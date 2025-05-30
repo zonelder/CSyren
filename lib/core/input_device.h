@@ -18,6 +18,8 @@ namespace csyren::core
 	public:
 		virtual ~InputDevice() = default;
 
+		virtual void earlyUpdate() {};
+
 		/**
 		 * @brief Update the device state.
 		 * This method should be called once per frame to update the device state.

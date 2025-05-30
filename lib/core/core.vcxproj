@@ -120,6 +120,7 @@
     <ClInclude Include="input_device.h" />
     <ClInclude Include="input_event.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="win32keyboard_device.h" />
     <ClInclude Include="window.h" />
     <ClInclude Include="win_exeption.h" />
   </ItemGroup>

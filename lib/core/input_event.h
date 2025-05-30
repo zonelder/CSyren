@@ -9,15 +9,17 @@
 namespace csyren::core
 {
 	/**
-	 * @class InputEvent
+	 * 
 	 * @brief Represents an input event from any input device
 	 * 
 	 * This class encapsulate all inpormation about an input event.
 	 * .
 	 */
-	class InputEvent
+	struct InputEvent
 	{
 	public:
+
+		InputEvent() noexcept = default;
 		/**
 		 * @enum Type
 		 * @brief Enumaterion of all possible input event types.
