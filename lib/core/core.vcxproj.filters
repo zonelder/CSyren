@@ -21,7 +21,7 @@
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="input.h">
+    <ClInclude Include="devices.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="win_exeption.h">
@@ -42,15 +42,21 @@
     <ClInclude Include="input_context.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="win32keyboard_device.h">
+    <ClInclude Include="keyboard_device.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="input_dispatcher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="input_enums.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mouse_device.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="input.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="window.cpp">

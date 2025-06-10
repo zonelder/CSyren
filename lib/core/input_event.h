@@ -6,7 +6,7 @@
 #include <memory>
 #include <algorithm>
 
-namespace csyren::core
+namespace csyren::core::input
 {
 	/**
 	 * 
@@ -54,6 +54,7 @@ namespace csyren::core
 				int y;
 				int deltaX;
 				int deltaY;
+				int wheelDelta;
 			} mouse;
 
 			struct {
@@ -104,7 +105,7 @@ namespace csyren::core
 		 * @typedef EventCallback_t
 		 * @brief Function signatura for event callbacks
 		 */
-		using EventCallback_t = std::function<bool(const InputEvent&)>;
+		using EventCallback_t = std::function<void(const InputEvent&)>;
 
 		/**
 		 * @brief Represent a subscription to an event type.

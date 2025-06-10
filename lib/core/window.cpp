@@ -1,5 +1,9 @@
 #include "pch.h"
 #include "window.h"
+#include "input_enums.h"
+
+#include <assert.h>
+
 
 csyren::core::Window::Window(int width, int height, const wchar_t* name) noexcept :
 	_hInst(GetModuleHandle(nullptr)),
@@ -35,7 +39,7 @@ HWND csyren::core::Window::init() noexcept
 	wcex.lpszMenuName = nullptr;
 	wcex.hInstance = _hInst;
 
-	wcex.lpfnWndProc = DefWindowProc;
+	wcex.lpfnWndProc = handleMsg;
 
 	if (!RegisterClassEx(&wcex))
 	{
@@ -58,8 +62,36 @@ HWND csyren::core::Window::init() noexcept
 	);
 }
 
-LRESULT csyren::core::Window::handleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+// Static message handler (called by OS)
+LRESULT CALLBACK csyren::core::Window::handleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	Window* pThis = nullptr;
+
+	if (msg == WM_NCCREATE) 
+	{
+		CREATESTRUCT* pCreate = reinterpret_cast<CREATESTRUCT*>(lParam);
+		pThis = reinterpret_cast<Window*>(pCreate->lpCreateParams);
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pThis));
+		return DefWindowProc(hWnd, msg, wParam, lParam);
+	}
+	else 
+	{
+		pThis = reinterpret_cast<Window*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+	}
+
+	if (pThis && pThis->ready()) 
+	{
+		return pThis->handleMsgImpl(hWnd, msg, wParam, lParam);
+	}
+	return DefWindowProc(hWnd, msg, wParam, lParam);
+}
+
+LRESULT csyren::core::Window::handleMsgImpl(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	assert(_dispatcher != nullptr && "dispatcher should be ready in main game loop.");
+	using InputEvent = input::InputEvent;
+	using EventType = InputEvent::Type;
+	using MouseButton = input::MouseButton;
+	InputEvent event;
 	switch (msg)
 	{
 	case WM_DESTROY:
@@ -67,6 +99,74 @@ LRESULT csyren::core::Window::handleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPAR
 	case WM_CLOSE:
 		PostQuitMessage(0);
 		break;
+	case WM_KEYDOWN:
+	case WM_SYSKEYDOWN:
+		
+		event.type = (lParam & 0x40000000) ?
+			EventType::Keyhold :
+			EventType::KeyDown;
+		event.code = static_cast<int>(wParam);
+		event.data.keyboard.shift = _shiftDown;
+		event.data.keyboard.ctrl = _ctrlDown;
+		event.data.keyboard.alt = _altDown;
+		_dispatcher->dispatch(event);
+		break;
+
+	case WM_KEYUP:
+	case WM_SYSKEYUP:
+		event.type = EventType::KeyUp;
+		event.code = static_cast<int>(wParam);
+		event.data.keyboard.shift = _shiftDown;
+		event.data.keyboard.ctrl = _ctrlDown;
+		event.data.keyboard.alt = _altDown;
+		_dispatcher->dispatch(event);
+		break;
+	case WM_LBUTTONDOWN:
+	case WM_RBUTTONDOWN:
+	{
+		const POINTS pt = MAKEPOINTS(lParam);
+		event.type = EventType::MouseButtonDown;
+		event.code = static_cast<int>((msg == WM_RBUTTONDOWN) ? MouseButton::Right : MouseButton::Left);
+		event.data.mouse.x = pt.x;
+		event.data.mouse.y = pt.y;
+		_dispatcher->dispatch(event);
+		break;
+	}
+
+	case WM_LBUTTONUP:
+	case WM_RBUTTONUP:
+	{
+		const POINTS pt = MAKEPOINTS(lParam);
+		event.type = EventType::MouseButtonUp;
+		event.code = static_cast<int>((msg == WM_RBUTTONUP) ? MouseButton::Right : MouseButton::Left);
+		event.data.mouse.x = pt.x;
+		event.data.mouse.y = pt.y;
+		_dispatcher->dispatch(event);
+		break;
+	}
+
+	case WM_MOUSEWHEEL: 
+	{
+		const POINTS pt = MAKEPOINTS(lParam);
+		event.type = EventType::MouseWheel;
+		event.code = static_cast<int>(MouseButton::Middle);
+		event.data.mouse.x = pt.x;
+		event.data.mouse.y = pt.y;
+		event.data.mouse.wheelDelta = GET_WHEEL_DELTA_WPARAM(wParam);
+		_dispatcher->dispatch(event);
+		break;
+	}
+	case WM_MOUSEMOVE:
+	{
+		const POINTS pt = MAKEPOINTS(lParam);
+		event.type = EventType::MouseButtonUp;
+		event.code = static_cast<int>((msg == WM_RBUTTONUP) ? MouseButton::Right : MouseButton::Left);
+		event.data.mouse.x = pt.x;
+		event.data.mouse.y = pt.y;
+		_dispatcher->dispatch(event);
+		break;
+	}
+
 	}
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }

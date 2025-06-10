@@ -113,19 +113,21 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="input_dispatcher.h" />
     <ClInclude Include="framework.h" />
-    <ClInclude Include="input.h" />
+    <ClInclude Include="devices.h" />
     <ClInclude Include="input_buffer.h" />
     <ClInclude Include="input_context.h" />
     <ClInclude Include="input_device.h" />
     <ClInclude Include="input_event.h" />
+    <ClInclude Include="input_enums.h" />
+    <ClInclude Include="mouse_device.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="win32keyboard_device.h" />
+    <ClInclude Include="keyboard_device.h" />
     <ClInclude Include="window.h" />
     <ClInclude Include="win_exeption.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="input.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
