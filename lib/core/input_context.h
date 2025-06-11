@@ -98,7 +98,8 @@ namespace csyren::core::input
 		 */
 		bool matches(const InputEvent& event) const
 		{
-			if (event.source && event.source->type() != _deviceType)
+
+			if (event.deviceType != _deviceType)
 			{
 				return false;
 			}

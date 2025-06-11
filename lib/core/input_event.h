@@ -1,6 +1,8 @@
 #ifndef __CSYREN_INPUT_EVENT__
 #define __CSYREN_INPUT_EVENT__
 #include "input_device.h"
+#include "input_enums.h"
+
 #include <functional>
 #include <chrono>
 #include <memory>
@@ -43,8 +45,8 @@ namespace csyren::core::input
 		};
 
 		Type type;				///< The type of event
+		DeviceType deviceType{ DeviceType::Unknown };
 		double timestamp;		///< When the event occured(in seconds)
-		InputDevice* source;	///< The device that generated the event
 		int code;				///< Device specific code(e.g. key code)
 
 		// Event-specific data
@@ -79,9 +81,9 @@ namespace csyren::core::input
 			void* customData;
 		} data;
 
-		InputEvent(Type type, InputDevice* source, int code = 0) noexcept :
+		InputEvent(Type type, DeviceType device, int code = 0) noexcept :
 			type(type),
-			source(source),
+			deviceType(device),
 			code(code)
 		{
 			using namespace std::chrono;

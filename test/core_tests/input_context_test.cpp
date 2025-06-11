@@ -2,9 +2,9 @@
 #include "core/input_context.h"
 
 
-using namespace csyren::core;
+using namespace csyren::core::input;
 
-// Mock input device for testing
+// mock input device for testing
 class MockInputDevice : public InputDevice {
 public:
     void update() override {}
@@ -43,17 +43,17 @@ TEST_F(InputContextTest, InputAction) {
 // Test InputBinding creation and matching
 TEST_F(InputContextTest, InputBinding) {
     InputBinding binding(DeviceType::Keyboard,' ', false, false, false); // Space key
-    InputEvent matchingEvent(InputEvent::Type::KeyDown, &mockDevice, ' ');
+    InputEvent matchingEvent(InputEvent::Type::KeyDown, mockDevice.type(), ' ');
     matchingEvent.data.keyboard.shift = false;
     matchingEvent.data.keyboard.ctrl = false;
     matchingEvent.data.keyboard.alt = false;
 
-    InputEvent nonMatchingEvent(InputEvent::Type::KeyDown, &mockDevice, 'A'); // 'A' key
+    InputEvent nonMatchingEvent(InputEvent::Type::KeyDown, mockDevice.type(), 'A'); // 'A' key
     nonMatchingEvent.data.keyboard.shift = false;
     nonMatchingEvent.data.keyboard.ctrl = false;
     nonMatchingEvent.data.keyboard.alt = false;
 
-    InputEvent modifierEvent(InputEvent::Type::KeyDown, &mockDevice, ' ');
+    InputEvent modifierEvent(InputEvent::Type::KeyDown, mockDevice.type(), ' ');
     modifierEvent.data.keyboard.shift = true;
     modifierEvent.data.keyboard.ctrl = false;
     modifierEvent.data.keyboard.alt = false;
@@ -67,17 +67,17 @@ TEST_F(InputContextTest, InputBinding) {
 TEST_F(InputContextTest, InputBindingWithModifiers) {
     InputBinding binding(DeviceType::Keyboard, 'A', true, true, false); // Ctrl+Shift+A
 
-    InputEvent matchingEvent(InputEvent::Type::KeyDown, &mockDevice, 'A');
+    InputEvent matchingEvent(InputEvent::Type::KeyDown, mockDevice.type(), 'A');
     matchingEvent.data.keyboard.shift = true;
     matchingEvent.data.keyboard.ctrl = true;
     matchingEvent.data.keyboard.alt = false;
 
-    InputEvent nonMatchingEvent1(InputEvent::Type::KeyDown, &mockDevice, 'A');
+    InputEvent nonMatchingEvent1(InputEvent::Type::KeyDown, mockDevice.type(), 'A');
     nonMatchingEvent1.data.keyboard.shift = true;
     nonMatchingEvent1.data.keyboard.ctrl = false;
     nonMatchingEvent1.data.keyboard.alt = false;
 
-    InputEvent nonMatchingEvent2(InputEvent::Type::KeyDown, &mockDevice, 'A');
+    InputEvent nonMatchingEvent2(InputEvent::Type::KeyDown, mockDevice.type(), 'A');
     nonMatchingEvent2.data.keyboard.shift = true;
     nonMatchingEvent2.data.keyboard.ctrl = true;
     nonMatchingEvent2.data.keyboard.alt = true;
@@ -114,8 +114,8 @@ TEST_F(InputContextTest, InputContextBinding)
 
     context.bind(jumpAction, spaceBinding);
 
-    InputEvent matchingEvent(InputEvent::Type::KeyDown, &mockDevice, ' ');
-    InputEvent nonMatchingEvent(InputEvent::Type::KeyDown, &mockDevice, 'A'); // 'A' key
+    InputEvent matchingEvent(InputEvent::Type::KeyDown, mockDevice.type(), ' ');
+    InputEvent nonMatchingEvent(InputEvent::Type::KeyDown, mockDevice.type(), 'A'); // 'A' key
 
     InputAction outAction("", "");
 
@@ -170,19 +170,19 @@ TEST_F(InputContextManagerTest, ContextRegistration) {
     InputAction outAction("", "");
 
     // Dialog context should handle 'Y' key
-    InputEvent yEvent(InputEvent::Type::KeyDown, &mockDevice, 'Y');
+    InputEvent yEvent(InputEvent::Type::KeyDown, mockDevice.type(), 'Y');
     InputContext* context = manager.activeContext(yEvent, outAction);
     EXPECT_EQ(context, &dialogContext);
     EXPECT_EQ(outAction.name(), "Confirm");
 
     // Menu context should handle Enter key
-    InputEvent enterEvent(InputEvent::Type::KeyDown, &mockDevice, 13);
+    InputEvent enterEvent(InputEvent::Type::KeyDown, mockDevice.type(), 13);
     context = manager.activeContext(enterEvent, outAction);
     EXPECT_EQ(context, &menuContext);
     EXPECT_EQ(outAction.name(), "Select");
 
     // Gameplay context should handle Space key
-    InputEvent spaceEvent(InputEvent::Type::KeyDown, &mockDevice, ' ');
+    InputEvent spaceEvent(InputEvent::Type::KeyDown, mockDevice.type(), ' ');
     context = manager.activeContext(spaceEvent, outAction);
     EXPECT_EQ(context, &gameplayContext);
     EXPECT_EQ(outAction.name(), "Jump");
@@ -196,12 +196,12 @@ TEST_F(InputContextManagerTest, ContextActivation) {
     InputAction outAction("", "");
 
     // Dialog context should still handle 'Y' key
-    InputEvent yEvent(InputEvent::Type::KeyDown, &mockDevice, 89);
+    InputEvent yEvent(InputEvent::Type::KeyDown, mockDevice.type(), 89);
     InputContext* context = manager.activeContext(yEvent, outAction);
     EXPECT_EQ(context, &dialogContext);
 
     // Menu context should no longer handle Enter key
-    InputEvent enterEvent(InputEvent::Type::KeyDown, &mockDevice, 13);
+    InputEvent enterEvent(InputEvent::Type::KeyDown, mockDevice.type(), 13);
     context = manager.activeContext(enterEvent, outAction);
     EXPECT_EQ(context, nullptr);
 
@@ -221,12 +221,12 @@ TEST_F(InputContextManagerTest, UnregisterContext)
     InputAction outAction("", "");
 
     // Dialog context should no longer handle 'Y' key
-    InputEvent yEvent(InputEvent::Type::KeyDown, &mockDevice, 'Y');
+    InputEvent yEvent(InputEvent::Type::KeyDown, mockDevice.type(), 'Y');
     InputContext* context = manager.activeContext(yEvent, outAction);
     EXPECT_EQ(context, nullptr);
 
     // Menu context should still handle Enter key
-    InputEvent enterEvent(InputEvent::Type::KeyDown, &mockDevice, 13);
+    InputEvent enterEvent(InputEvent::Type::KeyDown, mockDevice.type(), 13);
     context = manager.activeContext(enterEvent, outAction);
     EXPECT_EQ(context, &menuContext);
 

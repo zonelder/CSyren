@@ -113,6 +113,8 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="event_bus.h" />
+    <ClInclude Include="family_generator.h" />
     <ClInclude Include="input_dispatcher.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="devices.h" />

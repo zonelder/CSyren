@@ -2,7 +2,7 @@
 #define __CSYREN_INPUT_DEVICE__
 #include <string>
 
-namespace csyren::core
+namespace csyren::core::input
 {
 	enum class DeviceType
 	{

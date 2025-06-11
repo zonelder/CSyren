@@ -159,8 +159,8 @@ LRESULT csyren::core::Window::handleMsgImpl(HWND hWnd, UINT msg, WPARAM wParam, 
 	case WM_MOUSEMOVE:
 	{
 		const POINTS pt = MAKEPOINTS(lParam);
-		event.type = EventType::MouseButtonUp;
-		event.code = static_cast<int>((msg == WM_RBUTTONUP) ? MouseButton::Right : MouseButton::Left);
+		event.type = EventType::MouseMove;
+		event.code = static_cast<int>(MouseButton::UnknownButton);
 		event.data.mouse.x = pt.x;
 		event.data.mouse.y = pt.y;
 		_dispatcher->dispatch(event);

@@ -1,9 +1,10 @@
 #ifndef __CSYREN_KEYCODE__
 #define __CSYREN_KEYCODE__
+#include <Windows.h>
 
 namespace csyren::core::input
 {
-	enum class KeyCode
+	enum class KeyCode : int
 	{
 		// Alphanumeric keys
 
@@ -83,21 +84,21 @@ namespace csyren::core::input
 		ArrowRight = VK_RIGHT,
 
 		// Numpad keys
-		Numpad0 = VK_NUMPAD0,
-		Numpad1 = VK_NUMPAD1,
-		Numpad2 = VK_NUMPAD2,
-		Numpad3 = VK_NUMPAD3,
-		Numpad4 = VK_NUMPAD4,
-		Numpad5 = VK_NUMPAD5,
-		Numpad6 = VK_NUMPAD6,
-		Numpad7 = VK_NUMPAD7,
-		Numpad8 = VK_NUMPAD8,
-		Numpad9 = VK_NUMPAD9,
-		NumpadDivide = VK_DIVIDE,
-		NumpadMultiply = VK_MULTIPLY,
-		NumpadSubtract = VK_SUBTRACT,
-		NumpadAdd = VK_ADD,
-		NumpadDecimal = VK_DECIMAL,
+		Numpad0 =			VK_NUMPAD0,
+		Numpad1 =			VK_NUMPAD1,
+		Numpad2 =			VK_NUMPAD2,
+		Numpad3 =			VK_NUMPAD3,
+		Numpad4 =			VK_NUMPAD4,
+		Numpad5 =			VK_NUMPAD5,
+		Numpad6 =			VK_NUMPAD6,
+		Numpad7 =			VK_NUMPAD7,
+		Numpad8 =			VK_NUMPAD8,
+		Numpad9 =			VK_NUMPAD9,
+		NumpadDivide =		VK_DIVIDE,
+		NumpadMultiply =	VK_MULTIPLY,
+		NumpadSubtract =	VK_SUBTRACT,
+		NumpadAdd =			VK_ADD,
+		NumpadDecimal =		VK_DECIMAL,
 
 		// Unknown
 		UnknownKey = 0xFF,

@@ -54,6 +54,12 @@
     <ClInclude Include="mouse_device.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="event_bus.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="family_generator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

@@ -8,7 +8,7 @@
 #include <bitset>
 #include <Windows.h>
 
-namespace csyren::core
+namespace csyren::core::input
 {
 	class KeyboardDevice : public InputDevice
 	{

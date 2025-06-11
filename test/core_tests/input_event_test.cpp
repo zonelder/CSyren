@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "core/input_event.h"
 
-using namespace csyren::core;
+using namespace csyren::core::input;
 
 class MockInputDevice : public InputDevice
 {
@@ -27,9 +27,9 @@ protected:
 
 TEST_F(InputEventTest, EventCreation)
 {
-	InputEvent event(InputEvent::Type::KeyDown, &mockDevice, 'A');
+	InputEvent event(InputEvent::Type::KeyDown, mockDevice.type(), 'A');
 	EXPECT_EQ(event.type, InputEvent::Type::KeyDown);
-	EXPECT_EQ(event.source, &mockDevice);
+	EXPECT_EQ(event.deviceType, mockDevice.type());
 	EXPECT_EQ(event.code, 'A');
 	EXPECT_GT(event.timestamp, 0.0);
 }
@@ -43,7 +43,7 @@ TEST_F(InputEventTest, SubscribeAndDispatch)
 		return true;
 	});
 
-	InputEvent event(InputEvent::Type::KeyDown, &mockDevice, 'A');
+	InputEvent event(InputEvent::Type::KeyDown, mockDevice.type(), 'A');
 
 	auto handle = dispatcher.dispatch(event);
 	EXPECT_TRUE(handle);
