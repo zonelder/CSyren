@@ -47,10 +47,21 @@ namespace csyren::core::events
 			// Get type-safe ID and value hash
 			uint32_t typeHash = static_cast<uint32_t>(reflection::EventFamily::getID<T>());
 			uint32_t valueHash = static_cast<uint32_t>(std::hash<T>{}(v));
+			return mixHashes(typeHash, valueHash);
+		}
 
-			// Robust combining with avalanche effect
-			valueHash ^= typeHash + 0x9e3779b9 + (valueHash << 6) + (valueHash >> 2);
-			return valueHash;
+		static uint32_t mixHashes(uint32_t a, uint32_t b) noexcept {
+			// Based on MurmurHash3 finalizer
+			a ^= b;
+			a *= 0xcc9e2d51;
+			a = (a << 15) | (a >> 17);  // Rotate left 15
+			a *= 0x1b873593;
+			a ^= a >> 16;
+			a *= 0x85ebca6b;
+			a ^= a >> 13;
+			a *= 0xc2b2ae35;
+			a ^= a >> 16;
+			return a;
 		}
 		uint32_t _hash{ 0 };
 	};
