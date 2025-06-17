@@ -9,11 +9,16 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CSyren", "CSyren.vcxproj", 
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "core", "lib\core\core.vcxproj", "{C2D419D8-5A36-4905-BF2F-7FBC3CD025E9}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0A840A4E-EEBD-4693-BB62-DE598C61096E} = {0A840A4E-EEBD-4693-BB62-DE598C61096E}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "core_tests", "test\core_tests\core_tests.vcxproj", "{5CEF345F-3360-41A0-BC02-CB1F38138A0F}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C2D419D8-5A36-4905-BF2F-7FBC3CD025E9} = {C2D419D8-5A36-4905-BF2F-7FBC3CD025E9}
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cstdmf", "lib\cstdmf\cstdmf.vcxproj", "{0A840A4E-EEBD-4693-BB62-DE598C61096E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +38,10 @@ Global
 		{5CEF345F-3360-41A0-BC02-CB1F38138A0F}.Debug|x64.Build.0 = Debug|x64
 		{5CEF345F-3360-41A0-BC02-CB1F38138A0F}.Release|x64.ActiveCfg = Release|x64
 		{5CEF345F-3360-41A0-BC02-CB1F38138A0F}.Release|x64.Build.0 = Release|x64
+		{0A840A4E-EEBD-4693-BB62-DE598C61096E}.Debug|x64.ActiveCfg = Debug|x64
+		{0A840A4E-EEBD-4693-BB62-DE598C61096E}.Debug|x64.Build.0 = Debug|x64
+		{0A840A4E-EEBD-4693-BB62-DE598C61096E}.Release|x64.ActiveCfg = Release|x64
+		{0A840A4E-EEBD-4693-BB62-DE598C61096E}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
