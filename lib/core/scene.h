@@ -74,7 +74,7 @@ namespace csyren::core
 				if (it != _componentPools.end())
 					it->second->remove(compId, *this);
 
-				auto it = _updateableComponentPools.find(family);
+				it = _updateableComponentPools.find(family);
 				if (it != _updateableComponentPools.end())
 					it->second->remove(compId, *this);
 			}
@@ -90,23 +90,16 @@ namespace csyren::core
 			_entities.erase(id);
 		}
 
-		template<typename T>
-		T* addComponent(Entity::ID id)
+		template<typename T, typename... Args>
+		T* addComponent(Entity::ID id, Args&&... args)
 		{
 			Entity* ent = _entities.get(id);
 			if (!ent) return nullptr;
 
 			const size_t family = reflection::ComponentFamily::getID<T>();
-			
-			PoolBase*& base = nullptr;
-			if  constexpr (!reflection::HasUpdate<T>)
-			{
-				base = _componentPools[family];
-			}
-			else
-			{
-				base = _updateableComponentPools[family];
-			}
+			std::unique_ptr<PoolBase>& base =
+				reflection::HasUpdate<T> ? _updateableComponentPools[family]
+				: _componentPools[family];
 			if (!base)
 			{
 				base = std::make_unique<ComponentPool<T>>();
@@ -156,23 +149,17 @@ namespace csyren::core
 		template<typename T>
 		T* getComponent(Entity::ID id)
 		{
-			Entity* ent = _entities.get(id))
+			Entity* ent = _entities.get(id);
 			
 			if (!ent) return nullptr;
 
 			const size_t family = reflection::ComponentFamily::getID<T>();
 			auto it = ent->components.find(family);
-			if (it == ent->end()) return nullptr;
-			if constexpr (reflection::HasUpdate<T>)
-			{
-				auto poolIt = _updateableComponentPools.find(family);
-				if (poolIt == _updateableComponentPools.end()) return nullptr;
-			}
-			else
-			{
-				auto poolIt = _componentPools.find(family);
-				if (poolIt == _componentPools.end()) return nullptr;
-			}
+			if (it == ent->components.end()) return nullptr;
+
+			auto& map = reflection::HasUpdate<T> ? _updateableComponentPools : _componentPools;
+			auto poolIt = map.find(family);
+			if (poolIt == map.end()) return nullptr;
 			
 			auto* pool = static_cast<ComponentPool<T>*>(poolIt->second.get());
 			return pool->get(it->second);
@@ -198,12 +185,26 @@ namespace csyren::core
 		class ComponentPool : public PoolBase
 		{
 		public:
+			struct Record
+			{
+				Entity::ID owner{ Entity::invalidID };
+				T component{};
+
+				Record() = default;
+
+				template<typename... Args>
+				Record(Entity::ID e, Args&&... args)
+					: owner(e), component(std::forward<Args>(args)...)
+				{
+				}
+			};
+
 			template<typename... Args>
 			T* add(Entity::ID ent, Component::ID& outID, Args&&... args)
 			{
 				auto id = _records.emplace(ent, std::forward<Args>(args)...);
-				autID = static_cast<Component::ID>(id);
-				return _records.get(id);
+				outID = static_cast<Component::ID>(id);
+				return &_records.get(id)->component;
 			}
 
 			void remove(Component::ID id, Scene& scene) override
@@ -225,7 +226,7 @@ namespace csyren::core
 				{
 					for (auto& r : _records)
 					{
-						r.update(scene, time);
+						r.component.update(scene, time);
 					}
 				}
 
@@ -233,10 +234,11 @@ namespace csyren::core
 
 			T* get(Component::ID id)
 			{
-				return rec = _records.get(id);
+				auto* rec = _records.get(id);
+				return rec ? &rec->component : nullptr;
 			}
 		private:
-			cstdmf::PageView<T> _records;
+			cstdmf::PageView<Record> _records;
 		};
 
 		cstdmf::PageView<Entity> _entities;

@@ -15,6 +15,7 @@ namespace csyren::core
 {
 	class Time
 	{
+	public:
 		float deltaTime;
 	};
 
@@ -25,9 +26,6 @@ namespace csyren::core
 	public:
 		using ID = uint32_t;
 		virtual ~Component() = default;
-		virtual void onCreate(Scene&) {}//DEVIRTUALIZE
-		virtual void onDestroy(Scene&) {}//DEVIRTUALIZE
-		virtual void update(Scene&, Time&) {}//DEVIRTUALIZE
 	};
 }
 
