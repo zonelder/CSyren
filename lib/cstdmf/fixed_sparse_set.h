@@ -7,7 +7,7 @@
 namespace csyren::cstdmf
 {
 	template<typename T,size_t Capacity>
-	class FixedSparceSet
+	class FixedSparseSet
 	{
 	public:
 		using ID = size_t;
@@ -15,14 +15,20 @@ namespace csyren::cstdmf
 		using const_iterator = const T*;
 		static constexpr ID invalidID = std::numeric_limits<ID>::max();
 
-		FixedSparceSet() :
-			size_(0)
+		FixedSparseSet() noexcept :
+			_size(0)
 		{
 			for (size_t i = 0; i < Capacity; ++i)
 			{
 				_sparse[i] = invalidID;
 			}
 		}
+
+		~FixedSparseSet()
+		{
+			clear();
+		}
+
 
 		template<typename... Args>
 		bool emplace(ID id, Args&&... args)
@@ -31,6 +37,8 @@ namespace csyren::cstdmf
 			_sparse[id] = _size;
 			_dense[_size] = id;
 			new (&_data[_size]) T(std::forward<Args>(args)...);
+			++_size;
+			return true;
 		}
 
 		bool erase(ID id)
@@ -41,18 +49,28 @@ namespace csyren::cstdmf
 			_data[index].~T();
 			if (index != last)
 			{
-				_data[index] = std::remove(_data[last]);
+				_data[index] = std::move(_data[last]);
 				_dense[index] = _dense[last];
 				_sparse[_dense[index]] = index;
 			}
-			_sparce[id] = invalidID;
+			_sparse[id] = invalidID;
 			--_size;
 			return true;
 		}
 
-		bool contains(ID id) const
+		void clear()
 		{
-			return _sparse[id] != invalidID;
+			for (size_t i = 0; i < _size; ++i)
+			{
+				_data[i].~T();
+				_sparse[_dense[i]] = invalidID;//compact clean up. it may occure to be faster just iterate over all _sparce and clean instead of random access;
+			}
+			_size = 0;
+		}
+
+		bool contains(ID id) const noexcept
+		{
+			return id < Capacity && _sparse[id] != invalidID;
 		}
 
 		size_t size() const noexcept { return _size; }
@@ -65,14 +83,18 @@ namespace csyren::cstdmf
 
 		T* get(ID id) const noexcept
 		{
-			if (!contains(id)) return nullptr;
-			return &_data[_sparse[id]];
+			return contains(id) ? const_cast<T*>(&_data[_sparse[id]]) : nullptr;
+		}
+
+		T* get(ID id) noexcept
+		{
+			return contains(id) ?				&_data[_sparse[id]] : nullptr;
 		}
 
 		T& operator[](ID id) const
 		{
 			if (!contains(id))
-				throw std::out_of_range("FixedSparceSet::operator[] out of range");
+				throw std::out_of_range("FixedSparseSet::operator[] out of range");
 			return const_cast<T&>(_data[_sparse[id]]);
 		}
 
