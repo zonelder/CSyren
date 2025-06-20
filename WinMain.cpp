@@ -1,7 +1,6 @@
-#include <Windows.h>
 #include <iostream>
 #include "core/window.h"
-
+#include "core/scene.h"
 #define CONSOLE_ENABLE
 
 using namespace csyren;
@@ -59,6 +58,20 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE pPrevInstance, LPSTR plCmdLi
 			std::cout << "mouse button move:" << event.data.mouse.x << " " << event.data.mouse.y << "\n";
 		});
 	
+	{
+		cstdmf::PageView<std::unique_ptr<int>, 2> pv;
+
+		auto id1 = pv.emplace(std::make_unique<int>(42));
+		auto id2 = pv.emplace(std::make_unique<int>(100));
+
+		pv.erase(id1);
+
+		auto id3 = pv.emplace(std::make_unique<int>(200));
+		auto data = **pv.get(id3);
+		//EXPECT_EQ(**pv.get(id2), 100);
+		//EXPECT_EQ(**pv.get(id3), 200);
+	}
+
 	MSG msg = { 0 };
 	while (msg.message != WM_QUIT)
 	{

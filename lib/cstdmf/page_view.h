@@ -13,8 +13,6 @@ namespace csyren::cstdmf
 	template<typename T,size_t PageSize =  64>
 	class PageView
 	{
-
-
 	public:
 		using Page = FixedSparseSet<T, PageSize>;
 		template<bool isConst>
@@ -99,18 +97,17 @@ namespace csyren::cstdmf
 		template<typename... Args>
 		ID emplace(Args&&... args)
 		{
-
 			for (size_t i = 0; i < _pages.size(); ++i)
 			{
-				if (_pages[i]->size() < PageSize)
+				if (_pages[i] && _pages[i]->size() < PageSize)
 				{
 					auto localID = static_cast<Page::ID>(_pages[i]->size());
 					_pages[i]->emplace(localID, std::forward<Args>(args)...);
 					return encode_id(static_cast<uint32_t>(i), static_cast<uint32_t>(localID));
 				}
 			}
-			_pages.push_back(std::make_unique<Page>());
 			typename Page::ID localID = 0;
+			_pages.push_back(std::make_unique<Page>());
 			_pages.back()->emplace(localID, std::forward<Args>(args)...);
 			return encode_id(static_cast<uint32_t>(_pages.size() - 1), static_cast<uint32_t>(localID));
 		}
@@ -145,17 +142,20 @@ namespace csyren::cstdmf
 			return is_valid(page_idx) ? _pages[page_idx]->get(local_id) : nullptr;
 		}
 
-		T* at(ID id)
+		T& at(ID id)
 		{
-			if (T* ptr = get(id)) return ptr;
+			if (T* ptr = get(id)) return *ptr;
 			throw std::out_of_range("PageView::at invalid id");
 		}
 
-		const T* at(ID id) const
+		const T& at(ID id) const
 		{
-			if (T* ptr = get(id)) return ptr;
+			if (const T* ptr = get(id)) return *ptr;
 			throw std::out_of_range("PageView::at invalid id");
 		}
+
+		T& operator[](ID id) { return *get(id);}
+		const T& operator[](ID id) const { return *get(id); }
 
 		size_t size() const noexcept
 		{
@@ -197,6 +197,7 @@ namespace csyren::cstdmf
 				{
 					return iterator(this, page, _pages[page]->begin());
 				}
+				++page;
 			}
 			return iterator{};
 		}
@@ -218,13 +219,6 @@ namespace csyren::cstdmf
 		const_iterator end() const { return const_iterator(); }
 
 
-	private:
-		
-		bool is_valid(uint32_t page_id) const noexcept
-		{
-			return page_id < _pages.size() && _pages[page_id];
-		}
-
 		static ID encode_id(uint32_t page, uint32_t local)
 		{
 			return (static_cast<ID>(page) << 32) | local;
@@ -234,7 +228,13 @@ namespace csyren::cstdmf
 		{
 			return {static_cast<uint32_t>(id >> 32), static_cast<uint32_t>(id) };
 		}
+	private:
 		
+		bool is_valid(uint32_t page_id) const noexcept
+		{
+			return page_id < _pages.size() && _pages[page_id];
+		}
+
 		std::vector<std::unique_ptr<Page>> _pages;
 		std::vector<uint32_t> _nonFullPages;
 	};

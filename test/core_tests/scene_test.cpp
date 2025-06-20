@@ -23,14 +23,31 @@ struct Physics {
     void update(Scene&, Time& tm) { velocity += tm.deltaTime; }
 };
 
-TEST(SceneTest, EntityLifecycle) {
+TEST(SceneTest, SceneCreationTest)
+{
     Scene scene;
     Entity::ID entity = scene.createEntity();
-    ASSERT_NE(entity, Entity::invalidID);
-
-    scene.destroyEntity(entity);
-    // No direct way to verify destruction, but shouldn't crash
 }
+
+TEST(SceneTest, EntityLifecycle)
+{
+    // No direct way to verify destruction, but shouldn't crash
+    try {
+        Scene scene;
+        Entity::ID entity = scene.createEntity();
+        ASSERT_NE(entity, Entity::invalidID);
+
+        scene.destroyEntity(entity);
+        // No direct way to verify destruction, but shouldn't crash
+    }
+    catch (const std::exception& e) {
+        FAIL() << "Exception: " << e.what();
+    }
+    catch (...) {
+        FAIL() << "Unknown exception";
+    }
+}
+
 
 TEST(SceneTest, ComponentManagement) {
     Scene scene;
@@ -65,6 +82,7 @@ TEST(SceneTest, ComponentLifecycleCallbacks) {
 TEST(SceneTest, UpdateSystem) {
     Scene scene;
     Time time;
+    time.deltaTime = 1.0f;
     Entity::ID entity = scene.createEntity();
 
     Physics* physics = scene.addComponent<Physics>(entity);
