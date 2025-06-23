@@ -167,6 +167,8 @@ namespace csyren::core::input
 			{
 				sub.callback(event);
 			}
+
+			return true;
 		}
 	private:
 		std::unordered_map<InputEvent::Type, std::vector<Subscription>> _subscribers;

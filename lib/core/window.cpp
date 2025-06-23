@@ -60,6 +60,7 @@ HWND csyren::core::Window::init() noexcept
 		CW_USEDEFAULT, CW_USEDEFAULT, wr.right - wr.left, wr.bottom - wr.top,
 		nullptr, nullptr, _hInst, this
 	);
+	return _hWnd;
 }
 
 // Static message handler (called by OS)

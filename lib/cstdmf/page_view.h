@@ -6,6 +6,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <set>
 
 
 namespace csyren::cstdmf
@@ -14,7 +15,10 @@ namespace csyren::cstdmf
 	class PageView
 	{
 	public:
-		using Page = FixedSparseSet<T, PageSize>;
+		using ID = uint64_t;
+		using LocalID = uint32_t;
+		using Page = FixedSparseSet<T,PageSize,LocalID>;
+
 		template<bool isConst>
 		class iterator_impl
 		{
@@ -81,9 +85,10 @@ namespace csyren::cstdmf
 
 		};
 
-		using ID = size_t;
 		using iterator = iterator_impl<false>;
 		using const_iterator = iterator_impl<true>;
+
+		static constexpr ID invalidID = static_cast<ID>(Page::invalidID);
 
 		PageView() noexcept = default;
 		~PageView() { clear(); }
@@ -97,26 +102,53 @@ namespace csyren::cstdmf
 		template<typename... Args>
 		ID emplace(Args&&... args)
 		{
-			for (size_t i = 0; i < _pages.size(); ++i)
+			if (!_nonFullPages.empty())
 			{
-				if (_pages[i] && _pages[i]->size() < PageSize)
+				auto it = _nonFullPages.begin();
+				uint32_t pageIdx = *it;
+				Page* page = _pages[pageIdx].get();
+				LocalID localID = page->emplace(std::forward<Args>(args)...);
+				if (localID != Page::invalidID)
 				{
-					auto localID = static_cast<Page::ID>(_pages[i]->size());
-					_pages[i]->emplace(localID, std::forward<Args>(args)...);
-					return encode_id(static_cast<uint32_t>(i), static_cast<uint32_t>(localID));
+					if (page->size() == PageSize)
+					{
+						_nonFullPages.erase(it);
+					}
+					return encode_id(pageIdx, localID);
 				}
 			}
-			typename Page::ID localID = 0;
+
+			// Allocate new page
+			uint32_t pageIdx = static_cast<uint32_t>(_pages.size());
 			_pages.push_back(std::make_unique<Page>());
-			_pages.back()->emplace(localID, std::forward<Args>(args)...);
-			return encode_id(static_cast<uint32_t>(_pages.size() - 1), static_cast<uint32_t>(localID));
+			Page* newPage = _pages.back().get();
+
+			LocalID localID = newPage->emplace(std::forward<Args>(args)...);
+			if (localID == Page::invalidID)
+				return Page::invalidID;
+
+			// Add to non-full list if capacity remains
+			if (newPage->size() < PageSize) 
+			{
+				_nonFullPages.insert(pageIdx);
+			}
+
+			return encode_id(pageIdx, localID);
 		}
 
 		bool erase(ID id)
 		{
-			auto [page, local] = decode_id(id);
-			if (!is_valid(page)) return false;
-			return _pages[page]->erase(local);
+			auto [pageIdx, local] = decode_id(id);
+			if (!is_valid(pageIdx)) return false;
+			Page* page = _pages[pageIdx].get();
+			
+			const bool wasFull = page->size() == PageSize;
+			if (!page->erase(local)) return false;
+			if (wasFull)
+			{
+				_nonFullPages.insert(pageIdx);
+			}
+			return true;
 		}
 
 		bool contains(ID id) const noexcept 
@@ -219,14 +251,14 @@ namespace csyren::cstdmf
 		const_iterator end() const { return const_iterator(); }
 
 
-		static ID encode_id(uint32_t page, uint32_t local)
+		static ID encode_id(uint32_t page, LocalID local)
 		{
-			return (static_cast<ID>(page) << 32) | local;
+			return ((static_cast<ID>(page) << 32) | local);
 		}
 
-		static std::pair<uint32_t, uint32_t> decode_id(ID id)
+		static std::pair<uint32_t, LocalID> decode_id(ID id)
 		{
-			return {static_cast<uint32_t>(id >> 32), static_cast<uint32_t>(id) };
+			return {static_cast<uint32_t>(id >> 32), static_cast<LocalID>(id) };
 		}
 	private:
 		
@@ -236,7 +268,7 @@ namespace csyren::cstdmf
 		}
 
 		std::vector<std::unique_ptr<Page>> _pages;
-		std::vector<uint32_t> _nonFullPages;
+		std::set<uint32_t> _nonFullPages;
 	};
 }
 

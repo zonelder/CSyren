@@ -33,7 +33,7 @@ namespace csyren::core
 		ID id{ 0 };
 		ID parent{ invalidID };
 		std::vector<ID> childrens;
-		std::unordered_map<Component::ID, size_t> components;//component index in pool;
+		std::unordered_map<size_t, Component::ID> components;//component index in pool;
 
 	};
 

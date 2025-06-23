@@ -24,7 +24,7 @@ namespace csyren::core
 	class Component
 	{
 	public:
-		using ID = uint32_t;
+		using ID = size_t;
 		virtual ~Component() = default;
 	};
 }

@@ -1,16 +1,19 @@
 #ifndef __CSYREN_FIXED_SPARSE_SET__
 #define __CSYREN_FIXED_SPARSE_SET__
 
+#include <queue>
 #include <limits>
 #include <stdexcept>
 
 namespace csyren::cstdmf
 {
-	template<typename T,size_t Capacity>
+	template<typename T,size_t Capacity,typename ID = size_t>
 	class FixedSparseSet
 	{
+		static_assert(std::is_integral_v<ID>,"FixedSparseSet:: ID is not integer type");
+		static_assert(Capacity < std::numeric_limits<ID>::max(), "FixedSparseSet:: capacity is bigger that ID type can handle. reduse Capacity or change ID type.");
 	public:
-		using ID = size_t;
+		using size_type = ID;
 		using iterator = T*;
 		using const_iterator = const T*;
 		static constexpr ID invalidID = std::numeric_limits<ID>::max();
@@ -18,8 +21,10 @@ namespace csyren::cstdmf
 		FixedSparseSet() noexcept :
 			_size(0)
 		{
+			_freeList.reserve(Capacity);
 			for (size_t i = 0; i < Capacity; ++i)
 			{
+				_freeList.push_back(static_cast<ID>(Capacity - 1 - i)); // Reverse order
 				_sparse[i] = invalidID;
 			}
 		}
@@ -30,16 +35,19 @@ namespace csyren::cstdmf
 		}
 
 		template<typename... Args>
-		bool emplace(ID id, Args&&... args)
+		ID emplace(Args&&... args)
 		{
 			
-			if (_size >= Capacity || contains(id)) return false;
+			if (_size >= Capacity || _freeList.empty()) return invalidID;
+
+			ID id = _freeList.back();
+			_freeList.pop_back();
 			T* data = data_ptr();
 			_sparse[id] = _size;
 			_dense[_size] = id;
 			new (&data[_size]) T(std::forward<Args>(args)...);
 			++_size;
-			return true;
+			return id;
 		}
 
 		bool erase(ID id)
@@ -47,8 +55,8 @@ namespace csyren::cstdmf
 			if (!contains(id)) return false;
 
 			T* data = data_ptr();
-			size_t index = _sparse[id];
-			size_t last = _size - 1;
+			ID index = _sparse[id];
+			ID last = _size - 1;
 
 			data[index].~T();
 			if (index != last)
@@ -60,6 +68,7 @@ namespace csyren::cstdmf
 			}
 			_sparse[id] = invalidID;
 			--_size;
+			_freeList.push_back(id);
 			return true;
 		}
 
@@ -123,7 +132,8 @@ namespace csyren::cstdmf
 		ID _sparse[Capacity];
 		ID _dense[Capacity];
 		alignas(alignof(T)) std::byte _data[Capacity * sizeof(T)]{};
-		size_t _size{ 0 };
+		std::vector<ID>  _freeList;
+		size_type _size{ 0 };
 	};
 }
 
