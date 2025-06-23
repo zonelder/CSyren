@@ -117,6 +117,7 @@
   <ItemGroup>
     <ClInclude Include="component_base.h" />
     <ClInclude Include="component_pool.h" />
+    <ClInclude Include="entity.h" />
     <ClInclude Include="event_bus.h" />
     <ClInclude Include="family_generator.h" />
     <ClInclude Include="input_dispatcher.h" />
