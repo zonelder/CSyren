@@ -148,10 +148,10 @@ namespace csyren::core
 		}
 
 	private:
-
 		cstdmf::PageView<Entity> _entities;
 		std::unordered_map<size_t, std::unique_ptr<PoolBase>> _componentPools;
 		std::unordered_map<size_t, std::unique_ptr<PoolBase>> _updateableComponentPools;
+
 	};
 }
 
