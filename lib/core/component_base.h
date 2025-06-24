@@ -4,6 +4,10 @@
 #include <stdint.h>
 #include "family_generator.h"
 
+namespace csyren::render
+{
+	class Renderer;
+}
 
 namespace csyren::core
 {
@@ -38,7 +42,7 @@ namespace csyren::core::reflection
 	concept HasUpdate = requires(T t, Scene & s, Time & tm) { t.update(s, tm); };
 
 	template<typename T>
-	concept HasDraw = requires(T t) { t.draw(); };
+	concept HasDraw = requires(T t,Scene& s,render::Renderer& r) { t.draw(s,r); };
 }
 
 

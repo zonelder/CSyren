@@ -8,6 +8,7 @@
 #include "component_base.h"
 #include "component_pool.h"
 #include "component_order.h"
+#include "renderer.h"
 
 namespace csyren::core
 {
@@ -37,45 +38,45 @@ namespace csyren::core
 			}
 		}
 
-		void draw()
+		void draw(Scene& scene,render::Renderer& render)
 		{
-			/*
 			for (auto& [family, pool] : _drawablePools.natural)
 			{
-				pool->draw();
+				pool->draw(scene,render);
 			}
 
 			for (auto& [family, pool] : _drawablePools.hierarchy)
 			{
-				pool->draw();
+				pool->draw(scene,render);
 			}
-			*/
 		}
 
 		template<typename T, typename... Args>
-		std::pair<T*, Component::ID> add(Args&&... args)
+		std::pair<T*, Component::ID> add(Entity::ID entt_id,Args&&... args)
 		{
 			const size_t family = reflection::ComponentFamily::getID<T>();
-			auto& pool = getOrCreatePool<T>(family);
+			auto pool = getOrCreatePool<T>(family);
 			Component::ID id;
-			return { pool->add(id, std::forward<Args>(args)...),id };
+			return { pool->add(entt_id,id, std::forward<Args>(args)...),id };
 		}
 
 		template<typename T>
-		void remove(Component::ID id)
+		bool remove(Scene& scene,Component::ID id)
 		{
 			if (auto pool = getPool<T>())
 			{
-				pool->remove(id);
+				return pool->remove(scene,id);
 			}
+			return false;
 		}
 
-		void remove(size_t family, Component::ID id)
+		bool remove(Scene& scene,size_t family, Component::ID id)
 		{
 			if (auto it = allPools.find(family); it != allPools.end())
 			{
-				it->second->remove(id);
+				return it->second->remove(scene,id);
 			}
+			return false;
 		}
 
 		template<typename T>
@@ -177,7 +178,7 @@ namespace csyren::core
 			if (!ent) return;
 			for (const auto& [family, compId] : ent->components)
 			{
-				_handler.remove(family, compId);
+				_handler.remove(*this,family, compId);
 			}
 			ent->components.clear();
 			if (ent->parent != Entity::invalidID)
@@ -197,7 +198,7 @@ namespace csyren::core
 			Entity* ent = _entities.get(id);
 			if (!ent) return nullptr;
 
-			auto [comp, compID] = _handler.add<T>(std::forward<Args>(args)...);
+			auto [comp, compID] = _handler.add<T>(id,std::forward<Args>(args)...);
 			ent->components[reflection::ComponentFamily::getID<T>()] = compID;
 			if constexpr (reflection::HasOnCreate<T>)
 			{
@@ -217,7 +218,7 @@ namespace csyren::core
 			auto it = ent->components.find(family);
 			if (it == ent->components.end()) return;
 
-			_handler.remove<T>(it->second);
+			bool wasRemoved = _handler.remove<T>(*this,it->second);
 		}
 
 		template<typename T>

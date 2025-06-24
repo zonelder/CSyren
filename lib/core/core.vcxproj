@@ -132,6 +132,7 @@
     <ClInclude Include="mouse_device.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="keyboard_device.h" />
+    <ClInclude Include="renderer.h" />
     <ClInclude Include="scene.h" />
     <ClInclude Include="window.h" />
     <ClInclude Include="win_exeption.h" />

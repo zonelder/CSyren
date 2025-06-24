@@ -12,7 +12,8 @@ namespace csyren::core
     {
         virtual ~PoolBase() = default;
         virtual void update(Scene&, Time&) = 0;
-        virtual void remove(Component::ID, Scene&) = 0;
+        virtual bool remove(Scene& ,Component::ID) = 0;
+        virtual void draw(Scene&, render::Renderer&) = 0;
     };
 
     template<class T>
@@ -41,12 +42,17 @@ namespace csyren::core
             return &_records.get(id)->component;
         }
 
-        void remove(Component::ID id, Scene& scene) override
+        bool remove(Scene& scene,Component::ID id) override
         {
             if (auto* rec = _records.get(id))
             {
-                _records.erase(id);
+                if constexpr (reflection::HasOnDestroy<T>)
+                {
+                    rec->component.onDestroy(scene);
+                }
+               return _records.erase(id);
             }
+            return false;
         }
 
         void update(Scene& scene, Time& time) override
@@ -59,6 +65,17 @@ namespace csyren::core
                 }
             }
 
+        }
+
+        void draw(Scene& scene,render::Renderer& render) override
+        {
+            if constexpr (reflection::HasDraw<T>)
+            {
+                for (auto& r : _records)
+                {
+                    r.component.draw(scene,render);
+                }
+            }
         }
 
         T* get(Component::ID id)
