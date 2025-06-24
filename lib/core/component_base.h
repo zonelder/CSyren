@@ -36,6 +36,9 @@ namespace csyren::core::reflection
 
 	template<typename T>
 	concept HasUpdate = requires(T t, Scene & s, Time & tm) { t.update(s, tm); };
+
+	template<typename T>
+	concept HasDraw = requires(T t) { t.draw(); };
 }
 
 

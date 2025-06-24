@@ -45,11 +45,6 @@ namespace csyren::core
         {
             if (auto* rec = _records.get(id))
             {
-                if constexpr (reflection::HasOnDestroy<T>)
-                {
-                    rec->component.onDestroy(scene);
-                }
-
                 _records.erase(id);
             }
         }

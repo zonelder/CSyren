@@ -7,9 +7,142 @@
 
 #include "component_base.h"
 #include "component_pool.h"
+#include "component_order.h"
 
 namespace csyren::core
 {
+
+
+	struct PoolHandler
+	{
+		using PoolMap = std::unordered_map<size_t, std::shared_ptr<PoolBase>>;
+
+		struct OrderedPools
+		{
+			PoolMap natural;
+			PoolMap hierarchy;
+		};
+	public:
+
+		void update(Scene& scene, Time& time)
+		{
+			for (auto& [family, pool] : _updatablePools.natural)
+			{
+				pool->update(scene, time);
+			}
+
+			for (auto& [family, pool] : _updatablePools.hierarchy)
+			{
+				pool->update(scene, time);
+			}
+		}
+
+		void draw()
+		{
+			/*
+			for (auto& [family, pool] : _drawablePools.natural)
+			{
+				pool->draw();
+			}
+
+			for (auto& [family, pool] : _drawablePools.hierarchy)
+			{
+				pool->draw();
+			}
+			*/
+		}
+
+		template<typename T, typename... Args>
+		std::pair<T*, Component::ID> add(Args&&... args)
+		{
+			const size_t family = reflection::ComponentFamily::getID<T>();
+			auto& pool = getOrCreatePool<T>(family);
+			Component::ID id;
+			return { pool->add(id, std::forward<Args>(args)...),id };
+		}
+
+		template<typename T>
+		void remove(Component::ID id)
+		{
+			if (auto pool = getPool<T>())
+			{
+				pool->remove(id);
+			}
+		}
+
+		void remove(size_t family, Component::ID id)
+		{
+			if (auto it = allPools.find(family); it != allPools.end())
+			{
+				it->second->remove(id);
+			}
+		}
+
+		template<typename T>
+		T* get(Component::ID id)
+		{
+			if (auto pool = getPool<T>())
+			{
+				return pool->get(id);
+			}
+			return nullptr;
+		}
+	private:
+		template<typename T>
+		std::shared_ptr<ComponentPool<T>> getOrCreatePool(size_t family) {
+			// Try to find existing pool
+			if (auto pool = getPool<T>()) return pool;
+
+			// Create new pool
+			auto newPool = std::make_shared<ComponentPool<T>>();
+			allPools[family] = newPool;
+
+			// Add to appropriate ordered groups
+			using Order = reflection::order::default_order<T>;
+
+			if constexpr (reflection::HasUpdate<T>)
+			{
+				if constexpr (std::is_same_v<Order, reflection::order::natural_order_t>)
+				{
+					_updatablePools.natural[family] = newPool;
+				}
+				else if constexpr (std::is_same_v<Order, reflection::order::hierarchy_order_t>)
+				{
+					_updatablePools.hierarchy[family] = newPool;
+				}
+			}
+
+			if constexpr (reflection::HasDraw<T>)
+			{
+				if constexpr (std::is_same_v<Order, reflection::order::natural_order_t>)
+				{
+					_drawablePools.natural[family] = newPool;
+				}
+				else if constexpr (std::is_same_v<Order, reflection::order::hierarchy_order_t>)
+				{
+					_drawablePools.hierarchy[family] = newPool;
+				}
+			}
+
+			return newPool;
+		}
+
+		template<typename T>
+		std::shared_ptr<ComponentPool<T>> getPool()
+		{
+			const size_t family = reflection::ComponentFamily::getID<T>();
+			if (auto it = allPools.find(family); it != allPools.end())
+			{
+				return std::static_pointer_cast<ComponentPool<T>>(it->second);
+			}
+			return nullptr;
+		}
+
+	private:
+		PoolMap allPools;
+		OrderedPools _updatablePools;
+		OrderedPools _drawablePools;
+	};
 
 	class Scene
 	{
@@ -44,13 +177,7 @@ namespace csyren::core
 			if (!ent) return;
 			for (const auto& [family, compId] : ent->components)
 			{
-				auto it = _componentPools.find(family);
-				if (it != _componentPools.end())
-					it->second->remove(compId, *this);
-
-				it = _updateableComponentPools.find(family);
-				if (it != _updateableComponentPools.end())
-					it->second->remove(compId, *this);
+				_handler.remove(family, compId);
 			}
 			ent->components.clear();
 			if (ent->parent != Entity::invalidID)
@@ -70,18 +197,8 @@ namespace csyren::core
 			Entity* ent = _entities.get(id);
 			if (!ent) return nullptr;
 
-			const size_t family = reflection::ComponentFamily::getID<T>();
-			std::unique_ptr<PoolBase>& base =
-				reflection::HasUpdate<T> ? _updateableComponentPools[family]
-				: _componentPools[family];
-			if (!base)
-			{
-				base = std::make_unique<ComponentPool<T>>();
-			}
-			auto* pool = static_cast<ComponentPool<T>*>(base.get());
-			Component::ID compID;
-			T* comp = pool->add(id, compID, std::forward<Args>(args)...);
-			ent->components[family] = compID;
+			auto [comp, compID] = _handler.add<T>(std::forward<Args>(args)...);
+			ent->components[reflection::ComponentFamily::getID<T>()] = compID;
 			if constexpr (reflection::HasOnCreate<T>)
 			{
 				comp->onCreate(*this);
@@ -100,24 +217,7 @@ namespace csyren::core
 			auto it = ent->components.find(family);
 			if (it == ent->components.end()) return;
 
-			if constexpr (reflection::HasUpdate<T>)
-			{
-				auto poolIt = _updateableComponentPools.find(family);
-				if (poolIt != _updateableComponentPools.end())
-				{
-					poolIt->second->remove(it->second, *this);
-				}
-			}
-			else
-			{
-				auto poolIt = _componentPools.find(family);
-				if (poolIt != _componentPools.end())
-				{
-					poolIt->second->remove(it->second, *this);
-				}
-			}
-
-			ent->components.erase(it);
+			_handler.remove<T>(it->second);
 		}
 
 		template<typename T>
@@ -131,28 +231,19 @@ namespace csyren::core
 			auto it = ent->components.find(family);
 			if (it == ent->components.end()) return nullptr;
 
-			auto& map = reflection::HasUpdate<T> ? _updateableComponentPools : _componentPools;
-			auto poolIt = map.find(family);
-			if (poolIt == map.end()) return nullptr;
-			
-			auto* pool = static_cast<ComponentPool<T>*>(poolIt->second.get());
-			return pool->get(it->second);
+			return _handler.get<T>(it->second);
 		}
 
 		void update(Time& time)
 		{
-			for (auto& [fid, pool] : _updateableComponentPools)
-			{
-				pool->update(*this, time);
-			}
+			_handler.update(*this, time);
 		}
 
 	private:
 		cstdmf::PageView<Entity> _entities;
-		std::unordered_map<size_t, std::unique_ptr<PoolBase>> _componentPools;
-		std::unordered_map<size_t, std::unique_ptr<PoolBase>> _updateableComponentPools;
-
+		PoolHandler _handler;
 	};
+
 }
 
 #endif;
