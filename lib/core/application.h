@@ -3,20 +3,34 @@
 
 #include "window.h"
 #include "scene.h"
+#include "renderer.h"
+
+
+#include <string>
 
 namespace csyren::core
 {
+
 	class Application
 	{
 	public:
 		Application();
-		void init();
+		~Application();
+		
+		Application(const Application& rhs) = delete;
+		Application& operator=(const Application& rhs) = delete;
 
-		void game_loop();
+		bool init();
+		int	 run();
 
 	private:
-		Time _time;
-		render::Renderer _renderer;
+		
+		input::InputDispatcher	_inputDispatcher;
+		render::Renderer		_render;
+		Time					_time;
+
+		Window _window;
+		Scene _scene;
 	};
 }
 

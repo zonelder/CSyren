@@ -16,10 +16,20 @@ namespace csyren::core
 
 
 		HWND init() noexcept;
+
+		void show()
+		{
+			if(_hWnd)
+			{
+				ShowWindow(_hWnd, SW_SHOW);
+			}
+		}
 		void setInputDispatcher(input::InputDispatcher* dispatcher) { _dispatcher = dispatcher; }
 		const wchar_t* title() const noexcept { return _title; }
 		HINSTANCE hInstance() const noexcept { return _hInst; }
 
+		int width() const noexcept { return _width; }
+		int height() const noexcept { return _height; }
 
 		void preMessagePump()
 		{

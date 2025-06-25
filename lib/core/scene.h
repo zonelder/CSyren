@@ -240,6 +240,12 @@ namespace csyren::core
 			_handler.update(*this, time);
 		}
 
+		void draw(render::Renderer& render)
+		{
+			_handler.draw(*this, render);
+		}
+
+
 	private:
 		cstdmf::PageView<Entity> _entities;
 		PoolHandler _handler;
