@@ -25,6 +25,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cstdmf_tests", "test\cstdmf
 		{0A840A4E-EEBD-4693-BB62-DE598C61096E} = {0A840A4E-EEBD-4693-BB62-DE598C61096E}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dx12_graphic", "lib\dx12_graphic\dx12_graphic.vcxproj", "{02615BFC-B339-45BA-BF9F-22820D9E80A2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -51,6 +53,10 @@ Global
 		{BA52D8F0-E7C5-4493-A2FA-5699950FD5F2}.Debug|x64.Build.0 = Debug|x64
 		{BA52D8F0-E7C5-4493-A2FA-5699950FD5F2}.Release|x64.ActiveCfg = Release|x64
 		{BA52D8F0-E7C5-4493-A2FA-5699950FD5F2}.Release|x64.Build.0 = Release|x64
+		{02615BFC-B339-45BA-BF9F-22820D9E80A2}.Debug|x64.ActiveCfg = Debug|x64
+		{02615BFC-B339-45BA-BF9F-22820D9E80A2}.Debug|x64.Build.0 = Debug|x64
+		{02615BFC-B339-45BA-BF9F-22820D9E80A2}.Release|x64.ActiveCfg = Release|x64
+		{02615BFC-B339-45BA-BF9F-22820D9E80A2}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

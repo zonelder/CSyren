@@ -1,18 +1,10 @@
 #ifndef __CSYREN_RENDERER__
 #define __CSYERN_RENDERER__
 
+#define DX12_RENDER
 
-namespace csyren::render
-{
-	class Renderer
-	{
-		//Placeholder class for future render system.agregate render state 
-	public:
-
-	private:
-
-	};
-}
-
+#ifdef DX12_RENDER
+#include "dx12_graphic/renderer.h"
+#endif
 
 #endif
