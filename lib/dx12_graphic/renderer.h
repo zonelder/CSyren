@@ -41,6 +41,7 @@ namespace csyren::render
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> _rtvHeap;
 		UINT _rtvDescriptorSize{ 0 };
 		D3D12_VIEWPORT _viewport{};
+		D3D12_RECT		_scissor{};
 		Microsoft::WRL::ComPtr<ID3D12Resource> _renderTargets[FrameCount];
 		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> _commandAllocator;
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> _commandList;

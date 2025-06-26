@@ -94,6 +94,7 @@ namespace csyren::render
             return false;
 
         _viewport = { 0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f };
+        _scissor = { 0, 0, static_cast<LONG>(width), static_cast<LONG>(height) };
 
         return true;
     }
@@ -115,6 +116,7 @@ namespace csyren::render
         rtvHandle.ptr += _frameIndex * _rtvDescriptorSize;
         _commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
         _commandList->RSSetViewports(1, &_viewport);
+        _commandList->RSSetScissorRects(1, &_scissor);
     }
 
     void Renderer::clear(const FLOAT color[4])
