@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "mesh.h"
-#include "renderer.h"
 #include "material.h"
 
 using Microsoft::WRL::ComPtr;
@@ -26,14 +25,14 @@ namespace csyren::render
         resDesc.SampleDesc.Count = 1;
         resDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
-        if (FAILED(device->CreateCommittedResource(&heapProp, D3D12_HEAP_FLAG_NONE,
+        if (DX_FAILED(device->CreateCommittedResource(&heapProp, D3D12_HEAP_FLAG_NONE,
             &resDesc, D3D12_RESOURCE_STATE_GENERIC_READ,
             nullptr, IID_PPV_ARGS(&_vertexBuffer))))
             return false;
 
         void* data = nullptr;
         D3D12_RANGE readRange{ 0,0 };
-        if (SUCCEEDED(_vertexBuffer->Map(0, &readRange, &data)))
+        if (DX_SUCCEEDED(_vertexBuffer->Map(0, &readRange, &data)))
         {
             memcpy(data, vertices.data(), vertices.size() * sizeof(Vertex));
             _vertexBuffer->Unmap(0, nullptr);
@@ -44,12 +43,12 @@ namespace csyren::render
         _vertexView.StrideInBytes = sizeof(Vertex);
 
         resDesc.Width = sizeof(uint16_t) * indices.size();
-        if (FAILED(device->CreateCommittedResource(&heapProp, D3D12_HEAP_FLAG_NONE,
+        if (DX_FAILED(device->CreateCommittedResource(&heapProp, D3D12_HEAP_FLAG_NONE,
             &resDesc, D3D12_RESOURCE_STATE_GENERIC_READ,
             nullptr, IID_PPV_ARGS(&_indexBuffer))))
             return false;
 
-        if (SUCCEEDED(_indexBuffer->Map(0, &readRange, &data)))
+        if (DX_SUCCEEDED(_indexBuffer->Map(0, &readRange, &data)))
         {
             memcpy(data, indices.data(), indices.size() * sizeof(uint16_t));
             _indexBuffer->Unmap(0, nullptr);

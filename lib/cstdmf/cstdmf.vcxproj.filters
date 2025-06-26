@@ -27,7 +27,7 @@
     <ClInclude Include="fixed_sparse_set.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="universal_pool.h">
+    <ClInclude Include="log.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "renderer.h"
+#include "dx_log.h"
 
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3d12.lib")
@@ -25,16 +26,16 @@ namespace csyren::render
     {
         UINT factoryFlags = 0;
         ComPtr<IDXGIFactory4> factory;
-        if (FAILED(CreateDXGIFactory2(factoryFlags, IID_PPV_ARGS(&factory))))
+        if (DX_FAILED(CreateDXGIFactory2(factoryFlags, IID_PPV_ARGS(&factory))))
             return false;
 
-        if (FAILED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&_device))))
+        if (DX_FAILED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&_device))))
             return false;
 
         D3D12_COMMAND_QUEUE_DESC queueDesc = {};
         queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
         queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-        if (FAILED(_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&_commandQueue))))
+        if (DX_FAILED(_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&_commandQueue))))
             return false;
 
         DXGI_SWAP_CHAIN_DESC1 swapDesc = {};
@@ -47,13 +48,13 @@ namespace csyren::render
         swapDesc.SampleDesc.Count = 1;
 
         ComPtr<IDXGISwapChain1> swapChain1;
-        if (FAILED(factory->CreateSwapChainForHwnd(_commandQueue.Get(), hwnd, &swapDesc, nullptr, nullptr, &swapChain1)))
+        if (DX_FAILED(factory->CreateSwapChainForHwnd(_commandQueue.Get(), hwnd, &swapDesc, nullptr, nullptr, &swapChain1)))
             return false;
 
-        if (FAILED(factory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER)))
+        if (DX_FAILED(factory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER)))
             return false;
 
-        if (FAILED(swapChain1.As(&_swapChain)))
+        if (DX_FAILED(swapChain1.As(&_swapChain)))
             return false;
 
         _frameIndex = _swapChain->GetCurrentBackBufferIndex();
@@ -62,29 +63,29 @@ namespace csyren::render
         rtvHeapDesc.NumDescriptors = FrameCount;
         rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
         rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-        if (FAILED(_device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&_rtvHeap))))
+        if (DX_FAILED(_device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&_rtvHeap))))
             return false;
 
         _rtvDescriptorSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
         D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = _rtvHeap->GetCPUDescriptorHandleForHeapStart();
         for (UINT i = 0; i < FrameCount; ++i)
         {
-            if (FAILED(_swapChain->GetBuffer(i, IID_PPV_ARGS(&_renderTargets[i]))))
+            if (DX_FAILED(_swapChain->GetBuffer(i, IID_PPV_ARGS(&_renderTargets[i]))))
                 return false;
             _device->CreateRenderTargetView(_renderTargets[i].Get(), nullptr, rtvHandle);
             rtvHandle.ptr += _rtvDescriptorSize;
         }
 
-        if (FAILED(_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&_commandAllocator))))
+        if (DX_FAILED(_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&_commandAllocator))))
             return false;
 
-        if (FAILED(_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, _commandAllocator.Get(), nullptr, IID_PPV_ARGS(&_commandList))))
+        if (DX_FAILED(_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, _commandAllocator.Get(), nullptr, IID_PPV_ARGS(&_commandList))))
             return false;
 
-        if (FAILED(_commandList->Close()))
+        if (DX_FAILED(_commandList->Close()))
             return false;
 
-        if (FAILED(_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_fence))))
+        if (DX_FAILED(_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_fence))))
             return false;
 
         _fenceValue = 1;

@@ -1,5 +1,5 @@
 #ifndef __CSYREN_RENDERER__
-#define __CSYERN_RENDERER__
+#define __CSYREN_RENDERER__
 
 #define DX12_RENDER
 

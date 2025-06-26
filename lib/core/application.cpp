@@ -2,6 +2,7 @@
 #include "application.h"
 #include "renderer.h"
 #include "input_dispatcher.h"
+#include "cstdmf/log.h"
 #include <cassert>
 #include <format>
 #include <iostream>
@@ -11,28 +12,8 @@
 #include "dx12_graphic/mesh.h"
 #include "dx12_graphic/material.h"
 
+
 //
-
-wchar_t* translateErrorCode(HRESULT hr) noexcept
-{
-	wchar_t* pMsgBuf = nullptr;
-	DWORD nMsgLen = FormatMessage(
-		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-		nullptr, hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		reinterpret_cast<LPWSTR>(&pMsgBuf), 0, nullptr);
-
-	if (nMsgLen == 0)
-		return nullptr;
-	return pMsgBuf;
-}
-
-void BoxLastError()
-{
-	auto error = translateErrorCode(GetLastError());
-	auto error_str = std::format(TEXT("Failed init main window:{}"), error ? error : TEXT("undefined error code"));
-	MessageBox(0, error_str.c_str(), 0, 0);
-}
-
 
 namespace csyren::core
 {
@@ -48,16 +29,11 @@ namespace csyren::core
 	bool Application::init()
 	{
 		auto hWnd = _window.init();
-		if (!hWnd)
-		{
-			BoxLastError();
-			return false;
-		}
+		if (!hWnd) { return false; }
 		_window.setInputDispatcher(&_inputDispatcher);
 
 		if (!_render.init(hWnd, _window.width(), _window.height()))
 		{
-			BoxLastError();
 			return false;
 		}
 
@@ -67,6 +43,7 @@ namespace csyren::core
 
 	int Application::run()
 	{
+		log::init();
 		onSceneStart();
 		_window.show();
 		MSG msg = { 0 };
@@ -74,17 +51,9 @@ namespace csyren::core
 		const FLOAT clearColor[4] = { 0.1f, 0.1f, 0.3f, 1.0f };
 
 		render::Material material;
-		if (!render::Primitives::createDefaultMaterial(_render, material))
-		{
-			BoxLastError();
-			return -1;
-		}
 		render::Mesh mesh;
-		if (!render::Primitives::createTriangle(_render, mesh))
-		{
-			BoxLastError();
+		if (!render::Primitives::createDefaultMaterial(_render, material) || !render::Primitives::createTriangle(_render, mesh))
 			return -1;
-		}
 		while (msg.message != WM_QUIT)
 		{
 			_window.preMessagePump();
@@ -104,6 +73,7 @@ namespace csyren::core
 
 			_render.endFrame();
 		}
+		log::shutdown();
 		return static_cast<int>(msg.wParam);
 	}
 

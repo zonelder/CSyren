@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "material.h"
-#include "renderer.h"
 #include <d3dcompiler.h>
 
 using Microsoft::WRL::ComPtr;
@@ -18,11 +17,11 @@ namespace csyren::render
         rootDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
         ComPtr<ID3DBlob> sigBlob;
-        if (FAILED(D3D12SerializeRootSignature(&rootDesc, D3D_ROOT_SIGNATURE_VERSION_1,
+        if (DX_FAILED(D3D12SerializeRootSignature(&rootDesc, D3D_ROOT_SIGNATURE_VERSION_1,
             &sigBlob, nullptr)))
             return false;
 
-        if (FAILED(device->CreateRootSignature(0, sigBlob->GetBufferPointer(),
+        if (DX_FAILED(device->CreateRootSignature(0, sigBlob->GetBufferPointer(),
             sigBlob->GetBufferSize(), IID_PPV_ARGS(&_rootSig))))
             return false;
 
@@ -80,6 +79,6 @@ namespace csyren::render
         desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
         desc.SampleDesc.Count = 1;
 
-        return SUCCEEDED(device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&_pso)));
+        return DX_SUCCEEDED(device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&_pso)));
     }
 }

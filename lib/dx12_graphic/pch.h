@@ -9,5 +9,7 @@
 
 // add headers that you want to pre-compile here
 #include "framework.h"
+#include "dx_log.h"
+#include "renderer.h"
 
 #endif //PCH_H

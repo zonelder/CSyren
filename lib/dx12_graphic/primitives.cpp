@@ -28,10 +28,10 @@ namespace csyren::render
     {
         ComPtr<ID3DBlob> vs;
         ComPtr<ID3DBlob> ps;
-        if (FAILED(D3DCompile(g_vsCode, strlen(g_vsCode), nullptr, nullptr, nullptr,
+        if (DX_FAILED(D3DCompile(g_vsCode, strlen(g_vsCode), nullptr, nullptr, nullptr,
             "main", "vs_5_0", 0, 0, &vs, nullptr)))
             return false;
-        if (FAILED(D3DCompile(g_psCode, strlen(g_psCode), nullptr, nullptr, nullptr,
+        if (DX_FAILED(D3DCompile(g_psCode, strlen(g_psCode), nullptr, nullptr, nullptr,
             "main", "ps_5_0", 0, 0, &ps, nullptr)))
             return false;
 

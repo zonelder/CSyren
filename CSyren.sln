@@ -28,6 +28,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cstdmf_tests", "test\cstdmf
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dx12_graphic", "lib\dx12_graphic\dx12_graphic.vcxproj", "{02615BFC-B339-45BA-BF9F-22820D9E80A2}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0A840A4E-EEBD-4693-BB62-DE598C61096E} = {0A840A4E-EEBD-4693-BB62-DE598C61096E}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
