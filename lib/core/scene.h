@@ -9,6 +9,7 @@
 #include "component_pool.h"
 #include "component_order.h"
 #include "renderer.h"
+#include "input_dispatcher.h"
 
 namespace csyren::core
 {
@@ -148,7 +149,8 @@ namespace csyren::core
 	class Scene
 	{
 	public:
-		explicit Scene(size_t reserveEntities = 0)
+		explicit Scene(input::InputDispatcher& refInput, size_t reserveEntities = 0):
+			_refInput(refInput)
 		{
 			if (reserveEntities)
 			{
@@ -245,10 +247,15 @@ namespace csyren::core
 			_handler.draw(*this, render);
 		}
 
+		input::InputDispatcher& input() const noexcept
+		{
+			return const_cast<input::InputDispatcher&>(_refInput);
+		}
 
 	private:
 		cstdmf::PageView<Entity> _entities;
 		PoolHandler _handler;
+		input::InputDispatcher& _refInput;
 	};
 
 }

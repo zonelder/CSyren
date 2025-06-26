@@ -17,8 +17,37 @@ namespace csyren::render
 	class Renderer
 	{
 	public:
-		//TODO implement
+		Renderer() noexcept = default;
+		~Renderer();
+
+		Renderer(const Renderer&) = delete;
+		Renderer& operator=(const Renderer&) = delete;
+
+		bool init(HWND hwnd, UINT width, UINT height);
+		void beginFrame();
+		void clear(const FLOAT color[4]);
+		void endFrame();
+
+		ID3D12GraphicsCommandList* commandList() const noexcept { return _commandList.Get(); }
+		ID3D12Device* device() const noexcept { return _device.Get(); }
 	private:
+		void waitForGpu();
+
+		static constexpr UINT FrameCount = 2;
+
+		Microsoft::WRL::ComPtr<ID3D12Device> _device;
+		Microsoft::WRL::ComPtr<IDXGISwapChain3> _swapChain;
+		Microsoft::WRL::ComPtr<ID3D12CommandQueue> _commandQueue;
+		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> _rtvHeap;
+		UINT _rtvDescriptorSize{ 0 };
+		D3D12_VIEWPORT _viewport{};
+		Microsoft::WRL::ComPtr<ID3D12Resource> _renderTargets[FrameCount];
+		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> _commandAllocator;
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> _commandList;
+		Microsoft::WRL::ComPtr<ID3D12Fence> _fence;
+		UINT64 _fenceValue{ 0 };
+		HANDLE _fenceEvent{ nullptr };
+		UINT _frameIndex{ 0 };
 
 	};
 }

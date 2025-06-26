@@ -16,7 +16,7 @@ namespace csyren::core::input
 		KeyboardDevice() noexcept = default;
 		bool isConnected() const override
 		{
-			return GetKeyboardState(nullptr) != FALSE;
+			return true;
 		}
 
 		void update() override {};

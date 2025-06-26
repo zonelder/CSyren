@@ -2,6 +2,7 @@
 #include "core/scene.h"
 
 using namespace csyren::core;
+static input::InputDispatcher iDis;
 
 // Test Components
 struct Transform {
@@ -25,7 +26,7 @@ struct Physics {
 
 TEST(SceneTest, SceneCreationTest)
 {
-    Scene scene;
+    Scene scene(iDis);
     Entity::ID entity = scene.createEntity();
 }
 
@@ -33,7 +34,7 @@ TEST(SceneTest, EntityLifecycle)
 {
     // No direct way to verify destruction, but shouldn't crash
     try {
-        Scene scene;
+        Scene scene(iDis);
         Entity::ID entity = scene.createEntity();
         ASSERT_NE(entity, Entity::invalidID);
 
@@ -50,7 +51,7 @@ TEST(SceneTest, EntityLifecycle)
 
 
 TEST(SceneTest, ComponentManagement) {
-    Scene scene;
+    Scene scene(iDis);
     Entity::ID entity = scene.createEntity();
 
     // Add and retrieve component
@@ -66,7 +67,7 @@ TEST(SceneTest, ComponentManagement) {
 }
 
 TEST(SceneTest, ComponentLifecycleCallbacks) {
-    Scene scene;
+    Scene scene(iDis);
     Entity::ID entity = scene.createEntity();
     // onCreate test
     Health* health = scene.addComponent<Health>(entity);
@@ -80,7 +81,7 @@ TEST(SceneTest, ComponentLifecycleCallbacks) {
 }
 
 TEST(SceneTest, UpdateSystem) {
-    Scene scene;
+    Scene scene(iDis);
     Time time;
     time.deltaTime = 1.0f;
     Entity::ID entity = scene.createEntity();
@@ -98,7 +99,7 @@ TEST(SceneTest, UpdateSystem) {
 }
 
 TEST(SceneTest, ParentChildRelationships) {
-    Scene scene;
+    Scene scene(iDis);
     Entity::ID parent = scene.createEntity();
     Entity::ID child = scene.createEntity(parent);
 
@@ -118,8 +119,9 @@ TEST(SceneTest, ParentChildRelationships) {
     scene.destroyEntity(child);
 }
 
-TEST(SceneTest, MultipleComponentsPerEntity) {
-    Scene scene;
+TEST(SceneTest, MultipleComponentsPerEntity) 
+{
+    Scene scene(iDis);
     Entity::ID entity = scene.createEntity();
 
     auto* transform = scene.addComponent<Transform>(entity);
@@ -134,8 +136,9 @@ TEST(SceneTest, MultipleComponentsPerEntity) {
     scene.destroyEntity(entity);
 }
 
-TEST(SceneTest, NonexistentEntityHandling) {
-    Scene scene;
+TEST(SceneTest, NonexistentEntityHandling) 
+{
+    Scene scene(iDis);
     Entity::ID invalidEntity = 999; // Never created
 
     // All operations should handle invalid entities gracefully

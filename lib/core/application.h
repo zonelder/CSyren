@@ -23,6 +23,8 @@ namespace csyren::core
 		bool init();
 		int	 run();
 
+		void onSceneStart();
+
 	private:
 		
 		input::InputDispatcher	_inputDispatcher;
