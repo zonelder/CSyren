@@ -4,13 +4,13 @@
 #include "window.h"
 #include "scene.h"
 #include "renderer.h"
-
+#include "time.h"
 
 #include <string>
 
 namespace csyren::core
 {
-
+	class ResourceManager{};
 	class Application
 	{
 	public:
@@ -30,6 +30,7 @@ namespace csyren::core
 		input::InputDispatcher	_inputDispatcher;
 		render::Renderer		_render;
 		Time					_time;
+		ResourceManager			_resource;
 
 		Window _window;
 		Scene _scene;

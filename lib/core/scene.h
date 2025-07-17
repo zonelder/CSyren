@@ -13,7 +13,10 @@
 
 namespace csyren::core
 {
-
+	class UpdateAction{};
+	class DrawAction{};
+	class OnCreateAction{};
+	class OnDestroy {};
 
 	struct PoolHandler
 	{

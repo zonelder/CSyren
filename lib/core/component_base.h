@@ -11,11 +11,7 @@ namespace csyren::render
 
 namespace csyren::core
 {
-	class Time
-	{
-	public:
-		float deltaTime;
-	};
+	class Time;
 
 	class Scene;
 

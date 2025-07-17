@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 
 namespace csyren::core::reflection
 {
@@ -7,15 +8,15 @@ namespace csyren::core::reflection
 	{
 	public:
 		template<class T>
-		static size_t getID()
+		static uint64_t getID()
 		{
-			static size_t i = next();
+			static uint64_t i = next();
 			return i;
 		}
 	private:
-		static size_t next()
+		static uint64_t next()
 		{
-			static size_t s_nextID = 0;
+			static std::atomic<uint64_t> s_nextID = 0;
 			return s_nextID++;
 		}
 	};

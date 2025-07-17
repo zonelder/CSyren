@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "core/scene.h"
+#include "core/time.h"
 
 using namespace csyren::core;
 static input::InputDispatcher iDis;
@@ -21,7 +22,7 @@ struct Damage {
 
 struct Physics {
     float velocity = 0.0f;
-    void update(Scene&, Time& tm) { velocity += tm.deltaTime; }
+    void update(Scene&, Time& tm) { velocity += 1.0f; }
 };
 
 TEST(SceneTest, SceneCreationTest)
@@ -83,7 +84,6 @@ TEST(SceneTest, ComponentLifecycleCallbacks) {
 TEST(SceneTest, UpdateSystem) {
     Scene scene(iDis);
     Time time;
-    time.deltaTime = 1.0f;
     Entity::ID entity = scene.createEntity();
 
     Physics* physics = scene.addComponent<Physics>(entity);

@@ -12,6 +12,9 @@
 #include "dx12_graphic/mesh.h"
 #include "dx12_graphic/material.h"
 
+#include "core/event_bus.h"
+#include "core/context.h"
+#include "core/time.h"
 
 //
 
@@ -40,7 +43,6 @@ namespace csyren::core
 		return true;
 	}
 
-
 	int Application::run()
 	{
 		log::init();
@@ -50,21 +52,34 @@ namespace csyren::core
 
 		const FLOAT clearColor[4] = { 0.1f, 0.1f, 0.3f, 1.0f };
 
+		std::unique_ptr<csyren::core::events::EventBus2> bus = std::make_unique<csyren::core::events::EventBus2>();
+
+		core::Time time;
+		core::details::TimeHandler timeHandler;
+
+		core::events::UpdateEvent updateEvent{ _scene,_resource,*bus,time };
+		core::events::DrawEvent   drawEvent{ _scene,_resource,*bus,_render };
+
+		auto updateToken = bus->register_publisher<core::events::UpdateEvent>();
+		auto drawToken = bus->register_publisher<core::events::DrawEvent>();
 		render::Material material;
 		render::Mesh mesh;
 		if (!render::Primitives::createDefaultMaterial(_render, material) || !render::Primitives::createTriangle(_render, mesh))
 			return -1;
 		while (msg.message != WM_QUIT)
 		{
+			timeHandler.update(time);
 			_window.preMessagePump();
 			if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
 			{
 				TranslateMessage(&msg);
 				DispatchMessage(&msg);
 			}
+			
 			_inputDispatcher.update();
-			_scene.update(_time);
+			bus->publish(updateToken,updateEvent);
 
+			bus->publish(drawToken,drawEvent);
 			_render.beginFrame();
 			_render.clear(clearColor);
 

@@ -1,296 +1,305 @@
 #include "pch.h"
-#include "core/event_bus.h"
-#include <bitset>
-#include <unordered_set>
+#include "core/event_bus.h" // Заголовочный файл с EventBus2
+#include <memory>
+#include <vector>
+#include <atomic>
+#include <string>
 
 using namespace csyren::core::events;
 
-TEST(SubscriptionHandlerTest, HandlerCollisionAfterCounterWrap) 
-{
+struct TestEvent { int value; };
+struct AnotherEvent { float data; };
+struct MarkedEvent { std::string info; };
 
-    EventID event1 = EventID::fromHash(0xDEADBEEF);
-    EventID event2 = EventID::fromHash(0xDEADBEEF);
-    EventBus::HandlerMaker maker;
-    maker._nextHandlerCounter = 0xFFFFFFFF;
+class EventBusTest : public ::testing::Test {
+protected:
+    std::unique_ptr<EventBus2> bus = std::make_unique<EventBus2>();
+};
 
-    SubscriptionHandler h1 = maker.makeHandler(event1);
+class EventTracker {
+public:
+    std::atomic<int> testEventCount = 0;
+    std::atomic<int> markedEventCount = 0;
+    std::atomic<int> anotherEventCount = 0;
+    std::vector<int> receivedValues;
+    std::mutex vector_mutex;
 
-
-    maker._nextHandlerCounter = 0xFFFFFFFF;
-
-
-    SubscriptionHandler h2 = maker.makeHandler(event2);
-
-    EXPECT_EQ(h1, h2);
-
-    EXPECT_EQ(maker.getEventID(h1), maker.getEventID(h2));
-}
-
-TEST(EventIDTest, HashCollision) 
-{
-    EventID a(123), b(456);  // Two different events
-    // Force hash collision (mock computeCombinedHash)
-    EXPECT_TRUE(a.getHash() != b.getHash());  // Simulate collision
-    EXPECT_TRUE(a != b);  // Should still be different events!
-}
-
-TEST(SubscriptionHandlerTest, CounterWrap) {
-    EventBus::HandlerMaker  manager;
-    manager._nextHandlerCounter = 0xFFFFFFFE;
-
-    auto h1 = manager.makeHandler(EventID{ 1 });
-    auto h2 = manager.makeHandler(EventID{ 2 });
-    auto h3 = manager.makeHandler(EventID{ 3 });
-
-    // All handlers must be unique despite wrap
-    ASSERT_NE(h1, h2);
-    ASSERT_NE(h1, h3);
-    ASSERT_NE(h2, h3);
-}
-
-TEST(SubscriptionHandlerTest, HandlerRoundTrip1) {
-    EventID original(42);
-    EventBus::HandlerMaker manager;
-    SubscriptionHandler h = manager.makeHandler(original);
-    EventID recovered = manager.getEventID(h);
-    ASSERT_EQ(original, recovered);
-}
-
-
-TEST(SubscriptionHandlerTest, CounterBoundaryConditions) {
-    EventBus::HandlerMaker manager;
-    EventID event(42);
-
-    manager._nextHandlerCounter = (0xFFFFFFFF - 1);
-
-    SubscriptionHandler h1 = manager.makeHandler(event);  // Counter: 0xFFFFFFFE
-    SubscriptionHandler h2 = manager.makeHandler(event);  // Counter: 0xFFFFFFFF
-    SubscriptionHandler h3 = manager.makeHandler(event);  // Counter: 0x00000000
-    SubscriptionHandler h4 = manager.makeHandler(event);  // Counter: 0x00000001
-
-    // Verify all handlers are unique
-    ASSERT_NE(h1, h2);
-    ASSERT_NE(h1, h3);
-    ASSERT_NE(h1, h4);
-    ASSERT_NE(h2, h3);
-    ASSERT_NE(h2, h4);
-    ASSERT_NE(h3, h4);
-
-    // Verify counter wrapped properly
-    EXPECT_EQ(manager._nextHandlerCounter, 2);  // Test helper needed
-}
-
-TEST(EventIDTest, HashUniqueness) 
-{
-    // Test different types with same value
-    EventID intEvent(42);
-    EventID floatEvent(42.0f);
-
-    // Test same type with different values
-    EventID str1(std::string("hello"));
-    EventID str2(std::string("world"));
-
-    // Test empty values
-    EventID emptyStr(std::string(""));
-    EventID zeroInt(0);
-
-    // Verify all hashes are unique (might fail in reality!)
-    ASSERT_NE(intEvent.getHash(), floatEvent.getHash());
-    ASSERT_NE(str1.getHash(), str2.getHash());
-    ASSERT_NE(emptyStr.getHash(), zeroInt.getHash());
-
-    // Test equivalent values
-    EventID sameInt1(100);
-    EventID sameInt2(100);
-    ASSERT_EQ(sameInt1, sameInt2);
-}
-
-TEST(SubscriptionHandlerTest, HandlerRoundTrip) 
-{
-    EventBus::HandlerMaker manager;
-
-    // Test with full 32-bit range values
-    const uint32_t testHashes[] = { 0, 1, 0xFFFFFFFF, 0xDEADBEEF };
-
-    for (uint32_t hash : testHashes) {
-        EventID original = EventID::fromHash(hash);
-        SubscriptionHandler handler = manager.makeHandler(original);
-        EventID recovered = manager.getEventID(handler);
-
-        ASSERT_EQ(original, recovered);
-        ASSERT_EQ(hash, recovered.getHash());
+    void handleTestEvent(TestEvent& event) {
+        testEventCount++;
+        std::lock_guard lock(vector_mutex);
+        receivedValues.push_back(event.value);
     }
+    void handleMarkedEvent(MarkedEvent& /*event*/) { markedEventCount++; }
+    void handleAnotherEvent(AnotherEvent& /*event*/) { anotherEventCount++; }
+};
+
+
+// =================================================================================
+// БАЗОВЫЕ ТЕСТЫ (В основном без изменений)
+// =================================================================================
+
+TEST_F(EventBusTest, BasicPublishSubscribe) {
+    EventTracker tracker;
+    auto pub_token = bus->register_publisher<TestEvent>();
+    ASSERT_TRUE(pub_token.valid());
+    auto sub_token = bus->subscribe<TestEvent>([&](TestEvent& e) { tracker.handleTestEvent(e); });
+    ASSERT_TRUE(sub_token.valid());
+
+    TestEvent event{ 42 };
+    bus->publish(pub_token, event);
+    bus->commit_batch();
+
+    EXPECT_EQ(tracker.testEventCount, 1);
+    ASSERT_EQ(tracker.receivedValues.size(), 1);
+    EXPECT_EQ(tracker.receivedValues[0], 42);
 }
 
-TEST(EventIDTest, HashAvalancheEffect2) 
+TEST_F(EventBusTest, MultipleSubscribers) {
+    EventTracker tracker1, tracker2;
+    auto pub_token = bus->register_publisher<TestEvent>();
+    bus->subscribe<TestEvent>([&](TestEvent& e) { tracker1.handleTestEvent(e); });
+    bus->subscribe<TestEvent>([&](TestEvent& e) { tracker2.handleTestEvent(e); });
+
+    TestEvent event{ 100 };
+    bus->publish(pub_token, event);
+    bus->commit_batch();
+
+    EXPECT_EQ(tracker1.testEventCount, 1);
+    EXPECT_EQ(tracker2.testEventCount, 1);
+}
+
+TEST_F(EventBusTest, Unsubscribe) {
+    EventTracker tracker;
+    auto pub_token = bus->register_publisher<TestEvent>();
+    auto sub_token = bus->subscribe<TestEvent>([&](TestEvent& e) { tracker.handleTestEvent(e); });
+
+    bus->publish(pub_token, TestEvent{ 1 });
+    bus->commit_batch();
+    EXPECT_EQ(tracker.testEventCount, 1);
+
+    bus->unsubscribe(sub_token);
+
+    bus->publish(pub_token, TestEvent{ 2 });
+    bus->commit_batch();
+    EXPECT_EQ(tracker.testEventCount, 1);
+}
+
+TEST_F(EventBusTest, MultipleEventTypes) {
+    EventTracker tracker;
+    auto pub_test = bus->register_publisher<TestEvent>();
+    auto pub_another = bus->register_publisher<AnotherEvent>();
+    bus->subscribe<TestEvent>([&](auto&) { tracker.testEventCount++; });
+    bus->subscribe<AnotherEvent>([&](auto&) { tracker.anotherEventCount++; });
+
+    bus->publish(pub_test, TestEvent{});
+    bus->publish(pub_another, AnotherEvent{});
+    bus->commit_batch();
+
+    EXPECT_EQ(tracker.testEventCount, 1);
+    EXPECT_EQ(tracker.anotherEventCount, 1);
+}
+
+TEST_F(EventBusTest, UnregisterPublisher)
 {
-    // Test small input changes create big hash changes
-    EventID base(std::string("apple"));
-    EventID changed1(std::string("applf"));
-    EventID changed2(std::string("appld"));
-    EventID changed3(std::string("bpple"));
+    // ИЗМЕНЕНО: В новой модели этот тест проверяет, что отмена регистрации
+    // паблишера делает его токен невалидным для будущих публикаций.
+    EventTracker tracker;
+    auto pub_token = bus->register_publisher<TestEvent>();
+    bus->subscribe<TestEvent>([&](auto&) { tracker.testEventCount++; });
 
-    uint32_t baseHash = base.getHash();
+    bus->publish(pub_token, TestEvent{});
+    bus->commit_batch();
+    EXPECT_EQ(tracker.testEventCount, 1);
 
-    // Hamming distance check
-    auto hamming = [](uint32_t a, uint32_t b) {
-        return std::bitset<32>(a ^ b).count();
-        };
+    bus->unregister_publisher(pub_token);
 
-    // Verify significant hash changes
-    ASSERT_GT(hamming(baseHash, changed1.getHash()), 10);
-    ASSERT_GT(hamming(baseHash, changed2.getHash()), 10);
-    ASSERT_GT(hamming(baseHash, changed3.getHash()), 10);
+    bus->publish(pub_token, TestEvent{}); // Эта публикация не должна пройти
+    bus->commit_batch();
+    EXPECT_EQ(tracker.testEventCount, 1);
 }
 
-TEST(EventIDTest, HashAvalancheEffect) {
-    // Test small input changes create significant hash changes
-    auto testPair = [](auto a, auto b) {
-        EventID idA(a);
-        EventID idB(b);
-        uint32_t hashA = idA.getHash();
-        uint32_t hashB = idB.getHash();
+// =================================================================================
+// ТЕСТЫ НА ОТПИСКУ И СИНХРОНИЗАЦИЮ (Проверяют ключевые исправления)
+// =================================================================================
 
-        // Calculate bit difference
-        uint32_t diffBits = hashA ^ hashB;
-        int changedBits = std::bitset<32>(diffBits).count();
+TEST_F(EventBusTest, UnsubscribeDuringCommit) {
+    // Этот тест теперь проходит благодаря copy-on-write
+    EventTracker tracker;
+    SubscriberToken sub_token;
+    auto pub_token = bus->register_publisher<TestEvent>();
+    sub_token = bus->subscribe<TestEvent>([&](TestEvent&) {
+        tracker.testEventCount++;
+        bus->unsubscribe(sub_token);
+        });
 
-        // We expect at least 40% of bits to change (13/32 bits)
-        EXPECT_GE(changedBits, 13)
-            << "Values: '" << a << "' vs '" << b << "'\n"
-            << "HashA: 0x" << std::hex << hashA << "\n"
-            << "HashB: 0x" << std::hex << hashB << "\n"
-            << "Changed bits: " << std::dec << changedBits;
-        };
+    bus->publish(pub_token, TestEvent{});
+    bus->publish(pub_token, TestEvent{});
+    bus->commit_batch();
 
-    // Test various data types
-    testPair("apple", "applf");  // Change last character
-    testPair("apple", "bpple");  // Change first character
-    testPair(12345, 12346);      // Consecutive integers
-    testPair(0.1f, 0.1001f);     // Similar floats
-    testPair(100u, 101u);        // Consecutive unsigned
-    testPair("", " ");            // Empty vs single space
-    testPair('a', 'b');           // Consecutive chars
-    testPair(true, false);        // Boolean values
+    EXPECT_EQ(tracker.testEventCount, 1);
 }
 
-TEST(EventIDTest, HashDistribution) 
-{
-    // Verify hashes are well-distributed for different types
-    EventID intId(42);
-    EventID floatId(42.0f);
-    EventID strId(std::string("42"));
-    EventID charId('4');
-    EventID boolId(true);
+TEST_F(EventBusTest, MassiveUnsubscribeDuringProcessing) {
+    // Этот тест теперь проходит благодаря copy-on-write
+    constexpr int NUM_SUBSCRIBERS = 1000;
+    std::atomic<int> active_count{ 0 };
+    std::vector<SubscriberToken> tokens;
+    tokens.reserve(NUM_SUBSCRIBERS);
+    auto pub_token = bus->register_publisher<TestEvent>();
 
-    // All should have different hashes
-    EXPECT_NE(intId.getHash(), floatId.getHash());
-    EXPECT_NE(intId.getHash(), strId.getHash());
-    EXPECT_NE(floatId.getHash(), strId.getHash());
-    EXPECT_NE(charId.getHash(), boolId.getHash());
+    for (int i = 0; i < NUM_SUBSCRIBERS; i++) {
+        tokens.push_back(bus->subscribe<TestEvent>([this, &active_count, &tokens, i](TestEvent&) {
+            active_count++;
+            bus->unsubscribe(tokens[i]);
+            }));
+    }
 
-    // Same values, different types
-    EventID int100(100);
-    EventID double100(100.0);
-    EXPECT_NE(int100.getHash(), double100.getHash());
+    bus->publish(pub_token, TestEvent{});
+    bus->commit_batch();
+    EXPECT_EQ(active_count, NUM_SUBSCRIBERS);
+
+    // Вторая публикация - никто не должен получить
+    bus->publish(pub_token, TestEvent{});
+    bus->commit_batch();
+    EXPECT_EQ(active_count, NUM_SUBSCRIBERS);
 }
 
-TEST(SubscriptionHandlerTest, CounterWrapWithCollision) {
-    EventBus::HandlerMaker manager;
+// =================================================================================
+// ТЕСТЫ ЛОГИКИ МАРКЕРОВ (Адаптированы под новую логику)
+// =================================================================================
 
-    // Create collision scenario
-    EventID collision1 = EventID::fromHash(0xCAFEBABE);
-    EventID collision2 = EventID::fromHash(0xCAFEBABE);  // Same hash
+TEST_F(EventBusTest, MarkedEvents) {
+    // Проверяет базовую фильтрацию: подписчик с маркером А получает событие с маркером А, но не Б.
+    EventTracker tracker;
+    const EventMarker MARK_A = 1, MARK_B = 2;
+    auto pub_a = bus->register_publisher<MarkedEvent>(MARK_A);
+    auto pub_b = bus->register_publisher<MarkedEvent>(MARK_B);
+    bus->subscribe<MarkedEvent>(MARK_A, [&](auto& event) { tracker.handleMarkedEvent(event); });
 
-    // Set counter near wrap point
-    manager._nextHandlerCounter = (0xFFFFFFFE);
+    bus->publish(pub_a, MarkedEvent{});
+    bus->publish(pub_b, MarkedEvent{});
+    bus->commit_batch();
 
-    SubscriptionHandler h1 = manager.makeHandler(collision1);  // Counter: 0xFFFFFFFE
-    SubscriptionHandler h2 = manager.makeHandler(collision2);  // Counter: 0xFFFFFFFF
-    SubscriptionHandler h3 = manager.makeHandler(collision1);  // Counter: 0x00000000
-
-    // Force same counter value for different events
-    manager._nextHandlerCounter=(0xFFFFFFFE);
-    SubscriptionHandler h4 = manager.makeHandler(collision2);  // Same counter as h1
-
-    // Verify collision occurs
-    ASSERT_EQ(h1, h4) << "Handler collision not detected!";
-    ASSERT_EQ(manager.getEventID(h1), manager.getEventID(h4))
-        << "Collision causes incorrect event ID mapping";
+    EXPECT_EQ(tracker.markedEventCount, 1);
 }
 
-TEST(SubscriptionHandlerTest, HighVolumeUniqueness) {
-    EventBus::HandlerMaker manager;
-    std::unordered_set<SubscriptionHandler> handlers;
-    const int NUM_EVENTS = 1000;
-    const int SUBSCRIPTIONS_PER_EVENT = 10000;
+TEST_F(EventBusTest, UniversalSubscriberReceivesAll) {
+    // ИЗМЕНЕНО: Этот тест заменяет старый UniversalPublisher.
+    // Он проверяет, что универсальный подписчик получает ВСЕ события своего типа.
+    EventTracker tracker;
+    const EventMarker MARK_A = 123;
+    auto universal_pub = bus->register_publisher<TestEvent>();
+    auto marked_pub = bus->register_publisher<TestEvent>(MARK_A);
 
-    // Create distinct events
-    std::vector<EventID> events;
+    // Универсальный подписчик
+    bus->subscribe<TestEvent>([&](auto&) { tracker.testEventCount++; });
+
+    // 1. Публикация от универсального издателя
+    bus->publish(universal_pub, TestEvent{});
+    bus->commit_batch();
+    EXPECT_EQ(tracker.testEventCount, 1); // Получил
+
+    // 2. Публикация от маркированного издателя
+    bus->publish(marked_pub, TestEvent{});
+    bus->commit_batch();
+    EXPECT_EQ(tracker.testEventCount, 2); // Тоже получил
+}
+
+
+// =================================================================================
+// ПРОЧИЕ И СТРЕСС-ТЕСТЫ (В основном без изменений)
+// =================================================================================
+
+TEST_F(EventBusTest, HighLoadStressTest) {
+    constexpr int NUM_EVENTS = 5000;
+    constexpr int NUM_SUBSCRIBERS = 100;
+    std::atomic<int> event_counter{ 0 };
+    auto pub_token = bus->register_publisher<TestEvent>();
+
+    for (int i = 0; i < NUM_SUBSCRIBERS; i++) {
+        bus->subscribe<TestEvent>([&](TestEvent&) { event_counter++; });
+    }
+
+    TestEvent event;
     for (int i = 0; i < NUM_EVENTS; i++) {
-        events.push_back(EventID(i));
+        bus->publish(pub_token, event);
     }
+    bus->commit_batch();
 
-    // Generate massive number of handlers
-    for (int i = 0; i < SUBSCRIPTIONS_PER_EVENT; i++) {
-        for (const auto& event : events) {
-            SubscriptionHandler h = manager.makeHandler(event);
-
-            // Verify uniqueness
-            auto result = handlers.insert(h);
-            ASSERT_TRUE(result.second)
-                << "Handler collision at event=" << event.getHash()
-                << " counter=" << (h & 0xFFFFFFFF);
-        }
-    }
-
-    // Verify counter advanced correctly
-    ASSERT_EQ(manager._nextHandlerCounter,
-        static_cast<uint32_t>(NUM_EVENTS * SUBSCRIPTIONS_PER_EVENT));
+    EXPECT_EQ(event_counter.load(), NUM_EVENTS * NUM_SUBSCRIBERS);
 }
 
-TEST(SubscriptionHandlerTest, ZeroValueHandling) {
-    EventBus::HandlerMaker manager;
+TEST_F(EventBusTest, EventOrderPreservation) {
+    std::vector<int> event_order;
+    constexpr int NUM_EVENTS = 100;
+    auto pub_token = bus->register_publisher<TestEvent>();
+    bus->subscribe<TestEvent>([&](TestEvent& e) {
+        event_order.push_back(e.value);
+        });
 
-    // Create event with hash 0
-    EventID zeroHashEvent = EventID::fromHash(0);
+    for (int i = 0; i < NUM_EVENTS; i++) {
+        bus->publish(pub_token, TestEvent{ i });
+    }
+    bus->commit_batch();
 
-    // Create handlers at counter 0
-    manager._nextHandlerCounter = (0);
-    SubscriptionHandler h1 = manager.makeHandler(zeroHashEvent);
-    SubscriptionHandler h2 = manager.makeHandler(zeroHashEvent);
-
-    // Verify handlers are distinct
-    ASSERT_NE(h1, h2);
-
-    // Verify round trip
-    ASSERT_EQ(manager.getEventID(h1), zeroHashEvent);
-    ASSERT_EQ(manager.getEventID(h2), zeroHashEvent);
-
-    // Verify handler composition
-    ASSERT_EQ(h1 & 0xFFFFFFFF, 0u);
-    ASSERT_EQ(h2 & 0xFFFFFFFF, 1u);
-    ASSERT_EQ(h1 >> 32, 0u);
+    ASSERT_EQ(event_order.size(), NUM_EVENTS);
+    for (int i = 0; i < NUM_EVENTS; i++) {
+        EXPECT_EQ(event_order[i], i);
+    }
 }
 
-TEST(EventIDTest, TypeDistinction) {
-    // Different types with same value
-    EventID intEvent(42);
-    EventID floatEvent(42.0f);
-    EventID stringEvent(std::string("42"));
+TEST_F(EventBusTest, RapidSubscribeUnsubscribe) {
+    constexpr int NUM_ITERATIONS = 1000;
+    std::atomic<int> event_counter{ 0 };
+    auto pub_token = bus->register_publisher<TestEvent>();
 
-    // Same type, different values
-    EventID int42(42);
-    EventID int43(43);
+    for (int i = 0; i < NUM_ITERATIONS; i++) {
+        auto sub_token = bus->subscribe<TestEvent>([&](TestEvent&) { event_counter++; });
+        bus->publish(pub_token, TestEvent{});
+        bus->commit_batch();
+        bus->unsubscribe(sub_token);
+    }
 
-    // Verify same value same type
-    ASSERT_EQ(intEvent, EventID(42));
+    EXPECT_EQ(event_counter, NUM_ITERATIONS);
+}
 
-    // Verify different types don't match
-    ASSERT_NE(intEvent, floatEvent);
-    ASSERT_NE(intEvent, stringEvent);
-    ASSERT_NE(floatEvent, stringEvent);
+// =================================================================================
+// НОВЫЕ ТЕСТЫ
+// =================================================================================
 
-    // Verify different values don't match
-    ASSERT_NE(int42, int43);
+TEST_F(EventBusTest, NOP_UnsubscribeInvalidToken) {
+    // НОВЫЙ ТЕСТ: Проверяет, что отписка по невалидному токену ничего не ломает.
+    EventTracker tracker;
+    auto pub_token = bus->register_publisher<TestEvent>();
+    auto sub_token = bus->subscribe<TestEvent>([&](auto&) { tracker.testEventCount++; });
+
+    bus->unsubscribe(SubscriberToken{}); // Невалидный токен
+    bus->unsubscribe(SubscriberToken{});      // Несуществующий токен
+
+    bus->publish(pub_token, TestEvent{});
+    bus->commit_batch();
+
+    EXPECT_EQ(tracker.testEventCount, 1); // Подписка должна остаться активной
+}
+
+TEST_F(EventBusTest, NOP_PublishWithInvalidToken) {
+    // НОВЫЙ ТЕСТ: Проверяет, что публикация с невалидным токеном ничего не делает.
+    EventTracker tracker;
+    bus->subscribe<TestEvent>([&](auto&) { tracker.testEventCount++; });
+
+    bus->publish(PublishToken{}, TestEvent{});
+    bus->commit_batch();
+
+    EXPECT_EQ(tracker.testEventCount, 0);
+}
+
+TEST_F(EventBusTest, NoSubscribers) {
+    // НОВЫЙ ТЕСТ: Проверяет, что система не падает, если нет подписчиков.
+    auto pub_token = bus->register_publisher<TestEvent>();
+
+    // Ожидаем, что эти вызовы просто ничего не сделают и не вызовут крэш
+    ASSERT_NO_THROW({
+        bus->publish(pub_token, TestEvent{});
+        bus->commit_batch();
+        });
 }
