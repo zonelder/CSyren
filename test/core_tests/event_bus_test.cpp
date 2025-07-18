@@ -115,6 +115,21 @@ TEST_F(EventBusTest, UnregisterPublisher)
     bus->commit_batch();
     EXPECT_EQ(tracker.testEventCount, 1);
 }
+TEST_F(EventBusTest, CommitAfterUnregisterPublisher)
+{
+    EventTracker tracker;
+    auto pub_token = bus->register_publisher<TestEvent>();
+    bus->subscribe<TestEvent>([&](auto&) { tracker.testEventCount++; });
+
+    bus->publish(pub_token, TestEvent{});
+    EXPECT_EQ(tracker.testEventCount, 0);
+
+    bus->unregister_publisher(pub_token);
+
+    bus->publish(pub_token, TestEvent{}); // Эта публикация не должна пройти
+    bus->commit_batch();
+    EXPECT_EQ(tracker.testEventCount, 1);
+}
 
 // =================================================================================
 // ТЕСТЫ НА ОТПИСКУ И СИНХРОНИЗАЦИЮ (Проверяют ключевые исправления)

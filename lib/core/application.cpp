@@ -23,7 +23,7 @@ namespace csyren::core
 	Application::Application() :
 		_window(1200, 786, L"csyren engine"),
 		_inputDispatcher(),
-		_scene(_inputDispatcher)
+		_scene()
 	{ }
 
 	Application::~Application(){}
@@ -79,13 +79,12 @@ namespace csyren::core
 			_inputDispatcher.update();
 			bus->publish(updateToken,updateEvent);
 
-			bus->publish(drawToken,drawEvent);
 			_render.beginFrame();
 			_render.clear(clearColor);
+			bus->publish(drawToken,drawEvent);
 
-			mesh.draw(_render, material);
-			_scene.draw(_render);
-
+			mesh.draw(_render, material);//make a par of a callback
+			_scene.draw(_render);//make a part of callback
 			_render.endFrame();
 		}
 		log::shutdown();
@@ -98,7 +97,7 @@ namespace csyren::core
 	 */
 	void Application::onSceneStart()
 	{
-		auto dispatcher = _scene.input();
+		auto& dispatcher = _inputDispatcher;
 		auto& keyboard = dispatcher.devices().keyboard();
 
 		dispatcher.events().subscribe(core::input::InputEvent::Type::KeyUp, [](const core::input::InputEvent& event) {

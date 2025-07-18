@@ -241,12 +241,15 @@ namespace csyren::core::events
 			publish_impl(token, std::move(event));
 		}
 
-		void commit_batch() {
+		void commit_batch() 
+		{
+			_isCommitState = true;
 			for (auto& data_ptr : event_data_) {
 				if (data_ptr) {
 					data_ptr->commit();
 				}
 			}
+			_isCommitState = false;
 		}
 
 	private:
@@ -270,13 +273,15 @@ namespace csyren::core::events
 		PublishToken register_publisher_impl(std::optional<EventMarker> marker) {
 			const uint64_t pub_id = next_publisher_id_.fetch_add(1);
 			using Clean_t = std::decay_t<Event_t>;
-			if (pub_id >= publishers_.size()) 
+			if (pub_id >= publishers_.size())
 			{
 				return PublishToken(INVALID_TOKEN);
 			}
 			publishers_[pub_id] = { reflection::EventFamily::getID<Clean_t>(), marker };
 			return PublishToken(pub_id);
 		}
+	private:
+		bool _isCommitState{ false };
 	};
    
 }

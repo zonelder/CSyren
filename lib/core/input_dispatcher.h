@@ -5,6 +5,9 @@
 #include "input_buffer.h"
 #include "devices.h"
 
+//todo make class a sender of
+// InputEvent
+// ActionEvent
 namespace csyren::core::input
 {
 	class InputDispatcher

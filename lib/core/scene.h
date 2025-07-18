@@ -13,10 +13,19 @@
 
 namespace csyren::core
 {
-	class UpdateAction{};
-	class DrawAction{};
-	class OnCreateAction{};
-	class OnDestroy {};
+
+	//todo: make scene the sender of the global events
+	// OnCreateEvent<T>
+	// OnDestroyEvent<T>
+	// OnDisable<T>
+	// OnEnable<T>
+	// UpdateEvent
+	// DrawEvent
+	// DrawGizmoEvent
+	// EntityCreateEvent
+	// EntityDestroyEvent
+
+
 
 	struct PoolHandler
 	{
@@ -152,14 +161,7 @@ namespace csyren::core
 	class Scene
 	{
 	public:
-		explicit Scene(input::InputDispatcher& refInput, size_t reserveEntities = 0):
-			_refInput(refInput)
-		{
-			if (reserveEntities)
-			{
-				_entities.reserve(reserveEntities);
-			}
-		}
+		explicit Scene() = default;
 
 		Entity::ID createEntity(Entity::ID parent = Entity::invalidID)
 		{
@@ -250,15 +252,10 @@ namespace csyren::core
 			_handler.draw(*this, render);
 		}
 
-		input::InputDispatcher& input() const noexcept
-		{
-			return const_cast<input::InputDispatcher&>(_refInput);
-		}
 
 	private:
 		cstdmf::PageView<Entity> _entities;
 		PoolHandler _handler;
-		input::InputDispatcher& _refInput;
 	};
 
 }

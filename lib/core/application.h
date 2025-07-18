@@ -10,6 +10,10 @@
 
 namespace csyren::core
 {
+	//TODO implement:
+	//mesh handling
+	//texture handling
+	//shader handling
 	class ResourceManager{};
 	class Application
 	{
