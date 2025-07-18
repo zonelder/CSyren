@@ -101,8 +101,6 @@ TEST_F(EventBusTest, MultipleEventTypes) {
 
 TEST_F(EventBusTest, UnregisterPublisher)
 {
-    // ИЗМЕНЕНО: В новой модели этот тест проверяет, что отмена регистрации
-    // паблишера делает его токен невалидным для будущих публикаций.
     EventTracker tracker;
     auto pub_token = bus->register_publisher<TestEvent>();
     bus->subscribe<TestEvent>([&](auto&) { tracker.testEventCount++; });
