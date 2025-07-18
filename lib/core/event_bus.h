@@ -26,11 +26,13 @@ namespace csyren::core::reflection
 namespace csyren::core::events
 {
 	using EventMarker = uint32_t;
+
+	static constexpr uint32_t MAX_GENERATION = std::numeric_limits<uint32_t>::max();
     constexpr uint64_t INVALID_TOKEN = 0xFFFFFFFFFFFFFFFFull;
 	class PublishToken
 	{
 		friend class EventBus2;
-		explicit PublishToken(uint64_t d) : _data(d) {}
+		explicit PublishToken(uint64_t d,uint32_t generation = 0) : _data(d),_generation(generation) {}
 	public:
 		PublishToken() noexcept = default;
 
@@ -40,6 +42,7 @@ namespace csyren::core::events
         }
     private:
         uint64_t _data{ INVALID_TOKEN };
+		uint32_t _generation{ MAX_GENERATION };
 	};
 
 	class SubscriberToken
@@ -63,10 +66,12 @@ namespace csyren::core::events
 	public:
 		template<class Event_t>
 		using Callback_t = std::function<void(std::decay_t<Event_t>&)>;
+		
 		// Легковесная запись о паблишере
 		struct PublisherRecord {
 			uint64_t type_id;
 			std::optional<EventMarker> marker;
+			uint32_t generation;
 		};
 
 		// --- Структуры для безопасного стирания типов ---
@@ -186,8 +191,18 @@ namespace csyren::core::events
 			return register_publisher_impl<Event_t>(marker);
 		}
 
-		void unregister_publisher(PublishToken /*token*/) {
-			// В этой модели отписка паблишера не нужна, но метод оставим для API
+		void unregister_publisher(PublishToken token) 
+		{
+			if (!token.valid()) return;
+			const uint64_t pub_id = token._data;
+			if (pub_id == 0 || pub_id >= next_publisher_id_.load()) return;
+
+			auto& pub_record = publishers_[pub_id];
+
+			//invalidate record;
+			pub_record.generation = pub_record.generation >= MAX_GENERATION ? 0 : pub_record.generation + 1;
+			pub_record.marker = std::nullopt;
+			pub_record.type_id = 0;
 		}
 
 		template<class Event_t>
@@ -247,6 +262,7 @@ namespace csyren::core::events
 			const uint64_t type_id = reflection::EventFamily::getID<Clean_t>();
 
 			if (pub_record.type_id != type_id) return;
+			if (pub_record.generation != token._generation) return;
 
 			get_typed_data<Clean_t>().publish(&event, pub_record.marker);
 		}
