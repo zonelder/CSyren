@@ -136,7 +136,6 @@ TEST_F(EventBusTest, CommitAfterUnregisterPublisher)
 // =================================================================================
 
 TEST_F(EventBusTest, UnsubscribeDuringCommit) {
-    // Этот тест теперь проходит благодаря copy-on-write
     EventTracker tracker;
     SubscriberToken sub_token;
     auto pub_token = bus->register_publisher<TestEvent>();

@@ -27,7 +27,7 @@ struct Physics {
 
 TEST(SceneTest, SceneCreationTest)
 {
-    Scene scene(iDis);
+    Scene scene;
     Entity::ID entity = scene.createEntity();
 }
 
@@ -35,7 +35,7 @@ TEST(SceneTest, EntityLifecycle)
 {
     // No direct way to verify destruction, but shouldn't crash
     try {
-        Scene scene(iDis);
+        Scene scene;
         Entity::ID entity = scene.createEntity();
         ASSERT_NE(entity, Entity::invalidID);
 
@@ -52,7 +52,7 @@ TEST(SceneTest, EntityLifecycle)
 
 
 TEST(SceneTest, ComponentManagement) {
-    Scene scene(iDis);
+    Scene scene;
     Entity::ID entity = scene.createEntity();
 
     // Add and retrieve component
@@ -68,7 +68,7 @@ TEST(SceneTest, ComponentManagement) {
 }
 
 TEST(SceneTest, ComponentLifecycleCallbacks) {
-    Scene scene(iDis);
+    Scene scene;
     Entity::ID entity = scene.createEntity();
     // onCreate test
     Health* health = scene.addComponent<Health>(entity);
@@ -82,7 +82,7 @@ TEST(SceneTest, ComponentLifecycleCallbacks) {
 }
 
 TEST(SceneTest, UpdateSystem) {
-    Scene scene(iDis);
+    Scene scene;
     Time time;
     Entity::ID entity = scene.createEntity();
 
@@ -99,7 +99,7 @@ TEST(SceneTest, UpdateSystem) {
 }
 
 TEST(SceneTest, ParentChildRelationships) {
-    Scene scene(iDis);
+    Scene scene;
     Entity::ID parent = scene.createEntity();
     Entity::ID child = scene.createEntity(parent);
 
@@ -121,7 +121,7 @@ TEST(SceneTest, ParentChildRelationships) {
 
 TEST(SceneTest, MultipleComponentsPerEntity) 
 {
-    Scene scene(iDis);
+    Scene scene;
     Entity::ID entity = scene.createEntity();
 
     auto* transform = scene.addComponent<Transform>(entity);
@@ -138,7 +138,7 @@ TEST(SceneTest, MultipleComponentsPerEntity)
 
 TEST(SceneTest, NonexistentEntityHandling) 
 {
-    Scene scene(iDis);
+    Scene scene;
     Entity::ID invalidEntity = 999; // Never created
 
     // All operations should handle invalid entities gracefully

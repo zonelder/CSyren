@@ -3,6 +3,7 @@
 #define __CSYREN_EVENT_BUS__
 
 #include "family_generator.h"
+#include "cstdmf/log.h"
 
 #include <vector>
 #include <array>
@@ -80,6 +81,7 @@ namespace csyren::core::events
 			virtual void publish(void* event, std::optional<EventMarker> marker) = 0;
 			virtual void commit() = 0;
 			virtual void unsubscribe(uint64_t sub_id) = 0;
+			virtual void cleanup_subscribers() = 0;
 		};
 
 		template<typename Event_t>
@@ -88,6 +90,7 @@ namespace csyren::core::events
 				uint64_t id;
 				Callback_t<Event_t> callback;
 				std::optional<EventMarker> marker;
+				bool active{ true };
 			};
 
 			struct EventInstance {
@@ -115,28 +118,31 @@ namespace csyren::core::events
 					if (pending_events_.empty()) return;
 					events_to_process.swap(pending_events_);
 				}
-
-				// Копируем подписчиков ОДИН раз для всего батча событий
-				std::vector<Subscriber> subs_copy;
+				for (const auto& instance : events_to_process) 
 				{
-					std::shared_lock lock(subscribers_mutex_);
-					subs_copy = subscribers_;
-				}
-
-				for (const auto& instance : events_to_process) {
-					for (const auto& sub : subs_copy) {
-						// Фильтруем по маркеру, если он есть
-						if (instance.marker.has_value() && sub.marker.has_value() && instance.marker != sub.marker) {
-							continue;
+					for (auto& sub : subscribers_) 
+					{ // Iterate by reference
+						// Check for active status and marker match
+						if (sub.active) 
+						{
+							if (instance.marker.has_value() && sub.marker.has_value() && instance.marker != sub.marker)
+							{
+								continue;
+							}
+							sub.callback(const_cast<Event_t&>(instance.event));
 						}
-						sub.callback(const_cast<Event_t&>(instance.event));
 					}
 				}
 			}
 
 			void unsubscribe(uint64_t sub_id) override {
 				std::unique_lock lock(subscribers_mutex_);
-				std::erase_if(subscribers_, [sub_id](const Subscriber& s) { return s.id == sub_id; });
+				auto it = std::find_if(subscribers_.begin(), subscribers_.end(),
+					[sub_id](const Subscriber& s) { return s.id == sub_id; });
+				if (it != subscribers_.end()) 
+				{
+					it->active = false;
+				}
 			}
 
 			uint64_t subscribe(Callback_t<Event_t>&& callback, std::optional<EventMarker> marker) {
@@ -145,25 +151,18 @@ namespace csyren::core::events
 				subscribers_.push_back({ sub_id, std::move(callback), marker });
 				return sub_id;
 			}
+
+			void cleanup_subscribers() override 
+			{
+				std::unique_lock lock(subscribers_mutex_);
+				std::erase_if(subscribers_, [](const Subscriber& s) { return !s.active; });
+			}
 		};
-		// --- Конец структур ---
 	private:
 		std::array<std::unique_ptr<EventDataWrapper>, 1024> event_data_;
-		std::array<PublisherRecord, 65536> publishers_; // Простой реестр паблишеров
+		std::array<PublisherRecord, 65536> publishers_;
 		std::atomic<uint64_t> next_publisher_id_{ 1 };
 		static inline std::atomic<uint64_t> next_subscriber_id_{ 1 };
-
-		EventDataWrapper& get_data(uint64_t type_id) {
-			if (!event_data_[type_id]) {
-				static std::mutex creation_mutex;
-				std::lock_guard lock(creation_mutex);
-				if (!event_data_[type_id]) {
-					// Это место небезопасно для гонок, но для простоты оставим так.
-					// В реальном коде здесь нужна double-checked locking.
-				}
-			}
-			return *event_data_[type_id];
-		}
 
 		template<typename Event_t>
 		EventData<Event_t>& get_typed_data() {
@@ -222,8 +221,8 @@ namespace csyren::core::events
 
 		void unsubscribe(SubscriberToken token) {
 			if (!token.valid()) return;
-			// В этой простой модели мы не знаем тип события по токену,
-			// поэтому придется итерироваться по всем. Это компромисс ради простоты.
+			// This part is inefficient as it iterates all event types.
+			// A better design would map token to event type. For now, it works.
 			for (auto& data_ptr : event_data_) {
 				if (data_ptr) {
 					data_ptr->unsubscribe(token._data);
@@ -243,13 +242,19 @@ namespace csyren::core::events
 
 		void commit_batch() 
 		{
-			_isCommitState = true;
+			//1.dispatch all pending events
 			for (auto& data_ptr : event_data_) {
 				if (data_ptr) {
 					data_ptr->commit();
 				}
 			}
-			_isCommitState = false;
+
+			for (auto& data_ptr : event_data_) 
+			{
+				if (data_ptr) {
+					data_ptr->cleanup_subscribers();
+				}
+			}
 		}
 
 	private:
@@ -275,6 +280,7 @@ namespace csyren::core::events
 			using Clean_t = std::decay_t<Event_t>;
 			if (pub_id >= publishers_.size())
 			{
+				log::error("EventBus: too many publishers been created.");
 				return PublishToken(INVALID_TOKEN);
 			}
 			publishers_[pub_id] = { reflection::EventFamily::getID<Clean_t>(), marker };
