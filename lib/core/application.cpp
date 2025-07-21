@@ -23,7 +23,9 @@ namespace csyren::core
 	Application::Application() :
 		_window(1200, 786, L"csyren engine"),
 		_inputDispatcher(),
-		_scene()
+		_scene(),
+		_render(),
+		_resource(_render)
 	{ }
 
 	Application::~Application(){}
@@ -59,13 +61,16 @@ namespace csyren::core
 
 		core::events::UpdateEvent updateEvent{ _scene,_resource,*bus,time };
 		core::events::DrawEvent   drawEvent{ _scene,_resource,*bus,_render };
-
+		
 		auto updateToken = bus->register_publisher<core::events::UpdateEvent>();
 		auto drawToken = bus->register_publisher<core::events::DrawEvent>();
-		render::Material material;
-		render::Mesh mesh;
-		if (!render::Primitives::createDefaultMaterial(_render, material) || !render::Primitives::createTriangle(_render, mesh))
+
+		auto matHandle = render::Primitives::getDefaultMaterial(_resource);
+		auto meshHandle = render::Primitives::getTriangle(_resource);
+		
+		if (!matHandle || !meshHandle)
 			return -1;
+
 		while (msg.message != WM_QUIT)
 		{
 			timeHandler.update(time);
@@ -82,9 +87,8 @@ namespace csyren::core
 			_render.beginFrame();
 			_render.clear(clearColor);
 			bus->publish(drawToken,drawEvent);
-
-			mesh.draw(_render, material);//make a par of a callback
-			_scene.draw(_render);//make a part of callback
+			_resource.getMesh(meshHandle)->draw(_render, _resource.getMaterial(matHandle));
+			//_scene.draw(_render);//make a part of callback
 			_render.endFrame();
 		}
 		log::shutdown();

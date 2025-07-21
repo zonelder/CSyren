@@ -2,7 +2,10 @@
 #define __CSYREN_CONTEXT__
 
 
-
+namespace csyren::render
+{
+	class ResourceManager;
+}
 
 namespace csyren::core
 {
@@ -11,7 +14,6 @@ namespace csyren::core
 		class EventBus2;
 	}
 	class Scene;
-	class ResourceManager;
 	class Time;
 
 }
@@ -22,7 +24,7 @@ namespace csyren::core::events
 	struct ContextualEvent
 	{
 		Scene& scene;
-		ResourceManager& resources;
+		render::ResourceManager& resources;
 		EventBus2& bus;
 	};
 

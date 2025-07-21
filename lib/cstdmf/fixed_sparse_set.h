@@ -11,7 +11,7 @@ namespace csyren::cstdmf
 	class FixedSparseSet
 	{
 		static_assert(std::is_integral_v<ID>,"FixedSparseSet:: ID is not integer type");
-		static_assert(Capacity < std::numeric_limits<ID>::max(), "FixedSparseSet:: capacity is bigger that ID type can handle. reduse Capacity or change ID type.");
+		static_assert(Capacity < std::numeric_limits<ID>::max(), "FixedSparseSet:: capacity is bigger that ID type can handle. reduñe Capacity or change ID type.");
 	public:
 		using size_type = ID;
 		using iterator = T*;

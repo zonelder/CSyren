@@ -10,11 +10,6 @@
 
 namespace csyren::core
 {
-	//TODO implement:
-	//mesh handling
-	//texture handling
-	//shader handling
-	class ResourceManager{};
 	class Application
 	{
 	public:
@@ -33,8 +28,8 @@ namespace csyren::core
 		
 		input::InputDispatcher	_inputDispatcher;
 		render::Renderer		_render;
+		render::ResourceManager	_resource;
 		Time					_time;
-		ResourceManager			_resource;
 
 		Window _window;
 		Scene _scene;

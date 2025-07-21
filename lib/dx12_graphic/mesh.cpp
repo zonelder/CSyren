@@ -61,11 +61,11 @@ namespace csyren::render
         return true;
     }
 
-    void Mesh::draw(Renderer& renderer, Material& material)
+    void Mesh::draw(Renderer& renderer, const Material* material)
     {
         ID3D12GraphicsCommandList* cmd = renderer.commandList();
-        cmd->SetPipelineState(material.pso());
-        cmd->SetGraphicsRootSignature(material.rootSig());
+        cmd->SetPipelineState(material->pso());
+        cmd->SetGraphicsRootSignature(material->rootSig());
         cmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         cmd->IASetVertexBuffers(0, 1, &_vertexView);
         cmd->IASetIndexBuffer(&_indexView);

@@ -10,20 +10,24 @@ namespace csyren::render
 {
 	class Renderer;
 	class Material;
+	template<typename T> class ResourceStorage;
+
 
 	class Mesh
 	{
+		friend class ResourceStorage<Mesh>;
 	public:
 		struct Vertex
 		{
 			DirectX::XMFLOAT3 pos;
 			DirectX::XMFLOAT4 colour;
 		};
-
 		Mesh() noexcept = default;
+		void draw(Renderer& renderer, const Material* material);
+	private:
+
 		bool init(Renderer& renderer, const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices);
 
-		void draw(Renderer& renderer, Material& material);
 	private:
 		Microsoft::WRL::ComPtr<ID3D12Resource> _vertexBuffer;
 		Microsoft::WRL::ComPtr<ID3D12Resource> _indexBuffer;

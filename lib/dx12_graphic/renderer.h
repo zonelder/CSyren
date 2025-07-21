@@ -7,10 +7,13 @@
 #include <d3d12.h>
 #include "d3dcompiler.h"
 #include <DirectXMath.h>
+#include <DirectXTex.h>
 
 #include <string>
 #include <vector>
 #include <memory>
+
+#include "descriptor_heap_manager.h"
 
 namespace csyren::render
 {
@@ -27,6 +30,9 @@ namespace csyren::render
 		void beginFrame();
 		void clear(const FLOAT color[4]);
 		void endFrame();
+
+		HRESULT uploadTextureData(ID3D12Resource* destResource, const DirectX::ScratchImage& scratchImage);
+		DescriptorHeapManager* getDescriptorHeapManager() const noexcept { return _pSrvHeapManager.get(); }
 
 		ID3D12GraphicsCommandList* commandList() const noexcept { return _commandList.Get(); }
 		ID3D12Device* device() const noexcept { return _device.Get(); }
@@ -50,6 +56,8 @@ namespace csyren::render
 		HANDLE _fenceEvent{ nullptr };
 		UINT _frameIndex{ 0 };
 
+
+		std::unique_ptr<DescriptorHeapManager> _pSrvHeapManager;
 	};
 }
 

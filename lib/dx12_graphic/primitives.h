@@ -1,6 +1,8 @@
 #ifndef __CSYREN_PRIMITIVE_MESH__
 #define __CSYREN_PRIMITIVE_MESH__
 
+#include "resource_manager.h"
+
 namespace csyren::render
 {
     class Renderer;
@@ -10,9 +12,22 @@ namespace csyren::render
     class Primitives
     {
     public:
-        static bool createDefaultMaterial(Renderer& renderer, Material& material);
-        static bool createLine(Renderer& renderer, Mesh& mesh);
-        static bool createTriangle(Renderer& renderer, Mesh& mesh);
+        static MaterialHandle getDefaultMaterial(ResourceManager& rm);
+        static MeshHandle getLine(ResourceManager& rm);
+        static MeshHandle getTriangle(ResourceManager& rm);
+        static MeshHandle getQuad(ResourceManager& rm);
+        static MeshHandle getCube(ResourceManager& rm);
+
+        static void clearCache();
+
+    private:
+        inline static MaterialHandle s_defaultMaterial{};
+        inline static MeshHandle s_lineMesh{};
+        inline static MeshHandle s_triangleMesh{};
+
+        inline static MeshHandle s_quadMesh{};
+        inline static MeshHandle s_cubeMesh{};
+        
     };
 }
 
