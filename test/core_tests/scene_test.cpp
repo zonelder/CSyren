@@ -1,149 +1,196 @@
 #include "pch.h"
 #include "core/scene.h"
-#include "core/time.h"
+
+#include <random>
+#include <algorithm>
 
 using namespace csyren::core;
-static input::InputDispatcher iDis;
 
-// Test Components
-struct Transform {
-    float x = 0.0f, y = 0.0f;
-};
+struct TestComponent { int value; };
 
-struct Health {
-    int value = 100;
-    void onCreate(Scene&) { value = 200; } // Double health on creation
-};
 
-struct Damage {
-    int amount = 10;
-    void onDestroy(Scene& s) { amount = 0; } // Reset on destruction
-};
+class SceneTest : public ::testing::Test {
+protected:
+    events::EventBus2 bus;
+    Scene scene{ bus };
 
-struct Physics {
-    float velocity = 0.0f;
-    void update(Scene&, Time& tm) { velocity += 1.0f; }
-};
 
-TEST(SceneTest, SceneCreationTest)
-{
-    Scene scene;
-    Entity::ID entity = scene.createEntity();
-}
-
-TEST(SceneTest, EntityLifecycle)
-{
-    // No direct way to verify destruction, but shouldn't crash
-    try {
-        Scene scene;
-        Entity::ID entity = scene.createEntity();
-        ASSERT_NE(entity, Entity::invalidID);
-
-        scene.destroyEntity(entity);
-        // No direct way to verify destruction, but shouldn't crash
+    Entity::ID createEntityWithTestComponent(Entity::ID parent = Entity::invalidID) {
+        auto id = scene.createEntity(parent);
+        scene.addComponent<TestComponent>(id, 42);
+        return id;
     }
-    catch (const std::exception& e) {
-        FAIL() << "Exception: " << e.what();
-    }
-    catch (...) {
-        FAIL() << "Unknown exception";
-    }
+
+    void flush()
+    {
+        scene.flush();
+    };
+};
+
+
+TEST_F(SceneTest, EntityCreation) {
+    auto id = scene.createEntity();
+    EXPECT_NE(id, Entity::invalidID);
+    EXPECT_TRUE(scene.entities().contains(id));
+}
+
+TEST_F(SceneTest, EntityDestruction) {
+    auto id = scene.createEntity();
+    scene.destroyEntity(id);
+    flush();
+
+    EXPECT_FALSE(scene.entities().contains(id));
 }
 
 
-TEST(SceneTest, ComponentManagement) {
-    Scene scene;
-    Entity::ID entity = scene.createEntity();
+TEST_F(SceneTest, ComponentOperations) {
+    auto id = scene.createEntity();
 
-    // Add and retrieve component
-    Transform* transform = scene.addComponent<Transform>(entity);
-    ASSERT_NE(transform, nullptr);
-    ASSERT_EQ(scene.getComponent<Transform>(entity), transform);
 
-    // Remove component
-    scene.removeComponent<Transform>(entity);
-    ASSERT_EQ(scene.getComponent<Transform>(entity), nullptr);
+    auto* comp = scene.addComponent<TestComponent>(id, 42);
+    ASSERT_NE(comp, nullptr);
+    EXPECT_EQ(comp->value, 42);
 
-    scene.destroyEntity(entity);
+
+    auto* sameComp = scene.getComponent<TestComponent>(id);
+    EXPECT_EQ(sameComp, comp);
+
+
+    scene.removeComponent<TestComponent>(id);
+    flush();
+    EXPECT_EQ(scene.getComponent<TestComponent>(id), nullptr);
 }
 
-TEST(SceneTest, ComponentLifecycleCallbacks) {
-    Scene scene;
-    Entity::ID entity = scene.createEntity();
-    // onCreate test
-    Health* health = scene.addComponent<Health>(entity);
-    ASSERT_EQ(health->value, 200); // onCreate doubled it
-
-    // onDestroy test
-    Damage* damage = scene.addComponent<Damage>(entity);
-    ASSERT_EQ(damage->amount, 10);
-    scene.destroyEntity(entity); // Should trigger onDestroy
-    ASSERT_EQ(damage->amount, 0); // onDestroy reset it
+TEST_F(SceneTest, DuplicateComponent) {
+    auto id = scene.createEntity();
+    scene.addComponent<TestComponent>(id, 1);
+    EXPECT_THROW(
+        scene.addComponent<TestComponent>(id, 2),
+        std::runtime_error
+    );
 }
 
-TEST(SceneTest, UpdateSystem) {
-    Scene scene;
-    Time time;
-    Entity::ID entity = scene.createEntity();
+TEST_F(SceneTest, EntityHierarchy) {
+    auto parent = createEntityWithTestComponent();
+    auto child1 = createEntityWithTestComponent(parent);
+    auto child2 = createEntityWithTestComponent(parent);
 
-    Physics* physics = scene.addComponent<Physics>(entity);
-    ASSERT_EQ(physics->velocity, 0.0f);
+    auto* parentEnt = scene.entities().try_get(parent);
+    ASSERT_NE(parentEnt, nullptr);
+    EXPECT_EQ(parentEnt->childrens.size(), 2);
 
-    scene.update(time);
-    ASSERT_EQ(physics->velocity, 1.0f); // Updated once
+    auto* childEnt = scene.entities().try_get(child1);
+    ASSERT_NE(childEnt, nullptr);
+    EXPECT_EQ(childEnt->parent, parent);
 
-    scene.update(time);
-    ASSERT_EQ(physics->velocity, 2.0f); // Updated twice
+ 
+    scene.destroyEntity(child1);
+    flush();
 
-    scene.destroyEntity(entity);
-}
+    parentEnt = scene.entities().try_get(parent);
+    ASSERT_NE(parentEnt, nullptr);
+    EXPECT_EQ(parentEnt->childrens.size(), 1);
+    EXPECT_EQ(parentEnt->childrens[0], child2);
 
-TEST(SceneTest, ParentChildRelationships) {
-    Scene scene;
-    Entity::ID parent = scene.createEntity();
-    Entity::ID child = scene.createEntity(parent);
-
-    // Verify parent-child linkage
-    Transform* parentTrans = scene.addComponent<Transform>(parent);
-    Transform* childTrans = scene.addComponent<Transform>(child);
-
-    parentTrans->x = 5.0f;
-    childTrans->x = parentTrans->x + 1.0f;
-    ASSERT_EQ(childTrans->x, 6.0f);
-
-    // Destroy parent (should orphan child)
     scene.destroyEntity(parent);
-    // Child should still exist
-    ASSERT_NE(scene.getComponent<Transform>(child), nullptr);
-
-    scene.destroyEntity(child);
+    flush();
+    EXPECT_FALSE(scene.entities().contains(parent));
+    EXPECT_FALSE(scene.entities().contains(child2));
 }
 
-TEST(SceneTest, MultipleComponentsPerEntity) 
-{
-    Scene scene;
-    Entity::ID entity = scene.createEntity();
+TEST_F(SceneTest, DeferredCommands) {
+    auto id = createEntityWithTestComponent();
 
-    auto* transform = scene.addComponent<Transform>(entity);
-    auto* health = scene.addComponent<Health>(entity);
-    auto* physics = scene.addComponent<Physics>(entity);
+    scene.destroyEntity(id);
+    EXPECT_TRUE(scene.entities().contains(id));
 
-    ASSERT_NE(transform, nullptr);
-    ASSERT_NE(health, nullptr);
-    ASSERT_NE(physics, nullptr);
-    ASSERT_EQ(health->value, 200); // onCreate called
-
-    scene.destroyEntity(entity);
+    flush();
+    EXPECT_FALSE(scene.entities().contains(id));
 }
 
-TEST(SceneTest, NonexistentEntityHandling) 
-{
-    Scene scene;
-    Entity::ID invalidEntity = 999; // Never created
 
-    // All operations should handle invalid entities gracefully
-    scene.destroyEntity(invalidEntity);
-    ASSERT_EQ(scene.getComponent<Transform>(invalidEntity), nullptr);
-    scene.removeComponent<Transform>(invalidEntity);
+TEST_F(SceneTest, EventDelivery) {
+    int createCount = 0;
+    int destroyCount = 0;
+
+    auto createToken = bus.subscribe<events::EntityCreateEvent>(
+        [&](const auto&) { createCount++; });
+
+    auto destroyToken = bus.subscribe<events::EntityDestroyEvent>(
+        [&](const auto&) { destroyCount++; });
+
+
+    auto id = scene.createEntity();
+    bus.commit_batch();
+    EXPECT_EQ(createCount, 1);
+
+    scene.destroyEntity(id);
+    flush();
+    bus.commit_batch();
+    EXPECT_EQ(destroyCount, 1);
+    bus.unsubscribe(createToken);
+    bus.unsubscribe(destroyToken);
 }
 
+TEST_F(SceneTest, HighLoadOperations) {
+    const int N = 10000;
+    std::vector<Entity::ID> ids;
+
+
+    for (int i = 0; i < N; i++) {
+        ids.push_back(createEntityWithTestComponent());
+    }
+
+  
+    for (auto id : ids) {
+        auto* comp = scene.getComponent<TestComponent>(id);
+        ASSERT_NE(comp, nullptr);
+        EXPECT_EQ(comp->value, 42);
+    }
+
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::shuffle(ids.begin(), ids.end(), g);
+
+    for (auto id : ids) {
+        scene.destroyEntity(id);
+    }
+    flush();
+
+    for (auto id : ids) {
+        EXPECT_FALSE(scene.entities().contains(id));
+    }
+    EXPECT_EQ(scene.entities().size(), 0);
+}
+
+TEST_F(SceneTest, NonTrivialAccess) {
+    auto root = scene.createEntity();
+    struct SecondComponent {};
+    // Создание иерархии
+    std::vector<Entity::ID> children;
+    for (int i = 0; i < 10; i++) {
+        auto child = createEntityWithTestComponent(root);
+        children.push_back(child);
+
+        // Добавление второго компонента
+
+        scene.addComponent<SecondComponent>(child);
+    }
+
+    // Удаление промежуточного компонента
+    for (auto id : children) {
+        scene.removeComponent<TestComponent>(id);
+    }
+    flush();
+
+    // Проверка состояния
+    for (auto id : children) {
+        EXPECT_EQ(scene.getComponent<TestComponent>(id), nullptr);
+        EXPECT_NE(scene.getComponent<SecondComponent>(id), nullptr);
+    }
+
+    // Удаление корня
+    scene.destroyEntity(root);
+    flush();
+    EXPECT_FALSE(scene.entities().contains(root));
+}

@@ -2,7 +2,7 @@
 
 #include <limits>
 #include <vector>
-#include <unordered_map>
+#include <bitset>
 
 #include "component_base.h"
 
@@ -14,9 +14,8 @@ namespace csyren::core
 		static constexpr ID invalidID = std::numeric_limits<ID>::max();
 
 		ID id{ 0 };
-		ID parent{ invalidID };
+		Entity::ID parent = Entity::invalidID;
 		std::vector<ID> childrens;
-		std::unordered_map<size_t, Component::ID> components;//component index in pool;
-
+		std::bitset<reflection::MAX_COMPONENT_TYPES> components;
 	};
 }

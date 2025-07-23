@@ -30,6 +30,7 @@ namespace csyren::core
 		render::Renderer		_render;
 		render::ResourceManager	_resource;
 		Time					_time;
+		std::unique_ptr<csyren::core::events::EventBus2> _bus;
 
 		Window _window;
 		Scene _scene;

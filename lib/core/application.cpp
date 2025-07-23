@@ -23,7 +23,8 @@ namespace csyren::core
 	Application::Application() :
 		_window(1200, 786, L"csyren engine"),
 		_inputDispatcher(),
-		_scene(),
+		_bus(std::make_unique<csyren::core::events::EventBus2>()),
+		_scene(*_bus),
 		_render(),
 		_resource(_render)
 	{ }
@@ -48,28 +49,43 @@ namespace csyren::core
 	int Application::run()
 	{
 		log::init();
-		onSceneStart();
 		_window.show();
 		MSG msg = { 0 };
 
 		const FLOAT clearColor[4] = { 0.1f, 0.1f, 0.3f, 1.0f };
 
-		std::unique_ptr<csyren::core::events::EventBus2> bus = std::make_unique<csyren::core::events::EventBus2>();
-
 		core::Time time;
 		core::details::TimeHandler timeHandler;
 
-		core::events::UpdateEvent updateEvent{ _scene,_resource,*bus,time };
-		core::events::DrawEvent   drawEvent{ _scene,_resource,*bus,_render };
+		core::events::UpdateEvent updateEvent{ _scene,_resource,*_bus,time };
+		core::events::DrawEvent   drawEvent{ _scene,_resource,*_bus,_render };
 		
-		auto updateToken = bus->register_publisher<core::events::UpdateEvent>();
-		auto drawToken = bus->register_publisher<core::events::DrawEvent>();
+		auto updateToken = _bus->register_publisher<core::events::UpdateEvent>();
+		auto drawToken = _bus->register_publisher<core::events::DrawEvent>();
 
 		auto matHandle = render::Primitives::getDefaultMaterial(_resource);
 		auto meshHandle = render::Primitives::getTriangle(_resource);
+
+		int createCount = 0;
+		int destroyCount = 0;
+
+		auto createToken = _bus->subscribe<events::EntityCreateEvent>(
+			[&](const auto&) { createCount++; });
+
+		auto destroyToken = _bus->subscribe<events::EntityDestroyEvent>(
+			[&](const auto&) { destroyCount++; });
+
+
+		auto id = _scene.createEntity();
+
+		_scene.destroyEntity(id);
+		_scene.flush();
+		_bus->unsubscribe(createToken);
+		_bus->unsubscribe(destroyToken);
 		
 		if (!matHandle || !meshHandle)
 			return -1;
+		onSceneStart();
 
 		while (msg.message != WM_QUIT)
 		{
@@ -82,14 +98,17 @@ namespace csyren::core
 			}
 			
 			_inputDispatcher.update();
-			bus->publish(updateToken,updateEvent);
+			_bus->publish(updateToken,updateEvent);
 
 			_render.beginFrame();
 			_render.clear(clearColor);
-			bus->publish(drawToken,drawEvent);
+			_bus->publish(drawToken,drawEvent);
 			_resource.getMesh(meshHandle)->draw(_render, _resource.getMaterial(matHandle));
 			//_scene.draw(_render);//make a part of callback
 			_render.endFrame();
+			//TODO a fence for thread. flush should work with fixed data
+			_scene.flush();
+			_bus->commit_batch();
 		}
 		log::shutdown();
 		return static_cast<int>(msg.wParam);

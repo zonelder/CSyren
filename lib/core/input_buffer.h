@@ -44,7 +44,7 @@ namespace csyren::core
 		/**
 		 * @brief Push an item into the buffer.
 		 * Add an item to the buffer. handling overflow according to current policy.
-		 * param item The item to add
+		 * param item The item to emplace
 		 * @throw std::overflow_error  if the buffer is full and policy is ThrowException
 		 */
 		void push(const T& item)
