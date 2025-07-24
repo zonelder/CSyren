@@ -16,7 +16,6 @@
 #include "core/context.h"
 #include "core/time.h"
 
-//
 
 namespace csyren::core
 {
@@ -65,23 +64,6 @@ namespace csyren::core
 
 		auto matHandle = render::Primitives::getDefaultMaterial(_resource);
 		auto meshHandle = render::Primitives::getTriangle(_resource);
-
-		int createCount = 0;
-		int destroyCount = 0;
-
-		auto createToken = _bus->subscribe<events::EntityCreateEvent>(
-			[&](const auto&) { createCount++; });
-
-		auto destroyToken = _bus->subscribe<events::EntityDestroyEvent>(
-			[&](const auto&) { destroyCount++; });
-
-
-		auto id = _scene.createEntity();
-
-		_scene.destroyEntity(id);
-		_scene.flush();
-		_bus->unsubscribe(createToken);
-		_bus->unsubscribe(destroyToken);
 		
 		if (!matHandle || !meshHandle)
 			return -1;

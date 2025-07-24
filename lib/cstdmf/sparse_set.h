@@ -19,6 +19,7 @@ namespace
 
 namespace csyren::cstdmf
 {
+
     template<typename T,typename EntityID = uint32_t>
     class SparseSet
     {
@@ -119,6 +120,9 @@ namespace csyren::cstdmf
         using iterator = T*;
         using const_iterator = const T*;
 
+        using key_iterator = std::vector < EntityID>::iterator;
+        using const_key_iterator = std::vector<EntityID>::const_iterator;
+
         [[nodiscard]] size_t        size() const noexcept { return _items.size(); }
         [[nodiscard]] bool          empty() const noexcept { return _items.empty(); }
 
@@ -126,6 +130,11 @@ namespace csyren::cstdmf
         [[nodiscard]] iterator       end()   noexcept { return _items.data() + _items.size(); }
         [[nodiscard]] const_iterator begin() const noexcept { return _items.data(); }
         [[nodiscard]] const_iterator end()   const noexcept { return _items.data() + _items.size(); }
+
+        [[nodiscard]] key_iterator       key_begin() noexcept { return _dense.begin(); }
+        [[nodiscard]] key_iterator       key_end()   noexcept { return _dense.end(); }
+        [[nodiscard]] const_key_iterator key_begin() const noexcept { return  _dense.begin(); }
+        [[nodiscard]] const_key_iterator key_end()   const noexcept { return  _dense.end(); }
 
         void clear() noexcept
         {
@@ -135,14 +144,21 @@ namespace csyren::cstdmf
                 page.reset();
         }
 
+        
+
         void reserve(size_t capacity) 
         {
             _dense.reserve(capacity);
             _items.reserve(capacity);
         }
 
-        T* data() noexcept { return _dense.data(); };
-        const T* data() const noexcept { return _dense.data(); };
+        T* data() noexcept { return _items.data(); };
+        const T* data() const noexcept { return _items.data(); };
+
+        EntityID* key_data() noexcept { return _dense.data(); };
+        const EntityID* key_data() const noexcept { return _dense.data(); };
+
+
     private:
         [[nodiscard]] uint32_t* sparsePtr(EntityID entity) noexcept
         {

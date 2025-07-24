@@ -4,7 +4,7 @@
 #include <limits>
 #include <vector>
 #include <unordered_map>
-#include <variant>
+#include <memory>
 
 #include "component_base.h"
 #include "component_pool.h"
@@ -131,7 +131,7 @@ namespace csyren::core
 		}
 
 		template<typename T, typename... Args>
-		[[nodiscard]] T* addComponent(Entity::ID id, Args&&... args)
+		T* addComponent(Entity::ID id, Args&&... args)
 		{
 			Entity* ent = _entities.try_get(id);
 			if (!ent) return nullptr;
@@ -177,7 +177,7 @@ namespace csyren::core
 		}
 
 		template<typename... Cs>
-		SceneView<Cs...> view(){ return SceneView<Cs...>(*this); }
+		SceneView<Cs...> view(){ return SceneView<Cs...>(this); }
 
 		const cstdmf::SparseSet<Entity>& entities() const { return _entities; }
 
@@ -301,6 +301,167 @@ namespace csyren::core
 
 		events::EventBus2& _bus;
 		//
+	};
+
+
+	template<class... Cs>
+	class SceneView
+	{
+		template<class T>
+		using PoolPtr = std::shared_ptr<ComponentPool<T>>;
+		using Pools = std::tuple<PoolPtr<Cs>...>;
+		using DenseContainer = std::vector<Entity::ID>;
+		using DenseIt = DenseContainer::const_iterator;
+
+		template <typename F, typename Tuple, typename = void>
+		struct is_apply_invocable : std::false_type {};
+
+		template <typename F, typename Tuple>
+		struct is_apply_invocable<F, Tuple,
+			std::void_t<decltype(std::apply(std::declval<F>(), std::declval<Tuple>()))>
+		> : std::true_type {
+		};
+	public:
+		SceneView(Scene* scene) : _scene(scene),_empty(true){}
+		class iterator
+		{
+		public:
+			using value_type = std::tuple<Entity::ID, Cs&...>;
+			using iterator_category = std::forward_iterator_tag;
+			using difference_type = std::ptrdiff_t;
+
+			iterator(SceneView* view, DenseIt it)
+				: _view(view), _it(it) 
+			{
+				skip();
+			}
+			value_type operator*() const
+			{
+				Entity::ID ent = *_it;
+				return const_cast<SceneView*>(_view) ->make_pointer_tuple(ent);
+			}
+			iterator& operator++() { ++_it; skip(); return *this; }
+			iterator  operator++(int) { iterator tmp{ *this }; ++(*this); return tmp; }
+
+			friend bool operator==(const iterator& a, const iterator& b) { return a._it == b._it; }
+			friend bool operator!=(const iterator& a, const iterator& b) { return !(a == b); }
+		private:
+
+			void skip()
+			{
+				while (_it != _view->_last && !_view->has_all_components(*_it))
+					++_it;
+			}
+			SceneView* _view;
+			DenseIt    _it;
+		};
+
+		class const_iterator
+		{
+		public:
+			using value_type = std::tuple<Entity::ID, const Cs&...>;
+			using iterator_category = std::forward_iterator_tag;
+
+			const_iterator(const SceneView* view, DenseIt it) : _view(view), _it(it) { skip(); }
+
+			value_type operator*() const
+			{
+				Entity::ID ent = *_it;
+				return _view->make_pointer_tuple(ent);
+			}
+
+			const_iterator& operator++() { ++_it; skip(); return *this; }
+			const_iterator  operator++(int) { const_iterator tmp{ *this }; ++(*this); return tmp; }
+
+			friend bool operator==(const const_iterator& a, const const_iterator& b)
+			{
+				return a._it == b._it;
+			}
+			friend bool operator!=(const const_iterator& a, const const_iterator& b)
+			{
+				return !(a == b);
+			}
+
+		private:
+			void skip()
+			{
+				while (_it != _view->_last && !_view->has_all_components(*_it))
+					++_it;
+			}
+			const SceneView* _view;
+			DenseIt    _it;
+		};
+
+		[[nodiscard]] iterator       begin() { refresh(); return _empty ? end() : iterator(this, _first); }
+		[[nodiscard]] iterator       end() { return iterator(this, _last); }
+
+		[[nodiscard]] const_iterator begin() const { refresh(); return _empty ? end() : const_iterator(this, _first); }
+		[[nodiscard]] const_iterator end()   const { return const_iterator(this, _last); }
+
+		template<class Fn>
+		void each(Fn&& fn)
+		{
+			using element_type = std::decay_t<decltype(*std::declval<decltype(begin())>())>;
+			static_assert(is_apply_invocable<Fn&&, element_type>::value,
+				"function object must be callable via SceneView");
+			for (auto it = begin(); it != end(); ++it)
+				std::apply(fn, *it);
+		}
+
+	private:
+		auto make_pointer_tuple(Entity::ID id) const
+		{
+			return std::tuple<Entity::ID,const Cs&...>(id, (*std::get<PoolPtr<Cs>>(_pools))[id]...);
+		}
+		auto make_pointer_tuple(Entity::ID id)
+		{
+			return std::tuple<Entity::ID, Cs&...>(id, (*std::get<PoolPtr<Cs>>(_pools))[id]...);
+		}
+		
+		void gather_pools() const
+		{
+			((std::get<PoolPtr<Cs>>(_pools) = _scene->template getPool<Cs>()), ...);
+		}
+
+		void refresh() const
+		{
+			if (!_empty)
+			{
+				pick_smallest();
+				return;
+			}
+
+			gather_pools();
+
+			if ((!std::get<PoolPtr<Cs>>(_pools) || ...))
+			{
+				return;
+			}
+			_empty = false;
+			pick_smallest();
+		}
+
+		void pick_smallest() const
+		{
+			DenseIt first{}, last{};
+			std::size_t minSize = std::numeric_limits<std::size_t>::max();
+			std::apply([&](auto&&... pool)
+				{
+					((pool->size() < minSize ? (minSize = pool->size(),first = pool->key_begin(),last = pool->key_end(),0): 0), ...);
+				}, _pools);
+
+			_first = first;
+			_last = last;
+		}
+		bool has_all_components(Entity::ID id) const
+		{
+			return (std::get<PoolPtr<Cs>>(_pools)->contains(id) && ...);
+		}
+
+		mutable Pools _pools;
+		Scene* _scene;
+		mutable DenseIt _first, _last;
+		mutable bool _empty{ false };
 	};
 
 }
