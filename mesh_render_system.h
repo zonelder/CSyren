@@ -3,43 +3,40 @@
 
 #include "core/event_bus.h"
 #include "core/context.h"
+#include "core/system_base.h"
+#include "core/scene.h"
 
 #include "transform.h"
 #include "mesh_filter.h"
 
-using namespace csyren::core::events;
+
+using namespace csyren::core;
 using namespace csyren::components;
 
-namespace csyren::systems
+namespace csyren
 {
-    class MeshRenderSystem
+    class MeshRenderSystem : public core::System
     {
     public:
-        explicit MeshRenderSystem(EventBus2 & bus)
-        {
-            bus.subscribe<DrawEvent>([this](DrawEvent& e)
-                {
-                    onDraw(e);
-                });
-        }
+        explicit MeshRenderSystem() = default;
 
-    private:
-        void onDraw(DrawEvent& e)
+        void draw(events::DrawEvent& event)
         {
-            e.scene.view<Transform, MeshFilter, MeshRenderer>()
+            event.scene.view<Transform, MeshFilter, MeshRenderer>()
                 .each([&](Entity::ID id,
                     Transform& tr,
                     MeshFilter& mf,
                     MeshRenderer& mr)
                     {
-                        auto* mesh = e.resources.getMesh(mf.mesh);
-                        auto* material = e.resources.getMaterial(mr.material);
+                        auto* mesh = event.resources.getMesh(mf.mesh);
+                        auto* material = event.resources.getMaterial(mr.material);
                         if (!mesh || !material) return;
 
                         // TODO: в константный буфер положить tr.worldMatrix()
-                        mesh->draw(e.render, material);
+                        mesh->draw(event.render, material);
                     });
         }
+
     };
 }
 

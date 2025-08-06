@@ -38,7 +38,7 @@
     <ClInclude Include="mesh_filter.h">
       <Filter>component</Filter>
     </ClInclude>
-    <ClInclude Include="meshRenderSystem.h">
+    <ClInclude Include="mesh_render_system.h">
       <Filter>system</Filter>
     </ClInclude>
     <ClInclude Include="application.h">

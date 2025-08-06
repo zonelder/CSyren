@@ -46,8 +46,8 @@ namespace csyren::core
 			{
 				entry.system->init(event);
 			}
-			_updateSub = event.bus.subscribe<events::UpdateEvent>([&](events::UpdateEvent& event){ this->update(event);});
-			_drawSub   = event.bus.subscribe<events::DrawEvent>([&](events::DrawEvent& event) { this->draw(event); });
+			//_updateSub = event.bus.subscribe<events::UpdateEvent>([&](events::UpdateEvent& event){ this->update(event);});
+			//_drawSub   = event.bus.subscribe<events::DrawEvent>([&](events::DrawEvent& event) { this->draw(event); });
 
 			sort();
 		}
@@ -60,11 +60,10 @@ namespace csyren::core
 			}
 
 			_systems.clear();
-			event.bus.unsubscribe(_updateSub);
-			event.bus.unsubscribe(_drawSub);
+			//event.bus.unsubscribe(_updateSub);
+			//event.bus.unsubscribe(_drawSub);
 		}
 
-	private:
 		void update(events::UpdateEvent& event)
 		{
 			for (auto entry : _systems)
@@ -80,6 +79,7 @@ namespace csyren::core
 				entry.system->draw(event);
 			}
 		}
+	private:
 
 		std::vector<SystemEntry> _systems;
 		bool _sorted{ true };

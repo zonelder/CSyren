@@ -16,6 +16,8 @@
 #include "core/time.h"
 #include "core/input_dispatcher.h"
 
+#include "mesh_render_system.h"
+
 
 namespace csyren
 {
@@ -63,14 +65,6 @@ namespace csyren
 		core::events::DrawEvent   drawEvent{ _scene,_resource,*_bus,_render };
 		core::events::SystemEvent systemEvent{ _scene,_resource,*_bus,time,_render };
 
-		auto updateToken = _bus->register_publisher<core::events::UpdateEvent>();
-		auto drawToken = _bus->register_publisher<core::events::DrawEvent>();
-
-		auto matHandle = render::Primitives::getDefaultMaterial(_resource);
-		auto meshHandle = render::Primitives::getTriangle(_resource);
-
-		if (!matHandle || !meshHandle)
-			return -1;
 		onSceneStart();
 
 		_systems.init(systemEvent);
@@ -86,12 +80,12 @@ namespace csyren
 			}
 
 			_inputDispatcher.update(*_bus);
-			_bus->publish(updateToken, updateEvent);
+			_systems.update(updateEvent);
 
 			_render.beginFrame();
 			_render.clear(clearColor);
-			_bus->publish(drawToken, drawEvent);
-			_resource.getMesh(meshHandle)->draw(_render, _resource.getMaterial(matHandle));
+			_systems.draw(drawEvent);
+			//_resource.getMesh(meshHandle)->draw(_render, _resource.getMaterial(matHandle));
 			_render.endFrame();
 			_scene.flush();
 			_bus->commit_batch();
@@ -102,21 +96,28 @@ namespace csyren
 		return static_cast<int>(msg.wParam);
 	}
 
-
 	/**
 	 * @brief method where you can place you custom scene initialization.
 	 */
 	void Application::onSceneStart()
 	{
-		auto& dispatcher = _inputDispatcher;
-		auto& keyboard = dispatcher.devices().keyboard();
-
+		auto matHandle = render::Primitives::getDefaultMaterial(_resource);
+		auto meshHandle = render::Primitives::getTriangle(_resource);
 
 		_bus->subscribe<core::input::InputEvent>(static_cast<core::events::EventMarker>(core::input::InputEvent::Type::MouseMove), [](core::input::InputEvent& event)
 			{
 				std::cout << "mouse move:" << event.data.mouse.x << " " << event.data.mouse.y << "\n";
 			});
 
+		auto meshRenderSystem = std::make_shared<csyren::MeshRenderSystem>();
+		_systems.addSystem(meshRenderSystem, 0);
+
+		auto testMeshEntity = _scene.createEntity();
+		auto meshFilter = _scene.addComponent<MeshFilter>(testMeshEntity);
+		auto meshRenderer = _scene.addComponent<MeshRenderer>(testMeshEntity);
+		auto transform = _scene.addComponent<Transform>(testMeshEntity);
+		meshFilter->mesh = meshHandle;
+		meshRenderer->material = matHandle;
 	}
 
 
