@@ -21,6 +21,7 @@ namespace csyren::core
 namespace csyren::core::events
 {
 
+	//base class for generic app event
 	struct ContextualEvent
 	{
 		Scene& scene;
@@ -28,13 +29,22 @@ namespace csyren::core::events
 		EventBus2& bus;
 	};
 
+	//class for Update call
 	struct UpdateEvent : ContextualEvent
 	{
 		Time& time;
 	};
 
+	//class for draw call
 	struct DrawEvent : ContextualEvent
 	{
+		render::Renderer& render;
+	};
+
+	//class for sustem init\shutdown
+	struct SystemEvent : ContextualEvent
+	{
+		Time& time;
 		render::Renderer& render;
 	};
 }

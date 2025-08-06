@@ -26,7 +26,7 @@ namespace csyren::core::input
 		 * @enum Type
 		 * @brief Enumaterion of all possible input event types.
 		 */
-		enum class Type
+		enum class Type : uint32_t
 		{
 			KeyDown,			///< Keyboard key pressed
 			KeyUp,				///< Keyboard key released

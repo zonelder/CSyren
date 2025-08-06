@@ -1,8 +1,6 @@
 #include <iostream>
-#include "core/application.h"
-#include "core/event_bus.h"
+#include "application.h"
 
-using namespace csyren::core::events;
 
 #define CONSOLE_ENABLE
 
@@ -16,7 +14,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE pPrevInstance, LPSTR plCmdLi
 	freopen_s(&conout, "CON", "w", stdout);
 #endif
 
-	csyren::core::Application app{};
+	csyren::Application app{};
 	if (!app.init())
 	{
 		return -1;

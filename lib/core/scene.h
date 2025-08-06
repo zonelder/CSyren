@@ -181,6 +181,68 @@ namespace csyren::core
 
 		const cstdmf::SparseSet<Entity>& entities() const { return _entities; }
 
+
+		void flush()
+		{
+			for (const auto& e : _deferred.destroyComponentBuf())
+			{
+				auto it = _meta.find(e.family);
+				if (it == _meta.end())
+					continue;
+				it->second.removeFn(this, e, it->second.removeToken, _bus);
+			}
+
+			DestroyComponentCommand cm;
+			for (const auto& e : _deferred.destroyEntityBuf())
+			{
+
+				Entity* ent = _entities.try_get(e.id);
+				if (!ent) continue;
+				for (const auto& [family, m] : _meta)
+				{
+					if (ent->components.test(family))
+					{
+						cm.entt = e.id;
+						cm.family = family;
+						m.removeFn(this, cm, m.removeToken, _bus);
+					}
+				}
+
+				_bus.publish(_entityDestroyToken, events::EntityDestroyEvent{ e.id });
+
+				if (ent->parent != Entity::invalidID)
+				{
+					if (Entity* p = _entities.try_get(ent->parent))
+					{
+						auto& vec = p->childrens;
+						vec.erase(std::remove(vec.begin(), vec.end(), e.id), vec.end());
+					}
+				}
+
+				for (auto& child : ent->childrens)
+				{
+					Entity* pChild = _entities.try_get(child);
+					if (!pChild)
+					{
+						log::error("destroyEntity: child dont exist but entity keep reference to it.");
+						continue;
+					}
+					pChild->parent = Entity::invalidID;
+				}
+				_entities.erase(e.id);
+				if (e.id + 1 == _nextId)
+				{
+					--_nextId;
+				}
+				else
+				{
+					_freeIDs.push_back(e.id);
+				}
+			}
+
+			_deferred.clear();
+		}
+
 	private:
 		template<typename T>
 		std::shared_ptr<ComponentPool<T>> getPool()
@@ -227,66 +289,6 @@ namespace csyren::core
 			return _meta[family].removeToken;
 		}
 
-		void flush()
-		{
-			for (const auto& e : _deferred.destroyComponentBuf())
-			{
-				auto it = _meta.find(e.family);
-				if (it == _meta.end())
-					continue;
-				it->second.removeFn(this, e,it->second.removeToken,_bus);
-			}
-
-			DestroyComponentCommand cm;
-			for (const auto& e : _deferred.destroyEntityBuf())
-			{
-
-				Entity* ent = _entities.try_get(e.id);
-				if (!ent) continue;
-				for (const auto& [family,m] : _meta)
-				{
-					if (ent->components.test(family))
-					{
-						cm.entt = e.id;
-						cm.family = family;
-						m.removeFn(this, cm, m.removeToken, _bus);
-					}
-				}
-
-				_bus.publish(_entityDestroyToken, events::EntityDestroyEvent{ e.id });
-
-				if (ent->parent != Entity::invalidID)
-				{
-					if (Entity* p = _entities.try_get(ent->parent))
-					{
-						auto& vec = p->childrens;
-						vec.erase(std::remove(vec.begin(), vec.end(), e.id), vec.end());
-					}
-				}
-
-				for (auto& child : ent->childrens)
-				{
-					Entity* pChild = _entities.try_get(child);
-					if (!pChild)
-					{
-						log::error("destroyEntity: child dont exist but entity keep reference to it.");
-						continue;
-					}
-					pChild->parent = Entity::invalidID;
-				}
-				_entities.erase(e.id);
-				if (e.id + 1 == _nextId)
-				{
-					--_nextId;
-				}
-				else
-				{
-					_freeIDs.push_back(e.id);
-				}
-			}
-
-			_deferred.clear();
-		}
 
 	private:
 		cstdmf::SparseSet<Entity>	_entities;

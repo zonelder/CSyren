@@ -1,7 +1,6 @@
-#include "pch.h"
 #include "application.h"
-#include "renderer.h"
-#include "input_dispatcher.h"
+
+
 #include "cstdmf/log.h"
 #include <cassert>
 #include <format>
@@ -15,9 +14,10 @@
 #include "core/event_bus.h"
 #include "core/context.h"
 #include "core/time.h"
+#include "core/input_dispatcher.h"
 
 
-namespace csyren::core
+namespace csyren
 {
 	Application::Application() :
 		_window(1200, 786, L"csyren engine"),
@@ -26,9 +26,10 @@ namespace csyren::core
 		_scene(*_bus),
 		_render(),
 		_resource(_render)
-	{ }
+	{
+	}
 
-	Application::~Application(){}
+	Application::~Application() {}
 
 
 	bool Application::init()
@@ -41,6 +42,8 @@ namespace csyren::core
 		{
 			return false;
 		}
+
+		_inputDispatcher.init(*_bus);
 
 		return true;
 	}
@@ -58,16 +61,19 @@ namespace csyren::core
 
 		core::events::UpdateEvent updateEvent{ _scene,_resource,*_bus,time };
 		core::events::DrawEvent   drawEvent{ _scene,_resource,*_bus,_render };
-		
+		core::events::SystemEvent systemEvent{ _scene,_resource,*_bus,time,_render };
+
 		auto updateToken = _bus->register_publisher<core::events::UpdateEvent>();
 		auto drawToken = _bus->register_publisher<core::events::DrawEvent>();
 
 		auto matHandle = render::Primitives::getDefaultMaterial(_resource);
 		auto meshHandle = render::Primitives::getTriangle(_resource);
-		
+
 		if (!matHandle || !meshHandle)
 			return -1;
 		onSceneStart();
+
+		_systems.init(systemEvent);
 
 		while (msg.message != WM_QUIT)
 		{
@@ -78,20 +84,20 @@ namespace csyren::core
 				TranslateMessage(&msg);
 				DispatchMessage(&msg);
 			}
-			
-			_inputDispatcher.update();
-			_bus->publish(updateToken,updateEvent);
+
+			_inputDispatcher.update(*_bus);
+			_bus->publish(updateToken, updateEvent);
 
 			_render.beginFrame();
 			_render.clear(clearColor);
-			_bus->publish(drawToken,drawEvent);
+			_bus->publish(drawToken, drawEvent);
 			_resource.getMesh(meshHandle)->draw(_render, _resource.getMaterial(matHandle));
-			//_scene.draw(_render);//make a part of callback
 			_render.endFrame();
-			//TODO a fence for thread. flush should work with fixed data
 			_scene.flush();
 			_bus->commit_batch();
 		}
+		_systems.shutdown(systemEvent);
+		_inputDispatcher.shutdown(*_bus);
 		log::shutdown();
 		return static_cast<int>(msg.wParam);
 	}
@@ -105,21 +111,13 @@ namespace csyren::core
 		auto& dispatcher = _inputDispatcher;
 		auto& keyboard = dispatcher.devices().keyboard();
 
-		dispatcher.events().subscribe(core::input::InputEvent::Type::KeyUp, [](const core::input::InputEvent& event) {
 
-			std::cout << "up : " << char(event.code) << "\n"; }
-		);
-
-		dispatcher.events().subscribe(core::input::InputEvent::Type::MouseButtonDown, [](const core::input::InputEvent& event)
+		_bus->subscribe<core::input::InputEvent>(static_cast<core::events::EventMarker>(core::input::InputEvent::Type::MouseMove), [](core::input::InputEvent& event)
 			{
-				std::cout << "mouse button pressed:" << event.code << "\n";
-			});
-		dispatcher.events().subscribe(core::input::InputEvent::Type::MouseMove, [](const core::input::InputEvent& event)
-			{
-				std::cout << "mouse button move:" << event.data.mouse.x << " " << event.data.mouse.y << "\n";
+				std::cout << "mouse move:" << event.data.mouse.x << " " << event.data.mouse.y << "\n";
 			});
 
 	}
 
-	
+
 }

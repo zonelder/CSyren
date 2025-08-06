@@ -11,12 +11,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="application.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="application.h" />
     <ClInclude Include="meshRenderSystem.h" />
     <ClInclude Include="mesh_filter.h" />
     <ClInclude Include="transform.h" />
