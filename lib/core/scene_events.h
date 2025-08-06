@@ -35,11 +35,6 @@ namespace csyren::core {
         size_t family;
         Component::ID component;
     };
-
-    inline const events::EventID kEntityCreatedID{ "EntityCreated" };
-    inline const events::EventID kEntityDestroyedID{ "EntityDestroyed" };
-    inline const events::EventID kComponentAddedID{ "ComponentAdded" };
-    inline const events::EventID kComponentRemovedID{ "ComponentRemoved" };
 }
 
 #endif // CSYREN_SCENE_EVENTS_H

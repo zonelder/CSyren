@@ -6,6 +6,7 @@
 
 #include "transform.h"
 #include "mesh_filter.h"
+#include "entity.h"
 
 using namespace csyren::core::events;
 using namespace csyren::components;
@@ -27,7 +28,7 @@ namespace csyren::systems
         void onDraw(DrawEvent& e)
         {
             e.scene.view<Transform, MeshFilter, MeshRenderer>()
-                .each([&](Entity::ID id,
+                .each([&](core::Entity::ID id,
                     Transform& tr,
                     MeshFilter& mf,
                     MeshRenderer& mr)

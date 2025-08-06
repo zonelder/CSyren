@@ -16,13 +16,20 @@
 #include "core/context.h"
 #include "core/time.h"
 
+// include systems for space shoopter demo;
+#include "core/damage_system.h"
+#include "core/move_system.h"
+#include "core/collision_system.h"
+#include "core/mesh_filter.h"
+#include "core/player_input_system.h"
+#include "core/meshRenderSystem.h"
 
 namespace csyren::core
 {
 	Application::Application() :
 		_window(1200, 786, L"csyren engine"),
-		_inputDispatcher(),
 		_bus(std::make_unique<csyren::core::events::EventBus2>()),
+		_inputDispatcher(*_bus),
 		_scene(*_bus),
 		_render(),
 		_resource(_render)
@@ -62,11 +69,12 @@ namespace csyren::core
 		auto updateToken = _bus->register_publisher<core::events::UpdateEvent>();
 		auto drawToken = _bus->register_publisher<core::events::DrawEvent>();
 
-		auto matHandle = render::Primitives::getDefaultMaterial(_resource);
-		auto meshHandle = render::Primitives::getTriangle(_resource);
-		
-		if (!matHandle || !meshHandle)
-			return -1;
+
+		auto playerSystem = new csyren::demo::space_shooter::PlayerInputSystem(*_bus, _scene);
+		auto collisionSystem = new csyren::demo::space_shooter::CollisionSystem(*_bus);
+		auto moveSystem = new csyren::demo::space_shooter::MoveSystem(*_bus);
+		auto damageSystem = new csyren::demo::space_shooter::DamageSystem(*_bus);
+		auto meshRenderSystem = new csyren::systems::MeshRenderSystem(*_bus);
 		onSceneStart();
 
 		while (msg.message != WM_QUIT)
@@ -79,20 +87,25 @@ namespace csyren::core
 				DispatchMessage(&msg);
 			}
 			
-			_inputDispatcher.update();
+			_inputDispatcher.update(*_bus);
 			_bus->publish(updateToken,updateEvent);
 
 			_render.beginFrame();
 			_render.clear(clearColor);
 			_bus->publish(drawToken,drawEvent);
-			_resource.getMesh(meshHandle)->draw(_render, _resource.getMaterial(matHandle));
-			//_scene.draw(_render);//make a part of callback
 			_render.endFrame();
 			//TODO a fence for thread. flush should work with fixed data
 			_scene.flush();
 			_bus->commit_batch();
 		}
 		log::shutdown();
+
+
+		delete playerSystem;
+		delete collisionSystem;
+		delete moveSystem;
+		delete damageSystem;
+
 		return static_cast<int>(msg.wParam);
 	}
 
@@ -105,20 +118,38 @@ namespace csyren::core
 		auto& dispatcher = _inputDispatcher;
 		auto& keyboard = dispatcher.devices().keyboard();
 
-		dispatcher.events().subscribe(core::input::InputEvent::Type::KeyUp, [](const core::input::InputEvent& event) {
+		//create player and bind move keyboad
+		auto player = _scene.createEntity();
+		auto playerComponent = _scene.addComponent<PlayerComponent>(player);
+		if (!playerComponent)
+		{
+			log::error("Application::onSceneStart: failed to create player component");
+			return;
+		}
+		auto defaultMaterial = render::Primitives::getDefaultMaterial(_resource);
+		if (!defaultMaterial)
+		{
+			log::error("Application::onSceneStart: failed to get default material");
+			return;
+		}
+		auto circleMesh = render::Primitives::getQuad(_resource);
 
-			std::cout << "up : " << char(event.code) << "\n"; }
-		);
+		if (!circleMesh)
+		{
+			log::error("Application::onSceneStart: failed to get circle mesh");
+			return;
+		}
 
-		dispatcher.events().subscribe(core::input::InputEvent::Type::MouseButtonDown, [](const core::input::InputEvent& event)
-			{
-				std::cout << "mouse button pressed:" << event.code << "\n";
-			});
-		dispatcher.events().subscribe(core::input::InputEvent::Type::MouseMove, [](const core::input::InputEvent& event)
-			{
-				std::cout << "mouse button move:" << event.data.mouse.x << " " << event.data.mouse.y << "\n";
-			});
+		//create player mesh
+		auto playerMesh = _scene.addComponent<components::MeshFilter>(player);
+		auto playerMeshRenderer = _scene.addComponent<components::MeshRenderer>(player);
+		auto playerTransform = _scene.addComponent<components::Transform>(player);
 
+
+		playerMesh->mesh = circleMesh;
+		playerMeshRenderer->material = defaultMaterial;
+
+		//create a systems 
 	}
 
 	

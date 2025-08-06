@@ -84,6 +84,30 @@
     <ClInclude Include="command_buffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="mesh_filter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="transform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="collision_system.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="damage_system.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="meshRenderSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="move_system.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="space_shooter_components.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="player_input_system.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

@@ -26,7 +26,7 @@ namespace csyren::render
 		Renderer(const Renderer&) = delete;
 		Renderer& operator=(const Renderer&) = delete;
 
-		bool init(HWND hwnd, UINT width, UINT height);
+		bool init(HWND hwnd, UINT width, UINT height);  
 		void beginFrame();
 		void clear(const FLOAT color[4]);
 		void endFrame();

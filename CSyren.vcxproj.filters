@@ -28,15 +28,4 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="transform.h">
-      <Filter>component</Filter>
-    </ClInclude>
-    <ClInclude Include="mesh_filter.h">
-      <Filter>component</Filter>
-    </ClInclude>
-    <ClInclude Include="meshRenderSystem.h">
-      <Filter>system</Filter>
-    </ClInclude>
-  </ItemGroup>
 </Project>
