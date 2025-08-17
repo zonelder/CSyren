@@ -102,6 +102,18 @@ namespace csyren::render
         if (!_fenceEvent)
             return false;
 
+        constexpr size_t perFrameSize = sizeof(PerFrameBuffer);
+        constexpr size_t perEntitySize = sizeof(PerEntityBuffer); // Size for world matrix + other per-object data
+        constexpr size_t perMaterialSize = 128; // Size for material properties
+
+        if (!_perFrameCB.init(_device.Get(), perFrameSize) ||
+            !_perEntityCB.init(_device.Get(), perEntitySize) ||
+            !_perMaterialCB.init(_device.Get(), perMaterialSize))
+        {
+            return false;
+        }
+
+
         _viewport = { 0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f };
         _scissor = { 0, 0, static_cast<LONG>(width), static_cast<LONG>(height) };
 

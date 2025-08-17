@@ -1,6 +1,5 @@
 #include "application.h"
 
-
 #include "cstdmf/log.h"
 #include <cassert>
 #include <format>
@@ -14,10 +13,35 @@
 #include "core/event_bus.h"
 #include "core/context.h"
 #include "core/time.h"
+#include "core/camera.h"
 #include "core/input_dispatcher.h"
 
 #include "mesh_render_system.h"
+namespace
+{
 
+
+	DirectX::XMMATRIX createProjection(csyren::core::Camera& camera)
+	{
+
+		using namespace DirectX;
+		using namespace csyren::core;
+
+		if (camera.projection == ProjectionType::Perspective)
+		{
+			// Convert FOV to radians and create perspective matrix
+			float fovRadians = XMConvertToRadians(camera.fov);
+			return XMMatrixPerspectiveFovLH(fovRadians, camera.aspectRatio, camera.near, camera.far);
+		}
+		else // Orthographic
+		{
+			// Interpret FOV as vertical height of view volume
+			float viewHeight = camera.fov;
+			float viewWidth = viewHeight * camera.aspectRatio;
+			return XMMatrixOrthographicLH(viewWidth, viewHeight, camera.near, camera.far);
+		}
+	}
+}
 
 namespace csyren
 {
@@ -36,6 +60,8 @@ namespace csyren
 
 	bool Application::init()
 	{
+
+		//LoadLibrary(L"WinPixGpuCapture.dll");
 		auto hWnd = _window.init();
 		if (!hWnd) { return false; }
 		_window.setInputDispatcher(&_inputDispatcher);
@@ -81,28 +107,54 @@ namespace csyren
 
 			_inputDispatcher.update(*_bus);
 			_systems.update(updateEvent);
+			auto [mainCameraID,camera,cameraTransform] = *(_scene.view<Camera,Transform>().begin());//only first camera accepted
+
+			auto perFrameBuffer = _render.getPerFrameBuffer();
+			//perFrameBuffer->invView = DirectX::XMMatrixIdentity(); //cameraTransform.world();
+			//perFrameBuffer->view = DirectX::XMMatrixInverse(nullptr, perFrameBuffer->invView);
+			//perFrameBuffer->projection = DirectX::XMMatrixIdentity();//createProjection(camera);
+			perFrameBuffer->viewProjection = DirectX::XMMatrixIdentity();//perFrameBuffer->view* perFrameBuffer->projection;
+
+			auto perFrameCB = _render.getPerFrameCB();
+			perFrameCB->update(perFrameBuffer, sizeof(render::PerFrameBuffer));
 
 			_render.beginFrame();
-			_render.clear(clearColor);
+			_render.clear(&(camera.background.x));
+
+
 			_systems.draw(drawEvent);
-			//_resource.getMesh(meshHandle)->draw(_render, _resource.getMaterial(matHandle));
+
 			_render.endFrame();
+
 			_scene.flush();
 			_bus->commit_batch();
 		}
+
 		_systems.shutdown(systemEvent);
 		_inputDispatcher.shutdown(*_bus);
 		log::shutdown();
 		return static_cast<int>(msg.wParam);
 	}
 
+
+
 	/**
 	 * @brief method where you can place you custom scene initialization.
 	 */
 	void Application::onSceneStart()
 	{
+		auto mainCameraEntt = _scene.createEntity();
+		auto mainCamera = _scene.addComponent<Camera>(mainCameraEntt);
+		auto cameraTransform = _scene.addComponent<Transform>(mainCameraEntt);
+		mainCamera->aspectRatio = _window.width() / _window.height();
+		
+		
 		auto matHandle = render::Primitives::getDefaultMaterial(_resource);
 		auto meshHandle = render::Primitives::getTriangle(_resource);
+
+
+
+
 
 		_bus->subscribe<core::input::InputEvent>(static_cast<core::events::EventMarker>(core::input::InputEvent::Type::MouseMove), [](core::input::InputEvent& event)
 			{
@@ -118,7 +170,19 @@ namespace csyren
 		auto transform = _scene.addComponent<Transform>(testMeshEntity);
 		meshFilter->mesh = meshHandle;
 		meshRenderer->material = matHandle;
+
+		_bus->subscribe<core::input::InputEvent>(static_cast<core::events::EventMarker>(core::input::InputEvent::Type::KeyDown), [this, testMeshEntity](core::input::InputEvent& event)
+			{
+				if (event.code == static_cast<int>(core::input::KeyCode::Space))
+				{
+					auto tr = _scene.getComponent<Transform>(testMeshEntity);
+					tr->pos.y += 0.1f;
+					log::info("space pressed");
+				}
+			});
 	}
+
+
 
 
 }

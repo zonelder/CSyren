@@ -5,10 +5,13 @@
 #include "core/system_manager.h"
 #include "core/renderer.h"
 #include "core/time.h"
+#include "core/camera.h"
 
 
 namespace csyren
 {
+
+
 	class Application
 	{
 	public:
@@ -24,7 +27,6 @@ namespace csyren
 		void onSceneStart();
 
 	private:
-
 		core::input::InputDispatcher	_inputDispatcher;
 		render::Renderer		_render;
 		render::ResourceManager	_resource;

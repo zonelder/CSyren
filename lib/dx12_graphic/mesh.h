@@ -23,7 +23,7 @@ namespace csyren::render
 			DirectX::XMFLOAT4 colour;
 		};
 		Mesh() noexcept = default;
-		void draw(Renderer& renderer, const Material* material);
+		void draw(Renderer& renderer);
 	private:
 
 		bool init(Renderer& renderer, const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices);

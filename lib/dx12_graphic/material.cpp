@@ -13,7 +13,26 @@ namespace csyren::render
         ID3D12Device* device = renderer.device();
         if (!device) return false;
 
+        // Define root parameters for constant buffers
+        D3D12_ROOT_PARAMETER rootParameters[2] = {};
+
+        // PerFrame buffer (b0)
+        rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+        rootParameters[0].Descriptor.ShaderRegister = 0;
+        rootParameters[0].Descriptor.RegisterSpace = 0;
+        rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+        // PerObject buffer (b1)
+        rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+        rootParameters[1].Descriptor.ShaderRegister = 1;
+        rootParameters[1].Descriptor.RegisterSpace = 0;
+        rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
         D3D12_ROOT_SIGNATURE_DESC rootDesc = {};
+        rootDesc.NumParameters = 2;
+        rootDesc.pParameters = rootParameters;
+        rootDesc.NumStaticSamplers = 0;
+        rootDesc.pStaticSamplers = nullptr;
         rootDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
         ComPtr<ID3DBlob> sigBlob;

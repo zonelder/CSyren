@@ -46,7 +46,6 @@ namespace csyren::log
 
     inline void write(Level level, const std::string& msg)
     {
-        std::scoped_lock lock(g_mutex);
         std::string formatted = std::format("[{}] {}", toString(level), msg);
         write(formatted);
     }

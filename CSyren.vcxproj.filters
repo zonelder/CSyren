@@ -44,5 +44,8 @@
     <ClInclude Include="application.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="camera.h">
+      <Filter>component</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

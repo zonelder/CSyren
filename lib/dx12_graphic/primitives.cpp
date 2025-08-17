@@ -22,9 +22,24 @@ namespace csyren::render
 
         //TODO create basic shaders file
         const char* g_vsCode =
+            "cbuffer PerFrame : register(b0) {"
+            //"   matrix projection;"
+            //"   matrix view;"
+            "   matrix viewProjection;"
+            //"   matrix invView;"
+            "}"
+            "cbuffer PerObject : register(b1) { matrix world; }"
             "struct VS_INPUT { float3 pos : POSITION; float4 color : COLOR; };"
             "struct PS_INPUT { float4 pos : SV_POSITION; float4 color : COLOR; };"
-            "PS_INPUT main(VS_INPUT input) { PS_INPUT o; o.pos=float4(input.pos,1.0); o.color=input.color; return o; }";
+            "PS_INPUT main(VS_INPUT input) {"
+            "   PS_INPUT o;"
+            "   float4 pos = float4(input.pos, 1.0);"
+            "   pos = mul(world,pos);"              // World transform
+            "   pos = mul(viewProjection,pos);"     // Combined view-projection
+            "   o.pos = pos;"
+            "   o.color = input.color;"
+            "   return o;"
+            "}";
 
         const char* g_psCode =
             "struct PS_INPUT { float4 pos : SV_POSITION; float4 color : COLOR; };"

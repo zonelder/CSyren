@@ -1,6 +1,11 @@
 #ifndef __CSYREN_CONTEXT__
 #define __CSYREN_CONTEXT__
 
+namespace DirectX
+{
+	struct XMMATRIX;
+}
+
 
 namespace csyren::render
 {

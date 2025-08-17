@@ -14,9 +14,23 @@
 #include <memory>
 
 #include "descriptor_heap_manager.h"
+#include "constant_buffer.h"
 
 namespace csyren::render
 {
+	struct PerFrameBuffer
+	{
+		//DirectX::XMMATRIX projection;
+		//DirectX::XMMATRIX view;
+		DirectX::XMMATRIX viewProjection;
+		//DirectX::XMMATRIX invView;
+	};
+
+	struct PerEntityBuffer
+	{
+		DirectX::XMMATRIX world;
+	};
+
 	class Renderer
 	{
 	public:
@@ -36,6 +50,17 @@ namespace csyren::render
 
 		ID3D12GraphicsCommandList* commandList() const noexcept { return _commandList.Get(); }
 		ID3D12Device* device() const noexcept { return _device.Get(); }
+
+		ConstantBuffer* getPerFrameCB() noexcept { return &_perFrameCB; };
+
+		ConstantBuffer* getPerEntityCB() noexcept { return &_perEntityCB; };
+
+		ConstantBuffer* getPerMaterialCB() noexcept { return &_perMaterialCB; };
+
+
+		PerEntityBuffer* getPerEntityBuffer() noexcept { return &_perEntityBuffer;};
+
+		PerFrameBuffer* getPerFrameBuffer() noexcept { return &_perFrameBuffer; };
 	private:
 		void waitForGpu();
 
@@ -56,6 +81,12 @@ namespace csyren::render
 		HANDLE _fenceEvent{ nullptr };
 		UINT _frameIndex{ 0 };
 
+		ConstantBuffer _perFrameCB;
+		ConstantBuffer _perEntityCB;
+		ConstantBuffer _perMaterialCB;
+
+		PerFrameBuffer _perFrameBuffer;
+		PerEntityBuffer _perEntityBuffer;
 
 		std::unique_ptr<DescriptorHeapManager> _pSrvHeapManager;
 	};

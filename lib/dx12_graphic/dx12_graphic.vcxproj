@@ -150,6 +150,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="constant_buffer.h" />
     <ClInclude Include="descriptor_heap_manager.h" />
     <ClInclude Include="dx_log.h" />
     <ClInclude Include="framework.h" />
@@ -158,10 +159,12 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="primitives.h" />
     <ClInclude Include="renderer.h" />
+    <ClInclude Include="resource_handle.h" />
     <ClInclude Include="resource_manager.h" />
     <ClInclude Include="texture.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="constant_buffer.cpp" />
     <ClCompile Include="descriptor_heap_manager.cpp" />
     <ClCompile Include="material.cpp" />
     <ClCompile Include="mesh.cpp" />
