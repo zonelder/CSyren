@@ -29,13 +29,20 @@ namespace csyren::core::input
 			return _keyStates[key];
 		}
 
+		bool isKeyDown(KeyCode key) const
+		{
+			return _keyStates[static_cast<int>(key)];
+		}
+
         bool isKeyUp(int key) const
         {
             return !_keyStates[key];
         }
 
-
-
+		bool isKeyUp(KeyCode key) const
+		{
+			return !_keyStates[static_cast<int>(key)];
+		}
 
         //this method should never be give to user of engine. input system only
 

@@ -23,10 +23,10 @@ namespace csyren::render
         //TODO create basic shaders file
         const char* g_vsCode =
             "cbuffer PerFrame : register(b0) {"
-            //"   matrix projection;"
-            //"   matrix view;"
+            "   matrix projection;"
+            "   matrix view;"
             "   matrix viewProjection;"
-            //"   matrix invView;"
+            "   matrix invView;"
             "}"
             "cbuffer PerObject : register(b1) { matrix world; }"
             "struct VS_INPUT { float3 pos : POSITION; float4 color : COLOR; };"

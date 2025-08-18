@@ -13,9 +13,10 @@ namespace csyren::core::input
 		const KeyboardDevice& keyboard() const noexcept { return _keyboard; }
 		const MouseDevice& mouse() const noexcept { return _mouse; }
 	private:
-		void update()
+		void preUpdate()
 		{
 			_keyboard.update();
+			_mouse.update();
 		}
 		void dispatchEvent(const InputEvent& event)
 		{
@@ -32,12 +33,16 @@ namespace csyren::core::input
 				break;
 			case InputEvent::Type::MouseButtonDown:
 				_mouse.setButtonState(event.code, true);
+				break;
 			case InputEvent::Type::MouseButtonUp:
 				_mouse.setButtonState(event.code, false);
+				break;
 			case InputEvent::Type::MouseWheel:
 				_mouse.setScrollDelta(event.data.mouse.wheelDelta);
+				break;
 			case InputEvent::Type::MouseMove:
 				_mouse.setMousePosition(event.data.mouse.x, event.data.mouse.y);
+				break;
 			default:
 				break;
 			}

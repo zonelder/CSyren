@@ -18,12 +18,12 @@
 
 namespace csyren::render
 {
-	struct PerFrameBuffer
+	struct  alignas(16) PerFrameBuffer
 	{
-		//DirectX::XMMATRIX projection;
-		//DirectX::XMMATRIX view;
+		DirectX::XMMATRIX projection;
+		DirectX::XMMATRIX view;
 		DirectX::XMMATRIX viewProjection;
-		//DirectX::XMMATRIX invView;
+		DirectX::XMMATRIX invView;
 	};
 
 	struct PerEntityBuffer

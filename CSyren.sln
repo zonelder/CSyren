@@ -6,6 +6,7 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CSyren", "CSyren.vcxproj", "{43CB669E-1269-4AD8-A542-1F52AD812FCC}"
 	ProjectSection(ProjectDependencies) = postProject
 		{02615BFC-B339-45BA-BF9F-22820D9E80A2} = {02615BFC-B339-45BA-BF9F-22820D9E80A2}
+		{0D2C554D-745F-4404-B4B1-E0673E01B7DB} = {0D2C554D-745F-4404-B4B1-E0673E01B7DB}
 		{C2D419D8-5A36-4905-BF2F-7FBC3CD025E9} = {C2D419D8-5A36-4905-BF2F-7FBC3CD025E9}
 	EndProjectSection
 EndProject
@@ -31,6 +32,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dx12_graphic", "lib\dx12_gr
 	ProjectSection(ProjectDependencies) = postProject
 		{0A840A4E-EEBD-4693-BB62-DE598C61096E} = {0A840A4E-EEBD-4693-BB62-DE598C61096E}
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "math", "lib\math\math.vcxproj", "{0D2C554D-745F-4404-B4B1-E0673E01B7DB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -62,8 +65,15 @@ Global
 		{02615BFC-B339-45BA-BF9F-22820D9E80A2}.Debug|x64.Build.0 = Debug|x64
 		{02615BFC-B339-45BA-BF9F-22820D9E80A2}.Release|x64.ActiveCfg = Release|x64
 		{02615BFC-B339-45BA-BF9F-22820D9E80A2}.Release|x64.Build.0 = Release|x64
+		{0D2C554D-745F-4404-B4B1-E0673E01B7DB}.Debug|x64.ActiveCfg = Debug|x64
+		{0D2C554D-745F-4404-B4B1-E0673E01B7DB}.Debug|x64.Build.0 = Debug|x64
+		{0D2C554D-745F-4404-B4B1-E0673E01B7DB}.Release|x64.ActiveCfg = Release|x64
+		{0D2C554D-745F-4404-B4B1-E0673E01B7DB}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5C635A29-5C08-4942-ACBB-441D013EDFEC}
 	EndGlobalSection
 EndGlobal

@@ -45,6 +45,7 @@ namespace csyren::core::input
 		void update(events::EventBus2& bus)
 		{
 			InputAction action{ "","" };
+			_devices.preUpdate();
 			while (!_eventBuffer.empty())
 			{
 				auto event = _eventBuffer.pop();
@@ -63,9 +64,6 @@ namespace csyren::core::input
 				bus.publish(token_it->second, event);
 				_devices.dispatchEvent(event);
 			}
-
-			_devices.update();
-
 		}
 		void dispatch(const InputEvent& event)
 		{

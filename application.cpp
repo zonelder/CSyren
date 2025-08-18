@@ -17,6 +17,8 @@
 #include "core/input_dispatcher.h"
 
 #include "mesh_render_system.h"
+#include "editor_camera_controller_system.h"
+
 namespace
 {
 
@@ -87,9 +89,9 @@ namespace csyren
 		core::Time time;
 		core::details::TimeHandler timeHandler;
 
-		core::events::UpdateEvent updateEvent{ _scene,_resource,*_bus,time };
-		core::events::DrawEvent   drawEvent{ _scene,_resource,*_bus,_render };
-		core::events::SystemEvent systemEvent{ _scene,_resource,*_bus,time,_render };
+		core::events::UpdateEvent updateEvent{ _inputDispatcher.devices(), _scene,_resource,*_bus,time			};
+		core::events::DrawEvent   drawEvent  { _inputDispatcher.devices(), _scene,_resource,*_bus,_render		};
+		core::events::SystemEvent systemEvent{ _inputDispatcher.devices(), _scene,_resource,*_bus,time,_render  };
 
 		onSceneStart();
 
@@ -110,11 +112,10 @@ namespace csyren
 			auto [mainCameraID,camera,cameraTransform] = *(_scene.view<Camera,Transform>().begin());//only first camera accepted
 
 			auto perFrameBuffer = _render.getPerFrameBuffer();
-			//perFrameBuffer->invView = DirectX::XMMatrixIdentity(); //cameraTransform.world();
-			//perFrameBuffer->view = DirectX::XMMatrixInverse(nullptr, perFrameBuffer->invView);
-			//perFrameBuffer->projection = DirectX::XMMatrixIdentity();//createProjection(camera);
-			perFrameBuffer->viewProjection = DirectX::XMMatrixIdentity();//perFrameBuffer->view* perFrameBuffer->projection;
-
+			perFrameBuffer->invView = cameraTransform.world();
+			perFrameBuffer->view = DirectX::XMMatrixInverse(nullptr, perFrameBuffer->invView);
+			perFrameBuffer->projection = createProjection(camera);
+			perFrameBuffer->viewProjection = perFrameBuffer->view* perFrameBuffer->projection;
 			auto perFrameCB = _render.getPerFrameCB();
 			perFrameCB->update(perFrameBuffer, sizeof(render::PerFrameBuffer));
 
@@ -146,8 +147,10 @@ namespace csyren
 		auto mainCameraEntt = _scene.createEntity();
 		auto mainCamera = _scene.addComponent<Camera>(mainCameraEntt);
 		auto cameraTransform = _scene.addComponent<Transform>(mainCameraEntt);
+		auto editorCameraController = _scene.addComponent<EditorCameraController>(mainCameraEntt);
+		editorCameraController->movementSpeed = 1.0f;
 		mainCamera->aspectRatio = _window.width() / _window.height();
-		
+		cameraTransform->position = math::Vector3::back * 2;
 		
 		auto matHandle = render::Primitives::getDefaultMaterial(_resource);
 		auto meshHandle = render::Primitives::getTriangle(_resource);
@@ -160,9 +163,12 @@ namespace csyren
 			{
 				std::cout << "mouse move:" << event.data.mouse.x << " " << event.data.mouse.y << "\n";
 			});
+		auto editorCameraControllerSystem = std::make_shared<csyren::EditorCameraControllerSystem>();
+		_systems.addSystem(editorCameraControllerSystem, -1);
 
 		auto meshRenderSystem = std::make_shared<csyren::MeshRenderSystem>();
 		_systems.addSystem(meshRenderSystem, 0);
+
 
 		auto testMeshEntity = _scene.createEntity();
 		auto meshFilter = _scene.addComponent<MeshFilter>(testMeshEntity);
@@ -171,15 +177,6 @@ namespace csyren
 		meshFilter->mesh = meshHandle;
 		meshRenderer->material = matHandle;
 
-		_bus->subscribe<core::input::InputEvent>(static_cast<core::events::EventMarker>(core::input::InputEvent::Type::KeyDown), [this, testMeshEntity](core::input::InputEvent& event)
-			{
-				if (event.code == static_cast<int>(core::input::KeyCode::Space))
-				{
-					auto tr = _scene.getComponent<Transform>(testMeshEntity);
-					tr->pos.y += 0.1f;
-					log::info("space pressed");
-				}
-			});
 	}
 
 

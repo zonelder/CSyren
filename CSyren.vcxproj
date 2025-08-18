@@ -20,6 +20,8 @@
   <ItemGroup>
     <ClInclude Include="application.h" />
     <ClInclude Include="camera.h" />
+    <ClInclude Include="editor_camera_controller.h" />
+    <ClInclude Include="editor_camera_controller_system.h" />
     <ClInclude Include="mesh_render_system.h" />
     <ClInclude Include="mesh_filter.h" />
     <ClInclude Include="transform.h" />
@@ -79,7 +81,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)Build\$(Configuration)\core.lib;dxgi.lib;d3d12.lib;dxguid.lib;d3dcompiler.lib;$(SolutionDir)Build\$(Configuration)\dx12_graphic.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dxgi.lib;d3d12.lib;dxguid.lib;d3dcompiler.lib;$(SolutionDir)Build\$(Configuration)\core.lib;$(SolutionDir)Build\$(Configuration)\math.lib;$(SolutionDir)Build\$(Configuration)\dx12_graphic.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <UseLibraryDependencyInputs>true</UseLibraryDependencyInputs>
@@ -103,7 +105,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)Build\$(Configuration)\core.lib;dxgi.lib;d3d12.lib;dxguid.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dxgi.lib;d3d12.lib;dxguid.lib;d3dcompiler.lib;$(SolutionDir)Build\$(Configuration)\core.lib;$(SolutionDir)Build\$(Configuration)\math.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <UseLibraryDependencyInputs>true</UseLibraryDependencyInputs>

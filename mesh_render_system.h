@@ -26,10 +26,7 @@ namespace csyren
             auto perFrameCB = event.render.getPerFrameCB();
             auto perEntityCB = event.render.getPerEntityCB();
             auto perMaterialCB = event.render.getPerMaterialCB();
-            
             auto perEntityBuffer = event.render.getPerEntityBuffer();
-
-            perFrameCB->update(event.render.getPerFrameBuffer(), sizeof(render::PerFrameBuffer));
             
             event.scene.view<Transform, MeshFilter, MeshRenderer>()
                 .each([&](Entity::ID id,
@@ -51,7 +48,7 @@ namespace csyren
 
                         cmd->SetGraphicsRootConstantBufferView(0, perFrameCB->gpuAddress());
                         cmd->SetGraphicsRootConstantBufferView(1, perEntityCB->gpuAddress());
-                        cmd->SetGraphicsRootConstantBufferView(2, perMaterialCB->gpuAddress());
+                        //cmd->SetGraphicsRootConstantBufferView(2, perMaterialCB->gpuAddress());
 
                         mesh->draw(event.render);
                     });

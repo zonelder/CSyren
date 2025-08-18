@@ -23,12 +23,19 @@ namespace csyren::core
 
 }
 
+namespace csyren::core::input
+{
+	class Devices;
+}
+
+
 namespace csyren::core::events
 {
 
 	//base class for generic app event
 	struct ContextualEvent
 	{
+		const input::Devices& devices;
 		Scene& scene;
 		render::ResourceManager& resources;
 		EventBus2& bus;

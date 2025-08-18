@@ -5,15 +5,25 @@
 
 #include <bitset>
 
+
 namespace csyren::core::input
 {
 	class MouseDevice final: public InputDevice
 	{
+
 	public:
+
+		struct MouseDelta
+		{
+			int x{ 0 };
+			int y{ 0 };
+		};
 		MouseDevice() noexcept = default;
 		void update() override
 		{
 			_scrollDelta = 0;
+			_delta.x = 0;
+			_delta.y = 0;
 		}
 
 		DeviceType type() const override { return DeviceType::Mouse; }
@@ -36,10 +46,14 @@ namespace csyren::core::input
 
 		void setMousePosition(int x, int y)
 		{
+			_delta.x = x - _x;
+			_delta.y = y - _y;
 			_x = x;
 			_y = y;
 		}
 		void setScrollDelta(int delta) { _scrollDelta = delta; }
+
+		const MouseDelta& deltaPosition() const noexcept { return _delta; }
 
 	private:
 		bool getState(MouseButton button) const noexcept {
@@ -48,6 +62,8 @@ namespace csyren::core::input
 		std::bitset<static_cast<size_t>(MouseButton::Count)> _buttonStates;
 		int _x{ 0 };
 		int _y{ 0 };
+
+		MouseDelta _delta;
 		int _scrollDelta{ 0 };
 	};
 }

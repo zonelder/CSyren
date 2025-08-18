@@ -47,5 +47,11 @@
     <ClInclude Include="camera.h">
       <Filter>component</Filter>
     </ClInclude>
+    <ClInclude Include="editor_camera_controller_system.h">
+      <Filter>system</Filter>
+    </ClInclude>
+    <ClInclude Include="editor_camera_controller.h">
+      <Filter>component</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
