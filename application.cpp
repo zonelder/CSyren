@@ -19,6 +19,8 @@
 #include "mesh_render_system.h"
 #include "editor_camera_controller_system.h"
 
+#include "math/math.h"
+
 namespace
 {
 
@@ -31,16 +33,14 @@ namespace
 
 		if (camera.projection == ProjectionType::Perspective)
 		{
-			// Convert FOV to radians and create perspective matrix
-			float fovRadians = XMConvertToRadians(camera.fov);
-			return XMMatrixPerspectiveFovLH(fovRadians, camera.aspectRatio, camera.near, camera.far);
+			return csyren::math::Matrix4x4::perspective(camera.fov, camera.aspectRatio, camera.near, camera.far);
 		}
 		else // Orthographic
 		{
 			// Interpret FOV as vertical height of view volume
 			float viewHeight = camera.fov;
 			float viewWidth = viewHeight * camera.aspectRatio;
-			return XMMatrixOrthographicLH(viewWidth, viewHeight, camera.near, camera.far);
+			return DirectX::XMMatrixOrthographicLH(viewWidth, viewHeight, camera.near, camera.far);
 		}
 	}
 }
@@ -63,7 +63,6 @@ namespace csyren
 	bool Application::init()
 	{
 
-		//LoadLibrary(L"WinPixGpuCapture.dll");
 		auto hWnd = _window.init();
 		if (!hWnd) { return false; }
 		_window.setInputDispatcher(&_inputDispatcher);
@@ -96,13 +95,19 @@ namespace csyren
 		onSceneStart();
 
 		_systems.init(systemEvent);
-
-		while (msg.message != WM_QUIT)
+		while (true)
 		{
 			timeHandler.update(time);
 			_window.preMessagePump();
-			if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
+			while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
 			{
+				if (msg.message == WM_QUIT) 
+				{
+					_systems.shutdown(systemEvent);
+					_inputDispatcher.shutdown(*_bus);
+					log::shutdown();
+					return static_cast<int>(msg.wParam);
+				}
 				TranslateMessage(&msg);
 				DispatchMessage(&msg);
 			}
@@ -122,7 +127,6 @@ namespace csyren
 			_render.beginFrame();
 			_render.clear(&(camera.background.x));
 
-
 			_systems.draw(drawEvent);
 
 			_render.endFrame();
@@ -130,11 +134,6 @@ namespace csyren
 			_scene.flush();
 			_bus->commit_batch();
 		}
-
-		_systems.shutdown(systemEvent);
-		_inputDispatcher.shutdown(*_bus);
-		log::shutdown();
-		return static_cast<int>(msg.wParam);
 	}
 
 
@@ -157,12 +156,6 @@ namespace csyren
 
 
 
-
-
-		_bus->subscribe<core::input::InputEvent>(static_cast<core::events::EventMarker>(core::input::InputEvent::Type::MouseMove), [](core::input::InputEvent& event)
-			{
-				std::cout << "mouse move:" << event.data.mouse.x << " " << event.data.mouse.y << "\n";
-			});
 		auto editorCameraControllerSystem = std::make_shared<csyren::EditorCameraControllerSystem>();
 		_systems.addSystem(editorCameraControllerSystem, -1);
 

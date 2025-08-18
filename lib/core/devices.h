@@ -27,7 +27,7 @@ namespace csyren::core::input
 				break;
 			case InputEvent::Type::KeyUp:
 				_keyboard.setKeyUp(event.code);
-
+				break;
 			case InputEvent::Type::Keyhold:
 				//TODO implement
 				break;
