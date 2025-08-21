@@ -162,6 +162,7 @@
     <ClInclude Include="resource_handle.h" />
     <ClInclude Include="resource_manager.h" />
     <ClInclude Include="sampler_manager.h" />
+    <ClInclude Include="shader.h" />
     <ClInclude Include="texture.h" />
   </ItemGroup>
   <ItemGroup>
@@ -177,6 +178,7 @@
     </ClCompile>
     <ClCompile Include="primitives.cpp" />
     <ClCompile Include="renderer.cpp" />
+    <ClCompile Include="shader.cpp" />
     <ClCompile Include="texture.cpp" />
   </ItemGroup>
   <ItemGroup>

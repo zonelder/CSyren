@@ -17,8 +17,6 @@
 #include "sampler_manager.h"
 #include "constant_buffer.h"
 
-#include "texture.h"
-
 namespace csyren::render
 {
 	struct  alignas(16) PerFrameBuffer
@@ -33,6 +31,7 @@ namespace csyren::render
 	{
 		DirectX::XMMATRIX world;
 	};
+	class Texture;
 
 	class Renderer
 	{

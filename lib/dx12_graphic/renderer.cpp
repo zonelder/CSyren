@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "renderer.h"
-#include "dx_log.h"
+#include "texture.h"
 #include <d3dx12.h>
 
 #pragma comment(lib, "d3d12.lib")
@@ -98,7 +98,7 @@ namespace csyren::render
         }
 
         _pSamplerHeapManager = std::make_unique<DescriptorHeapManager>();
-        if (_pSamplerHeapManager->init(_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 16, true));
+        if (!_pSamplerHeapManager->init(_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 16, true))
         {
             return false;
         }

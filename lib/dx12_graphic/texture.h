@@ -1,9 +1,9 @@
 #ifndef __CSYREN_TEXTURE__
 #define __CSYREN_TEXTURE__
 
-#include "renderer.h"
-#include <filesystem>
 
+#include <filesystem>
+#include "renderer.h"
 
 namespace csyren::render
 {
@@ -28,16 +28,6 @@ namespace csyren::render
         Texture& operator=(Texture&&) noexcept;
 
         bool init(Renderer& renderer, const std::wstring& filePath);
-
-        bool init(Renderer& renderer, uint32_t width, uint32_t height, DXGI_FORMAT format);
-        bool init(Renderer& renderer, const void* data, size_t size);
-
-        UINT getMipmpaCount() const;
-        bool generateMips(Renderer& renderer);
-
-        UINT getWidth() const;
-        UINT getHeight() const;
-        DXGI_FORMAT getFormat() const;
     private:
         Microsoft::WRL::ComPtr<ID3D12Resource> _textureResource;
         DescriptorHandles _srvHandles{};

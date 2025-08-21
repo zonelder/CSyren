@@ -42,7 +42,7 @@ namespace csyren::render
             device->CreateSampler(&samplerDesc, _samplerHandles[index].cpuHandle);
 
             // --- PointClamp ---
-            size_t index = static_cast<size_t>(SamplerType::PointClamp);
+            index = static_cast<size_t>(SamplerType::PointClamp);
             samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
             samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
             samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;

@@ -12,6 +12,9 @@ namespace csyren::render
     class Primitives
     {
     public:
+
+        static MaterialHandle getHardcodedMaterial(ResourceManager& rm);
+        static ShaderHandle getDefaultShader(ResourceManager& rm);
         static MaterialHandle getDefaultMaterial(ResourceManager& rm);
         static MeshHandle getLine(ResourceManager& rm);
         static MeshHandle getTriangle(ResourceManager& rm);
@@ -21,6 +24,8 @@ namespace csyren::render
         static void clearCache();
 
     private:
+        inline static MaterialHandle s_hardcodedMaterial;
+        inline static ShaderHandle   s_defaultShader{};
         inline static MaterialHandle s_defaultMaterial{};
         inline static MeshHandle s_lineMesh{};
         inline static MeshHandle s_triangleMesh{};
