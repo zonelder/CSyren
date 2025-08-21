@@ -14,7 +14,10 @@
 #include <memory>
 
 #include "descriptor_heap_manager.h"
+#include "sampler_manager.h"
 #include "constant_buffer.h"
+
+#include "texture.h"
 
 namespace csyren::render
 {
@@ -61,6 +64,9 @@ namespace csyren::render
 		PerEntityBuffer* getPerEntityBuffer() noexcept { return &_perEntityBuffer;};
 
 		PerFrameBuffer* getPerFrameBuffer() noexcept { return &_perFrameBuffer; };
+
+		void setTexture(size_t slot, Texture* texture);
+		void setSampler(size_t slot, SamplerType type);
 	private:
 		void waitForGpu();
 
@@ -89,6 +95,8 @@ namespace csyren::render
 		PerEntityBuffer _perEntityBuffer;
 
 		std::unique_ptr<DescriptorHeapManager> _pSrvHeapManager;
+		std::unique_ptr<DescriptorHeapManager> _pSamplerHeapManager;
+		SamplerManager  _samplerManager;
 	};
 }
 

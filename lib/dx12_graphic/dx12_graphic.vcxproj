@@ -161,6 +161,7 @@
     <ClInclude Include="renderer.h" />
     <ClInclude Include="resource_handle.h" />
     <ClInclude Include="resource_manager.h" />
+    <ClInclude Include="sampler_manager.h" />
     <ClInclude Include="texture.h" />
   </ItemGroup>
   <ItemGroup>

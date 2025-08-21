@@ -8,89 +8,83 @@ namespace csyren::render
     {
         _device = device;
         _heapType = type;
-        _descriptorsPerHeap = descriptorsPerHeap;
+        _numDescriptorsInHeap = descriptorsPerHeap;
         _isShaderVisible = isShaderVisible;
         _descriptorSize = _device->GetDescriptorHandleIncrementSize(_heapType);
-        _currentHeapIndex = 0;
-        _currentOffsetInHeap = 0;
+        _nextFreeIndex = 0;
 
-        return createNewHeap();
+        D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+        heapDesc.NumDescriptors = _numDescriptorsInHeap;
+        heapDesc.Type = _heapType;
+        heapDesc.Flags = _isShaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+
+        HRESULT hr;
+        if (DX_FAILED(hr = _device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_heap))))
+        {
+            return false;
+        }
+
+        return true;
     }
 
 
     DescriptorHandles DescriptorHeapManager::allocate()
     {
+        UINT index;
         if (!_freeList.empty())
         {
-            DescriptorHandles handles = _freeList.back();
+            index = _freeList.back();
             _freeList.pop_back();
-            return handles;
         }
-
-        if (_currentOffsetInHeap >= _descriptorsPerHeap)
+        else
         {
-            _currentHeapIndex++;
-            _currentOffsetInHeap = 0;
-            if (_currentHeapIndex >= _heapPool.size())
+            if (_nextFreeIndex >= _numDescriptorsInHeap)
             {
-                if (!createNewHeap())
-                {
-                    return { {0}, {0} };
-                }
+                log::error("DescriptorHeapManager::allocate() : attempt to allocate descriptor but its full: heap type = {},size = {}", static_cast<int>(_heapType), _numDescriptorsInHeap);
+                return { {0},{0} };
             }
+            index = _nextFreeIndex++;
         }
-
-        ID3D12DescriptorHeap* currentHeap = _heapPool[_currentHeapIndex].Get();
-        D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = currentHeap->GetCPUDescriptorHandleForHeapStart();
-        cpuHandle.ptr += static_cast<SIZE_T>(_currentOffsetInHeap) * _descriptorSize;
-
-        D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = { 0 };
-        if (_isShaderVisible)
-        {
-            gpuHandle = currentHeap->GetGPUDescriptorHandleForHeapStart();
-            gpuHandle.ptr += static_cast<SIZE_T>(_currentOffsetInHeap) * _descriptorSize;
-        }
-
-        _currentOffsetInHeap++;
-
-        return { cpuHandle, gpuHandle };
+        return getHandlesFromIndex(index);
     }
 
     void DescriptorHeapManager::free(DescriptorHandles handles)
     {
-        if (handles.isValid())
+        if (!handles.isValid())
         {
-            _freeList.push_back(handles);
+            log::warning("DescriptorHeapManager::free() : attempt to free invalid handlers");
+            return;
         }
+
+        D3D12_CPU_DESCRIPTOR_HANDLE heapStart = _heap->GetCPUDescriptorHandleForHeapStart();
+        UINT index = static_cast<UINT>((handles.cpuHandle.ptr - heapStart.ptr) / _descriptorSize);
+
+        _freeList.push_back(index);
     }
 
-    std::vector<ID3D12DescriptorHeap*> DescriptorHeapManager::getHeaps() const
+    DescriptorHandles DescriptorHeapManager::getHandlesFromIndex(UINT index) const
     {
-        std::vector<ID3D12DescriptorHeap*> heaps;
-        heaps.reserve(_heapPool.size());
-        for (const auto& heap : _heapPool)
+        if (index >= _numDescriptorsInHeap)
         {
-            heaps.push_back(heap.Get());
+            log::error("DescriptorHeapManager::getHandlesFromIndex() : index out of range.index = {},maxIndex = {}", index, _numDescriptorsInHeap);
+            return { {0}, {0} }; // Индекс за пределами кучи
         }
-        return heaps;
+
+        D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = _heap->GetCPUDescriptorHandleForHeapStart();
+        cpuHandle.ptr += static_cast<SIZE_T>(index) * _descriptorSize;
+
+        D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = { 0 };
+        if (_isShaderVisible)
+        {
+            gpuHandle = _heap->GetGPUDescriptorHandleForHeapStart();
+            gpuHandle.ptr += static_cast<SIZE_T>(index) * _descriptorSize;
+        }
+
+        return { cpuHandle, gpuHandle };
     }
 
-    bool DescriptorHeapManager::createNewHeap()
+    ID3D12DescriptorHeap* DescriptorHeapManager::getHeap() const
     {
-        D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-        heapDesc.NumDescriptors = _descriptorsPerHeap;
-        heapDesc.Type = _heapType;
-        heapDesc.Flags = _isShaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-
-        Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> newHeap;
-        HRESULT hr;
-        if (FAILED(hr = _device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&newHeap))))
-        {
-            log::log_hr("DescriptorHeapManager:CreateDescriptorHeap", hr);
-            return false;
-        }
-
-        _heapPool.push_back(newHeap);
-        return true;
+        return _heap.Get();
     }
 }

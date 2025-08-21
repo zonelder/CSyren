@@ -97,6 +97,13 @@ namespace csyren::render
             return false;
         }
 
+        _pSamplerHeapManager = std::make_unique<DescriptorHeapManager>();
+        if (_pSamplerHeapManager->init(_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 16, true));
+        {
+            return false;
+        }
+        _samplerManager.init(_device.Get(), _pSamplerHeapManager.get());
+
         _fenceValue = 1;
         _fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
         if (!_fenceEvent)
@@ -139,11 +146,12 @@ namespace csyren::render
         _commandList->RSSetViewports(1, &_viewport);
         _commandList->RSSetScissorRects(1, &_scissor);
 
-        auto heaps = _pSrvHeapManager->getHeaps();
-        if (!heaps.empty())
-        {
-            _commandList->SetDescriptorHeaps(static_cast<UINT>(heaps.size()), heaps.data());
-        }
+        constexpr int heapCount = 2;
+        ID3D12DescriptorHeap* heapsToSet[heapCount] = {
+            _pSrvHeapManager->getHeap(),
+            _pSamplerHeapManager->getHeap()
+            };
+        _commandList->SetDescriptorHeaps(heapCount,heapsToSet);
     }
 
     void Renderer::clear(const FLOAT color[4])
@@ -231,6 +239,18 @@ namespace csyren::render
         waitForGpu();
 
         return S_OK;
+    }
+
+    void Renderer::setSampler(size_t slot, SamplerType type)
+    {
+        _commandList->SetGraphicsRootDescriptorTable(slot, _samplerManager.GetSampler(type));
+    }
+    void Renderer::setTexture(size_t rootParameterIndex,Texture* texture)
+    {
+        if (texture)
+        {
+            _commandList->SetGraphicsRootDescriptorTable(rootParameterIndex, texture->getGpuSrvHandle());
+        }
     }
 
 }

@@ -31,28 +31,24 @@ namespace csyren::render
 
         void free(DescriptorHandles handles);
 
-        std::vector<ID3D12DescriptorHeap*> getHeaps() const;
+        ID3D12DescriptorHeap* getHeap() const;
+
+        DescriptorHandles getHandlesFromIndex(UINT index) const;
 
     private:
-        // Вспомогательная функция для создания новой кучи в нашем пуле
-        bool createNewHeap();
 
         Microsoft::WRL::ComPtr<ID3D12Device> _device;
         D3D12_DESCRIPTOR_HEAP_TYPE _heapType;
-        UINT _descriptorsPerHeap{ 0 };
+        UINT _numDescriptorsInHeap{ 0 };
         bool _isShaderVisible{ false };
         UINT _descriptorSize{ 0 };
 
-        // Пул куч дескрипторов
-        std::vector<Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>> _heapPool;
+        Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> _heap;
 
-        // Индекс текущей кучи, из которой происходит выделение
-        UINT _currentHeapIndex{ 0 };
-        // Смещение внутри текущей кучи
-        UINT _currentOffsetInHeap{ 0 };
+        UINT _nextFreeIndex{ 0 };
 
         // Список свободных дескрипторов для переиспользования
-        std::vector<DescriptorHandles> _freeList;
+        std::vector<UINT> _freeList;
     };
 }
 
