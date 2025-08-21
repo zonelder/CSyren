@@ -100,9 +100,9 @@ namespace csyren::render
         _pSamplerHeapManager = std::make_unique<DescriptorHeapManager>();
         if (_pSamplerHeapManager->init(_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 16, true));
         {
-            return false;
+            _samplerManager.init(_device.Get(), _pSamplerHeapManager.get());
+           // return false;
         }
-        _samplerManager.init(_device.Get(), _pSamplerHeapManager.get());
 
         _fenceValue = 1;
         _fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);

@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "texture.h"
+#include "renderer.h"
 #include <DirectXTex.h>
 
 namespace csyren::render
