@@ -24,6 +24,7 @@
     <ClInclude Include="editor_camera_controller_system.h" />
     <ClInclude Include="mesh_render_system.h" />
     <ClInclude Include="mesh_filter.h" />
+    <ClInclude Include="todo.h" />
     <ClInclude Include="transform.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

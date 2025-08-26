@@ -53,5 +53,8 @@
     <ClInclude Include="editor_camera_controller.h">
       <Filter>component</Filter>
     </ClInclude>
+    <ClInclude Include="todo.h">
+      <Filter>component</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
