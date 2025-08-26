@@ -7,6 +7,9 @@
 
 #pragma comment(lib, "d3dcompiler.lib")
 
+//TODO:
+//1) read statis samplers via reflection
+
 namespace
 {
     std::string toUpper(std::string s) {

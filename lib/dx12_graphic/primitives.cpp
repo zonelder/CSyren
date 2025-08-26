@@ -59,8 +59,8 @@ namespace csyren::render
             "PS_INPUT main(VS_INPUT input) {"
             "   PS_INPUT o;"
             "   float4 pos = float4(input.pos, 1.0);"
-            //"   pos = mul(world,pos);"              // World transform
-            //"   pos = mul(viewProjection,pos);"     // Combined view-projection
+            "   pos = mul(world,pos);"              // World transform
+            "   pos = mul(viewProjection,pos);"     // Combined view-projection
             "   o.pos = pos;"
             "   o.color = input.color;"
             "   return o;"

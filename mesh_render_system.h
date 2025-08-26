@@ -47,10 +47,18 @@ namespace csyren
                         perEntityBuffer->world = tr.world();
                         perEntityCB->update(perEntityBuffer, sizeof(render::PerEntityBuffer));
                         
-                        //auto perFrameRoot = shader->getRootParameterIndex("PerFrame");
-                        //auto perEntityRoot = shader->getRootParameterIndex("PerObject");
-                        //cmd->SetGraphicsRootConstantBufferView(0, perFrameCB->gpuAddress());
-                        //cmd->SetGraphicsRootConstantBufferView(1, perEntityCB->gpuAddress());
+                        auto perFrameRoot = shader->getRootParameterIndex("PerFrame");
+                        auto perEntityRoot = shader->getRootParameterIndex("PerObject");
+                        if (perFrameRoot != UINT_MAX)
+                        {
+                            cmd->SetGraphicsRootConstantBufferView(0, perFrameCB->gpuAddress());
+                        }
+
+                        if (perEntityRoot != UINT_MAX)
+                        {
+                            cmd->SetGraphicsRootConstantBufferView(1, perEntityCB->gpuAddress());
+                        }
+
                         //cmd->SetGraphicsRootConstantBufferView(2, perMaterialCB->gpuAddress());
 
                         mesh->draw(event.render);
