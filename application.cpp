@@ -143,12 +143,14 @@ namespace csyren
 	 */
 	void Application::onSceneStart()
 	{
+
 		auto mainCameraEntt = _scene.createEntity();
 		auto mainCamera = _scene.addComponent<Camera>(mainCameraEntt);
 		auto cameraTransform = _scene.addComponent<Transform>(mainCameraEntt);
 		auto editorCameraController = _scene.addComponent<EditorCameraController>(mainCameraEntt);
 		editorCameraController->movementSpeed = 1.0f;
 		mainCamera->aspectRatio = _window.width() / _window.height();
+		mainCamera->background = { 1.f,0.0f,0.0f,1.0f };
 		cameraTransform->position = math::Vector3::back * 2;
 		
 		auto matHandle = render::Primitives::getDefaultMaterial(_resource);

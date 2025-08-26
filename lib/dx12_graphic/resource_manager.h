@@ -11,6 +11,7 @@
 #include "mesh.h"
 #include "Texture.h"
 #include "material.h"
+#include "shader.h"
 #include "resource_handle.h"
 
 namespace csyren::render
@@ -120,26 +121,42 @@ namespace csyren::render
         ResourceManager(const ResourceManager&) = delete;
         ResourceManager& operator=(const ResourceManager&) = delete;
 
+        //--------------------mesh-----------------------
         template<typename... TArgs>
         MeshHandle loadMesh(const std::string& name, TArgs&&... args)
         {
             return _meshStorage.load(name, _renderer, std::forward<TArgs>(args)...);
         }
         Mesh* getMesh(MeshHandle handle) { return _meshStorage.get(handle); }
-
+        //---------------------------------------------------
+        
+        //--------------------texture-----------------------
         template<typename... TArgs>
         TextureHandle loadTexture(const std::string& name, TArgs&&... args)
         {
             return _textureStorage.load(name, _renderer, std::forward<TArgs>(args)...);
         }
         Texture* getTexture(TextureHandle handle) { return _textureStorage.get(handle); }
+        //---------------------------------------------------
 
+        //-------------------material------------------------
         template<typename... TArgs>
         MaterialHandle loadMaterial(const std::string& name, TArgs&&... args)
         {
-            return _materialStorage.load(name, _renderer, std::forward<TArgs>(args)...);
+            return _materialStorage.load(name, _renderer,*this,std::forward<TArgs>(args)...);
         }
         Material* getMaterial(MaterialHandle handle) { return _materialStorage.get(handle); }
+        //---------------------------------------------------
+
+        //-------------------shader--------------------------
+        template<typename... TArgs>
+        ShaderHandle loadShader(const std::string& name, TArgs&&... args)
+        {
+            return _shaderStorage.load(name, _renderer.device(), std::forward<TArgs>(args)...);
+        }
+        Shader* getShader(ShaderHandle handle) { return _shaderStorage.get(handle); }
+        Shader* getShader(const std::string& name) { return _shaderStorage.get(name); }
+        //---------------------------------------------------
 
     private:
         csyren::render::Renderer& _renderer;
@@ -148,6 +165,7 @@ namespace csyren::render
         ResourceStorage<csyren::render::Mesh>     _meshStorage;
         ResourceStorage<csyren::render::Texture>  _textureStorage;
         ResourceStorage<csyren::render::Material> _materialStorage;
+        ResourceStorage<csyren::render::Shader>   _shaderStorage;
 	};
 }
 

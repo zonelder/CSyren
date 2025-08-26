@@ -5,6 +5,7 @@
 #include <wrl.h>
 #include <d3d12.h>
 #include <DirectXMath.h>
+#include <DirectXPackedVector.h>
 
 namespace csyren::render
 {
@@ -12,6 +13,7 @@ namespace csyren::render
 	class Material;
 	template<typename T> class ResourceStorage;
 
+	using Color = DirectX::PackedVector::XMCOLOR;
 
 	class Mesh
 	{
@@ -20,7 +22,7 @@ namespace csyren::render
 		struct Vertex
 		{
 			DirectX::XMFLOAT3 pos;
-			DirectX::XMFLOAT4 colour;
+			Color color;
 		};
 		Mesh() noexcept = default;
 		void draw(Renderer& renderer);

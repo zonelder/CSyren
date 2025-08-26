@@ -6,6 +6,7 @@ namespace csyren::render
     class Mesh;
     class Texture;
     class Material;
+    class Shader;
 
     template<typename T>
     struct THandle
@@ -22,5 +23,6 @@ namespace csyren::render
     using MeshHandle = THandle<Mesh>;
     using TextureHandle = THandle<Texture>;
     using MaterialHandle = THandle<Material>;
+    using ShaderHandle = THandle<Shader>;
 
 }

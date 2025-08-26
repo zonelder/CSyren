@@ -1,8 +1,9 @@
 #ifndef __CSYREN_TEXTURE__
 #define __CSYREN_TEXTURE__
 
-#include <filesystem>
 
+#include <filesystem>
+#include "renderer.h"
 
 namespace csyren::render
 {

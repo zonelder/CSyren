@@ -173,6 +173,7 @@
     <ClInclude Include="sparse_set.h" />
     <ClInclude Include="page_view.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="string_utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

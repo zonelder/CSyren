@@ -14,11 +14,36 @@ namespace csyren::render
 {
     namespace
     {
-        constexpr char DEFAULT_MATERIAL_NAME[] =    "__primitive_default_material__";
-        constexpr char LINE_MESH_NAME[] =           "__primitive_line__";
-        constexpr char TRIANGLE_MESH_NAME[] =       "__primitive_triangle__";
-        constexpr char QUAD_MESH_NAME[] =           "__primitive_quad__";
-        constexpr char CUBE_MESH_NAME[] =           "__primitive_cube__";
+        constexpr char HARDCODE_SHADER_NAME[]       = "__csyren_hardcode_shader__";
+        constexpr char DEFAULT_SHADER_NAME[]        = "__csyren_default_shader__";
+        constexpr char DEFAULT_MATERIAL_NAME[]      = "__primitive_default_material__";
+        constexpr char LINE_MESH_NAME[]             = "__primitive_line__";
+        constexpr char TRIANGLE_MESH_NAME[]         ="__primitive_triangle__";
+        constexpr char QUAD_MESH_NAME[]             ="__primitive_quad__";
+        constexpr char CUBE_MESH_NAME[]             ="__primitive_cube__";
+
+        const char* g_hardcodedVS = R"(
+            struct PS_INPUT {
+                float4 pos : SV_POSITION;
+            };
+
+            PS_INPUT main(uint vertexId : SV_VertexID) {
+                PS_INPUT o;
+                // Жестко задаем координаты вершин в пространстве отсечения (NDC)
+                // Это стандартный тестовый треугольник, который должен занять часть экрана
+                if (vertexId == 0) o.pos = float4(-0.5, -0.5, 0.5, 1.0);
+                if (vertexId == 1) o.pos = float4( 0.0,  0.5, 0.5, 1.0);
+                if (vertexId == 2) o.pos = float4( 0.5, -0.5, 0.5, 1.0);
+                return o;
+            }
+        )";
+
+        const char* g_hardcodedPS = R"(
+            float4 main() : SV_TARGET {
+                // Просто возвращаем белый цвет
+                return float4(1.0, 1.0, 1.0, 1.0);
+            }
+        )";
 
         //TODO create basic shaders file
         const char* g_vsCode =
@@ -46,25 +71,44 @@ namespace csyren::render
             "float4 main(PS_INPUT input) : SV_TARGET { return input.color; }";
     }
 
+    MaterialHandle Primitives::getHardcodedMaterial(ResourceManager& rm)
+    {
+        if (s_hardcodedMaterial && rm.getMaterial(s_hardcodedMaterial) != nullptr)
+        {
+            return s_hardcodedMaterial;
+        }
+        auto shader = rm.loadShader("__HARDCODE_SHADER__", std::string(g_hardcodedVS), std::string(g_hardcodedPS), L"hardcode");
+        MaterialStateDesc defaultStates = {};
+        s_hardcodedMaterial = rm.loadMaterial(HARDCODE_SHADER_NAME, shader, defaultStates);
+        return s_hardcodedMaterial;
+    }
+
+    ShaderHandle Primitives::getDefaultShader(ResourceManager& rm)
+    {
+        if (s_defaultShader && rm.getShader(s_defaultShader) != nullptr)
+        {
+            return s_defaultShader;
+        }
+
+        s_defaultShader = rm.loadShader(DEFAULT_SHADER_NAME, std::string(g_vsCode), std::string(g_psCode),L"default");
+        return s_defaultShader;
+    }
+
     MaterialHandle Primitives::getDefaultMaterial(ResourceManager& rm)
     {
         if (s_defaultMaterial && rm.getMaterial(s_defaultMaterial) != nullptr)
         {
             return s_defaultMaterial;
         }
-        ComPtr<ID3DBlob> vs;
-        ComPtr<ID3DBlob> ps;
-        if (DX_FAILED(D3DCompile(g_vsCode, strlen(g_vsCode), nullptr, nullptr, nullptr,
-            "main", "vs_5_0", 0, 0, &vs, nullptr)))
+        // 1. Получаем хендл на дефолтный шейдер
+        ShaderHandle shaderHandle = getDefaultShader(rm);
+        if (!shaderHandle)
+        {
+            log::error("Primitives: Failed to get default shader.");
             return {};
-        if (DX_FAILED(D3DCompile(g_psCode, strlen(g_psCode), nullptr, nullptr, nullptr,
-            "main", "ps_5_0", 0, 0, &ps, nullptr)))
-            return {};
-
-        D3D12_SHADER_BYTECODE vbc{ vs->GetBufferPointer(), vs->GetBufferSize() };
-        D3D12_SHADER_BYTECODE pbc{ ps->GetBufferPointer(), ps->GetBufferSize() };
-
-        s_defaultMaterial = rm.loadMaterial(DEFAULT_MATERIAL_NAME, vbc, pbc);
+        }
+        MaterialStateDesc defaultStates = {};
+        s_defaultMaterial = rm.loadMaterial(DEFAULT_MATERIAL_NAME, shaderHandle, defaultStates);
 
         return s_defaultMaterial;
     }
@@ -80,8 +124,8 @@ namespace csyren::render
 
         std::vector<Mesh::Vertex> verts =
         {
-                { XMFLOAT3(0,0,0), XMFLOAT4(1,1,1,1) },
-                { XMFLOAT3(1,0,0), XMFLOAT4(1,1,1,1) }
+                { XMFLOAT3(0,0,0), Color(1,1,1,1) },
+                { XMFLOAT3(1,0,0), Color(1,1,1,1) }
         };
         std::vector<uint16_t> idx = { 0,1 };
         s_lineMesh = rm.loadMesh(LINE_MESH_NAME, verts, idx);
@@ -97,9 +141,9 @@ namespace csyren::render
 
         std::vector<Mesh::Vertex> verts =
         {
-                { XMFLOAT3(0,0,0), XMFLOAT4(1,1,1,1) },
-                { XMFLOAT3(1,0,0), XMFLOAT4(1,1,1,1) },
-                { XMFLOAT3(0,1,0), XMFLOAT4(1,1,1,1) }
+                { XMFLOAT3(0,0,0), Color(1,1,1,1) },
+                { XMFLOAT3(1,0,0), Color(1,1,1,1) },
+                { XMFLOAT3(0,1,0), Color(1,1,1,1) }
         };
         std::vector<uint16_t> idx = { 0,1,2 };
         
@@ -118,10 +162,10 @@ namespace csyren::render
 
         std::vector<Mesh::Vertex> verts =
         {
-            { XMFLOAT3(-0.5f, -0.5f, 0.0f), XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f) }, 
-            { XMFLOAT3(-0.5f,  0.5f, 0.0f), XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f) },
-            { XMFLOAT3(0.5f,  0.5f, 0.0f), XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f) },
-            { XMFLOAT3(0.5f, -0.5f, 0.0f), XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f) }
+            { XMFLOAT3(-0.5f, -0.5f, 0.0f), Color(1.0f, 1.0f, 1.0f, 1.0f) },
+            { XMFLOAT3(-0.5f,  0.5f, 0.0f), Color(1.0f, 1.0f, 1.0f, 1.0f) },
+            { XMFLOAT3(0.5f,  0.5f, 0.0f), Color(1.0f, 1.0f, 1.0f, 1.0f) },
+            { XMFLOAT3(0.5f, -0.5f, 0.0f), Color(1.0f, 1.0f, 1.0f, 1.0f) }
         };
 
         std::vector<uint16_t> idx =
@@ -143,15 +187,15 @@ namespace csyren::render
 
         std::vector<Mesh::Vertex> verts =
         {
-            { XMFLOAT3(-0.5f, -0.5f, -0.5f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) }, 
-            { XMFLOAT3(-0.5f,  0.5f, -0.5f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) }, 
-            { XMFLOAT3(0.5f,  0.5f, -0.5f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) }, 
-            { XMFLOAT3(0.5f, -0.5f, -0.5f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
+            { XMFLOAT3(-0.5f, -0.5f, -0.5f), Color(1.0f, 0.0f, 0.0f, 1.0f) },
+            { XMFLOAT3(-0.5f,  0.5f, -0.5f), Color(1.0f, 0.0f, 0.0f, 1.0f) },
+            { XMFLOAT3(0.5f,  0.5f, -0.5f), Color(1.0f, 0.0f, 0.0f, 1.0f) },
+            { XMFLOAT3(0.5f, -0.5f, -0.5f), Color(1.0f, 0.0f, 0.0f, 1.0f) },
 
-            { XMFLOAT3(-0.5f, -0.5f,  0.5f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
-            { XMFLOAT3(-0.5f,  0.5f,  0.5f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
-            { XMFLOAT3(0.5f,  0.5f,  0.5f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) }, 
-            { XMFLOAT3(0.5f, -0.5f,  0.5f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) } 
+            { XMFLOAT3(-0.5f, -0.5f,  0.5f), Color(0.0f, 1.0f, 0.0f, 1.0f) },
+            { XMFLOAT3(-0.5f,  0.5f,  0.5f), Color(0.0f, 1.0f, 0.0f, 1.0f) },
+            { XMFLOAT3(0.5f,  0.5f,  0.5f), Color(0.0f, 1.0f, 0.0f, 1.0f) },
+            { XMFLOAT3(0.5f, -0.5f,  0.5f), Color(0.0f, 1.0f, 0.0f, 1.0f) }
         };
 
         std::vector<uint16_t> idx =

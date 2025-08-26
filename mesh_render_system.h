@@ -27,7 +27,7 @@ namespace csyren
             auto perEntityCB = event.render.getPerEntityCB();
             auto perMaterialCB = event.render.getPerMaterialCB();
             auto perEntityBuffer = event.render.getPerEntityBuffer();
-            
+
             event.scene.view<Transform, MeshFilter, MeshRenderer>()
                 .each([&](Entity::ID id,
                     Transform& tr,
@@ -37,17 +37,28 @@ namespace csyren
                         auto* mesh = event.resources.getMesh(mf.mesh);
                         auto* material = event.resources.getMaterial(mr.material);
                         if (!mesh || !material) return;
+                        auto* shader = event.resources.getShader(material->getShader());
+                        if (!shader) return;
 
                         cmd->SetPipelineState(material->pso());
-                        cmd->SetGraphicsRootSignature(material->rootSig());
+                        cmd->SetGraphicsRootSignature(shader->getRootSignature());
 
                         // Update per-entity constant buffer (world matrix)
                         perEntityBuffer->world = tr.world();
                         perEntityCB->update(perEntityBuffer, sizeof(render::PerEntityBuffer));
                         
+                        auto perFrameRoot = shader->getRootParameterIndex("PerFrame");
+                        auto perEntityRoot = shader->getRootParameterIndex("PerObject");
+                        if (perFrameRoot != UINT_MAX)
+                        {
+                            cmd->SetGraphicsRootConstantBufferView(0, perFrameCB->gpuAddress());
+                        }
 
-                        cmd->SetGraphicsRootConstantBufferView(0, perFrameCB->gpuAddress());
-                        cmd->SetGraphicsRootConstantBufferView(1, perEntityCB->gpuAddress());
+                        if (perEntityRoot != UINT_MAX)
+                        {
+                            cmd->SetGraphicsRootConstantBufferView(1, perEntityCB->gpuAddress());
+                        }
+
                         //cmd->SetGraphicsRootConstantBufferView(2, perMaterialCB->gpuAddress());
 
                         mesh->draw(event.render);
