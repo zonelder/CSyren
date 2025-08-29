@@ -1,6 +1,7 @@
 #pragma once
 
 #include <DirectXMath.h>
+#include "core/serializer.h"
 
 #undef far
 #undef near
@@ -28,11 +29,12 @@ namespace csyren::core
 		float aspectRatio{ 16.0f / 9.0f };
 		float fov{ 60.0f };
 
-		int prioroty{ 0 };
+		int priority{ 0 };
 		ProjectionType projection = Perspective;
 		DirectX::XMFLOAT4 background = { 0.1f, 0.1f, 0.1f, 1.0f };
 		ViewportRect viewportRect;
-
+	private:
+		SERIALIZABLE(Camera, far, near, aspectRatio, fov);
 
 	};
 

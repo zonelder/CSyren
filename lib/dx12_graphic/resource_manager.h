@@ -14,6 +14,11 @@
 #include "shader.h"
 #include "resource_handle.h"
 
+namespace
+{
+    static inline const std::string empty_string = std::string();
+}
+
 namespace csyren::render
 {
     class Renderer;
@@ -68,6 +73,19 @@ namespace csyren::render
                     break;
                 }
             }
+        }
+
+        const std::string& getName(THandle<TResource> handle)
+        {
+            if (!handle) return empty_string;
+            for (auto it = _nameToHandleMap.begin(); it != _nameToHandleMap.end(); ++it)
+            {
+                if (it->second == handle)
+                {
+                    return it->first;
+                }
+            }
+            return empty_string;
         }
 
         TResource* get(const std::string& name)
@@ -137,6 +155,8 @@ namespace csyren::render
             return _textureStorage.load(name, _renderer, std::forward<TArgs>(args)...);
         }
         Texture* getTexture(TextureHandle handle) { return _textureStorage.get(handle); }
+
+        const std::string& getTextureName(TextureHandle handle) {return _textureStorage.}
         //---------------------------------------------------
 
         //-------------------material------------------------
