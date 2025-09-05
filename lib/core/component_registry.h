@@ -6,10 +6,14 @@
 #include "core/scene.h"
 #include "core/renderer.h"
 
+#include "third_party/json/json.hpp"
+
+using json = nlohmann::json;
+
+
 namespace csyren::core::reflection
 {
 
-	
 	/**
 	 * @struct ComponentMeta
 	 * @brief Contain reflection data of components that allow serializer work with component in polymorphic way.
@@ -21,9 +25,9 @@ namespace csyren::core::reflection
 
 		std::function<void* (Scene&, Entity::ID)> get;
 
-		std::function<void(const void*, json&,json&,render::ResourceManager&)> serialize;
+		std::function<void(const void*, json&, json&,render::ResourceManager&)> serialize;
 
-		std::function<void(void*, const json&,json&,render::ResourceManager&)> deserialize;
+		std::function<void(void*, const json&, json&,render::ResourceManager&)> deserialize;
 	};
 
 	/**
@@ -65,15 +69,13 @@ namespace csyren::core::reflection
 
 			getRegistry()[name] = {
 				// add
-				[](Scene& scene, Entity::ID entity) -> void* { return &scene.addComponent<T>(entity); },
+				[](Scene& scene, Entity::ID entity) -> void* { return scene.addComponent<T>(entity); },
 				// has
 				[](Scene& scene, Entity::ID entity) { return scene.hasComponent<T>(entity); },
 				// get
-				[](Scene& scene, Entity::ID entity) -> void* { return &scene.getComponent<T>(entity); },
-				// serialize
-				[](const void* comp, json& j) { static_cast<const T*>(comp)->serialize(j); },
-				// deserialize
-				[](void* comp, const json& j) { static_cast<T*>(comp)->deserialize(j); }
+				[](Scene& scene, Entity::ID entity) -> void* { return scene.getComponent<T>(entity); },
+				& ComponentRegistrar<T>::serialize_impl,
+				& ComponentRegistrar<T>::deserialize_impl
 			};
 			log::debug("ComponentRegistry: {} registered automatically.", name);
 		}
@@ -93,6 +95,16 @@ namespace csyren::core::reflection
 		ComponentRegistrar(const std::string& name)
 		{
 			ComponentRegistry::registerComponentImpl<T>(name);
+		}
+
+		static void serialize_impl(const void* comp, json& j, json& root, render::ResourceManager& rm)
+		{
+			static_cast<const T*>(comp)->serialize(j, root, rm);
+		}
+
+		static void deserialize_impl(void* comp, const json& j, json& root, render::ResourceManager& rm)
+		{
+			static_cast<T*>(comp)->deserialize(j, root, rm);
 		}
 	};
 

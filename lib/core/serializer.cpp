@@ -7,11 +7,10 @@
 
 namespace csyren::core
 {
-    Serializer::Serializer(Scene& scene, render::ResourceManager& rm)
-        : _scene(scene), _resourceManager(rm)
-    {
-
-    }
+    Serializer::Serializer(Scene& scene, render::ResourceManager& rm) :
+        _scene(scene),
+        _resourceManager(rm)
+    {}
 
     bool Serializer::saveScene(const std::string& filepath)
     {
@@ -43,7 +42,7 @@ namespace csyren::core
         try
         {
             std::ofstream o(filepath);
-            o << sceneJson.dump(4); // dump(4) - форматирование с отступом в 4 пробела
+            o << sceneJson.dump(4);
             o.close();
             return o.good();
         }
@@ -55,11 +54,12 @@ namespace csyren::core
 
     }
 
+#pragma optimize("",off)
     bool Serializer::loadScene(const std::string& filepath)
     {
         std::ifstream f(filepath);
 
-        if (f.is_open())
+        if (!f.is_open())
         {
             log::error("Serializer::loadScene : Failed to open scene file {}", filepath);
             return false;
@@ -83,7 +83,7 @@ namespace csyren::core
             return false;
         }
 
-        if (data.contains("entities")) return true;
+        if (!data.contains("entities")) return true;
 
         for (const auto& entityData : data["entities"])
         {

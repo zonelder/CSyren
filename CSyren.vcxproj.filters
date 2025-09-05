@@ -56,5 +56,8 @@
     <ClInclude Include="todo.h">
       <Filter>component</Filter>
     </ClInclude>
+    <ClInclude Include="scene_loader.h">
+      <Filter>system</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

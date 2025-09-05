@@ -119,6 +119,18 @@ namespace csyren::render
             return {}; // Return invalid handle
         }
 
+        const std::string& getName(THandle< TResource> handle) const
+        {
+            for (auto [name, h] : _nameToHandleMap)
+            {
+                if (h == handle)
+                {
+                    return name;
+                }
+            }
+            return empty_string;
+        }
+
 
 
 
@@ -154,9 +166,15 @@ namespace csyren::render
         {
             return _textureStorage.load(name, _renderer, std::forward<TArgs>(args)...);
         }
+        //if its only path to texture.
+        TextureHandle loadTexture(const std::string& name)
+        {
+            return _textureStorage.load(name, _renderer, name);
+        }
+
         Texture* getTexture(TextureHandle handle) { return _textureStorage.get(handle); }
 
-        const std::string& getTextureName(TextureHandle handle) {return _textureStorage.}
+        const std::string& getTextureName(TextureHandle handle) { return _textureStorage.getName(handle); }
         //---------------------------------------------------
 
         //-------------------material------------------------

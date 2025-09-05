@@ -151,6 +151,17 @@ namespace csyren::core
 		}
 
 		template<typename T>
+		bool hasComponent(Entity::ID id)
+		{
+			Entity* ent = _entities.try_get(id);
+			if (!ent) return false;
+
+			const size_t family = reflection::ComponentFamily::getID<T>();
+			return ent->components.test(family);
+
+		}
+
+		template<typename T>
 		void removeComponent(Entity::ID id)
 		{
 			Entity* ent = _entities.try_get(id);

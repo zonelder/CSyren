@@ -51,7 +51,7 @@ namespace nlohmann
 				DirectX::XMFLOAT3 loadedFloat3;
 				j.at(0).get_to(loadedFloat3.x);
 				j.at(1).get_to(loadedFloat3.y);
-				j.at(3).get_to(loadedFloat3.z);
+				j.at(2).get_to(loadedFloat3.z);
 				vec = DirectX::XMLoadFloat3(&loadedFloat3);
 			}
 		}
@@ -77,8 +77,8 @@ namespace nlohmann
 				DirectX::XMFLOAT4 loadedFloat4;
 				j.at(0).get_to(loadedFloat4.x);
 				j.at(1).get_to(loadedFloat4.y);
-				j.at(3).get_to(loadedFloat4.z);
-				j.at(4).get_to(loadedFloat4.w);
+				j.at(2).get_to(loadedFloat4.z);
+				j.at(3).get_to(loadedFloat4.w);
 				vec = DirectX::XMLoadFloat4(&loadedFloat4);
 			}
 		}
@@ -142,23 +142,6 @@ namespace nlohmann
 //-------------------------------------------------------------------------------------------
 
 //----------------------------------------ContexedData---------------------------------------
-	
-	//@brief main implementation for field serialization\deserialization;
-	template<typename T>
-	struct adl_serializer<csyren::core::reflection::FieldContext<T>>
-	{
-		// to_json  call base to_json implementation for value
-		static void to_json(json& j, const csyren::core::reflection::FieldContext<T>& ctx)
-		{
-			j = ctx.value;
-		}
-
-		//from_json  call base from_json implementation for value
-		static void from_json(const json& j, csyren::core::reflection::FieldContext<T>& ctx)
-		{
-			j.get_to(ctx.value);
-		}
-	};
 
 	//--------------------------------TextureHandle-------------------------------------------
 	template<>
@@ -182,7 +165,7 @@ namespace nlohmann
 
 			for (const auto& res : root["resources"])
 			{
-				if (resourcePath == res["path"])
+				if (resourcePath == res.value("path",std::string()))
 				{
 					j = res["id"];
 					return;

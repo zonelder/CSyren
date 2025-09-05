@@ -18,6 +18,7 @@
 
 #include "mesh_render_system.h"
 #include "editor_camera_controller_system.h"
+#include "scene_loader.h"
 
 #include "math/math.h"
 
@@ -53,7 +54,8 @@ namespace csyren
 		_bus(std::make_unique<csyren::core::events::EventBus2>()),
 		_scene(*_bus),
 		_render(),
-		_resource(_render)
+		_resource(_render),
+		_serializer(_scene,_resource)
 	{
 	}
 
@@ -73,7 +75,6 @@ namespace csyren
 		}
 
 		_inputDispatcher.init(*_bus);
-
 		return true;
 	}
 
@@ -156,14 +157,19 @@ namespace csyren
 		auto matHandle = render::Primitives::getDefaultMaterial(_resource);
 		auto meshHandle = render::Primitives::getTriangle(_resource);
 
+		//-----------------------------init systems---------------------------------------------------
+		//
+		//--------------------------------------------------------------------------------------------
 
-
+		auto sceneLoaderSystem = std::make_shared<csyren::SceneLoaderSystem>(_serializer);
 		auto editorCameraControllerSystem = std::make_shared<csyren::EditorCameraControllerSystem>();
-		_systems.addSystem(editorCameraControllerSystem, -1);
-
 		auto meshRenderSystem = std::make_shared<csyren::MeshRenderSystem>();
+
+		_systems.addSystem(sceneLoaderSystem, -100); 
+		_systems.addSystem(editorCameraControllerSystem, -1);
 		_systems.addSystem(meshRenderSystem, 0);
 
+		//---------------------------------------------------------------------------------------------
 
 		auto testMeshEntity = _scene.createEntity();
 		auto meshFilter = _scene.addComponent<MeshFilter>(testMeshEntity);
@@ -172,9 +178,12 @@ namespace csyren
 		meshFilter->mesh = meshHandle;
 		meshRenderer->material = matHandle;
 
+		auto saveComponent = _scene.createEntity();
+		auto saveReq = _scene.addComponent<core::SceneLoaderRequest>(saveComponent);
+		saveReq->type = core::SceneLoaderRequest::LOAD;
+		saveReq->path = "E:\\test_scene.scene";
+
+
+
 	}
-
-
-
-
 }

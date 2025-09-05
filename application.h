@@ -6,7 +6,7 @@
 #include "core/renderer.h"
 #include "core/time.h"
 #include "core/camera.h"
-
+#include "core/serializer.h"
 
 namespace csyren
 {
@@ -36,5 +36,6 @@ namespace csyren
 		core::Window _window;
 		core::Scene _scene;
 		core::SystemManager _systems;
+		core::Serializer	_serializer;
 	};
 }

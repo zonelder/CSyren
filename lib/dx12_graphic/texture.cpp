@@ -3,9 +3,11 @@
 #include "renderer.h"
 #include <DirectXTex.h>
 
+#include "cstdmf/string_utils.h"
+
 namespace csyren::render
 {
-    Texture::Texture(DescriptorHeapManager* manager) : _heapManager(manager) {}
+    Texture::Texture() noexcept : _heapManager(nullptr) {}
 
     Texture::~Texture()
     {
@@ -40,12 +42,23 @@ namespace csyren::render
         return *this;
     }
 
+    bool Texture::init(Renderer& r, const std::string& filePath)
+    {
+        return init(r,cstdmf::to_wstring(filePath));
+    }
+
     bool Texture::init(Renderer& renderer, const std::wstring& filePath)
     {
         if (!std::filesystem::exists(filePath))
         {
-            //log::warning("Texture: texture file is not found.({})", filePath);
+            log::warning("Texture: texture file is not found.({})", cstdmf::to_string(filePath));
             return false;
+        }
+
+        _heapManager = renderer.getDescriptorHeapManager();
+        if (!_heapManager)
+        {
+            log::error("Texture: Attempt to load texture but heap manager has not initialized yet.");
         }
 
         DirectX::TexMetadata metadata;
@@ -66,29 +79,30 @@ namespace csyren::render
 
         if (FAILED(hr))
         {
-            //log::error("Texture: cant load\\decode texture file.({})", filePath);
+            log::error("Texture: cant load\\decode texture file.({})", cstdmf::to_string(filePath));
             return false;
         }
 
         hr = DirectX::CreateTexture(renderer.device(), metadata, &_textureResource);
         if (FAILED(hr))
         {
-            //log::error("Texture: cant  create GPU resource({})", filePath);
+            log::error("Texture: cant  create GPU resource({})", cstdmf::to_string(filePath));
             return false;
         }
+
         _textureResource->SetName((L"Texture: " + filePath).c_str());
 
         hr = renderer.uploadTextureData(_textureResource.Get(), scratchImage);
         if (FAILED(hr))
         {
-            //log::error("Texture: cant copy texture data to GPU({})", filePath);
+            log::error("Texture: cant copy texture data to GPU({})", cstdmf::to_string(filePath));
             return false;
         }
 
         _srvHandles = _heapManager->allocate();
         if (!_srvHandles.isValid())
         {
-            //log::error("Texture: failed to allocate descriptor.");
+            log::error("Texture: failed to allocate descriptor for texture {}.", cstdmf::to_string(filePath));
             return false;
         }
 

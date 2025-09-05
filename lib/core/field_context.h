@@ -3,7 +3,6 @@
 
 namespace csyren::render { class ResourceManager; }
 
-
 namespace csyren::core::reflection
 {
 	/**
@@ -14,8 +13,30 @@ namespace csyren::core::reflection
 	template<class T>
 	struct FieldContext
 	{
-		T& value;// —сылка на само поле (например, на SpriteRenderer::texture)
+		T& value;
 		render::ResourceManager& resourceManager;
-		nlohmann::json& rootJson; // ƒл€ "ленивой" записи ресурсов.
+		nlohmann::json& rootJson;
 	};
 }
+
+namespace nlohmann
+{
+	//@brief main implementation for field serialization\deserialization;
+	template<typename T>
+	struct adl_serializer<csyren::core::reflection::FieldContext<T>>
+	{
+		// to_json  call base to_json implementation for value
+		static void to_json(json& j, const csyren::core::reflection::FieldContext<T>& ctx)
+		{
+			j = ctx.value;
+		}
+
+		//from_json  call base from_json implementation for value
+		static void from_json(const json& j, csyren::core::reflection::FieldContext<T>& ctx)
+		{
+			j.get_to(ctx.value);
+		}
+	};
+}
+
+
