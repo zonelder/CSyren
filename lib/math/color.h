@@ -25,6 +25,8 @@ namespace csyren::math
 		explicit Color(DirectX::XMVECTOR vec) noexcept : _vec(vec) {};
 
 		operator DirectX::XMVECTOR() const noexcept { return _vec; };
+
+		Color& operator=(DirectX::XMVECTOR vec) noexcept { _vec = vec; return *this; }
 	
 		bool operator==(const Color& other) const noexcept;
 		bool operator!=(const Color& other) const noexcept;

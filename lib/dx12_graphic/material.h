@@ -27,6 +27,7 @@ namespace csyren::render
 	{
 	public:
 		Material() noexcept = default;
+		bool init(Renderer& renderer, ResourceManager& rm, const std::string& filepath);
 		bool init(Renderer& renderer,ResourceManager& rm, ShaderHandle shaderHandle, const MaterialStateDesc& states);
 		ID3D12PipelineState* pso() const noexcept { return _pso.Get(); }
 		ShaderHandle getShader() const noexcept { return _shaderHandle;}

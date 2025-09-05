@@ -83,6 +83,33 @@ namespace nlohmann
 			}
 		}
 	};
+	//-------------------------------------------------------------------------------------------
+
+//---------------------------------------Color---------------------------------------------
+	template<>
+	struct adl_serializer<csyren::math::Color>
+	{
+		static void to_json(json& j, const csyren::math::Color& vec)
+		{
+			DirectX::XMFLOAT4 storedFloat4;
+			DirectX::XMStoreFloat4(&storedFloat4, vec);
+			j = { storedFloat4.x,storedFloat4.y,storedFloat4.z,storedFloat4.w };
+		}
+
+
+		static void from_json(const json& j, csyren::math::Color& vec)
+		{
+			if (j.is_array() && j.size() == 4)
+			{
+				DirectX::XMFLOAT4 loadedFloat4;
+				j.at(0).get_to(loadedFloat4.x);
+				j.at(1).get_to(loadedFloat4.y);
+				j.at(2).get_to(loadedFloat4.z);
+				j.at(3).get_to(loadedFloat4.w);
+				vec = DirectX::XMLoadFloat4(&loadedFloat4);
+			}
+		}
+	};
 
 	//-------------------------------------------------------------------------------------------
 
@@ -205,7 +232,7 @@ namespace nlohmann
 					res["type"].get_to(type);
 					if (res["type"] != "texture")
 					{
-						csyren::log::error("Deserialize: wrong handler type was saved.expected - \'texture\',reseived - \'{}\'", type);
+						csyren::log::error("Deserialize: wrong handler type was saved.expected - \'texture\',received - \'{}\'", type);
 						return;
 					}
 					std::string path;
@@ -218,4 +245,153 @@ namespace nlohmann
 		}
 	};
 
+
+	//-----------------------------------------MeshHandle---------------------------------------------------------------
+	template<>
+	struct adl_serializer<csyren::core::reflection::FieldContext<csyren::render::MeshHandle>>
+	{
+		static void to_json(json& j, const csyren::core::reflection::FieldContext<csyren::render::MeshHandle>& ctx)
+		{
+			if (!ctx.value) {
+				j = nullptr;
+				return;
+			}
+
+			auto& rm = ctx.resourceManager;
+			auto& root = ctx.rootJson;
+			std::string resourcePath = rm.getMeshName(ctx.value);
+
+			if (!root.contains("resources"))
+			{
+				root["resources"] = json::array();
+			}
+
+			for (const auto& res : root["resources"])
+			{
+				if (resourcePath == res.value("path", std::string()))
+				{
+					j = res["id"];
+					return;
+				}
+			}
+
+			uint32_t newId = root["resources"].size();
+			json newRes;
+			newRes["id"] = newId;
+			newRes["type"] = "mesh";
+			newRes["path"] = resourcePath;
+			root["resources"].push_back(newRes);
+
+			j = newId;
+		}
+
+		static void from_json(const json& j, csyren::core::reflection::FieldContext<csyren::render::MeshHandle>& ctx)
+		{
+			uint32_t resourceID;
+			j.get_to(resourceID);
+
+			auto& root = ctx.rootJson;
+
+			if (!root.contains("resources"))
+			{
+				csyren::log::error("Deserialize: Mesh handler was saved but resources did not set up in file.");
+				return;
+			}
+
+			for (auto& res : root["resources"])
+			{
+				uint32_t currentID;
+				res["id"].get_to(currentID);
+				if (currentID == resourceID)
+				{
+					std::string type;
+					res["type"].get_to(type);
+					if (res["type"] != "mesh")
+					{
+						csyren::log::error("Deserialize: wrong handler type was saved.expected - \'mesh\',received - \'{}\'", type);
+						return;
+					}
+					std::string path;
+					res["path"].get_to(path);
+					ctx.value = ctx.resourceManager.loadMesh(path);
+					return;
+				}
+			}
+
+		}
+	};
+	//--------------------------------------------------MaterialHandle---------------------------------------------------------------
+	template<>
+	struct adl_serializer<csyren::core::reflection::FieldContext<csyren::render::MaterialHandle>>
+	{
+		static void to_json(json& j, const csyren::core::reflection::FieldContext<csyren::render::MaterialHandle>& ctx)
+		{
+			if (!ctx.value) {
+				j = nullptr;
+				return;
+			}
+
+			auto& rm = ctx.resourceManager;
+			auto& root = ctx.rootJson;
+			std::string resourcePath = rm.getMaterialName(ctx.value);
+
+			if (!root.contains("resources"))
+			{
+				root["resources"] = json::array();
+			}
+
+			for (const auto& res : root["resources"])
+			{
+				if (resourcePath == res.value("path", std::string()))
+				{
+					j = res["id"];
+					return;
+				}
+			}
+
+			uint32_t newId = root["resources"].size();
+			json newRes;
+			newRes["id"] = newId;
+			newRes["type"] = "material";
+			newRes["path"] = resourcePath;
+			root["resources"].push_back(newRes);
+
+			j = newId;
+		}
+
+		static void from_json(const json& j, csyren::core::reflection::FieldContext<csyren::render::MaterialHandle>& ctx)
+		{
+			uint32_t resourceID;
+			j.get_to(resourceID);
+
+			auto& root = ctx.rootJson;
+
+			if (!root.contains("resources"))
+			{
+				csyren::log::error("Deserialize: Material handler was saved but resources did not set up in file.");
+				return;
+			}
+
+			for (auto& res : root["resources"])
+			{
+				uint32_t currentID;
+				res["id"].get_to(currentID);
+				if (currentID == resourceID)
+				{
+					std::string type;
+					res["type"].get_to(type);
+					if (res["type"] != "material")
+					{
+						csyren::log::error("Deserialize: wrong handler type was saved.expected - \'material\',received - \'{}\'", type);
+						return;
+					}
+					std::string path;
+					res["path"].get_to(path);
+					ctx.value = ctx.resourceManager.loadMaterial(path);
+					return;
+				}
+			}
+
+		}
+	};
 }

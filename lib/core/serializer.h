@@ -31,7 +31,17 @@
 #define FOR_EACH_2(action, x, ...) EXPAND(action(x)) EXPAND(FOR_EACH_1(action, __VA_ARGS__))
 #define FOR_EACH_3(action, x, ...) EXPAND(action(x)) EXPAND(FOR_EACH_2(action, __VA_ARGS__))
 #define FOR_EACH_4(action, x, ...) EXPAND(action(x)) EXPAND(FOR_EACH_3(action, __VA_ARGS__))
-
+#define FOR_EACH_5(action, x, ...) EXPAND(action(x)) EXPAND(FOR_EACH_4(action, __VA_ARGS__))
+#define FOR_EACH_6(action, x, ...) EXPAND(action(x)) EXPAND(FOR_EACH_5(action, __VA_ARGS__))
+#define FOR_EACH_7(action, x, ...) EXPAND(action(x)) EXPAND(FOR_EACH_6(action, __VA_ARGS__))
+#define FOR_EACH_8(action, x, ...) EXPAND(action(x)) EXPAND(FOR_EACH_7(action, __VA_ARGS__))
+#define FOR_EACH_9(action, x, ...) EXPAND(action(x)) EXPAND(FOR_EACH_8(action, __VA_ARGS__))
+#define FOR_EACH_10(action, x, ...) EXPAND(action(x)) EXPAND(FOR_EACH_9(action, __VA_ARGS__))
+#define FOR_EACH_11(action, x, ...) EXPAND(action(x)) EXPAND(FOR_EACH_10(action, __VA_ARGS__))
+#define FOR_EACH_12(action, x, ...) EXPAND(action(x)) EXPAND(FOR_EACH_11(action, __VA_ARGS__))
+#define FOR_EACH_13(action, x, ...) EXPAND(action(x)) EXPAND(FOR_EACH_12(action, __VA_ARGS__))
+#define FOR_EACH_14(action, x, ...) EXPAND(action(x)) EXPAND(FOR_EACH_13(action, __VA_ARGS__))
+#define FOR_EACH_15(action, x, ...) EXPAND(action(x)) EXPAND(FOR_EACH_14(action, __VA_ARGS__))
 
 #define FOR_EACH(action, ...) \
     EXPAND(CSYREN_PASTE(FOR_EACH_, COUNT_ARGS(__VA_ARGS__))(action, ##__VA_ARGS__))

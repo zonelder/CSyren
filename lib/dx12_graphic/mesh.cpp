@@ -7,6 +7,12 @@ using namespace DirectX;
 
 namespace csyren::render
 {
+    bool Mesh::init(const std::string& filepath)
+    {
+        log::error("Mesh: attempt to load mesh from file but its not implemented. file = {}", filepath);
+        return false;
+    }
+
     bool Mesh::init(Renderer& renderer,
         const std::vector<Vertex>& vertices,
         const std::vector<uint16_t>& indices)

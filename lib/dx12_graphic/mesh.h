@@ -28,6 +28,7 @@ namespace csyren::render
 		void draw(Renderer& renderer);
 	private:
 
+		bool init(const std::string& filepath);
 		bool init(Renderer& renderer, const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices);
 
 	private:

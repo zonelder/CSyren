@@ -158,6 +158,7 @@ namespace csyren::render
             return _meshStorage.load(name, _renderer, std::forward<TArgs>(args)...);
         }
         Mesh* getMesh(MeshHandle handle) { return _meshStorage.get(handle); }
+        const std::string& getMeshName(MeshHandle handle) { return _meshStorage.getName(handle); }
         //---------------------------------------------------
         
         //--------------------texture-----------------------
@@ -184,6 +185,8 @@ namespace csyren::render
             return _materialStorage.load(name, _renderer,*this,std::forward<TArgs>(args)...);
         }
         Material* getMaterial(MaterialHandle handle) { return _materialStorage.get(handle); }
+
+        const std::string& getMaterialName(MaterialHandle handle) { return _materialStorage.getName(handle); }
         //---------------------------------------------------
 
         //-------------------shader--------------------------

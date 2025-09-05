@@ -180,7 +180,7 @@ namespace csyren
 
 		auto saveComponent = _scene.createEntity();
 		auto saveReq = _scene.addComponent<core::SceneLoaderRequest>(saveComponent);
-		saveReq->type = core::SceneLoaderRequest::LOAD;
+		saveReq->type = core::SceneLoaderRequest::SAVE;
 		saveReq->path = "E:\\test_scene.scene";
 
 

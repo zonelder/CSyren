@@ -8,6 +8,9 @@ using Microsoft::WRL::ComPtr;
 
 namespace csyren::render
 {
+
+
+
     MaterialStateDesc::MaterialStateDesc()
     {
         // --- Blend State ---
@@ -57,6 +60,12 @@ namespace csyren::render
             rtvFormats[i] = DXGI_FORMAT_UNKNOWN;
         }
         dsvFormat = DXGI_FORMAT_D32_FLOAT;
+    }
+
+    bool Material::init(Renderer& renderer, ResourceManager& rm, const std::string& filepath)
+    {
+        log::error("Material: material loading from file not implemented. file = {}", filepath);
+        return false;
     }
 
     bool Material::init(Renderer& renderer, ResourceManager& rm, ShaderHandle shaderHandle, const MaterialStateDesc& states)
