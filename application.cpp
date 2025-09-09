@@ -75,6 +75,7 @@ namespace csyren
 		}
 
 		_inputDispatcher.init(*_bus);
+		render::Primitives::registerFabricsAll(_resource);
 		return true;
 	}
 

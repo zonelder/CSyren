@@ -9,6 +9,8 @@
 
 namespace csyren::render
 {
+	class ResourceManager;
+	class Renderer;
 	template<typename T> class ResourceStorage;
 
 	struct ShaderResourceInfo
@@ -24,9 +26,10 @@ namespace csyren::render
 		friend class ResourceStorage<Shader>;
 	public:
 		Shader() = default;
-		bool init(ID3D12Device* device, const Microsoft::WRL::ComPtr<ID3DBlob> vs, const Microsoft::WRL::ComPtr<ID3DBlob> ps,const std::wstring& name);
-		bool init(ID3D12Device* device, const std::string& vsCode, const std::string& psCode, const std::wstring& name);
-		bool init(ID3D12Device* device, const std::wstring& vsPath, const std::wstring& psPath);
+		bool init(Renderer& renderer, ResourceManager& resourceManager, const Microsoft::WRL::ComPtr< ID3DBlob> vsBlob, const Microsoft::WRL::ComPtr< ID3DBlob> psBlob);
+		bool init(Renderer& renderer, ResourceManager& resourceManager, const std::string& vsCode, const std::string& psCode);
+		bool init(Renderer& renderer, ResourceManager& resourceManager, const std::wstring& vsPath, const std::wstring& psPath);
+		bool init(Renderer& renderer, ResourceManager& resourceManager, const std::string& filepath);
 		ID3D12RootSignature* getRootSignature() const 
 		{
 			return  _rootSignature.Get();

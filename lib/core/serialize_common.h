@@ -85,6 +85,31 @@ namespace nlohmann
 	};
 	//-------------------------------------------------------------------------------------------
 
+//---------------------------------------Vector4---------------------------------------------
+	template<>
+	struct adl_serializer<DirectX::XMFLOAT4>
+	{
+		static void to_json(json& j, const DirectX::XMFLOAT4& vec)
+		{
+			j = { vec.x,vec.y,vec.z,vec.w };
+		}
+
+
+		static void from_json(const json& j, DirectX::XMFLOAT4& vec)
+		{
+			if (j.is_array() && j.size() == 4)
+			{
+				DirectX::XMFLOAT4 loadedFloat4;
+				j.at(0).get_to(loadedFloat4.x);
+				j.at(1).get_to(loadedFloat4.y);
+				j.at(2).get_to(loadedFloat4.z);
+				j.at(3).get_to(loadedFloat4.w);
+				vec = loadedFloat4;
+			}
+		}
+	};
+	//-------------------------------------------------------------------------------------------
+
 //---------------------------------------Color---------------------------------------------
 	template<>
 	struct adl_serializer<csyren::math::Color>
@@ -237,7 +262,7 @@ namespace nlohmann
 					}
 					std::string path;
 					res["path"].get_to(path);
-					ctx.value = ctx.resourceManager.loadTexture(path);
+					ctx.value = ctx.resourceManager.get<csyren::render::Texture>(path);
 					return;
 				}
 			}
@@ -313,7 +338,7 @@ namespace nlohmann
 					}
 					std::string path;
 					res["path"].get_to(path);
-					ctx.value = ctx.resourceManager.loadMesh(path);
+					ctx.value = ctx.resourceManager.get<csyren::render::Mesh>(path);
 					return;
 				}
 			}
@@ -387,7 +412,7 @@ namespace nlohmann
 					}
 					std::string path;
 					res["path"].get_to(path);
-					ctx.value = ctx.resourceManager.loadMaterial(path);
+					ctx.value = ctx.resourceManager.get<csyren::render::Material>(path);
 					return;
 				}
 			}

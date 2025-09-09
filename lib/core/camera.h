@@ -32,7 +32,7 @@ namespace csyren::core
 
 		int priority{ 0 };
 		ProjectionType projection = Perspective;
-		math::Color background = { 0.1f, 0.1f, 0.1f, 1.0f };
+		DirectX::XMFLOAT4 background = { 0.1f, 0.1f, 0.1f, 1.0f };
 		ViewportRect viewportRect;//unused
 	private:
 		SERIALIZABLE(Camera, far, near, aspectRatio, fov,priority, projection,background);

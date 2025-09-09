@@ -1,21 +1,20 @@
 #include "pch.h"
 #include "mesh.h"
 #include "material.h"
+#include "resource_manager.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 
 namespace csyren::render
 {
-    bool Mesh::init(const std::string& filepath)
+    bool Mesh::init(Renderer& renderer, ResourceManager& resourceManager,const std::string& filepath)
     {
         log::error("Mesh: attempt to load mesh from file but its not implemented. file = {}", filepath);
         return false;
     }
 
-    bool Mesh::init(Renderer& renderer,
-        const std::vector<Vertex>& vertices,
-        const std::vector<uint16_t>& indices)
+    bool Mesh::init(Renderer& renderer, ResourceManager& resourceManager, const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices)
     {
         auto* device = renderer.device();
         _indexCount = static_cast<UINT>(indices.size());
@@ -66,6 +65,7 @@ namespace csyren::render
 
         return true;
     }
+
 
     void Mesh::draw(Renderer& renderer)
     {

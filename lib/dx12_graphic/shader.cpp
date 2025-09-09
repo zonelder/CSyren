@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "shader.h"
 #include "cstdmf/string_utils.h"
+#include "renderer.h"
+#include "resource_manager.h"
 
 #include <d3dcompiler.h>
 #include <algorithm>
@@ -142,7 +144,9 @@ namespace
 
 namespace csyren::render
 {
-	bool Shader::init(ID3D12Device* device, const Microsoft::WRL::ComPtr< ID3DBlob> vsBlob, const Microsoft::WRL::ComPtr< ID3DBlob> psBlob,const std::wstring& name)
+
+    //from blob
+	bool Shader::init(Renderer& renderer, ResourceManager& resourceManager, const Microsoft::WRL::ComPtr< ID3DBlob> vsBlob, const Microsoft::WRL::ComPtr< ID3DBlob> psBlob)
 	{
         if (!vsBlob || !psBlob)
         {
@@ -152,7 +156,7 @@ namespace csyren::render
 
         D3D12_SHADER_BYTECODE vs = { vsBlob->GetBufferPointer(), vsBlob->GetBufferSize() };
         D3D12_SHADER_BYTECODE ps = { psBlob->GetBufferPointer(), psBlob->GetBufferSize() };
-
+        auto device = renderer.device();
         if (!buildRootSignatureFromReflection(device, vs, ps))
         {
             log::error("Shader::init() : cant read reflection from shader.");
@@ -168,11 +172,13 @@ namespace csyren::render
         _vsBlob = vsBlob;
         _psBlob = psBlob;
         //TODO would be nice to set shader file name or similar.
-        _rootSignature->SetName(name.c_str());
+        //_rootSignature->SetName(name.c_str());
         return true;
 
 	}
-    bool Shader::init(ID3D12Device* device, const std::string& vsCode, const std::string& psCode, const std::wstring& name)
+
+    //from code
+    bool Shader::init(Renderer& renderer, ResourceManager& resourceManager, const std::string& vsCode, const std::string& psCode)
     {
         using Microsoft::WRL::ComPtr;
 
@@ -193,7 +199,7 @@ namespace csyren::render
         {
             if (errorBlob) 
             {
-                log::error("Vertex shader compilation failed for '{}': {}",cstdmf::to_string(name), std::string((char*)errorBlob->GetBufferPointer()));
+                log::error("Vertex shader compilation failed for: {}", std::string((char*)errorBlob->GetBufferPointer()));
             }
             return false;
         }
@@ -206,18 +212,28 @@ namespace csyren::render
         {
             if (errorBlob) 
             {
-                log::error("Pixel shader compilation failed for '{}': {}",cstdmf::to_string(name), std::string((char*)errorBlob->GetBufferPointer()));
+                log::error("Pixel shader compilation failed for: {}", std::string((char*)errorBlob->GetBufferPointer()));
             }
             return false;
         }
 
         // Вызываем основной метод с готовым байт-кодом
-        return init(device,vsBlob,psBlob,name);
+        return init(renderer,resourceManager,vsBlob,psBlob);
     }
 
-    bool Shader::init(ID3D12Device* device, const std::wstring& vsPath, const std::wstring& psPath)
+    bool Shader::init(Renderer& renderer, ResourceManager& resourceManager, const std::string& filepath)
+    {
+        log::error("Shader: Loading shader from file not implemented.");
+        return false;
+        //TODO implement loading from file(json maybe?) or agreed to create paired shaders in one file(ps+vs also will write dow in same file)
+    }
+
+    //from path
+    bool Shader::init(Renderer& renderer, ResourceManager& resourceManager, const std::wstring& vsPath, const std::wstring& psPath)
     {
         using Microsoft::WRL::ComPtr;
+        log::error("Shader: Loading shader from file not implemented.");
+        return false;
 
         ComPtr<ID3DBlob> vsBlob;
         ComPtr<ID3DBlob> psBlob;
@@ -234,7 +250,7 @@ namespace csyren::render
             return false;
         }
 
-        return init(device, vsBlob,psBlob,vsPath);
+        return init(renderer,resourceManager, vsBlob,psBlob);
     }
 
 

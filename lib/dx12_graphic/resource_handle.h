@@ -20,9 +20,22 @@ namespace csyren::render
         explicit operator bool() const { return id != INVALID; }
     };
 
+    
+
     using MeshHandle = THandle<Mesh>;
     using TextureHandle = THandle<Texture>;
     using MaterialHandle = THandle<Material>;
     using ShaderHandle = THandle<Shader>;
 
+}
+
+namespace std {
+    template<typename T>
+    struct hash<csyren::render::THandle<T>>
+    {
+        std::size_t operator()(const csyren::render::THandle<T>& handle) const
+        {
+            return std::hash<uint64_t>()(handle.id);
+        }
+    };
 }
