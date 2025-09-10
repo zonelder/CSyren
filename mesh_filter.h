@@ -17,7 +17,7 @@ namespace csyren::components
     {
         csyren::render::MaterialHandle material;
     private:
-        SERIALIZABLE(MeshFilter, material);
+        SERIALIZABLE(MeshRenderer, material);
     };
 }
 
