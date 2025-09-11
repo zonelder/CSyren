@@ -59,5 +59,11 @@
     <ClInclude Include="scene_loader.h">
       <Filter>system</Filter>
     </ClInclude>
+    <ClInclude Include="sprite_renderer.h">
+      <Filter>component</Filter>
+    </ClInclude>
+    <ClInclude Include="sprite_render_system.h">
+      <Filter>system</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

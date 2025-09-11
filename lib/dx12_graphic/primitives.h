@@ -18,9 +18,9 @@ namespace csyren::render
         static MeshHandle getTriangle(ResourceManager& rm);
         static MeshHandle getQuad(ResourceManager& rm);
         static MeshHandle getCube(ResourceManager& rm);
-    private:
-        friend class Application;
         static bool registerFabricsAll(ResourceManager&);
+    private:
+
     };
 }
 

@@ -16,6 +16,7 @@
 #include "descriptor_heap_manager.h"
 #include "sampler_manager.h"
 #include "constant_buffer.h"
+#include "upload_ring_buffer.h"
 
 namespace csyren::render
 {
@@ -55,7 +56,7 @@ namespace csyren::render
 
 		ConstantBuffer* getPerFrameCB() noexcept { return &_perFrameCB; };
 
-		ConstantBuffer* getPerEntityCB() noexcept { return &_perEntityCB; };
+		UploadRingBuffer* getPerEntityCB() noexcept { return &_perEntityCB; };
 
 		ConstantBuffer* getPerMaterialCB() noexcept { return &_perMaterialCB; };
 
@@ -84,7 +85,7 @@ namespace csyren::render
 		UINT _frameIndex{ 0 };
 
 		ConstantBuffer _perFrameCB;
-		ConstantBuffer _perEntityCB;
+		UploadRingBuffer _perEntityCB;
 		ConstantBuffer _perMaterialCB;
 
 		PerFrameBuffer _perFrameBuffer;

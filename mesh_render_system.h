@@ -20,13 +20,18 @@ namespace csyren
     public:
         explicit MeshRenderSystem() = default;
 
-        void draw(events::DrawEvent& event)
+        void draw(events::DrawEvent& event) override
         {
             ID3D12GraphicsCommandList* cmd = event.render.commandList();
             auto perFrameCB = event.render.getPerFrameCB();
             auto perEntityCB = event.render.getPerEntityCB();
             auto perMaterialCB = event.render.getPerMaterialCB();
-            auto perEntityBuffer = event.render.getPerEntityBuffer();
+            //auto perEntityBuffer = event.render.getPerEntityBuffer();
+
+            struct EntityBuffer
+            {
+                DirectX::XMMATRIX world;
+            } perEntityBuffer;
 
             event.scene.view<Transform, MeshFilter, MeshRenderer>()
                 .each([&](Entity::ID id,
@@ -44,8 +49,7 @@ namespace csyren
                         cmd->SetGraphicsRootSignature(shader->getRootSignature());
 
                         // Update per-entity constant buffer (world matrix)
-                        perEntityBuffer->world = tr.world();
-                        perEntityCB->update(perEntityBuffer, sizeof(render::PerEntityBuffer));
+
                         
                         auto perFrameRoot = shader->getRootParameterIndex("PerFrame");
                         auto perEntityRoot = shader->getRootParameterIndex("PerObject");
@@ -56,7 +60,9 @@ namespace csyren
 
                         if (perEntityRoot != UINT_MAX)
                         {
-                            cmd->SetGraphicsRootConstantBufferView(1, perEntityCB->gpuAddress());
+                            perEntityBuffer.world = tr.world();
+                            auto gpuAdress = perEntityCB->update(&perEntityBuffer, sizeof(EntityBuffer));
+                            cmd->SetGraphicsRootConstantBufferView(1, gpuAdress);
                         }
 
                         //cmd->SetGraphicsRootConstantBufferView(2, perMaterialCB->gpuAddress());

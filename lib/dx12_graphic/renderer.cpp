@@ -110,11 +110,11 @@ namespace csyren::render
         _fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
         if (!_fenceEvent)
             return false;
-
+        constexpr size_t MB = 1024 * 1024;
         constexpr size_t perFrameSize = sizeof(PerFrameBuffer);
-        constexpr size_t perEntitySize = sizeof(PerEntityBuffer); // Size for world matrix + other per-object data
+        constexpr size_t perEntitySize = 2* MB; // Size for world matrix + other per-object data for whole scene render.
         constexpr size_t perMaterialSize = 128; // Size for material properties
-
+        
         if (!_perFrameCB.init(_device.Get(), perFrameSize) ||
             !_perEntityCB.init(_device.Get(), perEntitySize) ||
             !_perMaterialCB.init(_device.Get(), perMaterialSize))
@@ -133,6 +133,7 @@ namespace csyren::render
     {
         _commandAllocator->Reset();
         _commandList->Reset(_commandAllocator.Get(), nullptr);
+        _perEntityCB.beginFrame();
 
         D3D12_RESOURCE_BARRIER barrier = {};
         barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
