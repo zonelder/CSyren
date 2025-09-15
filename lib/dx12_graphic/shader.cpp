@@ -20,12 +20,12 @@ namespace
         return s;
     }
 
-
-    using ShaderResourceInfo = csyren::render::ShaderResourceInfo;
     void reflectShader(
         const D3D12_SHADER_BYTECODE& shaderBytecode,
         D3D12_SHADER_VISIBILITY visibility,
-        std::unordered_map<std::string, ShaderResourceInfo>& resourceMap,
+        std::unordered_map<std::string, csyren::render::ShaderResourceInfo>& resourceMap,
+        std::unordered_map<std::string, csyren::render::ConstantBufferVariableInfo>& variableInfoMap,
+        std::unordered_map<std::string, UINT>& constantBufferSizes,
         std::vector<D3D12_ROOT_PARAMETER1>& rootParameters,
         std::vector<std::unique_ptr<D3D12_DESCRIPTOR_RANGE1[]>>& descriptorRanges,
         std::unordered_map<UINT, D3D12_STATIC_SAMPLER_DESC>& samplerMap) // register -> desc)
@@ -70,7 +70,7 @@ namespace
             }
             else
             {
-                ShaderResourceInfo info;
+                csyren::render::ShaderResourceInfo info;
                 info.name = resourceName;
                 info.shaderRegister = bindDesc.BindPoint;
                 info.registerSpace = bindDesc.Space;
@@ -82,11 +82,36 @@ namespace
                 switch (bindDesc.Type)
                 {
                 case D3D_SIT_CBUFFER:
+                {
                     param.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
                     param.Descriptor.ShaderRegister = bindDesc.BindPoint;
                     param.Descriptor.RegisterSpace = bindDesc.Space;
                     param.Descriptor.Flags = D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC;
+                    ID3D12ShaderReflectionConstantBuffer* cbuffer = reflection->GetConstantBufferByName(bindDesc.Name);
+                    D3D12_SHADER_BUFFER_DESC cbDesc;
+                    cbuffer->GetDesc(&cbDesc);
+
+                    constantBufferSizes[resourceName] = cbDesc.Size;
+                    for (UINT j = 0;j < cbDesc.Variables; ++j)
+                    {
+                        ID3D12ShaderReflectionVariable* var = cbuffer->GetVariableByIndex(j);
+                        D3D12_SHADER_VARIABLE_DESC varDesc;
+                        var->GetDesc(&varDesc);
+
+                        csyren::render::ConstantBufferVariableInfo varInfo;
+                        varInfo.bufferName = resourceName;
+                        varInfo.offset = varDesc.StartOffset;
+                        varInfo.size = varDesc.Size;
+                        if (varDesc.DefaultValue != nullptr)
+                        {
+                            varInfo.defaultValue.resize(varDesc.Size);
+                            memcpy(varInfo.defaultValue.data(), varDesc.DefaultValue, varDesc.Size);
+                        }
+                        variableInfoMap[varDesc.Name] = std::move(varInfo);
+                    }
                     break;
+                }
+
 
                 case D3D_SIT_TEXTURE:
                 case D3D_SIT_STRUCTURED:
@@ -269,8 +294,32 @@ namespace csyren::render
         std::vector<std::unique_ptr<D3D12_DESCRIPTOR_RANGE1[]>> descriptorRanges;
         std::unordered_map<UINT, D3D12_STATIC_SAMPLER_DESC> samplerMap; // register -> desc
 
-        reflectShader(vs, D3D12_SHADER_VISIBILITY_VERTEX, _resourceMap, rootParameters, descriptorRanges, samplerMap);
-        reflectShader(ps, D3D12_SHADER_VISIBILITY_PIXEL, _resourceMap, rootParameters, descriptorRanges, samplerMap);
+        _resourceMap.clear();
+        _variableInfoMap.clear();
+        _constantBufferSizes.clear();
+
+        reflectShader(vs, D3D12_SHADER_VISIBILITY_VERTEX, _resourceMap, _variableInfoMap, _constantBufferSizes, rootParameters, descriptorRanges, samplerMap);
+        reflectShader(ps, D3D12_SHADER_VISIBILITY_PIXEL, _resourceMap, _variableInfoMap, _constantBufferSizes, rootParameters, descriptorRanges, samplerMap);
+
+        _constantBuffersData.clear();
+
+        //initialize CPU constant buffers with zeros
+        for (const auto& pair : _constantBufferSizes)
+        {
+            _constantBuffersData[pair.first].resize(pair.second, 0);
+        }
+
+        //apply default value;
+        for (const auto& pair : _variableInfoMap)
+        {
+            const auto& varInfo = pair.second;
+            if (!varInfo.defaultValue.empty())
+            {
+                auto& cpuBuffer = _constantBuffersData[varInfo.bufferName];
+                memcpy(cpuBuffer.data() + varInfo.offset, varInfo.defaultValue.data(), varInfo.size);
+            }
+        }
+
 
         std::vector<D3D12_STATIC_SAMPLER_DESC> finalSamplers;
         for (const auto& pair : samplerMap) 
@@ -302,8 +351,6 @@ namespace csyren::render
             if (hr == DXGI_ERROR_DEVICE_REMOVED)
             {
                 HRESULT reason = device->GetDeviceRemovedReason();
-                // Поставьте здесь точку останова и посмотрите значение 'reason'.
-                // Например, DXGI_ERROR_DEVICE_HUNG означает, что драйвер завис.
                 log::error("Device removed! Reason: {:#x}", reason);
             }
             log::error("CreateRootSignature failed");
@@ -434,4 +481,172 @@ namespace csyren::render
         //_inputLayout[1].AlignedByteOffset = 12;
         return true;
     }
+
+
+    bool Shader::setFloat(const std::string& name, float v)
+    {
+        auto it = _variableInfoMap.find(name);
+        if (it == _variableInfoMap.end())
+        {
+            log::warning("Shader::setFloat: Variable '{}' not found in shader.", name);
+            return false;
+        }
+
+        const auto& varInfo = it->second;
+        if (varInfo.size != sizeof(float))
+        {
+            log::error("Shader::setFloat: Type mismatch for variable '{}'. Expected size {}, got {}.", name, varInfo.size, sizeof(float));
+            return false;
+        }
+        memcpy(_constantBuffersData[varInfo.bufferName].data() + varInfo.offset, &v, sizeof(float));
+        _dirtyCBs.insert(varInfo.bufferName);
+        return true;
+    }
+
+    bool Shader::setInt(const std::string& name, int v)
+    {
+        auto it = _variableInfoMap.find(name);
+        if (it == _variableInfoMap.end())
+        {
+            log::warning("Shader::setInt: Variable '{}' not found in shader.", name);
+            return false;
+        }
+
+        const auto& varInfo = it->second;
+        if (varInfo.size != sizeof(int))
+        {
+            log::error("Shader::setInt: Type mismatch for variable '{}'. Expected size {}, got {}.", name, varInfo.size, sizeof(int));
+            return false;
+        }
+        memcpy(_constantBuffersData[varInfo.bufferName].data() + varInfo.offset, &v, sizeof(int));
+        _dirtyCBs.insert(varInfo.bufferName);
+        return true;
+    }
+
+    bool Shader::setBool(const std::string& name, bool v)
+    {
+        // В HLSL bool takes 4 bytes;
+        return setInt(name, static_cast<int>(v));
+    }
+
+    bool Shader::setVector(const std::string& name, const DirectX::XMVECTOR& v)
+    {
+        auto it = _variableInfoMap.find(name);
+        if (it == _variableInfoMap.end())
+        {
+            log::warning("Shader::setVector: Variable '{}' not found in shader.", name);
+            return false;
+        }
+
+        const auto& varInfo = it->second;
+        // Вектор может быть float2, float3, float4
+        if (varInfo.size != sizeof(DirectX::XMFLOAT4) && varInfo.size != sizeof(DirectX::XMFLOAT3) && varInfo.size != sizeof(DirectX::XMFLOAT2))
+        {
+            log::error("Shader::setVector: Type mismatch for variable '{}'. Expected size {}, got {}.", name, varInfo.size, sizeof(DirectX::XMVECTOR));
+            return false;
+        }
+
+        memcpy(_constantBuffersData[varInfo.bufferName].data() + varInfo.offset, &v, varInfo.size);
+        _dirtyCBs.insert(varInfo.bufferName);
+        return true;
+    }
+
+    bool Shader::setMatrix(const std::string& name, const DirectX::XMMATRIX& v)
+    {
+        auto it = _variableInfoMap.find(name);
+        if (it == _variableInfoMap.end())
+        {
+            log::warning("Shader::setMatrix: Variable '{}' not found in shader.", name);
+            return false;
+        }
+
+        const auto& varInfo = it->second;
+        if (varInfo.size != sizeof(DirectX::XMMATRIX))
+        {
+            log::error("Shader::setMatrix: Type mismatch for variable '{}'. Expected size {}, got {}.", name, varInfo.size, sizeof(DirectX::XMMATRIX));
+            return false;
+        }
+
+        // Матрицы в HLSL column-major, XMMATRIX - row-major. Нужно транспонировать.
+        DirectX::XMMATRIX transposed = DirectX::XMMatrixTranspose(v);
+        memcpy(_constantBuffersData[varInfo.bufferName].data() + varInfo.offset, &transposed, sizeof(DirectX::XMMATRIX));
+        _dirtyCBs.insert(varInfo.bufferName);
+        return true;
+    }
+
+    bool Shader::setTexture(const std::string& name, Texture* texture)
+    {
+        auto it = _resourceMap.find(name);
+        if (it == _resourceMap.end())
+        {
+            log::warning("Shader::setTexture: Texture with name '{}' not found in shader.", name);
+            return false;
+        }
+        _shaderTextures[name] = texture;
+        return true;
+    }
+
+
+    bool Shader::setStruct(const std::string& name, const void* data, size_t size)
+    {
+        auto it = _variableInfoMap.find(name);
+        if (it == _variableInfoMap.end())
+        {
+            log::warning("Shader::setStruct: Variable '{}' not found in shader.", name);
+            return false;
+        }
+
+        const auto& varInfo = it->second;
+
+        if (size > varInfo.size)
+        {
+            log::error("Shader::setStruct: Data size ({}) for variable '{}' is larger than shader variable size ({}).", size, name, varInfo.size);
+            return false;
+        }
+        if (size < varInfo.size)
+        {
+            log::warning("Shader::setStruct: Data size ({}) for variable '{}' is smaller than shader variable size ({}). Partial update.", size, name, varInfo.size);
+        }
+
+        memcpy(_constantBuffersData[varInfo.bufferName].data() + varInfo.offset, data, size);
+        _dirtyCBs.insert(varInfo.bufferName);
+        return true;
+    }
+
+    void Shader::commit(ID3D12GraphicsCommandList* commandList, UploadRingBuffer& uploadBuffer)
+    {
+        for (const auto& bufferName : _dirtyCBs)
+        {
+            auto it = _resourceMap.find(bufferName);
+            if (it == _resourceMap.end()) continue;
+
+            const auto& resourceInfo = it->second;
+            const auto& bufferData = _constantBuffersData[bufferName];
+
+            if (bufferData.empty()) continue;
+            auto gpuAddr  = uploadBuffer.update(bufferData.data(), bufferData.size());
+            if (gpuAddr == 0)
+            {
+                log::error("Shader::commit: Failed to allocate from UploadRingBuffer for CB '{}'.", bufferName);
+                continue;
+            }
+            commandList->SetGraphicsRootConstantBufferView(resourceInfo.rootParameterIndex, gpuAddr);
+        }
+        _dirtyCBs.clear();
+
+        for (const auto& pair : _shaderTextures)
+        {
+            const std::string& textureName = pair.first;
+            Texture* texture = pair.second;
+
+            if (!texture ) continue;
+
+            auto it = _resourceMap.find(textureName);
+            if (it == _resourceMap.end()) continue;
+
+            const auto& resourceInfo = it->second;
+            commandList->SetGraphicsRootDescriptorTable(resourceInfo.rootParameterIndex, texture->getGpuSrvHandle());
+        }
+    }
+
 }

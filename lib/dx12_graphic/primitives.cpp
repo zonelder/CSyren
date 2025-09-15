@@ -29,7 +29,7 @@ namespace csyren::render
             "   matrix viewProjection;"
             "   matrix invView;"
             "}"
-            "cbuffer PerObject : register(b1) { matrix world; }"
+            "cbuffer PerObject : register(b1) { matrix world;float4 tint; }"
             "struct VS_INPUT { float3 pos : POSITION; float4 color : COLOR; };"
             "struct PS_INPUT { float4 pos : SV_POSITION; float4 color : COLOR; };"
             "PS_INPUT main(VS_INPUT input) {"
@@ -38,7 +38,7 @@ namespace csyren::render
             "   pos = mul(world,pos);"              // World transform
             "   pos = mul(viewProjection,pos);"     // Combined view-projection
             "   o.pos = pos;"
-            "   o.color = input.color;"
+            "   o.color = input.color*tint;"
             "   return o;"
             "}";
 

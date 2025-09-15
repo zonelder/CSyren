@@ -224,7 +224,7 @@ namespace nlohmann
 				}
 			}
 
-			uint32_t newId = root["resources"].size();
+			size_t newId = root["resources"].size();
 			json newRes;
 			newRes["id"] = newId;
 			newRes["type"] = "texture";
@@ -236,7 +236,7 @@ namespace nlohmann
 
 		static void from_json(const json& j, csyren::core::reflection::FieldContext<csyren::render::TextureHandle>& ctx)
 		{
-			uint32_t resourceID;
+			size_t resourceID;
 			j.get_to(resourceID);
 
 			auto& root = ctx.rootJson;
@@ -249,7 +249,7 @@ namespace nlohmann
 
 			for (auto& res : root["resources"])
 			{
-				uint32_t currentID;
+				size_t currentID;
 				res["id"].get_to(currentID);
 				if (currentID == resourceID)
 				{
@@ -300,7 +300,7 @@ namespace nlohmann
 				}
 			}
 
-			uint32_t newId = root["resources"].size();
+			size_t newId = root["resources"].size();
 			json newRes;
 			newRes["id"] = newId;
 			newRes["type"] = "mesh";
@@ -312,7 +312,7 @@ namespace nlohmann
 
 		static void from_json(const json& j, csyren::core::reflection::FieldContext<csyren::render::MeshHandle>& ctx)
 		{
-			uint32_t resourceID;
+			size_t resourceID;
 			j.get_to(resourceID);
 
 			auto& root = ctx.rootJson;
@@ -325,7 +325,7 @@ namespace nlohmann
 
 			for (auto& res : root["resources"])
 			{
-				uint32_t currentID;
+				size_t currentID;
 				res["id"].get_to(currentID);
 				if (currentID == resourceID)
 				{
@@ -374,7 +374,7 @@ namespace nlohmann
 				}
 			}
 
-			uint32_t newId = root["resources"].size();
+			size_t newId = root["resources"].size();
 			json newRes;
 			newRes["id"] = newId;
 			newRes["type"] = "material";
@@ -386,7 +386,7 @@ namespace nlohmann
 
 		static void from_json(const json& j, csyren::core::reflection::FieldContext<csyren::render::MaterialHandle>& ctx)
 		{
-			uint32_t resourceID;
+			size_t resourceID;
 			j.get_to(resourceID);
 
 			auto& root = ctx.rootJson;
@@ -399,7 +399,7 @@ namespace nlohmann
 
 			for (auto& res : root["resources"])
 			{
-				uint32_t currentID;
+				size_t currentID;
 				res["id"].get_to(currentID);
 				if (currentID == resourceID)
 				{

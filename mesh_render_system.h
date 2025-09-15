@@ -8,9 +8,11 @@
 
 #include "transform.h"
 #include "mesh_filter.h"
+#include "math/math.h"
 
 
 using namespace csyren::core;
+using namespace csyren::math;
 using namespace csyren::components;
 
 namespace csyren
@@ -24,10 +26,28 @@ namespace csyren
         {
             ID3D12GraphicsCommandList* cmd = event.render.commandList();
             auto perFrameCB = event.render.getPerFrameCB();
-            auto perEntityCB = event.render.getPerEntityCB();
+            render::UploadRingBuffer* perEntityCB = event.render.getPerEntityCB();
             auto perMaterialCB = event.render.getPerMaterialCB();
             //auto perEntityBuffer = event.render.getPerEntityBuffer();
+            auto& keyboard = event.devices.keyboard();
 
+            Vector4 color;
+            using KeyCode = input::KeyCode;
+            float r = 0, g = 0, b = 0;
+            if (keyboard.isKeyDown(KeyCode::Q))
+            {
+                r = 1.0f;
+            }
+            if (keyboard.isKeyDown(KeyCode::W))
+            {
+                g = 1.0f;
+            }
+
+            if (keyboard.isKeyDown(KeyCode::E))
+            {
+                b = 1.0f;
+            }
+            color = Vector4(r, g, b, 1);
             struct EntityBuffer
             {
                 DirectX::XMMATRIX world;
@@ -49,21 +69,15 @@ namespace csyren
                         cmd->SetGraphicsRootSignature(shader->getRootSignature());
 
                         // Update per-entity constant buffer (world matrix)
-
-                        
                         auto perFrameRoot = shader->getRootParameterIndex("PerFrame");
-                        auto perEntityRoot = shader->getRootParameterIndex("PerObject");
                         if (perFrameRoot != UINT_MAX)
                         {
                             cmd->SetGraphicsRootConstantBufferView(0, perFrameCB->gpuAddress());
                         }
 
-                        if (perEntityRoot != UINT_MAX)
-                        {
-                            perEntityBuffer.world = tr.world();
-                            auto gpuAdress = perEntityCB->update(&perEntityBuffer, sizeof(EntityBuffer));
-                            cmd->SetGraphicsRootConstantBufferView(1, gpuAdress);
-                        }
+                        shader->setMatrix("world", tr.world());
+                        shader->setVector("tint", color);
+                        shader->commit(cmd, *perEntityCB);
 
                         //cmd->SetGraphicsRootConstantBufferView(2, perMaterialCB->gpuAddress());
 
