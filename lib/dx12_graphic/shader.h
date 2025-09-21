@@ -8,6 +8,7 @@
 #include <wrl.h>
 #include "d3d12shader.h"
 #include "math/math.h"
+#include "engine_semantics.h"
 
 namespace csyren::render
 {
@@ -71,12 +72,23 @@ namespace csyren::render
 		bool setVector(const std::string& name, const DirectX::XMVECTOR& v);
 		bool setMatrix(const std::string& name, const DirectX::XMMATRIX& v);
 		bool setStruct(const std::string& name, const void* ptr, size_t size);
-
+		void setEngineParameters(const EngineVariableBuffer& engineBuffer);
 		void commit(ID3D12GraphicsCommandList* cmd, UploadRingBuffer& uploadBuffer);
 	private:
+		using AttributeMap = std::unordered_map<std::string, details::EngineSemantic>;
+		AttributeMap parseSemanticsFromSource(const std::string& shaderCode);
 
+		bool validateAndRegisterSemantics(ID3D12ShaderReflection* reflection, const AttributeMap& attributeMap);
+
+		bool buildSemanticsFromReflection(
+			const std::string& vsCode,
+			const std::string& psCode,
+			ID3D12ShaderReflection* vsReflection,
+			ID3D12ShaderReflection* psReflection);
 		bool buildRootSignatureFromReflection(ID3D12Device* device, const D3D12_SHADER_BYTECODE& vs, const D3D12_SHADER_BYTECODE& ps);
 		bool buildInputLayoutFromReflection(const D3D12_SHADER_BYTECODE& vs);
+
+
 		Microsoft::WRL::ComPtr<ID3D12RootSignature> _rootSignature;
 
 		Microsoft::WRL::ComPtr< ID3DBlob> _vsBlob;
@@ -91,6 +103,8 @@ namespace csyren::render
 		std::unordered_set<std::string> _dirtyCBs; // names of dirty buffers;
 
 		std::unordered_map<std::string, Texture*> _shaderTextures;
+
+		std::unordered_map<std::string, details::EngineSemantic> _engineSemanticMap;
 
 		std::vector<std::string>			   _semanticNames;
 		std::vector< D3D12_INPUT_ELEMENT_DESC> _inputLayout;

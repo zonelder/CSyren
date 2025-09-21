@@ -17,6 +17,7 @@
 #include "sampler_manager.h"
 #include "constant_buffer.h"
 #include "upload_ring_buffer.h"
+#include "engine_semantics.h"
 
 namespace csyren::render
 {
@@ -60,10 +61,7 @@ namespace csyren::render
 
 		ConstantBuffer* getPerMaterialCB() noexcept { return &_perMaterialCB; };
 
-
-		PerEntityBuffer* getPerEntityBuffer() noexcept { return &_perEntityBuffer;};
-
-		PerFrameBuffer* getPerFrameBuffer() noexcept { return &_perFrameBuffer; };
+		EngineVariableBuffer* getEngineVariableBuffer() noexcept { return &_engineVariableBuffer; };
 	private:
 		void waitForGpu();
 
@@ -87,13 +85,9 @@ namespace csyren::render
 		ConstantBuffer _perFrameCB;
 		UploadRingBuffer _perEntityCB;
 		ConstantBuffer _perMaterialCB;
-
-		PerFrameBuffer _perFrameBuffer;
-		PerEntityBuffer _perEntityBuffer;
+		EngineVariableBuffer _engineVariableBuffer;
 
 		std::unique_ptr<DescriptorHeapManager> _pSrvHeapManager;
-		//std::unique_ptr<DescriptorHeapManager> _pSamplerHeapManager;
-		//SamplerManager  _samplerManager;
 	};
 }
 

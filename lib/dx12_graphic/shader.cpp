@@ -6,6 +6,7 @@
 
 #include <d3dcompiler.h>
 #include <algorithm>
+#include <regex>
 
 #pragma comment(lib, "d3dcompiler.lib")
 
@@ -18,6 +19,21 @@ namespace
         std::transform(s.begin(), s.end(), s.begin(),
             [](unsigned char c) { return std::toupper(c); });
         return s;
+    }
+    using namespace csyren::render::details;
+   SemanticDataType GetTypeFromReflection(const D3D12_SHADER_TYPE_DESC& typeDesc)
+    {
+        if (typeDesc.Class == D3D_SVC_MATRIX_COLUMNS && typeDesc.Rows == 4 && typeDesc.Columns == 4)
+            return SemanticDataType::Matrix4x4;
+        if (typeDesc.Class == D3D_SVC_VECTOR && typeDesc.Columns == 4)
+            return SemanticDataType::Float4;
+        if (typeDesc.Class == D3D_SVC_VECTOR && typeDesc.Columns == 3)
+            return SemanticDataType::Float3;
+        if (typeDesc.Class == D3D_SVC_VECTOR && typeDesc.Columns == 2)
+            return SemanticDataType::Float2;
+        if (typeDesc.Class == D3D_SVC_SCALAR)
+            return SemanticDataType::Float;
+        return SemanticDataType::Unknown;
     }
 
     void reflectShader(
@@ -287,6 +303,50 @@ namespace csyren::render
 
 		return it->second.rootParameterIndex;
 	}
+
+    bool Shader::buildSemanticsFromReflection(
+        const std::string& vsCode,
+        const std::string& psCode,
+        ID3D12ShaderReflection* vsReflection,
+        ID3D12ShaderReflection* psReflection)
+    {
+        AttributeMap vsAttributes = parseSemanticsFromSource(vsCode);
+        AttributeMap psAttributes = parseSemanticsFromSource(psCode);
+
+        vsAttributes.insert(psAttributes.begin(), psAttributes.end());
+
+        if (vsAttributes.empty())
+        {
+            log::info("Shader: No engine semantics found in shader source. Skipping validation.");
+            return true; // Нет семантик - нет проблем.
+        }
+
+        // --- ПРОХОД 2: Валидация с помощью объектов рефлексии ---
+        log::info("Shader: Validating semantics using reflection data...");
+
+        // Валидируем для вершинного шейдера
+        if (vsReflection)
+        {
+            if (!validateAndRegisterSemantics(vsReflection, vsAttributes))
+            {
+                log::error("Failed to validate semantics for Vertex Shader. Check log for details.");
+                return false;
+            }
+        }
+
+        // Валидируем для пиксельного шейдера
+        if (psReflection)
+        {
+            if (!validateAndRegisterSemantics(psReflection, vsAttributes))
+            {
+                log::error("Failed to validate semantics for Pixel Shader. Check log for details.");
+                return false;
+            }
+        }
+
+        log::info("Shader: Semantic validation successful. Registered {} engine-driven variables.", _engineSemanticMap.size());
+        return true;
+    }
 
 	bool Shader::buildRootSignatureFromReflection(ID3D12Device* device, const D3D12_SHADER_BYTECODE& vs, const D3D12_SHADER_BYTECODE& ps)
 	{
@@ -611,6 +671,118 @@ namespace csyren::render
         memcpy(_constantBuffersData[varInfo.bufferName].data() + varInfo.offset, data, size);
         _dirtyCBs.insert(varInfo.bufferName);
         return true;
+    }
+
+
+
+    Shader::AttributeMap Shader::parseSemanticsFromSource(const std::string& shaderCode)
+    {
+        AttributeMap attributeMap;
+        // regular expression:
+        // 1. find group: `// @semantic(semantic name)`
+        // 2. `[\s\S]*?`: pass any number of cymbols.
+        // 3. `\b(\w+)\s*;`:find last world before ';'.
+        std::regex semantic_regex(R"(\/\/\s*@semantic\(([\w_]+)\)[\s\S]*?\b(\w+)\s*;)");
+
+        auto it = std::sregex_iterator(shaderCode.begin(), shaderCode.end(), semantic_regex);
+        for (; it != std::sregex_iterator(); ++it)
+        {
+            std::smatch match = *it;
+            std::string semantic_str = match[1].str();
+            std::string variable_name = match[2].str();
+
+           details::EngineSemantic semantic = details::EngineSemanticRegistry::findSemantic(semantic_str);
+            if (semantic != details::EngineSemantic::None)
+            {
+                if (attributeMap.count(variable_name))
+                {
+                    log::warning("Shader Parser: Semantic for variable '{}' is already defined. Overwriting.", variable_name);
+                }
+                attributeMap[variable_name] = semantic;
+            }
+        }
+        return attributeMap;
+    }
+
+    bool Shader::validateAndRegisterSemantics(ID3D12ShaderReflection* reflection, const AttributeMap& attributeMap)
+    {
+        D3D12_SHADER_DESC shaderDesc;
+        reflection->GetDesc(&shaderDesc);
+
+        // Итерируемся по всем константным буферам
+        for (UINT i = 0; i < shaderDesc.ConstantBuffers; ++i)
+        {
+            ID3D12ShaderReflectionConstantBuffer* cbuffer = reflection->GetConstantBufferByIndex(i);
+            D3D12_SHADER_BUFFER_DESC cbDesc;
+            cbuffer->GetDesc(&cbDesc);
+
+            // Итерируемся по всем переменным в этом буфере
+            for (UINT j = 0; j < cbDesc.Variables; ++j)
+            {
+                ID3D12ShaderReflectionVariable* var = cbuffer->GetVariableByIndex(j);
+                D3D12_SHADER_VARIABLE_DESC varDesc;
+                var->GetDesc(&varDesc);
+                std::string varName = varDesc.Name;
+
+                // Проверяем, есть ли для этой переменной атрибут
+                auto attrIt = attributeMap.find(varName);
+                if (attrIt != attributeMap.end())
+                {
+                    EngineSemantic semantic = attrIt->second;
+
+                    // Нашли! Теперь валидируем тип.
+                    const SemanticInfo* expectedInfo = EngineSemanticRegistry::find(semantic);
+                    if (!expectedInfo) continue;
+
+                    ID3D12ShaderReflectionType* type = var->GetType();
+                    D3D12_SHADER_TYPE_DESC typeDesc;
+                    type->GetDesc(&typeDesc);
+
+                    details::SemanticDataType actualType = GetTypeFromReflection(typeDesc);
+
+                    if (actualType != expectedInfo->type)
+                    {
+                        // --- ОШИБКА ТИПОВ! ---
+                        return false; // Прерываем создание шейдера
+                    }
+
+                    _engineSemanticMap[varName] = semantic;
+                    log::info("Shader: Successfully registered semantic for variable '{}'.", varName);
+                }
+            }
+        }
+        return true;
+    }
+
+    void Shader::setEngineParameters(const EngineVariableBuffer& engineBuffer)
+    {
+        const uint8_t* basePtr = reinterpret_cast<const uint8_t*>(&engineBuffer);
+
+        for (const auto& pair : _engineSemanticMap)
+        {
+            const std::string& varName = pair.first;
+            details::EngineSemantic semantic = pair.second;
+
+            const details::SemanticInfo* info = details::EngineSemanticRegistry::find(semantic);
+            if (!info) continue;
+
+            const void* sourceDataPtr = basePtr + info->offset;
+
+            switch (info->type)
+            {
+            case details::SemanticDataType::Matrix4x4:
+                setMatrix(varName, *static_cast<const DirectX::XMMATRIX*>(sourceDataPtr));
+                break;
+            case details::SemanticDataType::Float2:
+            case details::SemanticDataType::Float3:
+            case details::SemanticDataType::Float4:
+                setVector(varName, *static_cast<const DirectX::XMVECTOR*>(sourceDataPtr));
+                break;
+            case details::SemanticDataType::Float:
+                setFloat(varName, *static_cast<const float*>(sourceDataPtr));
+                break;
+            }
+        }
     }
 
     void Shader::commit(ID3D12GraphicsCommandList* commandList, UploadRingBuffer& uploadBuffer)
