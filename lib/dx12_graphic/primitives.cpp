@@ -22,35 +22,57 @@ namespace csyren::render
         constexpr char CUBE_MESH_NAME[]             ="__primitive_cube__";
 
         //TODO create basic shaders file
-        const char* g_vsCode =
-            "cbuffer PerFrame : register(b0) {"
-            "   matrix projection;"
-            "   matrix view;"
-            "   matrix viewProjection;"
-            "   matrix invView;"
-            "}"
-            "cbuffer PerObject : register(b1) { matrix world;float4 tint; }"
-            "struct VS_INPUT { float3 pos : POSITION; float4 color : COLOR; };"
-            "struct PS_INPUT { float4 pos : SV_POSITION; float4 color : COLOR; };"
-            "PS_INPUT main(VS_INPUT input) {"
-            "   PS_INPUT o;"
-            "   float4 pos = float4(input.pos, 1.0);"
-            "   pos = mul(world,pos);"              // World transform
-            "   pos = mul(viewProjection,pos);"     // Combined view-projection
-            "   o.pos = pos;"
-            "   o.color = input.color*tint;"
-            "   return o;"
-            "}";
+        const char* g_primitiveShaderCode = R"(
+            // Атрибуты-комментарии для автоматической привязки
+            // движком через setEngineParameters.
 
-        const char* g_psCode =
-            "struct PS_INPUT { float4 pos : SV_POSITION; float4 color : COLOR; };"
-            "float4 main(PS_INPUT input) : SV_TARGET { return input.color; }";
+            //@semantic(ViewProjection)
+            matrix viewProjection;
+
+            //@semantic(World)
+            matrix world;
+    
+            // Пользовательская переменная, которую можно менять через material->setVector(...)
+            //@editable() 
+            float4 tint;
+
+            struct VS_Input
+            {
+                float3 position : POSITION;
+                float4 color    : COLOR;
+            };
+
+            struct PS_Input
+            {
+                float4 position : SV_POSITION;
+                float4 color    : COLOR;
+            };
+
+            // --- Vertex Shader ---
+            PS_Input VSMain(VS_Input input)
+            {
+                PS_Input output;
+                float4 pos = float4(input.position, 1.0f);
+                pos = mul(pos, world);
+                pos = mul(pos, viewProjection);
+        
+                output.position = pos;
+                output.color = input.color * tint;
+                return output;
+            }
+
+            // --- Pixel Shader ---
+            float4 PSMain(PS_Input input) : SV_TARGET
+            {
+                return input.color;
+            }
+        )";
     }
 
 
     bool Primitives::registerFabricsAll(ResourceManager& rm)
     {
-        ResourceManager::ProceduralResourceFactory<Shader> defaultShaderFabric = [](ResourceManager& rm) { return rm.createShader(DEFAULT_SHADER_NAME, std::string(g_vsCode), std::string(g_psCode)); };
+        ResourceManager::ProceduralResourceFactory<Shader> defaultShaderFabric = [](ResourceManager& rm) { return rm.createShaderFromCode(DEFAULT_SHADER_NAME, std::string(g_primitiveShaderCode)); };
 
         ResourceManager::ProceduralResourceFactory<Material> defaultMaterialFabric = [](ResourceManager& rm)
             {

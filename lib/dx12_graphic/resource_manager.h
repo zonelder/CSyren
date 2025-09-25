@@ -201,9 +201,14 @@ namespace csyren::render
         // }
 
         // Shaders (from string code)
-        ShaderHandle createShader(const std::string& name, const std::string& vsCode, const std::string& psCode)
+        ShaderHandle createShader(const std::string& name, const std::string& filepath)
         {
-            return _shaderStorage.load(name, vsCode, psCode);
+            return _shaderStorage.load(name, filepath);
+        }
+
+        ShaderHandle createShaderFromCode(const std::string& name, const std::string& code)
+        {
+            return _shaderStorage.load(name, from_source_code,code);
         }
 
         // Materials

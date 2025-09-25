@@ -125,6 +125,7 @@ namespace csyren::render
 
         _viewport = { 0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f };
         _scissor = { 0, 0, static_cast<LONG>(width), static_cast<LONG>(height) };
+        details::EngineSemanticRegistry::instance().initialize();
 
         return true;
     }

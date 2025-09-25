@@ -63,6 +63,12 @@
     <ClInclude Include="engine_semantics.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="shader_meta.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resources.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -93,6 +99,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="upload_ring_buffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="shader_meta.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -76,4 +76,29 @@ namespace csyren::cstdmf
 
 		return w;
 	}
+
+	/**
+	 * @brief remove spaces from the start and the end of the string.
+	 * 
+	 * \param s
+	 * \return  return new string without corner spaces
+	 */
+	std::string trim(const std::string& s) 
+	{
+		size_t first = s.find_first_not_of(" \t\n\r");
+		if (std::string::npos == first) {
+			return s;
+		}
+		size_t last = s.find_last_not_of(" \t\n\r");
+		return s.substr(first, (last - first + 1));
+	}
+
+	std::string loadStringFromFile(const std::string& filepath)
+	{
+		std::ifstream file(filepath);
+		if (!file.is_open()) {
+			return "";
+		}
+		return std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+	}
 }

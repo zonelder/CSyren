@@ -22,91 +22,63 @@ namespace csyren::render
 	};
 }
 
-#define REGISTER_SEMANTIC_NAME(name) getNameMap()[std::string(#name)] = EngineSemantic::##name;
-
 namespace csyren::render::details
 {
-
-	enum class EngineSemantic
-	{
-		None,
-		World,
-		View,
-		InvView,
-		Projection,
-		ViewProjection,
-		CameraPosition,
-		Time,
-	};
 
 	enum class SemanticDataType { Unknown,Float,Float2,Float3,Float4, Matrix4x4 };
 
 
 	struct SemanticInfo
 	{
-		EngineSemantic semantic;
+		SemanticDataType type;
 		size_t offset;
 		size_t size;
-		SemanticDataType type;
 	};
 
-
+	/**
+	 * @class EngineSemanticRegistry
+	 * @brief Capture information about all registered sematics.
+	 * work directly with string literals.
+	 */
 	class EngineSemanticRegistry
 	{
 	public:
-		static void initialize()
+		void initialize()
 		{
-			registerSemantic<DirectX::XMMATRIX>(EngineSemantic::World, offsetof(EngineVariableBuffer, worldMatrix), SemanticDataType::Matrix4x4);
-			registerSemantic<DirectX::XMMATRIX>(EngineSemantic::View, offsetof(EngineVariableBuffer, viewMatrix), SemanticDataType::Matrix4x4);
-			registerSemantic<DirectX::XMMATRIX>(EngineSemantic::InvView, offsetof(EngineVariableBuffer, invViewMatrix), SemanticDataType::Matrix4x4);
-			registerSemantic<DirectX::XMMATRIX>(EngineSemantic::Projection, offsetof(EngineVariableBuffer, projectionMatrix), SemanticDataType::Matrix4x4);
-			registerSemantic<DirectX::XMMATRIX>(EngineSemantic::ViewProjection, offsetof(EngineVariableBuffer, viewProjectionMatrix), SemanticDataType::Matrix4x4);
-			registerSemantic<DirectX::XMVECTOR>(EngineSemantic::CameraPosition, offsetof(EngineVariableBuffer, cameraPosition), SemanticDataType::Float4);
-			registerSemantic<float>(EngineSemantic::Time, offsetof(EngineVariableBuffer, totalTime), SemanticDataType::Float);
-
-
-			REGISTER_SEMANTIC_NAME(World);
-			REGISTER_SEMANTIC_NAME(View);
-			REGISTER_SEMANTIC_NAME(InvView);
-			REGISTER_SEMANTIC_NAME(Projection);
-			REGISTER_SEMANTIC_NAME(ViewProjection);
-			REGISTER_SEMANTIC_NAME(CameraPosition);
-			REGISTER_SEMANTIC_NAME(Time);
-
+			registerSemantic<DirectX::XMMATRIX>("World", offsetof(EngineVariableBuffer, worldMatrix), SemanticDataType::Matrix4x4);
+			registerSemantic<DirectX::XMMATRIX>("View", offsetof(EngineVariableBuffer, viewMatrix), SemanticDataType::Matrix4x4);
+			registerSemantic<DirectX::XMMATRIX>("InvView", offsetof(EngineVariableBuffer, invViewMatrix), SemanticDataType::Matrix4x4);
+			registerSemantic<DirectX::XMMATRIX>("Projection", offsetof(EngineVariableBuffer, projectionMatrix), SemanticDataType::Matrix4x4);
+			registerSemantic<DirectX::XMMATRIX>("ViewProjection", offsetof(EngineVariableBuffer, viewProjectionMatrix), SemanticDataType::Matrix4x4);
+			registerSemantic<DirectX::XMVECTOR>("CameraPosition", offsetof(EngineVariableBuffer, cameraPosition), SemanticDataType::Float4);
+			registerSemantic<float>("Time", offsetof(EngineVariableBuffer, totalTime), SemanticDataType::Float);
 		}
 
-		static const SemanticInfo* find(EngineSemantic semantic)
+		const SemanticInfo* find(const std::string& name) const
 		{
-			auto it = getMap().find(semantic);
-			return (it != getMap().end()) ? &it->second : nullptr;
+			auto it = _registry.find(name);
+			return (it != _registry.end()) ? &it->second : nullptr;
 		}
 
-		static EngineSemantic findSemantic(const std::string semanticName)
+		static EngineSemanticRegistry& instance()
 		{
-			auto it = getNameMap().find(semanticName);
-			return (it != getNameMap().end()) ? it->second : EngineSemantic::None;
+			static EngineSemanticRegistry m;
+			return m;
 		}
+
 	private:
+		EngineSemanticRegistry() = default;
+		~EngineSemanticRegistry() = default;
+		EngineSemanticRegistry(const EngineSemanticRegistry&) = delete;
+		EngineSemanticRegistry& operator=(const EngineSemanticRegistry&) = delete;
+
 		template<typename T>
-		static void registerSemantic(EngineSemantic semantic, size_t offset, SemanticDataType type)
+		void registerSemantic(const std::string& name, size_t offset, SemanticDataType type)
 		{
-			getMap()[semantic] = { semantic, offset, sizeof(T), type };
+			_registry[name] = { type, offset, sizeof(T) };
 		}
 
-		// Singleton-like accessor
-		static std::unordered_map<EngineSemantic, SemanticInfo>& getMap()
-		{
-			static std::unordered_map<EngineSemantic, SemanticInfo> instance;
-			return instance;
-		}
-
-		static std::unordered_map<std::string, EngineSemantic>& getNameMap()
-		{
-			static std::unordered_map<std::string, EngineSemantic> instance;
-			return instance;
-		}
+		std::unordered_map<std::string, SemanticInfo> _registry;
 	};
 
 }
-
-#undef REGISTER_SEMANTIC_NAME

@@ -160,10 +160,12 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="primitives.h" />
     <ClInclude Include="renderer.h" />
+    <ClInclude Include="resources.h" />
     <ClInclude Include="resource_handle.h" />
     <ClInclude Include="resource_manager.h" />
     <ClInclude Include="sampler_manager.h" />
     <ClInclude Include="shader.h" />
+    <ClInclude Include="shader_meta.h" />
     <ClInclude Include="texture.h" />
     <ClInclude Include="upload_ring_buffer.h" />
   </ItemGroup>
@@ -181,6 +183,7 @@
     <ClCompile Include="primitives.cpp" />
     <ClCompile Include="renderer.cpp" />
     <ClCompile Include="shader.cpp" />
+    <ClCompile Include="shader_meta.cpp" />
     <ClCompile Include="texture.cpp" />
     <ClCompile Include="upload_ring_buffer.cpp" />
   </ItemGroup>

@@ -3,12 +3,14 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <filesystem>
 
 #include <d3d12.h>
 #include <wrl.h>
 #include "d3d12shader.h"
 #include "math/math.h"
 #include "engine_semantics.h"
+#include "shader_meta.h"
 
 namespace csyren::render
 {
@@ -35,14 +37,31 @@ namespace csyren::render
 		std::vector<uint8_t> defaultValue;
 	};
 
+
+	struct LinkedVariable
+	{
+		std::string variableName;
+
+		//duple of SemanticInfo for cache friedly behaviour;
+		details::SemanticDataType type;
+		size_t offset;
+	};
+
+	struct from_asset_path_t {};
+	inline constexpr from_asset_path_t from_asset_path{};
+
+	// Тэг для инициализации из исходного кода в строке
+	struct from_source_code_t {};
+	inline constexpr from_source_code_t from_source_code{};
+
+
 	class Shader
 	{
 		friend class ResourceStorage<Shader>;
 	public:
 		Shader() = default;
-		bool init(Renderer& renderer, ResourceManager& resourceManager, const Microsoft::WRL::ComPtr< ID3DBlob> vsBlob, const Microsoft::WRL::ComPtr< ID3DBlob> psBlob);
-		bool init(Renderer& renderer, ResourceManager& resourceManager, const std::string& vsCode, const std::string& psCode);
-		bool init(Renderer& renderer, ResourceManager& resourceManager, const std::wstring& vsPath, const std::wstring& psPath);
+		bool init(Renderer& renderer, ResourceManager& resourceManager, from_source_code_t, const std::string& code);
+		bool init(Renderer& renderer, ResourceManager& resourceManager, from_asset_path_t, const std::string& filepath);
 		bool init(Renderer& renderer, ResourceManager& resourceManager, const std::string& filepath);
 		ID3D12RootSignature* getRootSignature() const 
 		{
@@ -64,7 +83,6 @@ namespace csyren::render
 			return { _vsBlob->GetBufferPointer(), _vsBlob->GetBufferSize() };
 		}
 
-		//TODO implement all this methods.
 		bool setFloat(const std::string& name, float v);
 		bool setInt(const std::string& name, int v);
 		bool setBool(const std::string& name, bool v);
@@ -72,22 +90,22 @@ namespace csyren::render
 		bool setVector(const std::string& name, const DirectX::XMVECTOR& v);
 		bool setMatrix(const std::string& name, const DirectX::XMMATRIX& v);
 		bool setStruct(const std::string& name, const void* ptr, size_t size);
+
 		void setEngineParameters(const EngineVariableBuffer& engineBuffer);
+
 		void commit(ID3D12GraphicsCommandList* cmd, UploadRingBuffer& uploadBuffer);
 	private:
-		using AttributeMap = std::unordered_map<std::string, details::EngineSemantic>;
-		AttributeMap parseSemanticsFromSource(const std::string& shaderCode);
-
-		bool validateAndRegisterSemantics(ID3D12ShaderReflection* reflection, const AttributeMap& attributeMap);
-
-		bool buildSemanticsFromReflection(
-			const std::string& vsCode,
-			const std::string& psCode,
-			ID3D12ShaderReflection* vsReflection,
-			ID3D12ShaderReflection* psReflection);
 		bool buildRootSignatureFromReflection(ID3D12Device* device, const D3D12_SHADER_BYTECODE& vs, const D3D12_SHADER_BYTECODE& ps);
 		bool buildInputLayoutFromReflection(const D3D12_SHADER_BYTECODE& vs);
 
+		bool compileAndInit(Renderer& renderer, const std::string& shaderCode, const std::filesystem::path relativePath);
+		bool finalizeInit(Renderer& renderer, const D3D12_SHADER_BYTECODE& vs,const D3D12_SHADER_BYTECODE& ps);
+		bool loadPrecompiledAndInit(Renderer& renderer, const std::filesystem::path& relativePath);
+
+		Microsoft::WRL::ComPtr<ID3DBlob> compileShader(const std::string& source, const char* target, const std::string& entryPoint);
+
+		bool validateMeta(const D3D12_SHADER_BYTECODE& vs, const D3D12_SHADER_BYTECODE& ps);
+		void linkSemantics();
 
 		Microsoft::WRL::ComPtr<ID3D12RootSignature> _rootSignature;
 
@@ -100,13 +118,15 @@ namespace csyren::render
 		// CPU-copies of constant buffer;
 		std::unordered_map<std::string, std::vector<uint8_t>> _constantBuffersData;
 		std::unordered_map<std::string, UINT> _constantBufferSizes;
-		std::unordered_set<std::string> _dirtyCBs; // names of dirty buffers;
+		std::unordered_set<std::string> _dirtyCBs;
 
 		std::unordered_map<std::string, Texture*> _shaderTextures;
 
-		std::unordered_map<std::string, details::EngineSemantic> _engineSemanticMap;
+		std::vector<LinkedVariable>			   _linkedSemantics;
 
-		std::vector<std::string>			   _semanticNames;
+		std::vector<std::string>			   _InputLayoutSemantic;
 		std::vector< D3D12_INPUT_ELEMENT_DESC> _inputLayout;
+
+		ShaderMetaPtr		_meta;
 	};
 }
