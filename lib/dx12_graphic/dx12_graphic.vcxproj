@@ -158,6 +158,7 @@
     <ClInclude Include="material.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="pso_factory.h" />
     <ClInclude Include="primitives.h" />
     <ClInclude Include="renderer.h" />
     <ClInclude Include="resources.h" />
@@ -181,6 +182,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="primitives.cpp" />
+    <ClCompile Include="pso_factory.cpp" />
     <ClCompile Include="renderer.cpp" />
     <ClCompile Include="shader.cpp" />
     <ClCompile Include="shader_meta.cpp" />

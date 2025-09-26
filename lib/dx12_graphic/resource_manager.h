@@ -51,7 +51,7 @@ namespace csyren::render
             TResource* resource_ptr = _storage.get(handle.id);
 
             // Call the resource's init method, passing dependencies and specific init args
-            if (!resource_ptr->init(_renderer, _resourceManager, std::forward<TInitArgs>(init_args)...))
+            if (!resource_ptr->init(_renderer, std::forward<TInitArgs>(init_args)...))
             {
                 _storage.erase(handle.id);
                 log::error("Failed to initialize resource: {}", name);

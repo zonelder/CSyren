@@ -79,6 +79,8 @@ namespace csyren::render
                 meta->_variables.emplace_back(std::move(var_meta));
             }
         }
+
+        return meta;
 	}
 
    ShaderMetaPtr ShaderMetaBuilder::build(const nlohmann::json& jsonData)

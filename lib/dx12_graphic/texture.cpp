@@ -4,7 +4,6 @@
 #include <DirectXTex.h>
 
 #include "cstdmf/string_utils.h"
-#include "resource_manager.h"
 
 namespace csyren::render
 {
@@ -43,12 +42,12 @@ namespace csyren::render
         return *this;
     }
 
-    bool Texture::init(Renderer& r, ResourceManager& resourceManager, const std::string& filePath)
+    bool Texture::init(Renderer& r, const std::string& filePath)
     {
-        return init(r, resourceManager,cstdmf::to_wstring(filePath));
+        return init(r,cstdmf::to_wstring(filePath));
     }
 
-    bool Texture::init(Renderer& renderer, ResourceManager& resourceManager, const std::wstring& filePath)
+    bool Texture::init(Renderer& renderer, const std::wstring& filePath)
     {
         if (!std::filesystem::exists(filePath))
         {

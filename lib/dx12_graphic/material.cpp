@@ -62,52 +62,19 @@ namespace csyren::render
         dsvFormat = DXGI_FORMAT_D32_FLOAT;
     }
 
-    bool Material::init(Renderer& renderer, ResourceManager& rm, const std::string& filepath)
+    bool Material::init(Renderer& renderer, const std::string& filepath)
     {
         log::error("Material: material loading from file not implemented. file = {}", filepath);
         return false;
     }
 
-    bool Material::init(Renderer& renderer, ResourceManager& rm, ShaderHandle shaderHandle, const MaterialStateDesc& states)
+    bool Material::init(Renderer& renderer, ShaderHandle shaderHandle, const MaterialStateDesc& states)
     {
         if (!shaderHandle) {
             log::error("Material::init: Invalid shader handle provided.");
             return false;
         }
-
-        Shader* shader = rm.getShader(shaderHandle);
-        if (!shader) {
-            log::error("Material::init: Failed to retrieve shader from resource manager.");
-            return false;
-        }
-
-        ID3D12Device* device = renderer.device();
-        if (!device) return false;
-
-        D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
-        psoDesc.pRootSignature = shader->getRootSignature();
-        psoDesc.VS = shader->getVSBytecode();
-        psoDesc.PS = shader->getPSBytecode();
-        psoDesc.InputLayout = { shader->getInputLayout().data(), (UINT)shader->getInputLayout().size() };
-
-        // Применяем кастомные состояния из MaterialStateDesc
-        psoDesc.BlendState = states.blendState;
-        psoDesc.RasterizerState = states.rasterizerState;
-        psoDesc.DepthStencilState = states.depthStencilState;
-        psoDesc.PrimitiveTopologyType = states.primitiveTopologyType;
-        psoDesc.NumRenderTargets = states.numRenderTargets;
-        memcpy(psoDesc.RTVFormats, states.rtvFormats, sizeof(states.rtvFormats));
-        psoDesc.DSVFormat = states.dsvFormat;
-        psoDesc.SampleMask = UINT_MAX;
-        psoDesc.SampleDesc.Count = 1;
-
-        HRESULT hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&_pso));
-        if (FAILED(hr))
-        {
-            log::error("Material::init: Failed to create Graphics PSO.");
-            return false;
-        }
-
+        _states = states;
         _shaderHandle = shaderHandle;
         return true;
     }

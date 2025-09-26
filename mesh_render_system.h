@@ -48,10 +48,6 @@ namespace csyren
                 b = 1.0f;
             }
             color = Vector4(r, g, b, 1);
-            struct EntityBuffer
-            {
-                DirectX::XMMATRIX world;
-            } perEntityBuffer;
 
             event.scene.view<Transform, MeshFilter, MeshRenderer>()
                 .each([&](Entity::ID id,
@@ -65,7 +61,8 @@ namespace csyren
                         auto* shader = event.resources.getShader(material->getShader());
                         if (!shader) return;
 
-                        cmd->SetPipelineState(material->pso());
+                        auto pso = event.render.getPSO(material->getShader(),shader, material->getStates());
+                        cmd->SetPipelineState(pso);
                         cmd->SetGraphicsRootSignature(shader->getRootSignature());
 
                         // Update per-entity constant buffer (world matrix)
@@ -78,7 +75,7 @@ namespace csyren
                         shader->setMatrix("world", tr.world());
                         shader->setVector("tint", color);
                         shader->commit(cmd, *perEntityCB);
-
+                        
                         //cmd->SetGraphicsRootConstantBufferView(2, perMaterialCB->gpuAddress());
 
                         mesh->draw(event.render);

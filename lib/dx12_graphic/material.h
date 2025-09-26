@@ -9,9 +9,8 @@
 namespace csyren::render
 {
 	class Renderer;
-    class ResourceManager;
 	
-	struct MaterialStateDesc
+	struct alignas(sizeof(size_t)) MaterialStateDesc
 	{
 		D3D12_BLEND_DESC blendState;
 		D3D12_RASTERIZER_DESC rasterizerState;
@@ -27,13 +26,13 @@ namespace csyren::render
 	{
 	public:
 		Material() noexcept = default;
-		bool init(Renderer& renderer, ResourceManager& rm, const std::string& filepath);
-		bool init(Renderer& renderer,ResourceManager& rm, ShaderHandle shaderHandle, const MaterialStateDesc& states);
-		ID3D12PipelineState* pso() const noexcept { return _pso.Get(); }
+		bool init(Renderer& renderer, const std::string& filepath);
+		bool init(Renderer& renderer, ShaderHandle shaderHandle, const MaterialStateDesc& states);
 		ShaderHandle getShader() const noexcept { return _shaderHandle;}
+		const MaterialStateDesc& getStates() const noexcept { return _states; }
 	private:
+		MaterialStateDesc _states;
 		ShaderHandle _shaderHandle;
-		Microsoft::WRL::ComPtr<ID3D12PipelineState> _pso;
 	};
 }
 

@@ -14,7 +14,6 @@
 
 namespace csyren::render
 {
-	class ResourceManager;
 	class Renderer;
 	class Texture;
 	class UploadRingBuffer;
@@ -60,9 +59,9 @@ namespace csyren::render
 		friend class ResourceStorage<Shader>;
 	public:
 		Shader() = default;
-		bool init(Renderer& renderer, ResourceManager& resourceManager, from_source_code_t, const std::string& code);
-		bool init(Renderer& renderer, ResourceManager& resourceManager, from_asset_path_t, const std::string& filepath);
-		bool init(Renderer& renderer, ResourceManager& resourceManager, const std::string& filepath);
+		bool init(Renderer& renderer,from_source_code_t, const std::string& code);
+		bool init(Renderer& renderer,from_asset_path_t, const std::string& filepath);
+		bool init(Renderer& renderer,const std::string& filepath);
 		ID3D12RootSignature* getRootSignature() const 
 		{
 			return  _rootSignature.Get();

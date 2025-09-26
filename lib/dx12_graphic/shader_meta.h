@@ -4,7 +4,7 @@
 #include <vector>
 #include <memory>
 
-#include "core/serialize_common.h"
+#include "third_party/json/json.hpp"
 
 namespace csyren::render::details
 {

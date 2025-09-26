@@ -8,7 +8,6 @@
 namespace csyren::render
 {
     class Renderer;
-    class ResourceManager;
     template<typename T> class ResourceStorage;
 
     class Texture
@@ -30,9 +29,9 @@ namespace csyren::render
 
 
 
-        bool init(Renderer& renderer, ResourceManager& resourceManager, const std::wstring& filePath);
+        bool init(Renderer& renderer, const std::wstring& filePath);
 
-        bool init(Renderer& renderer, ResourceManager& resourceManager, const std::string& filePath);
+        bool init(Renderer& renderer, const std::string& filePath);
     private:
         Microsoft::WRL::ComPtr<ID3D12Resource> _textureResource;
         DescriptorHandles _srvHandles{};

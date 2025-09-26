@@ -18,6 +18,7 @@
 #include "constant_buffer.h"
 #include "upload_ring_buffer.h"
 #include "engine_semantics.h"
+#include "pso_factory.h"
 
 namespace csyren::render
 {
@@ -62,6 +63,8 @@ namespace csyren::render
 		ConstantBuffer* getPerMaterialCB() noexcept { return &_perMaterialCB; };
 
 		EngineVariableBuffer* getEngineVariableBuffer() noexcept { return &_engineVariableBuffer; };
+
+		ID3D12PipelineState* getPSO(ShaderHandle sh, Shader* shader, const MaterialStateDesc& state);
 	private:
 		void waitForGpu();
 
@@ -87,7 +90,8 @@ namespace csyren::render
 		ConstantBuffer _perMaterialCB;
 		EngineVariableBuffer _engineVariableBuffer;
 
-		std::unique_ptr<DescriptorHeapManager> _pSrvHeapManager;
+		std::unique_ptr<details::PSOFactory>	_pPSOFactory;
+		std::unique_ptr<DescriptorHeapManager>	_pSrvHeapManager;
 	};
 }
 

@@ -213,17 +213,17 @@ namespace csyren::render
         return byteCode;
     }
 
-    bool Shader::init(Renderer& renderer, ResourceManager& resourceManager, from_source_code_t, const std::string& code)
+    bool Shader::init(Renderer& renderer,from_source_code_t, const std::string& code)
     {
         return compileAndInit(renderer,code,"");
     }
 
-    bool Shader::init(Renderer& renderer, ResourceManager& resourceManager, from_asset_path_t, const std::string& filepath)
+    bool Shader::init(Renderer& renderer,from_asset_path_t, const std::string& filepath)
     {
-        return init(renderer,resourceManager,filepath);
+        return init(renderer,filepath);
     }
 
-    bool Shader::init(Renderer& renderer, ResourceManager& resourceManager, const std::string& assetPath)
+    bool Shader::init(Renderer& renderer, const std::string& assetPath)
     {
         std::filesystem::path relativePath(assetPath);
 

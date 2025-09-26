@@ -10,7 +10,6 @@
 namespace csyren::render
 {
 	class Renderer;
-	class ResourceManager;
 	class Material;
 	template<typename T> class ResourceStorage;
 
@@ -29,8 +28,8 @@ namespace csyren::render
 		void draw(Renderer& renderer);
 	private:
 
-		bool init(Renderer& renderer, ResourceManager& resourceManager,const std::string& filepath);
-		bool init(Renderer& renderer, ResourceManager& resourceManager, const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices);
+		bool init(Renderer& renderer,const std::string& filepath);
+		bool init(Renderer& renderer, const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices);
 
 	private:
 		Microsoft::WRL::ComPtr<ID3D12Resource> _vertexBuffer;

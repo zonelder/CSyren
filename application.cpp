@@ -118,11 +118,11 @@ namespace csyren
 			_systems.update(updateEvent);
 			auto [mainCameraID,camera,cameraTransform] = *(_scene.view<Camera,Transform>().begin());//only first camera accepted
 
-			auto perFrameBuffer = _render.getPerFrameBuffer();
-			perFrameBuffer->invView = cameraTransform.world();
-			perFrameBuffer->view = DirectX::XMMatrixInverse(nullptr, perFrameBuffer->invView);
-			perFrameBuffer->projection = createProjection(camera);
-			perFrameBuffer->viewProjection = perFrameBuffer->view* perFrameBuffer->projection;
+			auto perFrameBuffer = _render.getEngineVariableBuffer();
+			perFrameBuffer->invViewMatrix = cameraTransform.world();
+			perFrameBuffer->viewMatrix = DirectX::XMMatrixInverse(nullptr, perFrameBuffer->invViewMatrix);
+			perFrameBuffer->projectionMatrix = createProjection(camera);
+			perFrameBuffer->viewProjectionMatrix = perFrameBuffer->viewMatrix* perFrameBuffer->projectionMatrix;
 			auto perFrameCB = _render.getPerFrameCB();
 			perFrameCB->update(perFrameBuffer, sizeof(render::PerFrameBuffer));
 

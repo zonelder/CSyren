@@ -83,7 +83,7 @@ namespace csyren::cstdmf
 	 * \param s
 	 * \return  return new string without corner spaces
 	 */
-	std::string trim(const std::string& s) 
+	inline std::string trim(const std::string& s)
 	{
 		size_t first = s.find_first_not_of(" \t\n\r");
 		if (std::string::npos == first) {
@@ -93,7 +93,7 @@ namespace csyren::cstdmf
 		return s.substr(first, (last - first + 1));
 	}
 
-	std::string loadStringFromFile(const std::string& filepath)
+	inline std::string loadStringFromFile(const std::string& filepath)
 	{
 		std::ifstream file(filepath);
 		if (!file.is_open()) {

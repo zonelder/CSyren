@@ -122,6 +122,7 @@ namespace csyren::render
             return false;
         }
 
+        _pPSOFactory = std::make_unique<details::PSOFactory>(_device.Get());
 
         _viewport = { 0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f };
         _scissor = { 0, 0, static_cast<LONG>(width), static_cast<LONG>(height) };
@@ -238,6 +239,12 @@ namespace csyren::render
         waitForGpu();
 
         return S_OK;
+    }
+
+
+    ID3D12PipelineState* Renderer::getPSO(ShaderHandle sh,Shader* shader,const MaterialStateDesc& state)
+    {
+        return _pPSOFactory->get(sh,shader, state);
     }
 
 }
