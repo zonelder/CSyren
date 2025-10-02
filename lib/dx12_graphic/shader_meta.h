@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <memory>
 
@@ -29,7 +30,7 @@ namespace csyren::render::details
 		~AttributeRegistry() = default;
 		AttributeRegistry(const AttributeRegistry&) = delete;
 	private:
-		static std::unordered_set<std::string> _registeredAttributes;
+		std::unordered_set<std::string> _registeredAttributes;
 	};
 }
 

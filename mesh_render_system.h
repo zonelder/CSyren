@@ -30,7 +30,7 @@ namespace csyren
             auto perMaterialCB = event.render.getPerMaterialCB();
             //auto perEntityBuffer = event.render.getPerEntityBuffer();
             auto& keyboard = event.devices.keyboard();
-
+            auto engineParams = event.render.getEngineVariableBuffer();
             Vector4 color;
             using KeyCode = input::KeyCode;
             float r = 0, g = 0, b = 0;
@@ -71,7 +71,7 @@ namespace csyren
                         {
                             cmd->SetGraphicsRootConstantBufferView(0, perFrameCB->gpuAddress());
                         }
-
+                        shader->setEngineParameters(*engineParams);
                         shader->setMatrix("world", tr.world());
                         shader->setVector("tint", color);
                         shader->commit(cmd, *perEntityCB);

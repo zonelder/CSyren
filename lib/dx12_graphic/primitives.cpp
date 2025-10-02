@@ -26,10 +26,10 @@ namespace csyren::render
             // Атрибуты-комментарии для автоматической привязки
             // движком через setEngineParameters.
 
-            //@semantic(ViewProjection)
+            //@semantic ViewProjection
             matrix viewProjection;
 
-            //@semantic(World)
+            //@semantic World
             matrix world;
     
             // Пользовательская переменная, которую можно менять через material->setVector(...)
@@ -57,7 +57,7 @@ namespace csyren::render
                 pos = mul(pos, viewProjection);
         
                 output.position = pos;
-                output.color = input.color * tint;
+                output.color = input.color;
                 return output;
             }
 

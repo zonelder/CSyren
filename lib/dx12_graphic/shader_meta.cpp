@@ -48,7 +48,7 @@ namespace csyren::render
             ShaderMeta::VariableMeta var_meta;
 
             var_meta.type = variable_type;
-
+            var_meta.name = variable_name;
             std::istringstream iss(annotation_block);
             std::string line;
             while (std::getline(iss, line))
