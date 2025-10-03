@@ -65,13 +65,15 @@ namespace csyren
                         cmd->SetPipelineState(pso);
                         cmd->SetGraphicsRootSignature(shader->getRootSignature());
 
+                        engineParams->worldMatrix = tr.world();
                         // Update per-entity constant buffer (world matrix)
                         auto perFrameRoot = shader->getRootParameterIndex("PerFrame");
                         if (perFrameRoot != UINT_MAX)
                         {
                             cmd->SetGraphicsRootConstantBufferView(0, perFrameCB->gpuAddress());
                         }
-                        shader->setEngineParameters(*engineParams);
+                        shader->setEngineParameters(*engineParams,render::details::CBufferUpdateType::Entity);
+                        shader->setEngineParameters(*engineParams, render::details::CBufferUpdateType::Material);//пока так.
                         shader->setMatrix("world", tr.world());
                         shader->setVector("tint", color);
                         shader->commit(cmd, *perEntityCB);

@@ -36,7 +36,6 @@ namespace csyren::render
 		std::vector<uint8_t> defaultValue;
 	};
 
-
 	struct LinkedVariable
 	{
 		std::string variableName;
@@ -44,6 +43,13 @@ namespace csyren::render
 		//duple of SemanticInfo for cache friedly behaviour;
 		details::SemanticDataType type;
 		size_t offset;
+	};
+
+	struct LinkedBuffer
+	{
+		std::string bufferName;
+		details::CBufferUpdateType type;
+		std::vector<LinkedVariable> variables;
 	};
 
 	struct from_asset_path_t {};
@@ -90,7 +96,7 @@ namespace csyren::render
 		bool setMatrix(const std::string& name, const DirectX::XMMATRIX& v);
 		bool setStruct(const std::string& name, const void* ptr, size_t size);
 
-		void setEngineParameters(const EngineVariableBuffer& engineBuffer);
+		void setEngineParameters(const EngineVariableBuffer& engineBuffer,details::CBufferUpdateType updateType);
 
 		void commit(ID3D12GraphicsCommandList* cmd, UploadRingBuffer& uploadBuffer);
 	private:
@@ -112,19 +118,19 @@ namespace csyren::render
 		Microsoft::WRL::ComPtr< ID3DBlob> _psBlob;
 
 		std::unordered_map<std::string, ConstantBufferVariableInfo> _variableInfoMap;
-		std::unordered_map<std::string, ShaderResourceInfo> _resourceMap;
+		std::unordered_map<std::string, ShaderResourceInfo>			_resourceMap;
 
 		// CPU-copies of constant buffer;
-		std::unordered_map<std::string, std::vector<uint8_t>> _constantBuffersData;
-		std::unordered_map<std::string, UINT> _constantBufferSizes;
-		std::unordered_set<std::string> _dirtyCBs;
+		std::unordered_map<std::string, std::vector<uint8_t>>	_constantBuffersData;
+		std::unordered_map<std::string, UINT>					_constantBufferSizes;
+		std::unordered_set<std::string>							_dirtyCBs;
 
-		std::unordered_map<std::string, Texture*> _shaderTextures;
+		std::unordered_map<std::string, Texture*>				_shaderTextures;
 
-		std::vector<LinkedVariable>			   _linkedSemantics;
+		std::vector<LinkedBuffer>								_linkedBuffers;
 
-		std::vector<std::string>			   _InputLayoutSemantic;
-		std::vector< D3D12_INPUT_ELEMENT_DESC> _inputLayout;
+		std::vector<std::string>								_InputLayoutSemantic;
+		std::vector< D3D12_INPUT_ELEMENT_DESC>					_inputLayout;
 
 		ShaderMetaPtr		_meta;
 	};

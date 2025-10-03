@@ -681,21 +681,63 @@ namespace csyren::render
 
     void Shader::linkSemantics()
     {
-        _linkedSemantics.clear();
+        _linkedBuffers.clear();
         if (!_meta) return;
 
-        const auto& registry = details::EngineSemanticRegistry::instance();
+        const auto& varialbeRegistry = details::EngineSemanticRegistry::instance();
+        const auto& updateRegistry = details::EngineUpdateRegistry::instance();
 
-        for (const auto& varMeta : _meta->getAllMeta())
+        for (const auto& cbufferMeta : _meta->cbufferView())
         {
-            auto it = varMeta.attributes.find("semantic");
-            if (it == varMeta.attributes.end()) continue;
-
-            const std::string& semanticName = it->second;
-            const details::SemanticInfo* info = registry.find(semanticName);
-            if (info)
+            if (!_constantBuffersData.contains(cbufferMeta.name))
             {
-                _linkedSemantics.emplace_back( LinkedVariable{ varMeta.name,info->type,info->offset });
+                log::error("Shader::linkSemantics : Failed to find constant data '{}' in shader but meta file reference to it. different version between shader and meta files??", cbufferMeta.name);
+                continue;
+            }
+
+            auto it = cbufferMeta.attributes.find("update");
+            if (it == cbufferMeta.attributes.end()) continue;
+
+            const std::string& updateName = it->second;
+            const details::UpdateInfo* info = updateRegistry.find(updateName);
+
+            
+            if (info)//we know how to update this buffer
+            {
+                LinkedBuffer linkedBuffer;
+                linkedBuffer.bufferName = cbufferMeta.name;
+                linkedBuffer.type = info->type;
+
+                for (const auto& varMeta : _meta->variableView())
+                {
+                    if (!_variableInfoMap.contains(varMeta.name))
+                    {
+                        log::error("Shader::linkSemantics: Failed to find variable '{}' in shader but meta file reference to it.different version between shader and meta files??.", varMeta.name);
+                        continue;
+                    }
+
+                    const auto& shaderVarInfo = _variableInfoMap[varMeta.name];
+
+                    if (shaderVarInfo.bufferName != cbufferMeta.name)
+                    {
+                        log::error("Shader::linkSemantics: Failed to find variable '{}' in cbuffer '{}' but meta file expect it.different version between shader and meta files??.", varMeta.name,cbufferMeta.name);
+                        continue;
+                    }
+
+                    auto it = varMeta.attributes.find("semantic");
+                    if (it == varMeta.attributes.end()) continue;
+
+                    const std::string& semanticName = it->second;
+                    const details::SemanticInfo* varInfo = varialbeRegistry.find(semanticName);
+                    if (varInfo)
+                    {
+                        linkedBuffer.variables.emplace_back(LinkedVariable{ varMeta.name,varInfo->type,varInfo->offset });
+                    }
+                }
+                if (!linkedBuffer.variables.empty())
+                {
+                    _linkedBuffers.emplace_back(std::move(linkedBuffer));
+                }
             }
         }
     }
@@ -706,10 +748,16 @@ namespace csyren::render
         return true;
     }
 
-    void Shader::setEngineParameters(const EngineVariableBuffer& engineBuffer)
+    void Shader::setEngineParameters(const EngineVariableBuffer& engineBuffer, details::CBufferUpdateType updateType)
     {
         const uint8_t* basePtr = reinterpret_cast<const uint8_t*>(&engineBuffer);
-        for (const auto& linked : _linkedSemantics)
+
+        auto it = std::find(_linkedBuffers.begin(), _linkedBuffers.end(), [updateType](LinkedBuffer buffer) {return buffer.type == updateType; });
+        //nothing to update;
+        if (it == _linkedBuffers.end())
+            return;
+
+        for (const auto& linked : it->variables)
         {
             const void* sourceDataPtr = basePtr + linked.offset;
 

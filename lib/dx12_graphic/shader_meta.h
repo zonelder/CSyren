@@ -38,30 +38,77 @@ namespace csyren::render
 {
 	class ShaderMeta
 	{
-		using VariableName_t = std::string;
 		friend class ShaderMetaBuilder;
 	public:
+		using AttributeName_t = std::string;
+		using AttributeParams_t = std::string;
+		using AttributeMap = std::unordered_map< AttributeName_t, AttributeParams_t>;
 		struct VariableMeta
 		{
-			using AttributeName_t = std::string;
-			using AttributeParams_t = std::string;
 			std::string type;
-			VariableName_t name;
-			std::unordered_map< AttributeName_t, AttributeParams_t> attributes;
+			std::string name;
+			AttributeMap attributes;
 		};
 		using VariableMetaMap = std::vector<VariableMeta>;
 
-		VariableMetaMap::iterator begin() { return _variables.begin(); }
-		VariableMetaMap::iterator end() { return _variables.end(); }
 
-		VariableMetaMap::const_iterator begin() const { return _variables.begin(); }
-		VariableMetaMap::const_iterator end() const { return _variables.end(); }
+		struct CBufferMeta
+		{
+			std::string name;
+			AttributeMap attributes;
+		};
+		using CBufferVector = std::vector<CBufferMeta>;
 
-		const VariableMetaMap& getAllMeta() const { return _variables; }
+		/**
+		 * @class variableView.
+		 * @brief save read-only access to variable meta data;
+		 */
+		class VariableView
+		{
+		public:
+			using data_type = const VariableMeta;
+			using const_iterator = VariableMetaMap::const_iterator;
+			explicit VariableView(const VariableMetaMap& vars) : _vars(vars) {};
 
-		bool empty() const noexcept { return _variables.empty(); }
+			const_iterator begin() const { return _vars.get().begin(); }
+			const_iterator end() const { return _vars.get().end(); }
+
+			size_t size() const { return _vars.get().size(); }
+			bool empty() const { return _vars.get().empty(); }
+
+			data_type& operator[](size_t index) const { return _vars.get()[index]; }
+		private:
+			std::reference_wrapper<const VariableMetaMap> _vars;
+		};
+
+
+		/**
+		 * @class CbufferView.
+		 * @brief save read-only access to cbuffer meta data;
+		 */
+		class CBufferView
+		{
+		public:
+			using data_type = const CBufferMeta;
+			using const_iterator = CBufferVector::const_iterator;
+
+			explicit CBufferView(const CBufferVector& buffs) : _buffs(buffs){}
+
+			const_iterator begin() const { return _buffs.get().begin(); }
+			const_iterator end() const { return _buffs.get().end();}
+
+			size_t size() const { return _buffs.get().size(); }
+			bool empty() const { return _buffs.get().empty(); }
+			data_type& operator[](size_t index) const { return _buffs.get()[index]; }
+		private:
+			std::reference_wrapper<const CBufferVector> _buffs;
+		};
+
+		VariableView variableView() const { return VariableView(_variables); }
+
+		CBufferView cbufferView() const { return CBufferView(_cbuffers); }
 	private:
-
+		CBufferVector	_cbuffers;
 		VariableMetaMap _variables;
 	};
 	using ShaderMetaPtr = std::unique_ptr<ShaderMeta>;
@@ -75,6 +122,8 @@ namespace csyren::render
 		static ShaderMetaPtr build(const nlohmann::json& jsonData);
 
 		static bool save(const ShaderMeta& meta, const std::string& filepath);
+
+		static ShaderMeta::AttributeMap parseAttributes(const std::string& annotationBlock, const std::string& contextName);
 	};
 
 

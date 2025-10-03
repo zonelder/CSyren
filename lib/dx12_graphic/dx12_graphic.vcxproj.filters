@@ -72,6 +72,9 @@
     <ClInclude Include="pso_factory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="pass_data_manager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -108,6 +111,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="pso_factory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pass_data_manager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -23,18 +23,27 @@ namespace csyren::render
 
         //TODO create basic shaders file
         const char* g_primitiveShaderCode = R"(
-            // Атрибуты-комментарии для автоматической привязки
-            // движком через setEngineParameters.
+            
+            //@update frame
+            cbuffer perFrame
+            {
+                //@semantic ViewProjection
+                matrix viewProjection;
+            }
 
-            //@semantic ViewProjection
-            matrix viewProjection;
+            //@update entity
+            cbuffer perEntity
+            {
+                //@semantic World
+                matrix world;
+            }
 
-            //@semantic World
-            matrix world;
-    
-            // Пользовательская переменная, которую можно менять через material->setVector(...)
-            //@editable() 
-            float4 tint;
+            //@update material
+            cbuffer material
+            {
+                //@editable 
+                float4 tint;
+            }
 
             struct VS_Input
             {

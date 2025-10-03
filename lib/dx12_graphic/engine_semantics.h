@@ -27,6 +27,51 @@ namespace csyren::render::details
 
 	enum class SemanticDataType { Unknown,Float,Float2,Float3,Float4, Matrix4x4 };
 
+	enum class CBufferUpdateType {
+		Custom,		// user handle this parameters by yourself
+		Pass,		// engine update this buffer at the start of each frame 
+		Material,	// this buffer attach to the material and update only when material is dirty
+		Entity		// this buffer update per Entity.
+	};
+
+	struct UpdateInfo
+	{
+		CBufferUpdateType type;
+	};
+
+	class EngineUpdateRegistry
+	{
+	public:
+		void initialize()
+		{
+			registerSemantic("pass", CBufferUpdateType::Pass);
+			registerSemantic("frame", CBufferUpdateType::Pass);
+			
+			registerSemantic("Object", CBufferUpdateType::Entity);
+			registerSemantic("Entity", CBufferUpdateType::Entity);
+
+			registerSemantic("Material", CBufferUpdateType::Material);
+		}
+		static EngineUpdateRegistry& instance()
+		{
+			static EngineUpdateRegistry m;
+			return m;
+		}
+
+		const UpdateInfo* find(const std::string& name) const
+		{
+			auto it = _registry.find(name);
+			return (it != _registry.end()) ? &it->second : nullptr;
+		}
+	private:
+		//for the future. cant be sure we wont add logic to UpdateInfo
+		void registerSemantic(const std::string& name, CBufferUpdateType type)
+		{
+			_registry[name] = { type };
+		}
+		std::unordered_map<std::string, UpdateInfo> _registry;
+	};
+
 
 	struct SemanticInfo
 	{

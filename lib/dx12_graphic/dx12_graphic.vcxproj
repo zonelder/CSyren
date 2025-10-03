@@ -157,6 +157,7 @@
     <ClInclude Include="framework.h" />
     <ClInclude Include="material.h" />
     <ClInclude Include="mesh.h" />
+    <ClInclude Include="pass_data_manager.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="pso_factory.h" />
     <ClInclude Include="primitives.h" />
@@ -175,6 +176,7 @@
     <ClCompile Include="descriptor_heap_manager.cpp" />
     <ClCompile Include="material.cpp" />
     <ClCompile Include="mesh.cpp" />
+    <ClCompile Include="pass_data_manager.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
