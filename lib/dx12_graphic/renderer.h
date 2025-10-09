@@ -19,9 +19,13 @@
 #include "upload_ring_buffer.h"
 #include "engine_semantics.h"
 #include "pso_factory.h"
+#include "shader_parameter_binder.h"
+
 
 namespace csyren::render
 {
+	//class ResourceManager;
+
 	struct  alignas(16) PerFrameBuffer
 	{
 		DirectX::XMMATRIX projection;
@@ -64,8 +68,10 @@ namespace csyren::render
 
 		EngineVariableBuffer* getEngineVariableBuffer() noexcept { return &_engineVariableBuffer; };
 
-		ID3D12PipelineState* getPSO(ShaderHandle sh, Shader* shader, const MaterialStateDesc& state);
+
+		bool bindMaterial(ResourceManager& rm, MaterialHandle material);
 	private:
+		ID3D12PipelineState* getPSO(ShaderHandle sh, Shader* shader, const MaterialStateDesc& state);
 		void waitForGpu();
 
 		static constexpr UINT FrameCount = 2;
@@ -88,7 +94,8 @@ namespace csyren::render
 		ConstantBuffer _perFrameCB;
 		UploadRingBuffer _perEntityCB;
 		ConstantBuffer _perMaterialCB;
-		EngineVariableBuffer _engineVariableBuffer;
+		EngineVariableBuffer					_engineVariableBuffer;
+		ShaderParameterBinder					_parameterBinder;
 
 		std::unique_ptr<details::PSOFactory>	_pPSOFactory;
 		std::unique_ptr<DescriptorHeapManager>	_pSrvHeapManager;

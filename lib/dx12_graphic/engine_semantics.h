@@ -47,10 +47,10 @@ namespace csyren::render::details
 			registerSemantic("pass", CBufferUpdateType::Pass);
 			registerSemantic("frame", CBufferUpdateType::Pass);
 			
-			registerSemantic("Object", CBufferUpdateType::Entity);
-			registerSemantic("Entity", CBufferUpdateType::Entity);
+			registerSemantic("object", CBufferUpdateType::Entity);
+			registerSemantic("entity", CBufferUpdateType::Entity);
 
-			registerSemantic("Material", CBufferUpdateType::Material);
+			registerSemantic("material", CBufferUpdateType::Material);
 		}
 		static EngineUpdateRegistry& instance()
 		{

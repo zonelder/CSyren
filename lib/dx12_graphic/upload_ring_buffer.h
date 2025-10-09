@@ -15,11 +15,19 @@ namespace csyren::render
             _currentFrame = (_currentFrame + 1) % _numFrames;
             _offset = 0;
         }
+        struct Allocation
+        {
+            size_t offset;
+            size_t size;
+        };
+        size_t alloc(size_t size, void** cpuPtr, D3D12_GPU_VIRTUAL_ADDRESS* gpuAddr);
 
-        bool alloc(size_t size, void** cpuPtr, D3D12_GPU_VIRTUAL_ADDRESS* gpuAddr);
 
-        D3D12_GPU_VIRTUAL_ADDRESS update(const void* data, size_t size);
+        size_t update(const void* data, size_t size, D3D12_GPU_VIRTUAL_ADDRESS* outGpuAddr);
 
+        size_t currentOffset() const noexcept { return _offset; }
+
+        Microsoft::WRL::ComPtr<ID3D12Resource> currentResource() const noexcept { return _buffers[_currentFrame]; }
     private:
         static size_t align256(size_t size)
         {

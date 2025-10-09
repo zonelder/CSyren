@@ -31,7 +31,6 @@ namespace csyren
             //auto perEntityBuffer = event.render.getPerEntityBuffer();
             auto& keyboard = event.devices.keyboard();
             auto engineParams = event.render.getEngineVariableBuffer();
-            Vector4 color;
             using KeyCode = input::KeyCode;
             float r = 0, g = 0, b = 0;
             if (keyboard.isKeyDown(KeyCode::Q))
@@ -47,7 +46,7 @@ namespace csyren
             {
                 b = 1.0f;
             }
-            color = Vector4(r, g, b, 1);
+            DirectX::XMFLOAT4 color(r, g, b, 1.0f);
 
             event.scene.view<Transform, MeshFilter, MeshRenderer>()
                 .each([&](Entity::ID id,
@@ -56,29 +55,12 @@ namespace csyren
                     MeshRenderer& mr)
                     {
                         auto* mesh = event.resources.getMesh(mf.mesh);
-                        auto* material = event.resources.getMaterial(mr.material);
-                        if (!mesh || !material) return;
-                        auto* shader = event.resources.getShader(material->getShader());
-                        if (!shader) return;
 
-                        auto pso = event.render.getPSO(material->getShader(),shader, material->getStates());
-                        cmd->SetPipelineState(pso);
-                        cmd->SetGraphicsRootSignature(shader->getRootSignature());
+                        auto mat = event.resources.getMaterial(mr.material);
 
-                        engineParams->worldMatrix = tr.world();
-                        // Update per-entity constant buffer (world matrix)
-                        auto perFrameRoot = shader->getRootParameterIndex("PerFrame");
-                        if (perFrameRoot != UINT_MAX)
-                        {
-                            cmd->SetGraphicsRootConstantBufferView(0, perFrameCB->gpuAddress());
-                        }
-                        shader->setEngineParameters(*engineParams,render::details::CBufferUpdateType::Entity);
-                        shader->setEngineParameters(*engineParams, render::details::CBufferUpdateType::Material);//пока так.
-                        shader->setMatrix("world", tr.world());
-                        shader->setVector("tint", color);
-                        shader->commit(cmd, *perEntityCB);
-                        
-                        //cmd->SetGraphicsRootConstantBufferView(2, perMaterialCB->gpuAddress());
+                        mat->setVector("tint", color);
+                        if (!event.render.bindMaterial(event.resources,mr.material))
+                            return;
 
                         mesh->draw(event.render);
                     });

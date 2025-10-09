@@ -9,6 +9,7 @@ namespace csyren::render::details
     {
         registry.registerAttribute("semantic");
         registry.registerAttribute("tooltip");
+        registry.registerAttribute("update");
     }
 
     const AttributeRegistry& AttributeRegistry::instance()
@@ -84,6 +85,7 @@ namespace csyren::render
                 cbuffer_meta.attributes = parseAttributes(annotation_block, name);
                 if (!cbuffer_meta.attributes.empty())
                 {
+                    cbuffer_meta.name = name;
                     meta->_cbuffers.emplace_back(std::move(cbuffer_meta));
                 }
             }

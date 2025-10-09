@@ -62,8 +62,8 @@ namespace csyren::render
             {
                 PS_Input output;
                 float4 pos = float4(input.position, 1.0f);
-                pos = mul(pos, world);
-                pos = mul(pos, viewProjection);
+               // pos = mul(pos, world);
+               // pos = mul(pos, viewProjection);
         
                 output.position = pos;
                 output.color = input.color;
@@ -73,7 +73,7 @@ namespace csyren::render
             // --- Pixel Shader ---
             float4 PSMain(PS_Input input) : SV_TARGET
             {
-                return input.color;
+                return input.color*tint;
             }
         )";
     }

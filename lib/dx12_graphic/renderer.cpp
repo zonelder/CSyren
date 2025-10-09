@@ -1,7 +1,11 @@
 #include "pch.h"
+#include "resource_manager.h"
 #include "renderer.h"
 #include "texture.h"
 #include <d3dx12.h>
+
+
+
 
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -246,6 +250,30 @@ namespace csyren::render
     ID3D12PipelineState* Renderer::getPSO(ShaderHandle sh,Shader* shader,const MaterialStateDesc& state)
     {
         return _pPSOFactory->get(sh,shader, state);
+    }
+
+
+    bool Renderer::bindMaterial(ResourceManager& rm, MaterialHandle mathandle)
+    {
+        auto* material = rm.getMaterial(mathandle);
+        if (!material)
+            return false;
+
+        auto shaderHandle = material->getShader();
+        auto* shader = rm.getShader(material->getShader());
+        if (!shader)
+            return false;
+
+        auto pso = getPSO(shaderHandle, shader, material->getStates());
+        _commandList->SetPipelineState(pso);
+        _commandList->SetGraphicsRootSignature(shader->getRootSignature());
+
+        if (!_parameterBinder.updateMaterialBuffer(_device.Get(), _commandList.Get(), &rm, _perEntityCB, mathandle))
+        {
+            return false;
+        }
+
+        return true;
     }
 
 }

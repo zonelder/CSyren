@@ -60,36 +60,39 @@ namespace csyren::render
         return true;
     }
 
-    bool UploadRingBuffer::alloc(size_t size, void** cpuPtr, D3D12_GPU_VIRTUAL_ADDRESS* gpuAddr)
+    size_t UploadRingBuffer::alloc(size_t size, void** cpuPtr, D3D12_GPU_VIRTUAL_ADDRESS* gpuAddr)
     {
         size = align256(size);
         if (_offset + size > _frameSize)
         {
             log::error("UploadRingBuffer: failed to allocate gpu memory : RUN OUT OF FRAME BUFFER MEMORY.");
-            return false;
+            return -1;
         }
-
+        size_t currentOffset = _offset; // —охран€ем текущее смещение перед увеличением
         *cpuPtr = _mapped[_currentFrame] + _offset;
         *gpuAddr = _buffers[_currentFrame]->GetGPUVirtualAddress() + _offset;
 
         _offset += size;
-        return true;
+        return currentOffset;
     }
 
-    D3D12_GPU_VIRTUAL_ADDRESS UploadRingBuffer::update(const void* data, size_t size)
+    size_t UploadRingBuffer::update(const void* data, size_t size, D3D12_GPU_VIRTUAL_ADDRESS* outGpuAddr)
     {
         void* cpuPtr = nullptr;
         D3D12_GPU_VIRTUAL_ADDRESS gpuAddr = 0;
 
-        if (!alloc(size, &cpuPtr, &gpuAddr))
+        size_t offset = alloc(size, &cpuPtr, &gpuAddr);
+        if (offset == -1)
         {
             log::error("UploadRingBuffer::update: failed to update buffer");
-            return 0;
+            if (outGpuAddr) *outGpuAddr = 0;
+            return -1;
         }
 
 
         memcpy(cpuPtr, data, size);
-        return gpuAddr;
+        if (outGpuAddr) *outGpuAddr = gpuAddr;
+        return offset;
     }
 
 }

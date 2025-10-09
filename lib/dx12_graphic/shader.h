@@ -43,13 +43,32 @@ namespace csyren::render
 		//duple of SemanticInfo for cache friedly behaviour;
 		details::SemanticDataType type;
 		size_t offset;
+		size_t size;
 	};
 
 	struct LinkedBuffer
 	{
 		std::string bufferName;
 		details::CBufferUpdateType type;
+		size_t size;
+		size_t rootParameterIndex;
 		std::vector<LinkedVariable> variables;
+	};
+
+	struct bakedVariable
+	{
+		size_t sourceNameHash;
+		uint32_t destinationOffset;
+		uint32_t size;
+	};
+
+	struct BakedConstantBuffer
+	{
+		size_t bufferNameHash;
+		uint32_t rootParameterIndex;
+		uint32_t size;
+		details::CBufferUpdateType updateType;
+		std::vector<bakedVariable> variables;
 	};
 
 	struct from_asset_path_t {};
@@ -87,18 +106,12 @@ namespace csyren::render
 			if (!_vsBlob) return  { nullptr,0 };
 			return { _vsBlob->GetBufferPointer(), _vsBlob->GetBufferSize() };
 		}
-
-		bool setFloat(const std::string& name, float v);
-		bool setInt(const std::string& name, int v);
-		bool setBool(const std::string& name, bool v);
-		bool setTexture(const std::string& name, Texture* v);
-		bool setVector(const std::string& name, const DirectX::XMVECTOR& v);
-		bool setMatrix(const std::string& name, const DirectX::XMMATRIX& v);
-		bool setStruct(const std::string& name, const void* ptr, size_t size);
-
 		void setEngineParameters(const EngineVariableBuffer& engineBuffer,details::CBufferUpdateType updateType);
 
 		void commit(ID3D12GraphicsCommandList* cmd, UploadRingBuffer& uploadBuffer);
+
+
+		const LinkedBuffer* getConstantBuffer(details::CBufferUpdateType updateType) const noexcept;
 	private:
 		bool buildRootSignatureFromReflection(ID3D12Device* device, const D3D12_SHADER_BYTECODE& vs, const D3D12_SHADER_BYTECODE& ps);
 		bool buildInputLayoutFromReflection(const D3D12_SHADER_BYTECODE& vs);
@@ -120,12 +133,7 @@ namespace csyren::render
 		std::unordered_map<std::string, ConstantBufferVariableInfo> _variableInfoMap;
 		std::unordered_map<std::string, ShaderResourceInfo>			_resourceMap;
 
-		// CPU-copies of constant buffer;
-		std::unordered_map<std::string, std::vector<uint8_t>>	_constantBuffersData;
 		std::unordered_map<std::string, UINT>					_constantBufferSizes;
-		std::unordered_set<std::string>							_dirtyCBs;
-
-		std::unordered_map<std::string, Texture*>				_shaderTextures;
 
 		std::vector<LinkedBuffer>								_linkedBuffers;
 

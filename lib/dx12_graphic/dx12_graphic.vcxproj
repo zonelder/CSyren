@@ -151,6 +151,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="constant_buffer.h" />
+    <ClInclude Include="constant_buffer_manager.h" />
     <ClInclude Include="descriptor_heap_manager.h" />
     <ClInclude Include="dx_log.h" />
     <ClInclude Include="engine_semantics.h" />
@@ -168,6 +169,7 @@
     <ClInclude Include="sampler_manager.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="shader_meta.h" />
+    <ClInclude Include="shader_parameter_binder.h" />
     <ClInclude Include="texture.h" />
     <ClInclude Include="upload_ring_buffer.h" />
   </ItemGroup>
@@ -176,7 +178,6 @@
     <ClCompile Include="descriptor_heap_manager.cpp" />
     <ClCompile Include="material.cpp" />
     <ClCompile Include="mesh.cpp" />
-    <ClCompile Include="pass_data_manager.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -188,6 +189,7 @@
     <ClCompile Include="renderer.cpp" />
     <ClCompile Include="shader.cpp" />
     <ClCompile Include="shader_meta.cpp" />
+    <ClCompile Include="shader_parameter_binder.cpp" />
     <ClCompile Include="texture.cpp" />
     <ClCompile Include="upload_ring_buffer.cpp" />
   </ItemGroup>

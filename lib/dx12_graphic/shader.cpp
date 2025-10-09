@@ -368,24 +368,6 @@ namespace csyren::render
         reflectShaderStage(vsReflection.Get(), D3D12_SHADER_VISIBILITY_VERTEX, data);
         reflectShaderStage(psReflection.Get(), D3D12_SHADER_VISIBILITY_PIXEL, data);
 
-        _constantBuffersData.clear();
-
-        //initialize CPU constant buffers with zeros
-        for (const auto& pair : _constantBufferSizes)
-        {
-            _constantBuffersData[pair.first].resize(pair.second, 0);
-        }
-
-        //apply default value;
-        for (const auto& pair : _variableInfoMap)
-        {
-            const auto& varInfo = pair.second;
-            if (!varInfo.defaultValue.empty())
-            {
-                auto& cpuBuffer = _constantBuffersData[varInfo.bufferName];
-                memcpy(cpuBuffer.data() + varInfo.offset, varInfo.defaultValue.data(), varInfo.size);
-            }
-        }
 
 
         std::vector<D3D12_STATIC_SAMPLER_DESC> finalSamplers;
@@ -547,138 +529,7 @@ namespace csyren::render
         //_inputLayout[1].AlignedByteOffset = 12;
         return true;
     }
-
-
-    bool Shader::setFloat(const std::string& name, float v)
-    {
-        auto it = _variableInfoMap.find(name);
-        if (it == _variableInfoMap.end())
-        {
-            log::warning("Shader::setFloat: Variable '{}' not found in shader.", name);
-            return false;
-        }
-
-        const auto& varInfo = it->second;
-        if (varInfo.size != sizeof(float))
-        {
-            log::error("Shader::setFloat: Type mismatch for variable '{}'. Expected size {}, got {}.", name, varInfo.size, sizeof(float));
-            return false;
-        }
-        memcpy(_constantBuffersData[varInfo.bufferName].data() + varInfo.offset, &v, sizeof(float));
-        _dirtyCBs.insert(varInfo.bufferName);
-        return true;
-    }
-
-    bool Shader::setInt(const std::string& name, int v)
-    {
-        auto it = _variableInfoMap.find(name);
-        if (it == _variableInfoMap.end())
-        {
-            log::warning("Shader::setInt: Variable '{}' not found in shader.", name);
-            return false;
-        }
-
-        const auto& varInfo = it->second;
-        if (varInfo.size != sizeof(int))
-        {
-            log::error("Shader::setInt: Type mismatch for variable '{}'. Expected size {}, got {}.", name, varInfo.size, sizeof(int));
-            return false;
-        }
-        memcpy(_constantBuffersData[varInfo.bufferName].data() + varInfo.offset, &v, sizeof(int));
-        _dirtyCBs.insert(varInfo.bufferName);
-        return true;
-    }
-
-    bool Shader::setBool(const std::string& name, bool v)
-    {
-        // В HLSL bool takes 4 bytes;
-        return setInt(name, static_cast<int>(v));
-    }
-
-    bool Shader::setVector(const std::string& name, const DirectX::XMVECTOR& v)
-    {
-        auto it = _variableInfoMap.find(name);
-        if (it == _variableInfoMap.end())
-        {
-            log::warning("Shader::setVector: Variable '{}' not found in shader.", name);
-            return false;
-        }
-
-        const auto& varInfo = it->second;
-        // Вектор может быть float2, float3, float4
-        if (varInfo.size != sizeof(DirectX::XMFLOAT4) && varInfo.size != sizeof(DirectX::XMFLOAT3) && varInfo.size != sizeof(DirectX::XMFLOAT2))
-        {
-            log::error("Shader::setVector: Type mismatch for variable '{}'. Expected size {}, got {}.", name, varInfo.size, sizeof(DirectX::XMVECTOR));
-            return false;
-        }
-
-        memcpy(_constantBuffersData[varInfo.bufferName].data() + varInfo.offset, &v, varInfo.size);
-        _dirtyCBs.insert(varInfo.bufferName);
-        return true;
-    }
-
-    bool Shader::setMatrix(const std::string& name, const DirectX::XMMATRIX& v)
-    {
-        auto it = _variableInfoMap.find(name);
-        if (it == _variableInfoMap.end())
-        {
-            log::warning("Shader::setMatrix: Variable '{}' not found in shader.", name);
-            return false;
-        }
-
-        const auto& varInfo = it->second;
-        if (varInfo.size != sizeof(DirectX::XMMATRIX))
-        {
-            log::error("Shader::setMatrix: Type mismatch for variable '{}'. Expected size {}, got {}.", name, varInfo.size, sizeof(DirectX::XMMATRIX));
-            return false;
-        }
-
-        // Матрицы в HLSL column-major, XMMATRIX - row-major. Нужно транспонировать.
-        DirectX::XMMATRIX transposed = DirectX::XMMatrixTranspose(v);
-        memcpy(_constantBuffersData[varInfo.bufferName].data() + varInfo.offset, &transposed, sizeof(DirectX::XMMATRIX));
-        _dirtyCBs.insert(varInfo.bufferName);
-        return true;
-    }
-
-    bool Shader::setTexture(const std::string& name, Texture* texture)
-    {
-        auto it = _resourceMap.find(name);
-        if (it == _resourceMap.end())
-        {
-            log::warning("Shader::setTexture: Texture with name '{}' not found in shader.", name);
-            return false;
-        }
-        _shaderTextures[name] = texture;
-        return true;
-    }
-
-
-    bool Shader::setStruct(const std::string& name, const void* data, size_t size)
-    {
-        auto it = _variableInfoMap.find(name);
-        if (it == _variableInfoMap.end())
-        {
-            log::warning("Shader::setStruct: Variable '{}' not found in shader.", name);
-            return false;
-        }
-
-        const auto& varInfo = it->second;
-
-        if (size > varInfo.size)
-        {
-            log::error("Shader::setStruct: Data size ({}) for variable '{}' is larger than shader variable size ({}).", size, name, varInfo.size);
-            return false;
-        }
-        if (size < varInfo.size)
-        {
-            log::warning("Shader::setStruct: Data size ({}) for variable '{}' is smaller than shader variable size ({}). Partial update.", size, name, varInfo.size);
-        }
-
-        memcpy(_constantBuffersData[varInfo.bufferName].data() + varInfo.offset, data, size);
-        _dirtyCBs.insert(varInfo.bufferName);
-        return true;
-    }
-
+    #pragma optimize("",off)
     void Shader::linkSemantics()
     {
         _linkedBuffers.clear();
@@ -689,7 +540,7 @@ namespace csyren::render
 
         for (const auto& cbufferMeta : _meta->cbufferView())
         {
-            if (!_constantBuffersData.contains(cbufferMeta.name))
+            if (!_resourceMap.contains(cbufferMeta.name))
             {
                 log::error("Shader::linkSemantics : Failed to find constant data '{}' in shader but meta file reference to it. different version between shader and meta files??", cbufferMeta.name);
                 continue;
@@ -697,6 +548,13 @@ namespace csyren::render
 
             auto it = cbufferMeta.attributes.find("update");
             if (it == cbufferMeta.attributes.end()) continue;
+
+            auto resourceInfoIt = _resourceMap.find(cbufferMeta.name);
+            if (resourceInfoIt == _resourceMap.end())
+            {
+                log::warning("Shader::linkSemantics: CBuffer '{}' found in meta, but not reflected in shader. Skipping.", cbufferMeta.name);
+                continue;
+            }
 
             const std::string& updateName = it->second;
             const details::UpdateInfo* info = updateRegistry.find(updateName);
@@ -707,32 +565,16 @@ namespace csyren::render
                 LinkedBuffer linkedBuffer;
                 linkedBuffer.bufferName = cbufferMeta.name;
                 linkedBuffer.type = info->type;
+                linkedBuffer.size = _constantBufferSizes[cbufferMeta.name];
+                linkedBuffer.rootParameterIndex = resourceInfoIt->second.rootParameterIndex;
 
-                for (const auto& varMeta : _meta->variableView())
+                for (const auto& [name, shaderVarInfo] : _variableInfoMap)
                 {
-                    if (!_variableInfoMap.contains(varMeta.name))
-                    {
-                        log::error("Shader::linkSemantics: Failed to find variable '{}' in shader but meta file reference to it.different version between shader and meta files??.", varMeta.name);
-                        continue;
-                    }
-
-                    const auto& shaderVarInfo = _variableInfoMap[varMeta.name];
-
                     if (shaderVarInfo.bufferName != cbufferMeta.name)
                     {
-                        log::error("Shader::linkSemantics: Failed to find variable '{}' in cbuffer '{}' but meta file expect it.different version between shader and meta files??.", varMeta.name,cbufferMeta.name);
                         continue;
                     }
-
-                    auto it = varMeta.attributes.find("semantic");
-                    if (it == varMeta.attributes.end()) continue;
-
-                    const std::string& semanticName = it->second;
-                    const details::SemanticInfo* varInfo = varialbeRegistry.find(semanticName);
-                    if (varInfo)
-                    {
-                        linkedBuffer.variables.emplace_back(LinkedVariable{ varMeta.name,varInfo->type,varInfo->offset });
-                    }
+                    linkedBuffer.variables.emplace_back(LinkedVariable{ name,details::SemanticDataType::Unknown,shaderVarInfo.offset,shaderVarInfo.size });
                 }
                 if (!linkedBuffer.variables.empty())
                 {
@@ -748,70 +590,12 @@ namespace csyren::render
         return true;
     }
 
-    void Shader::setEngineParameters(const EngineVariableBuffer& engineBuffer, details::CBufferUpdateType updateType)
+    const LinkedBuffer* Shader::getConstantBuffer(details::CBufferUpdateType updateType) const noexcept
     {
-        const uint8_t* basePtr = reinterpret_cast<const uint8_t*>(&engineBuffer);
-
-        auto it = std::find(_linkedBuffers.begin(), _linkedBuffers.end(), [updateType](LinkedBuffer buffer) {return buffer.type == updateType; });
-        //nothing to update;
+        auto it = std::find_if(_linkedBuffers.begin(), _linkedBuffers.end(), [updateType](const auto& buffer) {return updateType == buffer.type; });
         if (it == _linkedBuffers.end())
-            return;
-
-        for (const auto& linked : it->variables)
-        {
-            const void* sourceDataPtr = basePtr + linked.offset;
-
-            switch (linked.type)
-            {
-            case details::SemanticDataType::Matrix4x4:
-                setMatrix(linked.variableName, *static_cast<const DirectX::XMMATRIX*>(sourceDataPtr));
-                break;
-            case details::SemanticDataType::Float2:
-            case details::SemanticDataType::Float3:
-            case details::SemanticDataType::Float4:
-                setVector(linked.variableName, *static_cast<const DirectX::XMVECTOR*>(sourceDataPtr));
-                break;
-            case details::SemanticDataType::Float:
-                setFloat(linked.variableName, *static_cast<const float*>(sourceDataPtr));
-                break;
-            }
-        }
-    }
-
-    void Shader::commit(ID3D12GraphicsCommandList* commandList, UploadRingBuffer& uploadBuffer)
-    {
-        for (const auto& bufferName : _dirtyCBs)
-        {
-            auto it = _resourceMap.find(bufferName);
-            if (it == _resourceMap.end()) continue;
-
-            const auto& resourceInfo = it->second;
-            const auto& bufferData = _constantBuffersData[bufferName];
-
-            if (bufferData.empty()) continue;
-            auto gpuAddr  = uploadBuffer.update(bufferData.data(), bufferData.size());
-            if (gpuAddr == 0)
-            {
-                log::error("Shader::commit: Failed to allocate from UploadRingBuffer for CB '{}'.", bufferName);
-                continue;
-            }
-            commandList->SetGraphicsRootConstantBufferView(resourceInfo.rootParameterIndex, gpuAddr);
-        }
-        _dirtyCBs.clear();
-
-        for (const auto& pair : _shaderTextures)
-        {
-            const std::string& textureName = pair.first;
-            Texture* texture = pair.second;
-
-            if (!texture ) continue;
-
-            auto it = _resourceMap.find(textureName);
-            if (it == _resourceMap.end()) continue;
-
-            const auto& resourceInfo = it->second;
-            commandList->SetGraphicsRootDescriptorTable(resourceInfo.rootParameterIndex, texture->getGpuSrvHandle());
-        }
+            return nullptr;
+        return &(*it);
     }
 
 }

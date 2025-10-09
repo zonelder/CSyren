@@ -75,6 +75,12 @@
     <ClInclude Include="pass_data_manager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="constant_buffer_manager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shader_parameter_binder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -113,7 +119,7 @@
     <ClCompile Include="pso_factory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="pass_data_manager.cpp">
+    <ClCompile Include="shader_parameter_binder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
