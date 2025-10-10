@@ -141,10 +141,16 @@ namespace
                D3D12_SHADER_VARIABLE_DESC varDesc;
                var->GetDesc(&varDesc);
 
+               ID3D12ShaderReflectionType* varType = var->GetType();
+               D3D12_SHADER_TYPE_DESC typeDesc;
+               varType->GetDesc(&typeDesc);
+
                csyren::render::ConstantBufferVariableInfo varInfo;
                varInfo.bufferName = cbDesc.Name;
                varInfo.offset = varDesc.StartOffset;
                varInfo.size = varDesc.Size;
+               varInfo.needsTranspose = typeDesc.Class == D3D_SVC_MATRIX_COLUMNS;
+
                data.variableInfoMap[varDesc.Name] = std::move(varInfo);
            }
        }
@@ -177,6 +183,7 @@ namespace csyren::render
         }
 
         linkSemantics();
+        buildSemanticLayout();
         log::info("Shader : initialized successfully.");
 
         return true;
@@ -574,13 +581,55 @@ namespace csyren::render
                     {
                         continue;
                     }
-                    linkedBuffer.variables.emplace_back(LinkedVariable{ name,details::SemanticDataType::Unknown,shaderVarInfo.offset,shaderVarInfo.size });
+                    linkedBuffer.variables.emplace_back(LinkedVariable{ name,details::SemanticDataType::Unknown,shaderVarInfo.offset,shaderVarInfo.size,shaderVarInfo.needsTranspose });
                 }
                 if (!linkedBuffer.variables.empty())
                 {
                     _linkedBuffers.emplace_back(std::move(linkedBuffer));
                 }
             }
+        }
+    }
+
+    void Shader::buildSemanticLayout()
+    {
+        _semanticLayouts.clear();
+
+        const auto& semanticRegistry = details::EngineSemanticRegistry::instance();
+        const std::string SEMANTIC_ATTR = "semantic";
+        for (auto& linkedBuffer : _linkedBuffers)
+        {
+            SemanticBufferLayout layout;
+            layout.type = linkedBuffer.type;
+            layout.size = static_cast<uint32_t>(linkedBuffer.size);
+            layout.rootParameterIndex = static_cast<uint32_t>(linkedBuffer.rootParameterIndex);
+            const auto& varMetaView = _meta->variableView();
+            for (auto& var : linkedBuffer.variables)
+            {
+                const auto& metaIt = std::find_if(varMetaView.begin(), varMetaView.end(), [&var](const auto& meta) {return meta.name == var.name; });
+                if (metaIt == varMetaView.end())
+                    continue;
+                const auto& attrs = metaIt->attributes;
+
+                auto semIt = attrs.find(SEMANTIC_ATTR);
+                if (semIt == attrs.end())
+                    continue;
+                const auto& semName = semIt->second;
+
+                const auto* sem = semanticRegistry.find(semName);
+                if (!sem)
+                    continue; //not an engine variable;
+
+                layout.copyCommands.emplace_back(SemanticCopyCommand{
+                    static_cast<uint32_t>(sem->offset),
+                    static_cast<uint32_t>(var.offset),
+                    static_cast<uint32_t>(sem->size),
+                    var.needTranspose
+                    });
+            }
+
+            if (!layout.copyCommands.empty())
+                _semanticLayouts.push_back(std::move(layout));
         }
     }
 
@@ -594,6 +643,14 @@ namespace csyren::render
     {
         auto it = std::find_if(_linkedBuffers.begin(), _linkedBuffers.end(), [updateType](const auto& buffer) {return updateType == buffer.type; });
         if (it == _linkedBuffers.end())
+            return nullptr;
+        return &(*it);
+    }
+
+    const SemanticBufferLayout* Shader::getSemanticBuffer(details::CBufferUpdateType updateType) const noexcept
+    {
+        auto it = std::find_if(_semanticLayouts.begin(), _semanticLayouts.end(), [updateType](const auto& buffer) {return updateType == buffer.type; });
+        if (it == _semanticLayouts.end())
             return nullptr;
         return &(*it);
     }

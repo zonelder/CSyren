@@ -25,10 +25,7 @@ namespace csyren
         void draw(events::DrawEvent& event) override
         {
             ID3D12GraphicsCommandList* cmd = event.render.commandList();
-            auto perFrameCB = event.render.getPerFrameCB();
             render::UploadRingBuffer* perEntityCB = event.render.getPerEntityCB();
-            auto perMaterialCB = event.render.getPerMaterialCB();
-            //auto perEntityBuffer = event.render.getPerEntityBuffer();
             auto& keyboard = event.devices.keyboard();
             auto engineParams = event.render.getEngineVariableBuffer();
             using KeyCode = input::KeyCode;

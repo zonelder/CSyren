@@ -34,16 +34,18 @@ namespace csyren::render
 		UINT offset;
 		UINT size;
 		std::vector<uint8_t> defaultValue;
+		bool needsTranspose;
 	};
 
 	struct LinkedVariable
 	{
-		std::string variableName;
+		std::string name;
 
 		//duple of SemanticInfo for cache friedly behaviour;
 		details::SemanticDataType type;
 		size_t offset;
 		size_t size;
+		bool needTranspose;
 	};
 
 	struct LinkedBuffer
@@ -55,20 +57,21 @@ namespace csyren::render
 		std::vector<LinkedVariable> variables;
 	};
 
-	struct bakedVariable
+
+	struct SemanticCopyCommand
 	{
-		size_t sourceNameHash;
-		uint32_t destinationOffset;
-		uint32_t size;
+		uint32_t srcOffset; // offset â EngineVariableBuffer
+		uint32_t dstOffset; // offset â GPU CBuffer
+		uint32_t size;		// size of copying
+		bool transpose{ false };
 	};
 
-	struct BakedConstantBuffer
+	struct SemanticBufferLayout
 	{
-		size_t bufferNameHash;
-		uint32_t rootParameterIndex;
+		details::CBufferUpdateType type;
 		uint32_t size;
-		details::CBufferUpdateType updateType;
-		std::vector<bakedVariable> variables;
+		uint32_t rootParameterIndex;
+		std::vector<SemanticCopyCommand> copyCommands;
 	};
 
 	struct from_asset_path_t {};
@@ -112,6 +115,8 @@ namespace csyren::render
 
 
 		const LinkedBuffer* getConstantBuffer(details::CBufferUpdateType updateType) const noexcept;
+
+		const SemanticBufferLayout* getSemanticBuffer(details::CBufferUpdateType updateType) const noexcept;
 	private:
 		bool buildRootSignatureFromReflection(ID3D12Device* device, const D3D12_SHADER_BYTECODE& vs, const D3D12_SHADER_BYTECODE& ps);
 		bool buildInputLayoutFromReflection(const D3D12_SHADER_BYTECODE& vs);
@@ -124,6 +129,7 @@ namespace csyren::render
 
 		bool validateMeta(const D3D12_SHADER_BYTECODE& vs, const D3D12_SHADER_BYTECODE& ps);
 		void linkSemantics();
+		void buildSemanticLayout();
 
 		Microsoft::WRL::ComPtr<ID3D12RootSignature> _rootSignature;
 
@@ -136,6 +142,7 @@ namespace csyren::render
 		std::unordered_map<std::string, UINT>					_constantBufferSizes;
 
 		std::vector<LinkedBuffer>								_linkedBuffers;
+		std::vector<SemanticBufferLayout>						_semanticLayouts;
 
 		std::vector<std::string>								_InputLayoutSemantic;
 		std::vector< D3D12_INPUT_ELEMENT_DESC>					_inputLayout;

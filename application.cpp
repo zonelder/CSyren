@@ -118,13 +118,22 @@ namespace csyren
 			_systems.update(updateEvent);
 			auto [mainCameraID,camera,cameraTransform] = *(_scene.view<Camera,Transform>().begin());//only first camera accepted
 
-			auto perFrameBuffer = _render.getEngineVariableBuffer();
-			perFrameBuffer->invViewMatrix = cameraTransform.world();
-			perFrameBuffer->viewMatrix = DirectX::XMMatrixInverse(nullptr, perFrameBuffer->invViewMatrix);
-			perFrameBuffer->projectionMatrix = createProjection(camera);
-			perFrameBuffer->viewProjectionMatrix = perFrameBuffer->viewMatrix* perFrameBuffer->projectionMatrix;
-			auto perFrameCB = _render.getPerFrameCB();
-			perFrameCB->update(perFrameBuffer, sizeof(render::PerFrameBuffer));
+			auto engineVariables = _render.getEngineVariableBuffer();
+
+			DirectX::XMMATRIX invView = cameraTransform.world();
+			DirectX::XMStoreFloat4x4(&engineVariables->invViewMatrix, invView);
+
+			// viewMatrix = inverse(invViewMatrix)
+			DirectX::XMMATRIX view = DirectX::XMMatrixInverse(nullptr, invView);
+			DirectX::XMStoreFloat4x4(&engineVariables->viewMatrix, view);
+
+			// projectionMatrix = projection
+			DirectX::XMMATRIX proj = createProjection(camera);
+			DirectX::XMStoreFloat4x4(&engineVariables->projectionMatrix, proj);
+
+			// viewProjectionMatrix = view * projection
+			DirectX::XMMATRIX viewProj = DirectX::XMMatrixMultiply(view, proj);
+			DirectX::XMStoreFloat4x4(&engineVariables->viewProjectionMatrix, viewProj);
 
 			_render.beginFrame();
 			_render.clear(&(camera.background.x));

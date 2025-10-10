@@ -78,18 +78,26 @@ namespace csyren::render
     struct EngineVariableBuffer;
     class ShaderParameterBinder
     {
+        using BufferHash = size_t;
     public:
+        void beginFrame(uint64_t frameNumber);
+
         bool updateMaterialBuffer(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, ResourceManager* rm, UploadRingBuffer& ringBuffer, MaterialHandle material);
 
-        void updateFrameBuffer(EngineVariableBuffer& buffer, ShaderHandle shader);
+        bool updateFrameBuffer(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList,EngineVariableBuffer& buffer, UploadRingBuffer& ringBuffer, Shader* shader);
     private:
         struct MaterialBufferCache
         {
             details::GpuBuffer  buffer;
             uint64_t lastUpdatedVersion = (uint64_t)(- 1);
         };
+        struct FrameBufferCache
+        {
+            D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = 0;
+        };
 
     private:
         std::unordered_map<MaterialHandle, MaterialBufferCache> _materialCache;
+        std::unordered_map<BufferHash, FrameBufferCache>         _frameCache;
     };
 }

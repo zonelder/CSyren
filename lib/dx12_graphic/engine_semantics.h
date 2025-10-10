@@ -8,14 +8,14 @@ namespace csyren::render
 {
 	struct EngineVariableBuffer
 	{
+		DirectX::XMFLOAT4X4 worldMatrix{};
 		//-------------------------------perFrame-------------------------------
-		DirectX::XMMATRIX worldMatrix;
-		DirectX::XMMATRIX viewMatrix;
-		DirectX::XMMATRIX invViewMatrix;
-		DirectX::XMMATRIX projectionMatrix;
-		DirectX::XMMATRIX viewProjectionMatrix;
-		DirectX::XMVECTOR cameraPosition;
-		float totalTime;
+		DirectX::XMFLOAT4X4 viewMatrix{};
+		DirectX::XMFLOAT4X4 invViewMatrix{};
+		DirectX::XMFLOAT4X4 projectionMatrix{};
+		DirectX::XMFLOAT4X4 viewProjectionMatrix{};
+		DirectX::XMFLOAT4 cameraPosition{};
+		float totalTime = 0.0f;
 		//----------------------------------------------------------------------
 
 

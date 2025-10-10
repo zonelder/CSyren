@@ -60,11 +60,7 @@ namespace csyren::render
 		ID3D12GraphicsCommandList* commandList() const noexcept { return _commandList.Get(); }
 		ID3D12Device* device() const noexcept { return _device.Get(); }
 
-		ConstantBuffer* getPerFrameCB() noexcept { return &_perFrameCB; };
-
 		UploadRingBuffer* getPerEntityCB() noexcept { return &_perEntityCB; };
-
-		ConstantBuffer* getPerMaterialCB() noexcept { return &_perMaterialCB; };
 
 		EngineVariableBuffer* getEngineVariableBuffer() noexcept { return &_engineVariableBuffer; };
 
@@ -91,9 +87,7 @@ namespace csyren::render
 		HANDLE _fenceEvent{ nullptr };
 		UINT _frameIndex{ 0 };
 
-		ConstantBuffer _perFrameCB;
 		UploadRingBuffer _perEntityCB;
-		ConstantBuffer _perMaterialCB;
 		EngineVariableBuffer					_engineVariableBuffer;
 		ShaderParameterBinder					_parameterBinder;
 

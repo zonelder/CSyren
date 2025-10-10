@@ -119,9 +119,7 @@ namespace csyren::render
         constexpr size_t perEntitySize = 2* MB; // Size for world matrix + other per-object data for whole scene render.
         constexpr size_t perMaterialSize = 128; // Size for material properties
         
-        if (!_perFrameCB.init(_device.Get(), perFrameSize) ||
-            !_perEntityCB.init(_device.Get(), perEntitySize) ||
-            !_perMaterialCB.init(_device.Get(), perMaterialSize))
+        if (!_perEntityCB.init(_device.Get(), perEntitySize))
         {
             return false;
         }
@@ -269,6 +267,11 @@ namespace csyren::render
         _commandList->SetGraphicsRootSignature(shader->getRootSignature());
 
         if (!_parameterBinder.updateMaterialBuffer(_device.Get(), _commandList.Get(), &rm, _perEntityCB, mathandle))
+        {
+            return false;
+        }
+
+        if (!_parameterBinder.updateFrameBuffer(_device.Get(), _commandList.Get(), _engineVariableBuffer, _perEntityCB, shader))
         {
             return false;
         }

@@ -1,6 +1,25 @@
 #include "pch.h"
 #include "shader_parameter_binder.h"
 
+
+namespace
+{
+	static void copyWithTranspose(uint8_t* dst, const uint8_t* src, size_t size, bool transpose)
+	{
+		if (transpose && size == sizeof(DirectX::XMFLOAT4X4))
+		{
+			const DirectX::XMFLOAT4X4* srcMat = reinterpret_cast<const DirectX::XMFLOAT4X4*>(src);
+			DirectX::XMFLOAT4X4 tmp;
+			DirectX::XMStoreFloat4x4(&tmp, DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(srcMat)));
+			memcpy(dst, &tmp, sizeof(tmp));
+		}
+		else
+		{
+			memcpy(dst, src, size);
+		}
+	}
+}
+
 namespace csyren::render
 {
 
@@ -50,7 +69,8 @@ namespace csyren::render
 
 			if (cache.buffer.size() < materialBufferDesc->size)
 			{
-				log::info("Resizing material buffer for handle {} from {} to bytes.", mathandle.id, cache.buffer.size(), materialBufferDesc->size);
+				log::info("Resizing material buffer for handle {} from {} to {} bytes.",
+					mathandle.id, cache.buffer.size(), materialBufferDesc->size);
 				if (!cache.buffer.init(device, materialBufferDesc->size,D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER))
 				{
 					log::error("Failed to initialize/resize material buffer for handle {}.", mathandle.id);
@@ -63,20 +83,20 @@ namespace csyren::render
 			std::vector<uint8_t> cpuData(materialBufferDesc->size, 0);
 			for (const auto& varDesc : materialBufferDesc->variables)
 			{
-				const auto& varData = material->getVariable(varDesc.variableName);
+				const auto& varData = material->getVariable(varDesc.name);
 				if (varData.empty())
 				{
-					log::debug("Variable '{}' not found in material.using default value.", varDesc.variableName);
+					log::debug("Variable '{}' not found in material.using default value.", varDesc.name);
 					continue;
 				}
 
 				if (varData.size() != varDesc.size)
 				{
 					log::error("Size mismatch for variable '{}' in material (handle: {}). Shader expects {} bytes, but material provides {} bytes. Skipping update for this variable.",
-						varDesc.variableName, mathandle.id, varDesc.size, varData.size());
+						varDesc.name, mathandle.id, varDesc.size, varData.size());
 					continue;
 				}
-				memcpy(cpuData.data() + varDesc.offset, varData.data(), varDesc.size);
+				copyWithTranspose(cpuData.data() + varDesc.offset, varData.data(), varDesc.size, varDesc.needTranspose);
 			};
 
 			D3D12_RESOURCE_BARRIER preCopyBarrier = {};
@@ -87,18 +107,21 @@ namespace csyren::render
 			cmdList->ResourceBarrier(1, &preCopyBarrier);
 
 			auto uploadOffset = ringBuffer.update(cpuData.data(), cpuData.size(), nullptr);
-
-			if (uploadOffset != -1)
+			if (uploadOffset == -1)
 			{
-				cmdList->CopyBufferRegion(
-					cache.buffer.getResource(),         // Destination resource (наш DEFAULT буфер)
-					0,                                  // Destination offset
-					ringBuffer.currentResource().Get(), // Source resource (текущий буфер из кольца)
-					uploadOffset,                       // Source offset (смещение, которое мы получили)
-					materialBufferDesc->size            // Size of data to copy
-				);
-				cache.lastUpdatedVersion = material->version();
+				log::error("Failed to update ring buffer for material handle {}.", mathandle.id);
+				return false;
 			}
+
+			cmdList->CopyBufferRegion(
+				cache.buffer.getResource(),         // Destination resource (наш DEFAULT буфер)
+				0,                                  // Destination offset
+				ringBuffer.currentResource().Get(), // Source resource (текущий буфер из кольца)
+				uploadOffset,                       // Source offset (смещение, которое мы получили)
+				materialBufferDesc->size            // Size of data to copy
+			);
+
+			cache.lastUpdatedVersion = material->version();
 			D3D12_RESOURCE_BARRIER postCopyBarrier = {};
 			postCopyBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 			postCopyBarrier.Transition.pResource = cache.buffer.getResource();
@@ -110,6 +133,27 @@ namespace csyren::render
 		}
 
 		cmdList->SetGraphicsRootConstantBufferView(materialBufferDesc->rootParameterIndex, cache.buffer.getGpuAddress());
+		return true;
+	}
+	bool ShaderParameterBinder::updateFrameBuffer(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, EngineVariableBuffer& engineVars, UploadRingBuffer& ringBuffer, Shader* shader)
+	{
+		const SemanticBufferLayout* frameBufferDesc = shader->getSemanticBuffer(details::CBufferUpdateType::Pass);
+		if (!frameBufferDesc)
+		{
+			//nothing to do here
+			return true;
+		}
+
+		std::vector<uint8_t> cpuData(frameBufferDesc->size, 0);
+		const uint8_t* srcBase = reinterpret_cast<const uint8_t*>(&engineVars);
+		uint8_t* dstBase = cpuData.data();
+		for (const auto&  cmd : frameBufferDesc->copyCommands)
+		{
+			copyWithTranspose(dstBase + cmd.dstOffset, srcBase + cmd.srcOffset, cmd.size, cmd.transpose);
+		}
+		D3D12_GPU_VIRTUAL_ADDRESS addr = 0;
+		ringBuffer.update(cpuData.data(), cpuData.size(), &addr);
+		cmdList->SetGraphicsRootConstantBufferView(frameBufferDesc->rootParameterIndex, addr);
 		return true;
 	}
 }
