@@ -135,25 +135,60 @@ namespace csyren::render
 		cmdList->SetGraphicsRootConstantBufferView(materialBufferDesc->rootParameterIndex, cache.buffer.getGpuAddress());
 		return true;
 	}
-	bool ShaderParameterBinder::updateFrameBuffer(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, EngineVariableBuffer& engineVars, UploadRingBuffer& ringBuffer, Shader* shader)
+	bool ShaderParameterBinder::updateFrameBuffer(ID3D12GraphicsCommandList* cmdList, const EngineVariableBuffer& engineVars, const SemanticBufferLayout* layout,
+		UploadRingBuffer& ringBuffer)
 	{
-		const SemanticBufferLayout* frameBufferDesc = shader->getSemanticBuffer(details::CBufferUpdateType::Pass);
-		if (!frameBufferDesc)
+		if (!layout)
 		{
 			//nothing to do here
 			return true;
 		}
 
-		std::vector<uint8_t> cpuData(frameBufferDesc->size, 0);
+		std::vector<uint8_t> cpuData(layout->size, 0);
 		const uint8_t* srcBase = reinterpret_cast<const uint8_t*>(&engineVars);
 		uint8_t* dstBase = cpuData.data();
-		for (const auto&  cmd : frameBufferDesc->copyCommands)
+		for (const auto&  cmd : layout->copyCommands)
 		{
 			copyWithTranspose(dstBase + cmd.dstOffset, srcBase + cmd.srcOffset, cmd.size, cmd.transpose);
 		}
 		D3D12_GPU_VIRTUAL_ADDRESS addr = 0;
 		ringBuffer.update(cpuData.data(), cpuData.size(), &addr);
-		cmdList->SetGraphicsRootConstantBufferView(frameBufferDesc->rootParameterIndex, addr);
+		cmdList->SetGraphicsRootConstantBufferView(layout->rootParameterIndex, addr);
+		return true;
+	}
+
+	bool ShaderParameterBinder::updateEntityBuffer(ID3D12GraphicsCommandList* cmdList,const EntityVariableBuffer& entityVars,const SemanticBufferLayout* layout, UploadRingBuffer& ringBuffer)
+	{
+		if (!layout)
+		{
+			return true;//nothing to update;
+		}
+
+		D3D12_GPU_VIRTUAL_ADDRESS gpuAddr = 0;
+		uint8_t* dstBase = nullptr;
+
+		if (ringBuffer.allocate(layout->size, (void**)&dstBase, &gpuAddr) == size_t(-1))
+		{
+			log::error("ShaderParameterBinder::updateEntityBuffer : failed to allocate per-entity memory");
+			return false;
+		}
+
+
+		const uint8_t* srcBase = reinterpret_cast<const uint8_t*>(&entityVars);
+		for (const auto& cmd : layout->copyCommands)
+		{
+			copyWithTranspose(
+				dstBase + cmd.dstOffset,
+				srcBase + cmd.srcOffset,
+				cmd.size,
+				cmd.transpose
+			);
+		}
+		cmdList->SetGraphicsRootConstantBufferView(
+			layout->rootParameterIndex,
+			gpuAddr
+		);
+
 		return true;
 	}
 }

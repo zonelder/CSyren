@@ -60,7 +60,7 @@ namespace csyren::render
         return true;
     }
 
-    size_t UploadRingBuffer::alloc(size_t size, void** cpuPtr, D3D12_GPU_VIRTUAL_ADDRESS* gpuAddr)
+    size_t UploadRingBuffer::allocate(size_t size, void** cpuPtr, D3D12_GPU_VIRTUAL_ADDRESS* gpuAddr)
     {
         size = align256(size);
         if (_offset + size > _frameSize)
@@ -81,7 +81,7 @@ namespace csyren::render
         void* cpuPtr = nullptr;
         D3D12_GPU_VIRTUAL_ADDRESS gpuAddr = 0;
 
-        size_t offset = alloc(size, &cpuPtr, &gpuAddr);
+        size_t offset = allocate(size, &cpuPtr, &gpuAddr);
         if (offset == -1)
         {
             log::error("UploadRingBuffer::update: failed to update buffer");

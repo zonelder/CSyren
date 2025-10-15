@@ -18,16 +18,14 @@ namespace csyren::render::details
     public:
         GpuBuffer() = default;
 
-        // Универсальный init для создания буфера в DEFAULT куче
         bool init(ID3D12Device* device, size_t size, D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON)
         {
-            // Если буфер уже существует, освобождаем его перед созданием нового
             if (_resource)
             {
                 _resource.Reset();
             }
             _size = size;
-            if (_size == 0) return true; // Можно создать "пустой" буфер
+            if (_size == 0) return true;
 
             D3D12_HEAP_PROPERTIES heapProps = {};
             heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
@@ -60,7 +58,6 @@ namespace csyren::render::details
         D3D12_GPU_VIRTUAL_ADDRESS getGpuAddress() const { return _resource ? _resource->GetGPUVirtualAddress() : 0; }
         size_t size() const { return _size; }
 
-        // Разрешаем перемещение, запрещаем копирование
         GpuBuffer(GpuBuffer&&) noexcept = default;
         GpuBuffer& operator=(GpuBuffer&&) noexcept = default;
         GpuBuffer(const GpuBuffer&) = delete;
@@ -80,11 +77,11 @@ namespace csyren::render
     {
         using BufferHash = size_t;
     public:
-        void beginFrame(uint64_t frameNumber);
-
+        
         bool updateMaterialBuffer(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, ResourceManager* rm, UploadRingBuffer& ringBuffer, MaterialHandle material);
 
-        bool updateFrameBuffer(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList,EngineVariableBuffer& buffer, UploadRingBuffer& ringBuffer, Shader* shader);
+        bool updateFrameBuffer( ID3D12GraphicsCommandList* cmdList,const EngineVariableBuffer& buffer,const SemanticBufferLayout* layout, UploadRingBuffer& ringBuffer);
+        bool updateEntityBuffer(ID3D12GraphicsCommandList* cmdList,const EntityVariableBuffer& buffer,const SemanticBufferLayout* layout, UploadRingBuffer& ringBuffer);
     private:
         struct MaterialBufferCache
         {

@@ -536,6 +536,7 @@ namespace csyren::render
         //_inputLayout[1].AlignedByteOffset = 12;
         return true;
     }
+
     #pragma optimize("",off)
     void Shader::linkSemantics()
     {
@@ -544,7 +545,7 @@ namespace csyren::render
 
         const auto& varialbeRegistry = details::EngineSemanticRegistry::instance();
         const auto& updateRegistry = details::EngineUpdateRegistry::instance();
-
+        const auto& varView = _meta->variableView();
         for (const auto& cbufferMeta : _meta->cbufferView())
         {
             if (!_resourceMap.contains(cbufferMeta.name))
@@ -574,6 +575,7 @@ namespace csyren::render
                 linkedBuffer.type = info->type;
                 linkedBuffer.size = _constantBufferSizes[cbufferMeta.name];
                 linkedBuffer.rootParameterIndex = resourceInfoIt->second.rootParameterIndex;
+                
 
                 for (const auto& [name, shaderVarInfo] : _variableInfoMap)
                 {
@@ -581,7 +583,20 @@ namespace csyren::render
                     {
                         continue;
                     }
-                    linkedBuffer.variables.emplace_back(LinkedVariable{ name,details::SemanticDataType::Unknown,shaderVarInfo.offset,shaderVarInfo.size,shaderVarInfo.needsTranspose });
+                    std::string semantic;
+                    for (auto& varMeta : varView)
+                    {
+                        if (varMeta.name == name)
+                        {
+                            auto it = varMeta.attributes.find("semantic");
+                            if (it != varMeta.attributes.end())
+                            {
+                                semantic = it->second;
+                            }
+                        }
+                    }
+
+                    linkedBuffer.variables.emplace_back(LinkedVariable{ name,semantic,details::SemanticDataType::Unknown,shaderVarInfo.offset,shaderVarInfo.size,shaderVarInfo.needsTranspose });
                 }
                 if (!linkedBuffer.variables.empty())
                 {

@@ -63,9 +63,11 @@ namespace csyren::render
 		UploadRingBuffer* getPerEntityCB() noexcept { return &_perEntityCB; };
 
 		EngineVariableBuffer* getEngineVariableBuffer() noexcept { return &_engineVariableBuffer; };
-
+		EntityVariableBuffer* getEntityVariableBuffer() noexcept { return &_entityVariableBuffer; };
 
 		bool bindMaterial(ResourceManager& rm, MaterialHandle material);
+
+		bool bindEntity(const SemanticBufferLayout* layout);
 	private:
 		ID3D12PipelineState* getPSO(ShaderHandle sh, Shader* shader, const MaterialStateDesc& state);
 		void waitForGpu();
@@ -89,6 +91,7 @@ namespace csyren::render
 
 		UploadRingBuffer _perEntityCB;
 		EngineVariableBuffer					_engineVariableBuffer;
+		EntityVariableBuffer					_entityVariableBuffer;
 		ShaderParameterBinder					_parameterBinder;
 
 		std::unique_ptr<details::PSOFactory>	_pPSOFactory;

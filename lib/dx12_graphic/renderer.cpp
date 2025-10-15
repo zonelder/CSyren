@@ -250,7 +250,7 @@ namespace csyren::render
         return _pPSOFactory->get(sh,shader, state);
     }
 
-
+    //TODO CHANGE API
     bool Renderer::bindMaterial(ResourceManager& rm, MaterialHandle mathandle)
     {
         auto* material = rm.getMaterial(mathandle);
@@ -271,12 +271,17 @@ namespace csyren::render
             return false;
         }
 
-        if (!_parameterBinder.updateFrameBuffer(_device.Get(), _commandList.Get(), _engineVariableBuffer, _perEntityCB, shader))
+        if (!_parameterBinder.updateFrameBuffer(_commandList.Get(), _engineVariableBuffer, shader->getSemanticBuffer(details::CBufferUpdateType::Pass), _perEntityCB))
         {
             return false;
         }
 
         return true;
+    }
+
+    bool Renderer::bindEntity(const SemanticBufferLayout* layout)
+    {
+        return _parameterBinder.updateEntityBuffer(_commandList.Get(), _entityVariableBuffer, layout, _perEntityCB);
     }
 
 }

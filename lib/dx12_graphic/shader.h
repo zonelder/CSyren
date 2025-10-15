@@ -40,6 +40,7 @@ namespace csyren::render
 	struct LinkedVariable
 	{
 		std::string name;
+		std::string semantic;
 
 		//duple of SemanticInfo for cache friedly behaviour;
 		details::SemanticDataType type;

@@ -2,30 +2,37 @@
 
 #include <DirectXMath.h>
 #include <unordered_map>
-
+#include "core/entity.h"
 
 namespace csyren::render
 {
-	struct EngineVariableBuffer
+	struct alignas(16) EngineVariableBuffer
 	{
-		DirectX::XMFLOAT4X4 worldMatrix{};
 		//-------------------------------perFrame-------------------------------
 		DirectX::XMFLOAT4X4 viewMatrix{};
 		DirectX::XMFLOAT4X4 invViewMatrix{};
 		DirectX::XMFLOAT4X4 projectionMatrix{};
 		DirectX::XMFLOAT4X4 viewProjectionMatrix{};
-		DirectX::XMFLOAT4 cameraPosition{};
-		float totalTime = 0.0f;
+		DirectX::XMFLOAT4	cameraPosition{};
+		float				totalTime		= 0.0f;
 		//----------------------------------------------------------------------
 
 
+	};
+
+	struct alignas(16) EntityVariableBuffer
+	{
+		DirectX::XMFLOAT4X4 worldMatrix{};
+		core::Entity::ID	entityID;
+		size_t				materialID;
+		size_t				meshID;
 	};
 }
 
 namespace csyren::render::details
 {
 
-	enum class SemanticDataType { Unknown,Float,Float2,Float3,Float4, Matrix4x4 };
+	enum class SemanticDataType { Unknown,Float,Float2,Float3,Float4, Matrix4x4,Uint };
 
 	enum class CBufferUpdateType {
 		Custom,		// user handle this parameters by yourself
@@ -90,13 +97,19 @@ namespace csyren::render::details
 	public:
 		void initialize()
 		{
-			registerSemantic<DirectX::XMMATRIX>("World", offsetof(EngineVariableBuffer, worldMatrix), SemanticDataType::Matrix4x4);
-			registerSemantic<DirectX::XMMATRIX>("View", offsetof(EngineVariableBuffer, viewMatrix), SemanticDataType::Matrix4x4);
-			registerSemantic<DirectX::XMMATRIX>("InvView", offsetof(EngineVariableBuffer, invViewMatrix), SemanticDataType::Matrix4x4);
-			registerSemantic<DirectX::XMMATRIX>("Projection", offsetof(EngineVariableBuffer, projectionMatrix), SemanticDataType::Matrix4x4);
-			registerSemantic<DirectX::XMMATRIX>("ViewProjection", offsetof(EngineVariableBuffer, viewProjectionMatrix), SemanticDataType::Matrix4x4);
-			registerSemantic<DirectX::XMVECTOR>("CameraPosition", offsetof(EngineVariableBuffer, cameraPosition), SemanticDataType::Float4);
-			registerSemantic<float>("Time", offsetof(EngineVariableBuffer, totalTime), SemanticDataType::Float);
+			//pass buffers
+			registerSemantic<DirectX::XMMATRIX>("View"			, offsetof(EngineVariableBuffer, viewMatrix)			, SemanticDataType::Matrix4x4);
+			registerSemantic<DirectX::XMMATRIX>("InvView"		, offsetof(EngineVariableBuffer, invViewMatrix)			, SemanticDataType::Matrix4x4);
+			registerSemantic<DirectX::XMMATRIX>("Projection"	, offsetof(EngineVariableBuffer, projectionMatrix)		, SemanticDataType::Matrix4x4);
+			registerSemantic<DirectX::XMMATRIX>("ViewProjection", offsetof(EngineVariableBuffer, viewProjectionMatrix)	, SemanticDataType::Matrix4x4);
+			registerSemantic<DirectX::XMVECTOR>("CameraPosition", offsetof(EngineVariableBuffer, cameraPosition)		, SemanticDataType::Float4);
+			registerSemantic<float>("Time"						, offsetof(EngineVariableBuffer, totalTime)				, SemanticDataType::Float);
+
+			//entity buffers
+			registerSemantic<DirectX::XMMATRIX>("World"			, offsetof(EntityVariableBuffer, worldMatrix)	, SemanticDataType::Matrix4x4);
+			registerSemantic<uint32_t>("EntityID"				, offsetof(EntityVariableBuffer, entityID)		, SemanticDataType::Uint);
+			registerSemantic<uint32_t>("MaterialID"				, offsetof(EntityVariableBuffer, materialID)	, SemanticDataType::Uint);
+			registerSemantic<uint32_t>("MeshID"					, offsetof(EntityVariableBuffer, meshID)		, SemanticDataType::Matrix4x4);
 		}
 
 		const SemanticInfo* find(const std::string& name) const

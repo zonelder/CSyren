@@ -20,7 +20,7 @@ namespace csyren::render
             size_t offset;
             size_t size;
         };
-        size_t alloc(size_t size, void** cpuPtr, D3D12_GPU_VIRTUAL_ADDRESS* gpuAddr);
+        size_t allocate(size_t size, void** cpuPtr, D3D12_GPU_VIRTUAL_ADDRESS* gpuAddr);
 
 
         size_t update(const void* data, size_t size, D3D12_GPU_VIRTUAL_ADDRESS* outGpuAddr);
