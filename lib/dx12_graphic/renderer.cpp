@@ -114,7 +114,7 @@ namespace csyren::render
 
         D3D12_CLEAR_VALUE depthClearValue = {};
         depthClearValue.Format = DXGI_FORMAT_D32_FLOAT;
-        depthClearValue.DepthStencil.Depth = 1.0f;
+        depthClearValue.DepthStencil.Depth = 0.0f;
         depthClearValue.DepthStencil.Stencil = 0;
 
         D3D12_HEAP_PROPERTIES heapProps = {};
@@ -210,7 +210,7 @@ namespace csyren::render
         _commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 
         // --- Clear depth buffer ---
-        _commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+        _commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 0.0f, 0, 0, nullptr);
 
         // --- Viewport & scissor ---
         _commandList->RSSetViewports(1, &_viewport);

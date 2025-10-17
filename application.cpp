@@ -5,7 +5,6 @@
 #include <format>
 #include <iostream>
 
-//
 #include "dx12_graphic/primitives.h"
 #include "dx12_graphic/mesh.h"
 #include "dx12_graphic/material.h"
@@ -24,7 +23,6 @@
 
 namespace
 {
-
 
 	DirectX::XMMATRIX createProjection(csyren::core::Camera& camera)
 	{

@@ -46,7 +46,7 @@ namespace csyren::render
         depthStencilState = {};
         depthStencilState.DepthEnable = TRUE;
         depthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-        depthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+        depthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
         depthStencilState.StencilEnable = FALSE;
         depthStencilState.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
         depthStencilState.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK; 
