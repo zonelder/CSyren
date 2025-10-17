@@ -65,5 +65,11 @@
     <ClInclude Include="sprite_render_system.h">
       <Filter>system</Filter>
     </ClInclude>
+    <ClInclude Include="debug_rotator_system.h">
+      <Filter>system</Filter>
+    </ClInclude>
+    <ClInclude Include="debug_rotator.h">
+      <Filter>component</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

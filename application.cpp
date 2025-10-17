@@ -17,6 +17,7 @@
 
 #include "mesh_render_system.h"
 #include "editor_camera_controller_system.h"
+#include "debug_rotator_system.h"
 #include "scene_loader.h"
 
 #include "math/math.h"
@@ -166,9 +167,11 @@ namespace csyren
 		//--------------------------------------------------------------------------------------------
 		auto sceneLoaderSystem = std::make_shared<csyren::SceneLoaderSystem>(_serializer);
 		auto editorCameraControllerSystem = std::make_shared<csyren::EditorCameraControllerSystem>();
+		auto debugRotatorSystem = std::make_shared<csyren::DebugRotatorSystem>();
 		auto meshRenderSystem = std::make_shared<csyren::MeshRenderSystem>();
 
 		_systems.addSystem(sceneLoaderSystem, -100); 
+		_systems.addSystem(debugRotatorSystem, -2);
 		_systems.addSystem(editorCameraControllerSystem, -1);
 		_systems.addSystem(meshRenderSystem, 0);
 
@@ -193,23 +196,32 @@ namespace csyren
 		auto meshQuad = render::Primitives::getQuad(_resource);
 		auto meshCube = render::Primitives::getCube(_resource);
 
-		struct TestObj { DirectX::XMFLOAT3 pos; uint32_t colorIndex; };
-		std::vector<TestObj> objects = {
-			{{ 0.0f, 0.0f,  0.0f}, 0}, // ближний
-			{{ 0.5f, 0.5f,  1.0f}, 1}, // дальше
-			{{-0.5f,-0.5f, 2.0f}, 0}  // ещё дальше
-		};
+		const int gridX = 100;
+		const int gridY = 20;
+		const float spacing = 1.5f;
+		int counter = 0;
 
-		for (auto& obj : objects)
+		for (int y = 0; y < gridY; ++y)
 		{
-			auto ent = _scene.createEntity();
-			auto tr = _scene.addComponent<Transform>(ent);
-			auto mf = _scene.addComponent<MeshFilter>(ent);
-			auto mr = _scene.addComponent<MeshRenderer>(ent);
+			for (int x = 0; x < gridX; ++x)
+			{
+				auto ent = _scene.createEntity();
+				auto tr = _scene.addComponent<Transform>(ent);
+				auto mf = _scene.addComponent<MeshFilter>(ent);
+				auto mr = _scene.addComponent<MeshRenderer>(ent);
 
-			tr->position = DirectX::XMLoadFloat3(&obj.pos);
-			mf->mesh = (obj.colorIndex == 0) ? meshQuad : meshCube;
-			mr->material = (obj.colorIndex == 0) ? matDefault : matRainbow;
+				float fx = (x - gridX / 2.0f) * spacing;
+				float fz = (y - gridY / 2.0f) * spacing;
+				tr->position = { fx, sinf(y * 0.3f) * 0.5f, fz };
+				tr->scale = { 0.5f, 0.5f, 0.5f };
+
+				bool even = ((x + y) % 2) == 0;
+				mf->mesh = even ? meshCube : meshQuad;
+				mr->material = even ? matDefault : matRainbow;
+
+				auto rotEnt = _scene.addComponent<DebugRotator>(ent);
+				rotEnt->speed = DirectX::XMFLOAT3(0, 0.5f + 0.3f * (x % 5), 0);
+			}
 		}
 
 		//---------------------------------------------------------------------------------------------

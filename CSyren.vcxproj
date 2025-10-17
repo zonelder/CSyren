@@ -20,6 +20,8 @@
   <ItemGroup>
     <ClInclude Include="application.h" />
     <ClInclude Include="camera.h" />
+    <ClInclude Include="debug_rotator.h" />
+    <ClInclude Include="debug_rotator_system.h" />
     <ClInclude Include="editor_camera_controller.h" />
     <ClInclude Include="editor_camera_controller_system.h" />
     <ClInclude Include="mesh_render_system.h" />
