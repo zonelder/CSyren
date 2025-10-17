@@ -71,7 +71,7 @@ namespace csyren::render
 			{
 				log::info("Resizing material buffer for handle {} from {} to {} bytes.",
 					mathandle.id, cache.buffer.size(), materialBufferDesc->size);
-				if (!cache.buffer.init(device, materialBufferDesc->size,D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER))
+				if (!cache.buffer.init(device, materialBufferDesc->size, D3D12_RESOURCE_STATE_COMMON))
 				{
 					log::error("Failed to initialize/resize material buffer for handle {}.", mathandle.id);
 					_materialCache.erase(it); // Удаляем кеш, т.к. он в невалидном состоянии

@@ -12,6 +12,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE pPrevInstance, LPSTR plCmdLi
 	AllocConsole();
 	AttachConsole(GetCurrentProcessId());
 	freopen_s(&conout, "CON", "w", stdout);
+	std::cout.sync_with_stdio(true);
 #endif
 
 	csyren::Application app{};

@@ -31,7 +31,7 @@ namespace csyren::render
         // --- Rasterizer State ---
         rasterizerState = {};
         rasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
-        rasterizerState.CullMode = D3D12_CULL_MODE_NONE; // ¬ы можете изменить это на D3D12_CULL_MODE_NONE дл€ отладки
+        rasterizerState.CullMode = D3D12_CULL_MODE_NONE;
         rasterizerState.FrontCounterClockwise = FALSE;
         rasterizerState.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
         rasterizerState.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
@@ -44,13 +44,12 @@ namespace csyren::render
 
         // --- Depth-Stencil State ---
         depthStencilState = {};
-        depthStencilState.DepthEnable = TRUE; // ќбычно это то, что вам нужно
+        depthStencilState.DepthEnable = TRUE;
         depthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-        depthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+        depthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
         depthStencilState.StencilEnable = FALSE;
         depthStencilState.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
-        depthStencilState.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
-        // ... остальна€ часть depthStencilState игнорируетс€ ...
+        depthStencilState.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK; 
 
         // --- ќстальные параметры PSO ---
         primitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;

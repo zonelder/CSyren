@@ -18,6 +18,10 @@ namespace csyren::render
         static MeshHandle getTriangle(ResourceManager& rm);
         static MeshHandle getQuad(ResourceManager& rm);
         static MeshHandle getCube(ResourceManager& rm);
+        
+        static ShaderHandle getRainbowShader(ResourceManager& rm);
+        static MaterialHandle getRainbowMaterial(ResourceManager& rm);
+
         static bool registerFabricsAll(ResourceManager&);
     private:
 

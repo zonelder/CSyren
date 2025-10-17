@@ -16,6 +16,9 @@ namespace csyren::render
     {
         constexpr char DEFAULT_SHADER_NAME[]        = "__csyren_default_shader__";
         constexpr char DEFAULT_MATERIAL_NAME[]      = "__primitive_default_material__";
+
+        constexpr char RAINBOW_SHADER_NAME[]        = "__csyren_rainbow_shader__";
+        constexpr char RAINBOW_MATERIAL_NAME[]      = "__primitive_rainbow_material__";
         constexpr char LINE_MESH_NAME[]             = "__primitive_line__";
         constexpr char TRIANGLE_MESH_NAME[]         ="__primitive_triangle__";
         constexpr char QUAD_MESH_NAME[]             ="__primitive_quad__";
@@ -76,6 +79,63 @@ namespace csyren::render
                 return input.color*tint;
             }
         )";
+
+            const char* g_primitiveShaderCode2 = R"(
+
+            //@update frame
+            cbuffer perFrame
+            {
+                //@semantic ViewProjection
+                matrix viewProjection;
+                //@semantic Time
+                float time;
+            }
+
+            //@update entity
+            cbuffer perEntity
+            {
+                //@semantic World
+                matrix world;
+            }
+
+            //@update material
+            cbuffer material
+            {
+                //@editable
+                float4 tint;
+            }
+
+            struct VS_Input
+            {
+                float3 position : POSITION;
+                float4 color    : COLOR;
+            };
+
+            struct PS_Input
+            {
+                float4 position : SV_POSITION;
+                float4 color    : COLOR;
+            };
+
+            PS_Input VSMain(VS_Input input)
+            {
+                PS_Input o;
+                float4 pos = float4(input.position, 1.0f);
+                pos = mul(pos, world);
+                pos = mul(pos, viewProjection);
+                o.position = pos;
+
+                float wave = sin(time * 2.0f + input.position.x * 5.0f) * 0.5f + 0.5f;
+                o.color = lerp(input.color, float4(wave, 1.0f - wave, 1.0f, 1.0f), 0.5f);
+                return o;
+            }
+
+            float4 PSMain(PS_Input input) : SV_TARGET
+            {
+                float3 c = input.color.rgb * tint.rgb;
+                return float4(c, 1.0f);
+            }
+        )";
     }
 
 
@@ -97,6 +157,17 @@ namespace csyren::render
             };
             std::vector<uint16_t> idx = { 0, 1 };
             return rm.createMesh(LINE_MESH_NAME, verts, idx);
+            };
+
+        ResourceManager::ProceduralResourceFactory<Shader> rainbowShaderFabric =
+            [](ResourceManager& rm) { return rm.createShaderFromCode(RAINBOW_SHADER_NAME, std::string(g_primitiveShaderCode2)); };
+
+        ResourceManager::ProceduralResourceFactory<Material> rainbowMaterialFabric =
+            [](ResourceManager& rm)
+            {
+                auto shader = rm.get<Shader>(RAINBOW_SHADER_NAME);
+                MaterialStateDesc states = {};
+                return rm.createMaterial(RAINBOW_MATERIAL_NAME, shader, states);
             };
 
         ResourceManager::ProceduralResourceFactory<Mesh> triangleMeshFabric = [](ResourceManager& rm) {
@@ -149,6 +220,8 @@ namespace csyren::render
         rm.registerProcedural(TRIANGLE_MESH_NAME, triangleMeshFabric);
         rm.registerProcedural(QUAD_MESH_NAME, quadMeshFabric);
         rm.registerProcedural(CUBE_MESH_NAME, cubeMeshFabric);
+        rm.registerProcedural(RAINBOW_SHADER_NAME, rainbowShaderFabric);
+        rm.registerProcedural(RAINBOW_MATERIAL_NAME, rainbowMaterialFabric);
 
         return true; // Возвращаем true в случае успеха
     }
@@ -162,6 +235,16 @@ namespace csyren::render
     MaterialHandle Primitives::getDefaultMaterial(ResourceManager& rm)
     {
         return rm.get<Material>(DEFAULT_MATERIAL_NAME);
+    }
+
+    ShaderHandle Primitives::getRainbowShader(ResourceManager& rm)
+    {
+        return rm.get<Shader>(RAINBOW_SHADER_NAME);
+    }
+
+    MaterialHandle Primitives::getRainbowMaterial(ResourceManager& rm)
+    {
+        return rm.get<Material>(RAINBOW_MATERIAL_NAME);
     }
 
     MeshHandle Primitives::getLine(ResourceManager& rm)

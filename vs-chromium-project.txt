@@ -11,6 +11,7 @@
 *.csproj
 *.vcxproj
 *.bat
+*.vs
 doxygen/
 pydoc/
 build/

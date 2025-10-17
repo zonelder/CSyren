@@ -64,7 +64,8 @@ namespace csyren
 
 	bool Application::init()
 	{
-
+		log::init();
+		log::info("-------------------------------------Init Application-------------------------------------");
 		auto hWnd = _window.init();
 		if (!hWnd) { return false; }
 		_window.setInputDispatcher(&_inputDispatcher);
@@ -76,12 +77,14 @@ namespace csyren
 
 		_inputDispatcher.init(*_bus);
 		render::Primitives::registerFabricsAll(_resource);
+
+		log::info("-------------------------------------------------------------------------------------------");
 		return true;
 	}
 
 	int Application::run()
 	{
-		log::init();
+
 		_window.show();
 		MSG msg = { 0 };
 
@@ -93,10 +96,13 @@ namespace csyren
 		core::events::UpdateEvent updateEvent{ _inputDispatcher.devices(), _scene,_resource,*_bus,time			};
 		core::events::DrawEvent   drawEvent  { _inputDispatcher.devices(), _scene,_resource,*_bus,_render		};
 		core::events::SystemEvent systemEvent{ _inputDispatcher.devices(), _scene,_resource,*_bus,time,_render  };
-
+		log::info("-------------------------------Setup Start Up------------------------------------------------");
 		onSceneStart();
 
 		_systems.init(systemEvent);
+		log::info("---------------------------------------------------------------------------------------------");
+
+		log::info("-------------------------------Run Game Loop-------------------------------------------------");
 		while (true)
 		{
 			timeHandler.update(time);
@@ -105,6 +111,9 @@ namespace csyren
 			{
 				if (msg.message == WM_QUIT) 
 				{
+					log::info("---------------------------------------------------------------------------------------------");
+
+					log::info("-------------------------------Shutdown------------------------------------------------------");
 					_systems.shutdown(systemEvent);
 					_inputDispatcher.shutdown(*_bus);
 					log::shutdown();
@@ -119,7 +128,7 @@ namespace csyren
 			auto [mainCameraID,camera,cameraTransform] = *(_scene.view<Camera,Transform>().begin());//only first camera accepted
 
 			auto engineVariables = _render.getEngineVariableBuffer();
-
+			engineVariables->totalTime = time.totalTime();
 			DirectX::XMMATRIX invView = cameraTransform.world();
 			DirectX::XMStoreFloat4x4(&engineVariables->invViewMatrix, invView);
 
@@ -148,7 +157,6 @@ namespace csyren
 	}
 
 
-
 	/**
 	 * @brief method where you can place you custom scene initialization.
 	 */
@@ -168,6 +176,7 @@ namespace csyren
 
 		//------------------------------------LOAD SCENE------------------------------------------------
 
+		//------------------------------------Camera----------------------------------------------------
 		auto mainCameraEntt = _scene.createEntity();
 		auto mainCamera = _scene.addComponent<Camera>(mainCameraEntt);
 		auto cameraTransform = _scene.addComponent<Transform>(mainCameraEntt);
@@ -177,16 +186,33 @@ namespace csyren
 		mainCamera->background = { 1.f,0.0f,0.0f,1.0f };
 		cameraTransform->position = math::Vector3::back * 2;
 		
-		auto matHandle = render::Primitives::getDefaultMaterial(_resource);
-		auto meshHandle = render::Primitives::getTriangle(_resource);
+		//-------------------------------------Material and mesh----------------------------------------
 
+		auto matDefault = render::Primitives::getDefaultMaterial(_resource);
+		auto matRainbow = render::Primitives::getRainbowMaterial(_resource);
+		_resource.getMaterial(matDefault)->setVector("tint", DirectX::XMFLOAT4(1, 1, 1,1));
+		_resource.getMaterial(matRainbow)->setVector("tint", DirectX::XMFLOAT4(1, 1, 1, 1));
+		auto meshQuad = render::Primitives::getQuad(_resource);
+		auto meshCube = render::Primitives::getCube(_resource);
 
-		auto testMeshEntity = _scene.createEntity();
-		auto meshFilter = _scene.addComponent<MeshFilter>(testMeshEntity);
-		auto meshRenderer = _scene.addComponent<MeshRenderer>(testMeshEntity);
-		auto transform = _scene.addComponent<Transform>(testMeshEntity);
-		meshFilter->mesh = meshHandle;
-		meshRenderer->material = matHandle;
+		struct TestObj { DirectX::XMFLOAT3 pos; uint32_t colorIndex; };
+		std::vector<TestObj> objects = {
+			{{ 0.0f, 0.0f,  0.0f}, 0}, // ближний
+			{{ 0.5f, 0.5f,  1.0f}, 1}, // дальше
+			{{-0.5f,-0.5f, 2.0f}, 0}  // ещё дальше
+		};
+
+		for (auto& obj : objects)
+		{
+			auto ent = _scene.createEntity();
+			auto tr = _scene.addComponent<Transform>(ent);
+			auto mf = _scene.addComponent<MeshFilter>(ent);
+			auto mr = _scene.addComponent<MeshRenderer>(ent);
+
+			tr->position = DirectX::XMLoadFloat3(&obj.pos);
+			mf->mesh = (obj.colorIndex == 0) ? meshQuad : meshCube;
+			mr->material = (obj.colorIndex == 0) ? matDefault : matRainbow;
+		}
 
 		//---------------------------------------------------------------------------------------------
 		/*

@@ -29,39 +29,6 @@ namespace csyren
             auto engineParams = event.render.getEngineVariableBuffer();
             auto entityParams = event.render.getEntityVariableBuffer();
             using KeyCode = input::KeyCode;
-            float r = 0, g = 0, b = 0;
-            if (keyboard.isKeyDown(KeyCode::Q))
-            {
-                r = 1.0f;
-            }
-            if (keyboard.isKeyDown(KeyCode::W))
-            {
-                g = 1.0f;
-            }
-
-            if (keyboard.isKeyDown(KeyCode::E))
-            {
-                b = 1.0f;
-            }
-
-            float moveSpeed = 0.01f;
-            if (keyboard.isKeyDown(KeyCode::LShift))
-                moveSpeed *= 5.0f;
-            DirectX::XMFLOAT3 position =  DirectX::XMFLOAT3(0,0,0);
-            if (keyboard.isKeyDown(KeyCode::W))
-                position.y += moveSpeed;
-            if (keyboard.isKeyDown(KeyCode::S))
-                position.y -= moveSpeed;
-            if (keyboard.isKeyDown(KeyCode::A))
-                position.x -= moveSpeed;
-            if (keyboard.isKeyDown(KeyCode::D))
-                position.x += moveSpeed;
-            if (keyboard.isKeyDown(KeyCode::Q))
-                position.z -= moveSpeed;
-            if (keyboard.isKeyDown(KeyCode::E))
-                position.z += moveSpeed;
-
-            DirectX::XMFLOAT4 color(r, g, b, 1.0f);
 
             event.scene.view<Transform, MeshFilter, MeshRenderer>()
                 .each([&](Entity::ID id,
@@ -78,12 +45,10 @@ namespace csyren
                         if (!shader)
                             return;
 
-                        tr.position += Vector3(position.x, position.y, position.z);
                         DirectX::XMFLOAT4X4 out;
                         DirectX::XMStoreFloat4x4(&out, tr.world());
                         entityParams->worldMatrix = out;
                         entityParams->entityID = id;
-                        mat->setVector("tint", color);
                         if (!event.render.bindMaterial(event.resources,mr.material))
                             return;
 
