@@ -66,14 +66,18 @@ namespace csyren::render
         return true;
     }
 
-
-    void Mesh::draw(Renderer& renderer)
+    void Mesh::bind(Renderer& renderer)
     {
         ID3D12GraphicsCommandList* cmd = renderer.commandList();
 
         cmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         cmd->IASetVertexBuffers(0, 1, &_vertexView);
         cmd->IASetIndexBuffer(&_indexView);
+    }
+
+    void Mesh::draw(Renderer& renderer)
+    {
+        ID3D12GraphicsCommandList* cmd = renderer.commandList();
         cmd->DrawIndexedInstanced(_indexCount, 1, 0, 0, 0);
     }
 }

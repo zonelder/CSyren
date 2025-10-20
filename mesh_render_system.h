@@ -51,8 +51,11 @@ namespace csyren
                     auto* mesh = event.resources.getMesh(meshID);
                     if (!mesh) continue;
 
+                    mesh->bind(event.render);
+
                     for (auto& data : entities)
                     {
+                        //TODO instancing look pretty well here.
                         DirectX::XMStoreFloat4x4(&entityParams->worldMatrix, data.tr->world());
                         entityParams->entityID = data.id;
                         if (!event.render.bindEntity(cb)) continue;

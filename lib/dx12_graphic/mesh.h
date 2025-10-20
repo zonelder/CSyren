@@ -25,6 +25,7 @@ namespace csyren::render
 			Color color;
 		};
 		Mesh() noexcept = default;
+		void bind(Renderer& renderer);
 		void draw(Renderer& renderer);
 	private:
 
