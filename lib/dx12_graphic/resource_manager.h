@@ -188,9 +188,9 @@ namespace csyren::render
         // They bypass the procedural factory lookup and file loading.
 
         // Meshes
-        MeshHandle createMesh(const std::string& name, const std::vector<Mesh::Vertex>& vertices, const std::vector<uint16_t>& indices)
+        MeshHandle createMesh(const std::string& name,void* vertexData, size_t vertexDataSize, uint32_t vertexStride,const std::vector<MeshIndex>& indices)
         {
-            return _meshStorage.load(name, vertices, indices);
+            return _meshStorage.load(name, vertexData, vertexDataSize, vertexStride, indices);
         }
 
         // Textures

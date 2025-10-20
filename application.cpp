@@ -75,8 +75,6 @@ namespace csyren
 		}
 
 		_inputDispatcher.init(*_bus);
-		render::Primitives::registerFabricsAll(_resource);
-
 		log::info("-------------------------------------------------------------------------------------------");
 		return true;
 	}
@@ -95,12 +93,16 @@ namespace csyren
 		core::events::UpdateEvent updateEvent{ _inputDispatcher.devices(), _scene,_resource,*_bus,time			};
 		core::events::DrawEvent   drawEvent  { _inputDispatcher.devices(), _scene,_resource,*_bus,_render		};
 		core::events::SystemEvent systemEvent{ _inputDispatcher.devices(), _scene,_resource,*_bus,time,_render  };
+
 		log::info("-------------------------------Setup Start Up------------------------------------------------");
+		_render.beginResourceUpload();
+
+		render::Primitives::registerFabricsAll(_resource);
 		onSceneStart();
-
 		_systems.init(systemEvent);
-		log::info("---------------------------------------------------------------------------------------------");
 
+		_render.endResourceUpload();
+		log::info("---------------------------------------------------------------------------------------------");
 		log::info("-------------------------------Run Game Loop-------------------------------------------------");
 		while (true)
 		{

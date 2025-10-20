@@ -3,6 +3,7 @@
 #include "mesh.h"
 #include "material.h"
 #include "renderer.h"
+#include "vertex_formats.h"
 
 #include <d3dcompiler.h>
 #include <vector>
@@ -151,12 +152,15 @@ namespace csyren::render
             };
 
         ResourceManager::ProceduralResourceFactory<Mesh> lineMeshFabric = [](ResourceManager& rm) {
-            std::vector<Mesh::Vertex> verts = {
+            std::vector<VertexXYZC> verts = {
                 { XMFLOAT3(0.0f, 0.0f, 0.0f), Color(1.0f, 1.0f, 1.0f, 1.0f) },
                 { XMFLOAT3(1.0f, 0.0f, 0.0f), Color(1.0f, 1.0f, 1.0f, 1.0f) }
             };
             std::vector<uint16_t> idx = { 0, 1 };
-            return rm.createMesh(LINE_MESH_NAME, verts, idx);
+            return rm.createMesh(LINE_MESH_NAME, verts.data(),
+                verts.size() * sizeof(VertexXYZC),
+                sizeof(VertexXYZC),
+                idx);
             };
 
         ResourceManager::ProceduralResourceFactory<Shader> rainbowShaderFabric =
@@ -171,28 +175,28 @@ namespace csyren::render
             };
 
         ResourceManager::ProceduralResourceFactory<Mesh> triangleMeshFabric = [](ResourceManager& rm) {
-            std::vector<Mesh::Vertex> verts = {
+            std::vector<VertexXYZC> verts = {
                 { XMFLOAT3(0.0f, 0.0f, 0.0f), Color(1.0f, 1.0f, 1.0f, 1.0f) },
                 { XMFLOAT3(1.0f, 0.0f, 0.0f), Color(1.0f, 1.0f, 1.0f, 1.0f) },
                 { XMFLOAT3(0.0f, 1.0f, 0.0f), Color(1.0f, 1.0f, 1.0f, 1.0f) }
             };
             std::vector<uint16_t> idx = { 0, 1, 2 };
-            return rm.createMesh(TRIANGLE_MESH_NAME, verts, idx);
+            return rm.createMesh(TRIANGLE_MESH_NAME, verts.data(),verts.size()*sizeof(VertexXYZC),sizeof(VertexXYZC), idx);
             };
 
         ResourceManager::ProceduralResourceFactory<Mesh> quadMeshFabric = [](ResourceManager& rm) {
-            std::vector<Mesh::Vertex> verts = {
+            std::vector<VertexXYZC> verts = {
                 { XMFLOAT3(-0.5f, -0.5f, 0.0f), Color(1.0f, 1.0f, 1.0f, 1.0f) },
                 { XMFLOAT3(-0.5f,  0.5f, 0.0f), Color(1.0f, 1.0f, 1.0f, 1.0f) },
                 { XMFLOAT3(0.5f,  0.5f, 0.0f), Color(1.0f, 1.0f, 1.0f, 1.0f) },
                 { XMFLOAT3(0.5f, -0.5f, 0.0f), Color(1.0f, 1.0f, 1.0f, 1.0f) }
             };
             std::vector<uint16_t> idx = { 0, 1, 2, 0, 2, 3 };
-            return rm.createMesh(QUAD_MESH_NAME, verts, idx);
+            return rm.createMesh(QUAD_MESH_NAME, verts.data(), verts.size() * sizeof(VertexXYZC), sizeof(VertexXYZC), idx);
             };
 
         ResourceManager::ProceduralResourceFactory<Mesh> cubeMeshFabric = [](ResourceManager& rm) {
-            std::vector<Mesh::Vertex> verts = {
+            std::vector<VertexXYZC> verts = {
                 { XMFLOAT3(-0.5f, -0.5f, -0.5f), Color(1.0f, 0.0f, 0.0f, 1.0f) },
                 { XMFLOAT3(-0.5f,  0.5f, -0.5f), Color(1.0f, 0.0f, 0.0f, 1.0f) },
                 { XMFLOAT3(0.5f,  0.5f, -0.5f), Color(1.0f, 0.0f, 0.0f, 1.0f) },
@@ -210,7 +214,7 @@ namespace csyren::render
                 1, 5, 6,   1, 6, 2,
                 4, 0, 3,   4, 3, 7
             };
-            return rm.createMesh(CUBE_MESH_NAME, verts, idx);
+            return rm.createMesh(CUBE_MESH_NAME, verts.data(), verts.size() * sizeof(VertexXYZC), sizeof(VertexXYZC), idx);
             };
 
         // --- Регистрация всех фабрик ---

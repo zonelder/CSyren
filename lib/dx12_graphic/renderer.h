@@ -54,13 +54,17 @@ namespace csyren::render
 		void clear(const FLOAT color[4]);
 		void endFrame();
 
+
+		void beginResourceUpload();
+		void endResourceUpload();
+
 		HRESULT uploadTextureData(ID3D12Resource* destResource, const DirectX::ScratchImage& scratchImage);
 		DescriptorHeapManager* getDescriptorHeapManager() const noexcept { return _pSrvHeapManager.get(); }
 
 		ID3D12GraphicsCommandList* commandList() const noexcept { return _commandList.Get(); }
 		ID3D12Device* device() const noexcept { return _device.Get(); }
 
-		UploadRingBuffer* getPerEntityCB() noexcept { return &_perEntityCB; };
+		UploadRingBuffer* getUploadBuffer() noexcept { return &_perEntityCB; };
 
 		EngineVariableBuffer* getEngineVariableBuffer() noexcept { return &_engineVariableBuffer; };
 		EntityVariableBuffer* getEntityVariableBuffer() noexcept { return &_entityVariableBuffer; };

@@ -191,6 +191,7 @@
     <ClInclude Include="shader_parameter_binder.h" />
     <ClInclude Include="texture.h" />
     <ClInclude Include="upload_ring_buffer.h" />
+    <ClInclude Include="vertex_formats.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="constant_buffer.cpp" />

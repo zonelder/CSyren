@@ -365,4 +365,21 @@ namespace csyren::render
         return _parameterBinder.updateEntityBuffer(_commandList.Get(), _entityVariableBuffer, layout, _perEntityCB);
     }
 
+
+    void Renderer::beginResourceUpload()
+    {
+        DX_LOG(_commandAllocator->Reset());
+        DX_LOG(_commandList->Reset(_commandAllocator.Get(), nullptr));
+    }
+
+
+    void Renderer::endResourceUpload()
+    {
+        DX_LOG(_commandList->Close());
+
+        ID3D12CommandList* ppCommandLists[] = { _commandList.Get() };
+        _commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+        waitForGpu();
+    }
+
 }
