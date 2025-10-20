@@ -259,7 +259,7 @@ namespace csyren::render
         _commandQueue->ExecuteCommandLists(1, cmds);
 
         // --- Present ---
-        _swapChain->Present(1, 0);
+        _swapChain->Present(static_cast<UINT>(_enableVSync), 0);
 
         // --- GPU sync ---
         const UINT64 fenceToWaitFor = _fenceValue;

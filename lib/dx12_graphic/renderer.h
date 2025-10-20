@@ -101,6 +101,7 @@ namespace csyren::render
 
 		std::unique_ptr<details::PSOFactory>	_pPSOFactory;
 		std::unique_ptr<DescriptorHeapManager>	_pSrvHeapManager;
+		bool									_enableVSync{ false };
 	};
 }
 
