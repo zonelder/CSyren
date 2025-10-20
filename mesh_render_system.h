@@ -23,42 +23,43 @@ namespace csyren
 
         void draw(events::DrawEvent& event) override
         {
-            ID3D12GraphicsCommandList* cmd = event.render.commandList();
-            render::UploadRingBuffer* perEntityCB = event.render.getPerEntityCB();
-            auto& keyboard = event.devices.keyboard();
-            auto engineParams = event.render.getEngineVariableBuffer();
+
+            struct EntityData { Transform* tr; Entity::ID id; };
+            using MeshGroups = std::unordered_map<render::MeshHandle,std::vector<EntityData>>;
+            using MaterialGroups = std::unordered_map<render::MaterialHandle, MeshGroups>;
+
+            MaterialGroups batches;
             auto entityParams = event.render.getEntityVariableBuffer();
-            using KeyCode = input::KeyCode;
+            for (auto [entt, tr, mf, mr] : event.scene.view<Transform, MeshFilter, MeshRenderer>())
+            {
+                batches[mr.material][mf.mesh].push_back({ &tr,entt });
+            }
 
-            event.scene.view<Transform, MeshFilter, MeshRenderer>()
-                .each([&](Entity::ID id,
-                    Transform& tr,
-                    MeshFilter& mf,
-                    MeshRenderer& mr)
+            for (auto& [matID, meshGroups] : batches)
+            {
+                auto* mat = event.resources.getMaterial(matID);
+                if (!mat) continue;
+
+                auto* shader = event.resources.getShader(mat->getShader());
+                if (!shader) continue;
+
+                if (!event.render.bindMaterial(event.resources, matID)) continue;
+                auto* cb = shader->getSemanticBuffer(render::details::CBufferUpdateType::Entity);
+
+                for (auto& [meshID, entities] : meshGroups)
+                {
+                    auto* mesh = event.resources.getMesh(meshID);
+                    if (!mesh) continue;
+
+                    for (auto& data : entities)
                     {
-                        auto* mesh = event.resources.getMesh(mf.mesh);
-
-                        auto mat = event.resources.getMaterial(mr.material);
-                        if (!mat || !mesh)
-                            return;
-                        auto shader = event.resources.getShader(mat->getShader());
-                        if (!shader)
-                            return;
-
-                        DirectX::XMFLOAT4X4 out;
-                        DirectX::XMStoreFloat4x4(&out, tr.world());
-                        entityParams->worldMatrix = out;
-                        entityParams->entityID = id;
-                        if (!event.render.bindMaterial(event.resources,mr.material))
-                            return;
-
-                        if (!event.render.bindEntity(shader->getSemanticBuffer(render::details::CBufferUpdateType::Entity)))
-                        {
-                            return;
-                        }
-
+                        DirectX::XMStoreFloat4x4(&entityParams->worldMatrix, data.tr->world());
+                        entityParams->entityID = data.id;
+                        if (!event.render.bindEntity(cb)) continue;
                         mesh->draw(event.render);
-                    });
+                    }
+                }
+            }
         }
 
     };
