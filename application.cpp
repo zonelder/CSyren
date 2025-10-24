@@ -214,8 +214,8 @@ namespace csyren
 
 				float fx = (x - gridX / 2.0f) * spacing;
 				float fz = (y - gridY / 2.0f) * spacing;
-				tr->position = { fx, sinf(y * 0.3f) * 0.5f, fz };
-				tr->scale = { 0.5f, 0.5f, 0.5f };
+				tr->position = Vector3{ fx, sinf(y * 0.3f) * 0.5f, fz };
+				tr->scale = Vector3{ 0.5f, 0.5f, 0.5f };
 
 				bool even = ((x + y) % 2) == 0;
 				mf->mesh = even ? meshCube : meshQuad;

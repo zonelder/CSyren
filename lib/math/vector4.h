@@ -11,27 +11,43 @@
 namespace csyren::math
 {
 
-    class alignas(16) Vector4
+    class Vector4 : public DirectX::XMFLOAT4
     {
-        union
+    public:
+        Vector4() noexcept : DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f) {}
+        Vector4(float x, float y, float z, float w) : DirectX::XMFLOAT4(x,y,z,w){}
+        explicit Vector4(DirectX::FXMVECTOR vec) noexcept
         {
-            struct alignas(16) { float x, y, z, w; };
-            DirectX::XMVECTOR _vec;
+            DirectX::XMStoreFloat4(this, vec);
+        }
+
+        Vector4(const Vector4& other)               noexcept = default;
+        Vector4& operator=(const Vector4& other)    noexcept = default;
+        Vector4(Vector4&& other)                    noexcept = default;
+        Vector4& operator=(Vector4&& other)         noexcept = default;
+        Vector4& operator=(DirectX::XMVECTOR vec) 
+        {
+            DirectX::XMStoreFloat4(this, vec);
+            return *this;
         };
 
-    public:
-        Vector4() : _vec(DirectX::XMVectorZero()) {}
-        Vector4(float x, float y, float z, float w) : _vec(DirectX::XMVectorSet(x, y, z, w)) {}
-        explicit Vector4(const DirectX::XMVECTOR& reg) : _vec(reg) {}
+        operator DirectX::XMVECTOR() const noexcept
+        {
+            return DirectX::XMLoadFloat4(this);
+        }
 
-        Vector4(const Vector4& other) = default;
-        Vector4& operator=(const Vector4& other) { _vec = other._vec; return *this; };
-        Vector4(Vector4&& other) noexcept = default;
-        Vector4& operator=(Vector4&& other) noexcept = default;
-        Vector4& operator=(const DirectX::XMVECTOR& vec) { _vec = vec; return *this; };
+        // Доступ по индексу
+        float operator[](size_t index) const noexcept
+        {
+            assert(index < 4 && "Vector4 index out of bounds.");
+            return reinterpret_cast<const float*>(this)[index];
+        }
 
-        operator DirectX::XMVECTOR() const { return _vec; };
-        operator DirectX::XMVECTOR() { return _vec; };
+        float& operator[](size_t index) noexcept
+        {
+            assert(index < 4 && "Vector4 index out of bounds.");
+            return reinterpret_cast<float*>(this)[index];
+        }
 
         friend inline Vector4 operator+(const Vector4& v1, const Vector4& v2);
         friend Vector4 operator-(const Vector4& v1, const Vector4& v2);
@@ -41,7 +57,7 @@ namespace csyren::math
         friend Vector4 operator/(float d, const Vector4& v);
         friend bool operator==(const Vector4& v1, const Vector4& v2) noexcept;
 
-        bool equal(const Vector4& other) const noexcept;
+        bool exactEqual(const Vector4& other) const noexcept;
 
         Vector4& operator+=(const Vector4& other) noexcept;
         Vector4& operator-=(const Vector4& other) noexcept;
@@ -69,19 +85,7 @@ namespace csyren::math
         static Vector4 min(const Vector4& a, const Vector4& b);
         static Vector4 moveTowards(const Vector4& current, const Vector4& target, float maxDistDelta);
         static Vector4 scale(const Vector4& a, const Vector4& b);
-        static bool equal(const Vector4& a, const Vector4& b) noexcept;
-
-        float operator[](size_t index) const noexcept
-        {
-            assert(index < 4 && "Vector4 index out of bound.");
-            return (&x)[index];
-        }
-
-        float& operator[](size_t index) noexcept
-        {
-            assert(index < 4 && "Vector4 index out of bound.");
-            return (&x)[index];
-        }
+        static bool exactEqual(const Vector4& a, const Vector4& b) noexcept;
 
         static const Vector4 one;
         static const Vector4 zero;
@@ -94,22 +98,22 @@ namespace csyren::math
     inline bool operator==(const Vector4& lhs, const Vector4& rhs) noexcept
     {
         static const auto eps = DirectX::XMVectorReplicate(Vector4::s_epsilon);
-        return DirectX::XMVector4NearEqual(lhs._vec, rhs._vec, eps);
+        return DirectX::XMVector4NearEqual(lhs, rhs, eps);
     }
 
     inline Vector4 operator+(const Vector4& v1, const Vector4& v2)
     {
-        return Vector4(DirectX::XMVectorAdd(v1._vec, v2._vec));
+        return Vector4(DirectX::XMVectorAdd(v1, v2));
     }
 
     inline Vector4 operator-(const Vector4& v1, const Vector4& v2)
     {
-        return Vector4(DirectX::XMVectorSubtract(v1._vec, v2._vec));
+        return Vector4(DirectX::XMVectorSubtract(v1, v2));
     }
 
     inline Vector4 operator*(const Vector4& v, float d)
     {
-        return Vector4(DirectX::XMVectorScale(v._vec, d));
+        return Vector4(DirectX::XMVectorScale(v, d));
     }
 
     inline Vector4 operator*(float d, const Vector4& v)
@@ -120,7 +124,7 @@ namespace csyren::math
     inline Vector4 operator/(const Vector4& v, float d)
     {
         assert(d != 0.0f && "Vector4 division by zero");
-        return Vector4(DirectX::XMVectorScale(v._vec, 1.0f / d));
+        return Vector4(DirectX::XMVectorScale(v, 1.0f / d));
     }
 
     inline Vector4 operator/(float d, const Vector4& v)
@@ -130,37 +134,37 @@ namespace csyren::math
 
     inline Vector4& Vector4::operator+=(const Vector4& other) noexcept
     {
-        _vec = DirectX::XMVectorAdd(_vec, other._vec);
+        DirectX::XMStoreFloat4(this, DirectX::XMVectorAdd(*this, other));
         return *this;
     }
 
     inline Vector4& Vector4::operator-=(const Vector4& other) noexcept
     {
-        _vec = DirectX::XMVectorSubtract(_vec, other._vec);
+        DirectX::XMStoreFloat4(this, DirectX::XMVectorSubtract(*this, other));
         return *this;
     }
 
     inline Vector4& Vector4::operator*=(float scalar) noexcept
     {
-        _vec = DirectX::XMVectorScale(_vec, scalar);
+        DirectX::XMStoreFloat4(this, DirectX::XMVectorScale(*this, scalar));
         return *this;
     }
 
     inline Vector4& Vector4::operator/=(float scalar) noexcept
     {
-        assert(scalar != 0.0f && "Vector4::attempt to divide by zero.");
-        _vec = DirectX::XMVectorScale(_vec, 1.0f / scalar);
+        assert(scalar != 0.0f && "Division by zero");
+        DirectX::XMStoreFloat4(this, DirectX::XMVectorScale(*this, 1.0f / scalar));
         return *this;
     }
 
     inline Vector4 Vector4::operator-() const noexcept
     {
-        return Vector4(DirectX::XMVectorNegate(_vec));
+        return Vector4(DirectX::XMVectorNegate(*this));
     }
 
     inline float Vector4::dot(const Vector4& v1, const Vector4& v2) noexcept
     {
-        return DirectX::XMVectorGetX(DirectX::XMVector4Dot(v1._vec, v2._vec));
+        return DirectX::XMVectorGetX(DirectX::XMVector4Dot(v1, v2));
     }
 
     inline float Vector4::dot(const Vector4& v) const noexcept
@@ -170,27 +174,27 @@ namespace csyren::math
 
     inline Vector4 Vector4::normalized() const& noexcept
     {
-        return Vector4(DirectX::XMVector4Normalize(_vec));
+        return Vector4(DirectX::XMVector2Normalize(*this));
     }
 
     inline void Vector4::normalize() noexcept
     {
-        _vec = DirectX::XMVector4Normalize(_vec);
+        DirectX::XMStoreFloat4(this, DirectX::XMVector2Normalize(*this));
     }
 
     inline Vector4 Vector4::scale(const Vector4& v) const noexcept
     {
-        return Vector4(DirectX::XMVectorMultiply(_vec, v._vec));
+        return Vector4(DirectX::XMVectorMultiply(*this, v));
     }
 
     inline float Vector4::magnitude() const noexcept
     {
-        return DirectX::XMVectorGetX(DirectX::XMVector4Length(_vec));
+        return DirectX::XMVectorGetX(DirectX::XMVector4Length(*this));
     }
 
     inline float Vector4::sqrMagnitude() const noexcept
     {
-        return DirectX::XMVectorGetX(DirectX::XMVector4LengthSq(_vec));
+        return DirectX::XMVectorGetX(DirectX::XMVector4LengthSq(*this));
     }
 
     inline float Vector4::distance(const Vector4& a, const Vector4& b) noexcept
@@ -200,17 +204,17 @@ namespace csyren::math
 
     inline Vector4 Vector4::lerp(const Vector4& a, const Vector4& b, float t)
     {
-        return Vector4(DirectX::XMVectorLerp(a._vec, b._vec, std::clamp(t, 0.0f, 1.0f)));
+        return Vector4(DirectX::XMVectorLerp(a, b, std::clamp(t, 0.0f, 1.0f)));
     }
 
     inline Vector4 Vector4::lerpUnclamped(const Vector4& a, const Vector4& b, float t)
     {
-        return Vector4(DirectX::XMVectorLerp(a._vec, b._vec, t));
+        return Vector4(DirectX::XMVectorLerp(a, b, t));
     }
 
     inline Vector4 Vector4::reflect(const Vector4& incident, const Vector4& normal)
     {
-        return Vector4(DirectX::XMVector4Reflect(incident._vec, normal._vec));
+        return Vector4(DirectX::XMVector4Reflect(incident, normal));
     }
 
     inline Vector4 Vector4::project(const Vector4& vector, const Vector4& onto)
@@ -242,12 +246,12 @@ namespace csyren::math
 
     inline Vector4 Vector4::max(const Vector4& a, const Vector4& b)
     {
-        return Vector4(DirectX::XMVectorMax(a._vec, b._vec));
+        return Vector4(DirectX::XMVectorMax(a, b));
     }
 
     inline Vector4 Vector4::min(const Vector4& a, const Vector4& b)
     {
-        return Vector4(DirectX::XMVectorMin(a._vec, b._vec));
+        return Vector4(DirectX::XMVectorMin(a, b));
     }
 
     inline Vector4 Vector4::moveTowards(const Vector4& current, const Vector4& target, float maxDelta)
@@ -264,14 +268,14 @@ namespace csyren::math
         return a.scale(b);
     }
 
-    inline bool Vector4::equal(const Vector4& a) const noexcept
+    inline bool Vector4::exactEqual(const Vector4& a) const noexcept
     {
-        return DirectX::XMVector4Equal(_vec, a._vec);
+        return DirectX::XMVector4Equal(*this, a);
     }
 
-    inline bool Vector4::equal(const Vector4& a, const Vector4& b) noexcept
+    inline bool Vector4::exactEqual(const Vector4& a, const Vector4& b) noexcept
     {
-        return a.equal(b);
+        return a.exactEqual(b);
     }
 
     inline std::ostream& operator<<(std::ostream& os, const Vector4& v)

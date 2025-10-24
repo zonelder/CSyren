@@ -9,30 +9,38 @@
 namespace csyren::math
 {
 
-    class alignas(16) Quaternion
+    class  Quaternion : public DirectX::XMFLOAT4
     {
-        static const Quaternion s_qepsilon;
-        union
-        {
-            struct alignas(16) { float x, y, z, w; };
-            DirectX::XMVECTOR _vec;
-        };
     public:
-        Quaternion() noexcept :_vec(DirectX::XMQuaternionIdentity()) {}
-        Quaternion(float px, float py, float pz, float pw) noexcept : x(px), y(py), z(pz), w(pw) {}
-        explicit Quaternion(const DirectX::XMVECTOR& vec) noexcept : _vec(vec) {}
-        explicit Quaternion(DirectX::XMVECTOR&& vec) noexcept :_vec(std::move(vec)) {};
 
-        Quaternion(Quaternion&& other) noexcept = default;
-        Quaternion& operator=(Quaternion&& other) noexcept = default;
+        Quaternion() noexcept : DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) {}
+        Quaternion(float x, float y, float z, float w) noexcept : DirectX::XMFLOAT4(x, y, z, w) {}
+        explicit Quaternion(DirectX::XMVECTOR vec) noexcept
+        {
+            DirectX::XMStoreFloat4(this, vec);
+        }
 
-        Quaternion(const Quaternion& other) noexcept = default;
-        Quaternion& operator=(const Quaternion& other) noexcept = default;
-        Quaternion& operator=(const DirectX::XMVECTOR& vec) noexcept { _vec = vec; return *this; };
-        Quaternion& operator=(DirectX::XMVECTOR&& vec) noexcept { _vec = std::move(vec); return *this; };
+        Quaternion(const Quaternion&) = default;
+        Quaternion& operator=(const Quaternion&) = default;
+        Quaternion(Quaternion&&) = default;
+        Quaternion& operator=(Quaternion&&) = default;
 
-        operator DirectX::XMVECTOR() const { return _vec; };
-        operator DirectX::XMVECTOR() { return _vec; };
+        Quaternion& operator=(DirectX::XMVECTOR vec) noexcept
+        {
+            DirectX::XMStoreFloat4(this, vec);
+            return *this;
+        }
+
+        operator DirectX::XMVECTOR() const noexcept
+        {
+            return DirectX::XMLoadFloat4(this);
+        }
+
+        float operator[](size_t index) const noexcept
+        {
+            assert(index < 4 && "Quaternion index out of bounds.");
+            return reinterpret_cast<const float*>(this)[index];
+        }
 
         Quaternion operator*(const Quaternion& other) const noexcept;
         Vector3 operator*(const Vector3& point) const noexcept;
@@ -54,7 +62,7 @@ namespace csyren::math
 
         static Quaternion slerp(const Quaternion& a, const Quaternion& b, float t) noexcept;
         static Quaternion slerpUnclamped(const Quaternion& a, const Quaternion& b, float t) noexcept;
-        static bool equal(const Quaternion& q1, const Quaternion& q2) noexcept;
+        static bool exactEqual(const Quaternion& q1, const Quaternion& q2) noexcept;
 
 
         void invert() noexcept;
@@ -75,14 +83,7 @@ namespace csyren::math
         void setFromToRotation(const Vector3& fromDirection, const Vector3& toDirection) noexcept;
         void setLookRotation(const Vector3& forward, const Vector3& upward = Vector3::up) noexcept;
         void toAngleAxis(float angle, const Vector3& axis) noexcept;
-        bool equal(const Quaternion& other) const noexcept;
-
-
-        float operator[](size_t index) const noexcept
-        {
-            assert(index < 4 && "Quaternion index out of bound.");
-            return (&x)[index];
-        }
+        bool exactEqual(const Quaternion& other) const noexcept;
 
         static const Quaternion identity;
 
@@ -92,23 +93,23 @@ namespace csyren::math
     inline bool operator==(const Quaternion& lhs, const Quaternion& rhs) noexcept
     {
         static const auto eps = DirectX::XMVectorReplicate(Vector3::s_epsilon);
-        return DirectX::XMVector4NearEqual(lhs._vec, rhs._vec, eps);
+        return DirectX::XMVector4NearEqual(lhs, rhs, eps);
     }
 
 
     inline Quaternion Quaternion::operator*(const Quaternion& other) const noexcept
     {
-        return Quaternion(DirectX::XMQuaternionMultiply(_vec, other._vec));
+        return Quaternion(DirectX::XMQuaternionMultiply(*this, other));
     }
 
     inline Vector3 Quaternion::operator*(const Vector3& point) const noexcept
     {
-        return Vector3(DirectX::XMVector3Rotate(point, _vec));
+        return Vector3(DirectX::XMVector3Rotate(point, *this));
     }
 
     inline Quaternion& Quaternion::operator*=(const Quaternion& other) noexcept
     {
-        _vec = DirectX::XMQuaternionMultiply(_vec, other._vec);
+        DirectX::XMStoreFloat4(this, DirectX::XMQuaternionMultiply(*this, other));
         return *this;
     }
 
@@ -123,7 +124,7 @@ namespace csyren::math
         return Quaternion(DirectX::XMQuaternionRotationRollPitchYawFromVector(angles));
     }
 
-    inline Quaternion Quaternion::Quaternion::euler(const Vector3& a) noexcept
+    inline Quaternion Quaternion::euler(const Vector3& a) noexcept
     {
         DirectX::XMVECTOR angles = DirectX::XMVectorSet(
             DirectX::XMConvertToRadians(a[0]),
@@ -143,7 +144,7 @@ namespace csyren::math
     inline void Quaternion::toAngleAxis(float angle, const Vector3& axis) noexcept
     {
         float rad = DirectX::XMConvertToRadians(angle);
-        _vec = DirectX::XMQuaternionRotationAxis(axis, rad);
+        *this = DirectX::XMQuaternionRotationAxis(axis, rad);
     }
 
     inline Quaternion Quaternion::lookRotation(const Vector3& forward, const Vector3& upward) noexcept
@@ -155,27 +156,27 @@ namespace csyren::math
     inline void Quaternion::setLookRotation(const Vector3& forward, const Vector3& upward) noexcept
     {
         DirectX::XMMATRIX matrix = DirectX::XMMatrixLookToLH(Vector3::zero, forward, upward);
-        _vec = DirectX::XMQuaternionRotationMatrix(matrix);
+        *this = DirectX::XMQuaternionRotationMatrix(matrix);
     }
 
     inline Quaternion Quaternion::inverse() const noexcept
     {
-        return Quaternion(DirectX::XMQuaternionInverse(_vec));
+        return Quaternion(DirectX::XMQuaternionInverse(*this));
     }
 
     inline void Quaternion::invert() noexcept
     {
-        _vec = DirectX::XMQuaternionInverse(_vec);
+        *this = DirectX::XMQuaternionInverse(*this);
     }
 
     inline Quaternion Quaternion::conjugated() const noexcept
     {
-        return Quaternion(DirectX::XMQuaternionConjugate(_vec));
+        return Quaternion(DirectX::XMQuaternionConjugate(*this));
     }
 
     inline float Quaternion::dot(const Quaternion& q) const noexcept
     {
-        return DirectX::XMVectorGetX(DirectX::XMQuaternionDot(_vec, q._vec));
+        return DirectX::XMVectorGetX(DirectX::XMQuaternionDot(*this, q));
     }
 
     inline float Quaternion::angle(const Quaternion& q1, const Quaternion& q2) noexcept
@@ -187,25 +188,25 @@ namespace csyren::math
 
     inline float Quaternion::dot(const Quaternion& q1, const Quaternion& q2) noexcept
     {
-        return q1.dot(q2);
+        return DirectX::XMVectorGetX(DirectX::XMQuaternionDot(q1, q2));
     }
 
     inline Quaternion Quaternion::lerp(const Quaternion& a, const Quaternion& b, float t) noexcept
     {
-        return Quaternion(DirectX::XMVectorLerp(a._vec, b._vec, std::clamp(t, 0.0f, 1.0f)));
+        return Quaternion(DirectX::XMVectorLerp(a, b, std::clamp(t, 0.0f, 1.0f)));
     }
     inline Quaternion Quaternion::lerpUnclamped(const Quaternion& a, const Quaternion& b, float t) noexcept
     {
-        return Quaternion(DirectX::XMVectorLerp(a._vec, b._vec, t));
+        return Quaternion(DirectX::XMVectorLerp(a, b, t));
     }
 
     inline Quaternion Quaternion::slerp(const Quaternion& a, const Quaternion& b, float t) noexcept
     {
-        return Quaternion(DirectX::XMQuaternionSlerp(a._vec, b._vec, std::clamp(t, 0.0f, 1.0f)));
+        return Quaternion(DirectX::XMQuaternionSlerp(a, b, std::clamp(t, 0.0f, 1.0f)));
     }
     inline Quaternion Quaternion::slerpUnclamped(const Quaternion& a, const Quaternion& b, float t) noexcept
     {
-        return Quaternion(DirectX::XMQuaternionSlerp(a._vec, b._vec, t));
+        return Quaternion(DirectX::XMQuaternionSlerp(a, b, t));
     }
 
     inline float Quaternion::angle() const noexcept
@@ -226,7 +227,7 @@ namespace csyren::math
     inline Vector3 Quaternion::eulerAngles() const noexcept
     {
         using namespace DirectX;
-        XMMATRIX rotMatrix = XMMatrixRotationQuaternion(_vec);
+        XMMATRIX rotMatrix = XMMatrixRotationQuaternion(*this);
         XMFLOAT3X3 mat;
         XMStoreFloat3x3(&mat, rotMatrix);
 
@@ -285,17 +286,17 @@ namespace csyren::math
 
         if (cos_theta > 0.9995f)
         {
-            _vec = identity._vec;
+            *this = identity;
         }
 
         if (cos_theta < -0.9995f)
         {
-            _vec = DirectX::XMQuaternionRotationAxis(DirectX::XMVector3Orthogonal(v0), DirectX::XM_PI);
+            *this = DirectX::XMQuaternionRotationAxis(DirectX::XMVector3Orthogonal(v0), DirectX::XM_PI);
             return;
         }
 
         const float angle = std::acos(cos_theta);
-        _vec = DirectX::XMQuaternionRotationNormal(axis.normalized(), angle);
+        *this = DirectX::XMQuaternionRotationNormal(axis.normalized(), angle);
         return;
     }
 
@@ -309,33 +310,33 @@ namespace csyren::math
 
     inline float Quaternion::magnitude() const noexcept
     {
-        return DirectX::XMVectorGetX(DirectX::XMQuaternionLength(_vec));
+        return DirectX::XMVectorGetX(DirectX::XMQuaternionLength(*this));
     }
 
     inline float Quaternion::sqrMagnitude() const noexcept
     {
-        return DirectX::XMVectorGetX(DirectX::XMQuaternionLengthSq(_vec));
+        return DirectX::XMVectorGetX(DirectX::XMQuaternionLengthSq(*this));
     }
 
     inline void Quaternion::normalize() noexcept
     {
-        _vec = DirectX::XMQuaternionNormalize(_vec);
+        DirectX::XMStoreFloat4(this, DirectX::XMQuaternionNormalize(*this));
     }
 
     inline Quaternion Quaternion::normalized() const noexcept
     {
-        return Quaternion(DirectX::XMQuaternionNormalize(_vec));
+        return Quaternion(DirectX::XMQuaternionNormalize(*this));
     }
 
 
-    inline bool Quaternion::equal(const Quaternion& other) const noexcept
+    inline bool Quaternion::exactEqual(const Quaternion& other) const noexcept
     {
-        return DirectX::XMVector4Equal(_vec, other._vec);
+        return DirectX::XMVector4Equal(*this, other);
     }
 
-    inline bool Quaternion::equal(const Quaternion& lhs, const Quaternion& rhs) noexcept
+    inline bool Quaternion::exactEqual(const Quaternion& lhs, const Quaternion& rhs) noexcept
     {
-        return lhs.equal(rhs);
+        return lhs.exactEqual(rhs);
     }
 }
 #endif

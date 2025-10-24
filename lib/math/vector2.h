@@ -13,30 +13,45 @@
 namespace csyren::math
 {
 
-    class alignas(16) Vector2
+    class Vector2 : public DirectX::XMFLOAT2
     {
-        union
-        {
-            struct alignas(16) { float x, y, _pad1, _pad2; };
-            DirectX::XMVECTOR _vec;
-        };
-
     public:
         // Constructors
-        Vector2() : _vec(DirectX::XMVectorZero()) {}
-        Vector2(float x, float y) : _vec(DirectX::XMVectorSet(x, y, 0.0f, 0.0f)) {}
-        explicit Vector2(const DirectX::XMVECTOR& reg) : _vec(reg) {}
+        Vector2() noexcept : DirectX::XMFLOAT2(0.0f, 0.0f) {}
+        Vector2(float x, float y) noexcept : DirectX::XMFLOAT2(x, y) {}
+        explicit Vector2(DirectX::XMVECTOR vec) noexcept
+        {
+            DirectX::XMStoreFloat2(this, vec);
+        }
 
-        // Copy and move operations
-        Vector2(const Vector2& other) = default;
-        Vector2& operator=(const Vector2& other) = default;
-        Vector2(Vector2&& other) noexcept = default;
-        Vector2& operator=(Vector2&& other) noexcept = default;
-        Vector2& operator=(const DirectX::XMVECTOR& vec) { _vec = vec; return *this; }
+        Vector2(const Vector2&) = default;
+        Vector2& operator=(const Vector2&) = default;
+        Vector2(Vector2&&) = default;
+        Vector2& operator=(Vector2&&) = default;
 
-        // Conversion to XMVECTOR
-        operator DirectX::XMVECTOR() const { return _vec; }
-        operator DirectX::XMVECTOR() { return _vec; };
+        Vector2& operator=(DirectX::FXMVECTOR vec) noexcept
+        {
+            DirectX::XMStoreFloat2(this, vec);
+            return *this;
+        }
+
+        operator DirectX::XMVECTOR() const noexcept
+        {
+            return DirectX::XMLoadFloat2(this);
+        }
+
+        // Доступ по индексу
+        float operator[](size_t index) const noexcept
+        {
+            assert(index < 2 && "Vector2 index out of bounds.");
+            return reinterpret_cast<const float*>(this)[index];
+        }
+
+        float& operator[](size_t index) noexcept
+        {
+            assert(index < 2 && "Vector2 index out of bounds.");
+            return reinterpret_cast<float*>(this)[index];
+        }
 
         // Arithmetic operators
         friend Vector2 operator+(const Vector2& v1, const Vector2& v2);
@@ -76,20 +91,7 @@ namespace csyren::math
         static Vector2 min(const Vector2& a, const Vector2& b);
         static Vector2 moveTowards(const Vector2& current, const Vector2& target, float maxDistanceDelta);
         static Vector2 scale(const Vector2& a, const Vector2& b);
-        static bool equal(const Vector2& a, const Vector2& b) noexcept;
-
-        // Accessors
-        float operator[](size_t index) const noexcept
-        {
-            assert(index < 2 && "Vector2 index out of bounds.");
-            return (&x)[index];
-        }
-
-        float& operator[](size_t index) noexcept
-        {
-            assert(index < 2 && "Vector2 index out of bounds.");
-            return (&x)[index];
-        }
+        static bool exactEqual(const Vector2& a, const Vector2& b) noexcept;
 
         // Constants
         static const Vector2 up;
@@ -108,22 +110,22 @@ namespace csyren::math
     inline bool operator==(const Vector2& lhs, const Vector2& rhs) noexcept
     {
         const auto eps = DirectX::XMVectorReplicate(Vector2::Epsilon);
-        return DirectX::XMVector2NearEqual(lhs._vec, rhs._vec, eps);
+        return DirectX::XMVector2NearEqual(lhs, rhs, eps);
     }
 
     inline Vector2 operator+(const Vector2& v1, const Vector2& v2)
     {
-        return Vector2(DirectX::XMVectorAdd(v1._vec, v2._vec));
+        return Vector2(DirectX::XMVectorAdd(v1, v2));
     }
 
     inline Vector2 operator-(const Vector2& v1, const Vector2& v2)
     {
-        return Vector2(DirectX::XMVectorSubtract(v1._vec, v2._vec));
+        return Vector2(DirectX::XMVectorSubtract(v1, v2));
     }
 
     inline Vector2 operator*(const Vector2& v, float scalar)
     {
-        return Vector2(DirectX::XMVectorScale(v._vec, scalar));
+        return Vector2(DirectX::XMVectorScale(v, scalar));
     }
 
     inline Vector2 operator*(float scalar, const Vector2& v)
@@ -134,7 +136,7 @@ namespace csyren::math
     inline Vector2 operator/(const Vector2& v, float divisor)
     {
         assert(divisor != 0.0f && "Vector2 division by zero.");
-        return Vector2(DirectX::XMVectorScale(v._vec, 1.0f / divisor));
+        return Vector2(DirectX::XMVectorScale(v, 1.0f / divisor));
     }
 
     inline Vector2 operator/(float divisor, const Vector2& v)
@@ -145,43 +147,43 @@ namespace csyren::math
     // Member function implementations
     inline Vector2& Vector2::operator+=(const Vector2& other) noexcept
     {
-        _vec = DirectX::XMVectorAdd(_vec, other._vec);
+        DirectX::XMStoreFloat2(this, DirectX::XMVectorAdd(*this, other));
         return *this;
     }
 
     inline Vector2& Vector2::operator-=(const Vector2& other) noexcept
     {
-        _vec = DirectX::XMVectorSubtract(_vec, other._vec);
+        DirectX::XMStoreFloat2(this, DirectX::XMVectorSubtract(*this, other));
         return *this;
     }
 
     inline Vector2& Vector2::operator*=(float scalar) noexcept
     {
-        _vec = DirectX::XMVectorScale(_vec, scalar);
+        DirectX::XMStoreFloat2(this, DirectX::XMVectorScale(*this, scalar));
         return *this;
     }
 
     inline Vector2& Vector2::operator/=(float scalar) noexcept
     {
-        assert(scalar != 0.0f && "Vector2 division by zero.");
-        _vec = DirectX::XMVectorScale(_vec, 1.0f / scalar);
+        assert(scalar != 0.0f && "Division by zero");
+        DirectX::XMStoreFloat2(this, DirectX::XMVectorScale(*this, 1.0f / scalar));
         return *this;
     }
 
     inline Vector2 Vector2::operator-() const noexcept
     {
-        return Vector2(DirectX::XMVectorNegate(_vec));
+        return Vector2(DirectX::XMVectorNegate(*this));
     }
 
     inline float Vector2::dot(const Vector2& v1, const Vector2& v2) noexcept
     {
-        return v1.dot(v2);
+        return DirectX::XMVectorGetX(DirectX::XMVector2Dot(v1, v2));
     }
 
 
     inline float Vector2::dot(const Vector2& v) const noexcept
     {
-        return DirectX::XMVectorGetX(DirectX::XMVector2Dot(_vec, v._vec));
+        return DirectX::XMVectorGetX(DirectX::XMVector2Dot(*this, v));
     }
 
     inline Vector2 Vector2::perpendicular() const noexcept
@@ -191,27 +193,27 @@ namespace csyren::math
 
     inline Vector2 Vector2::normalized() const noexcept
     {
-        return Vector2(DirectX::XMVector2Normalize(_vec));
+        return Vector2(DirectX::XMVector2Normalize(*this));
     }
 
     inline void Vector2::normalize() noexcept
     {
-        _vec = DirectX::XMVector2Normalize(_vec);
+        DirectX::XMStoreFloat2(this, DirectX::XMVector2Normalize(*this));
     }
 
     inline Vector2 Vector2::scale(const Vector2& v) const noexcept
     {
-        return Vector2(DirectX::XMVectorMultiply(_vec, v._vec));
+        return Vector2(DirectX::XMVectorMultiply(*this, v));
     }
 
     inline float Vector2::magnitude() const noexcept
     {
-        return DirectX::XMVectorGetX(DirectX::XMVector2Length(_vec));
+        return DirectX::XMVectorGetX(DirectX::XMVector2Length(*this));
     }
 
     inline float Vector2::sqrMagnitude() const noexcept
     {
-        return DirectX::XMVectorGetX(DirectX::XMVector2LengthSq(_vec));
+        return DirectX::XMVectorGetX(DirectX::XMVector2LengthSq(*this));
     }
 
     inline Vector2 Vector2::clampMagnitude(float maxLength) const noexcept
@@ -228,18 +230,17 @@ namespace csyren::math
     inline Vector2 Vector2::lerp(const Vector2& a, const Vector2& b, float t)
     {
         t = std::clamp(t, 0.0f, 1.0f);
-        return Vector2(DirectX::XMVectorLerp(a._vec, b._vec, t));
+        return Vector2(DirectX::XMVectorLerp(a, b, t));
     }
 
     inline Vector2 Vector2::lerpUnclamped(const Vector2& a, const Vector2& b, float t)
     {
-        return Vector2(DirectX::XMVectorLerp(a._vec, b._vec, t));
+        return Vector2(DirectX::XMVectorLerp(a, b, t));
     }
 
     inline Vector2 Vector2::reflect(const Vector2& incident, const Vector2& normal)
     {
-        float v = dot(incident, normal);
-        return incident - 2.0f * v * normal;
+        return Vector2(DirectX::XMVector2Reflect(incident, normal));
     }
 
     inline Vector2 Vector2::project(const Vector2& vector, const Vector2& onto)
@@ -256,12 +257,12 @@ namespace csyren::math
 
     inline Vector2 Vector2::max(const Vector2& a, const Vector2& b)
     {
-        return Vector2(DirectX::XMVectorMax(a._vec, b._vec));
+        return Vector2(DirectX::XMVectorMax(a, b));
     }
 
     inline Vector2 Vector2::min(const Vector2& a, const Vector2& b)
     {
-        return Vector2(DirectX::XMVectorMin(a._vec, b._vec));
+        return Vector2(DirectX::XMVectorMin(a, b));
     }
 
     inline Vector2 Vector2::moveTowards(const Vector2& current, const Vector2& target, float maxDistanceDelta)
@@ -276,9 +277,9 @@ namespace csyren::math
         return a.scale(b);
     }
 
-    inline bool Vector2::equal(const Vector2& a, const Vector2& b) noexcept
+    inline bool Vector2::exactEqual(const Vector2& a, const Vector2& b) noexcept
     {
-        return DirectX::XMVector2Equal(a._vec, b._vec);
+        return DirectX::XMVector2Equal(a, b);
     }
 
     inline std::ostream& operator<<(std::ostream& os, const Vector2& v)

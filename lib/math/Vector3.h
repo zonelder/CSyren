@@ -12,27 +12,36 @@
 namespace csyren::math
 {
 
-	class alignas(16) Vector3
+	class Vector3 : public DirectX::XMFLOAT3
 	{
-
-		union
-		{
-			struct alignas(16) { float x, y, z, _pad; };
-			DirectX::XMVECTOR _vec;
-		};
 	public:
-		Vector3() : _vec(DirectX::XMVectorZero()) {}
-		Vector3(float x, float y, float z) : _vec(DirectX::XMVectorSet(x, y, z, 0.0f)) {}
-		explicit Vector3(const DirectX::XMVECTOR& reg) : _vec(reg) {}
+		Vector3()  noexcept : DirectX::XMFLOAT3(0.0f,0.0f,0.0f) {}
+		Vector3(float x, float y, float z) noexcept : DirectX::XMFLOAT3(x, y, z) {}
+		explicit Vector3(DirectX::XMVECTOR reg)  noexcept {DirectX::XMStoreFloat3(this, reg); }
 
-		Vector3(const Vector3& other) = default;
-		Vector3& operator=(const Vector3& other) { _vec = other._vec; return *this; };
-		Vector3(Vector3&& other) noexcept = default;
-		Vector3& operator=(Vector3&& other) noexcept = default;
-		Vector3& operator=(const DirectX::XMVECTOR& vec) { _vec = vec; return *this; };
+		Vector3(const Vector3& other)				noexcept = default;
+		Vector3& operator=(const Vector3& other)	noexcept = default;
+		Vector3(Vector3&& other)					noexcept = default;
+		Vector3& operator=(Vector3&& other)			noexcept = default;
+		Vector3& operator=(DirectX::XMVECTOR vec)	noexcept 
+		{
+			DirectX::XMStoreFloat3(this, vec);
+			return *this;
+		}
 
-		operator DirectX::XMVECTOR() const { return _vec; };
-		operator DirectX::XMVECTOR() { return _vec; };
+		operator DirectX::XMVECTOR() const noexcept { return DirectX::XMLoadFloat3(this); };
+
+		float operator[](size_t index) const noexcept
+		{
+			assert(index < 3 && "Vector3 index out of bounds.");
+			return reinterpret_cast<const float*>(this)[index];
+		}
+
+		float& operator[](size_t index) noexcept
+		{
+			assert(index < 3 && "Vector3 index out of bounds.");
+			return reinterpret_cast<float*>(this)[index];
+		}
 
 		friend inline Vector3 operator+(const Vector3& v1, const Vector3& v2);
 		friend Vector3 operator-(const Vector3& v1, const Vector3& v2);
@@ -42,7 +51,7 @@ namespace csyren::math
 		friend Vector3 operator/(float d, const Vector3& v);
 		friend bool operator==(const Vector3& v1, const Vector3& v2) noexcept;
 
-		bool equal(const Vector3& other) const noexcept;
+		bool exactEqual(const Vector3& other) const noexcept;
 
 		Vector3& operator+=(const Vector3& other) noexcept;
 		Vector3& operator-=(const Vector3& other) noexcept;
@@ -74,20 +83,7 @@ namespace csyren::math
 		static Vector3 min(const Vector3& a, const Vector3& b);
 		static Vector3 moveTowards(const Vector3& current, const Vector3& target, float maxDistDelta);
 		static Vector3 scale(const Vector3& a, const Vector3& b);
-		static bool equal(const Vector3& a, const Vector3& b) noexcept;
-
-
-		float operator[](size_t index) const noexcept
-		{
-			assert(index < 3 && "Vector3 index out of bound.");
-			return (&x)[index];
-		}
-
-		float& operator[](size_t index) noexcept
-		{
-			assert(index < 3 && "Vector3 index out of bound.");
-			return (&x)[index];
-		}
+		static bool exactEqual(const Vector3& a, const Vector3& b) noexcept;
 
 		static const Vector3 up;
 		static const Vector3 down;
@@ -109,22 +105,22 @@ namespace csyren::math
 	inline bool operator==(const Vector3& lhs, const Vector3& rhs) noexcept
 	{
 		static const auto eps = DirectX::XMVectorReplicate(Vector3::s_epsilon);
-		return DirectX::XMVector3NearEqual(lhs._vec, rhs._vec, eps);
+		return DirectX::XMVector3NearEqual(lhs, rhs, eps);
 	}
 
 	inline Vector3 operator+(const Vector3& v1, const Vector3& v2)
 	{
-		return Vector3(DirectX::XMVectorAdd(v1._vec, v2._vec));
+		return Vector3(DirectX::XMVectorAdd(v1, v2));
 	}
 
 	inline Vector3 operator-(const Vector3& v1, const Vector3& v2)
 	{
-		return Vector3(DirectX::XMVectorSubtract(v1._vec, v2._vec));
+		return Vector3(DirectX::XMVectorSubtract(v1, v2));
 	}
 
 	inline Vector3 operator*(const Vector3& v, float d)
 	{
-		return Vector3(DirectX::XMVectorScale(v._vec, d));
+		return Vector3(DirectX::XMVectorScale(v, d));
 	}
 
 	inline Vector3 operator*(float d, const Vector3& v)
@@ -135,7 +131,7 @@ namespace csyren::math
 	inline Vector3 operator/(const Vector3& v, float d)
 	{
 		assert(d != 0.0f && "Vector3 division by zero");
-		return Vector3(DirectX::XMVectorScale(v._vec, 1.0f / d));
+		return Vector3(DirectX::XMVectorScale(v, 1.0f / d));
 	}
 
 	inline Vector3 operator/(float d, const Vector3& v)
@@ -145,37 +141,40 @@ namespace csyren::math
 
 	inline Vector3& Vector3::operator+=(const Vector3& other) noexcept
 	{
-		_vec = DirectX::XMVectorAdd(_vec, other._vec);
+		DirectX::XMVECTOR result = DirectX::XMVectorAdd(*this, other);
+		DirectX::XMStoreFloat3(this, result);
 		return *this;
 	}
 	inline Vector3& Vector3::operator-=(const Vector3& other) noexcept
 	{
-		_vec = DirectX::XMVectorSubtract(_vec, other._vec);
+		DirectX::XMVECTOR result = DirectX::XMVectorSubtract(*this, other);
+		DirectX::XMStoreFloat3(this, result);
 		return *this;
 	}
 
 	inline Vector3& Vector3::operator*=(float scalar) noexcept
 	{
-		_vec = DirectX::XMVectorScale(_vec, scalar);
+		DirectX::XMVECTOR result = DirectX::XMVectorScale(*this, scalar);
+		DirectX::XMStoreFloat3(this, result);
 		return *this;
 	}
 
 	inline Vector3& Vector3::operator/=(float scalar) noexcept
 	{
-		assert(scalar != 0.0f && "Vector3::attempt to divide by zero.");
-
-		_vec = DirectX::XMVectorScale(_vec, 1.0f / scalar);
+		assert(scalar != 0.0f && "Division by zero");
+		DirectX::XMVECTOR result = DirectX::XMVectorScale(*this, 1.0f / scalar);
+		DirectX::XMStoreFloat3(this, result);
 		return *this;
 	}
 
 	inline Vector3 Vector3::operator-() const noexcept
 	{
-		return Vector3(DirectX::XMVectorNegate(_vec));
+		return Vector3(DirectX::XMVectorNegate(*this));
 	}
 
 	inline float Vector3::dot(const Vector3& v1, const Vector3& v2) noexcept
 	{
-		return DirectX::XMVectorGetX(DirectX::XMVector3Dot(v1._vec, v2._vec));
+		return DirectX::XMVectorGetX(DirectX::XMVector3Dot(v1, v2));
 	}
 
 	inline float Vector3::dot(const Vector3& v) const noexcept
@@ -185,7 +184,7 @@ namespace csyren::math
 
 	inline Vector3 Vector3::cross(const Vector3& a, const Vector3& b) noexcept
 	{
-		return Vector3(DirectX::XMVector3Cross(a._vec, b._vec));
+		return Vector3(DirectX::XMVector3Cross(a, b));
 	}
 
 	inline Vector3 Vector3::cross(const Vector3& v1) const noexcept
@@ -196,28 +195,28 @@ namespace csyren::math
 
 	inline Vector3 Vector3::normalized() const& noexcept
 	{
-		return Vector3(DirectX::XMVector3Normalize(_vec));
+		return Vector3(DirectX::XMVector3Normalize(*this));
 
 	}
 
 	inline void Vector3::normalize() noexcept
 	{
-		_vec = DirectX::XMVector3Normalize(_vec);
+		DirectX::XMStoreFloat3(this, DirectX::XMVector3Normalize(*this));
 	}
 
 	inline Vector3 Vector3::scale(const Vector3& v) const noexcept
 	{
-		return Vector3(DirectX::XMVectorMultiply(_vec, v._vec));
+		return Vector3(DirectX::XMVectorMultiply(*this, v));
 	}
 
 	inline float Vector3::magnitude() const noexcept
 	{
-		return DirectX::XMVectorGetX(DirectX::XMVector3Length(_vec));
+		return DirectX::XMVectorGetX(DirectX::XMVector3Length(*this));
 	}
 
 	inline float Vector3::sqrMagnitude() const noexcept
 	{
-		return DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(_vec));
+		return DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(*this));
 	}
 	inline float Vector3::distance(const Vector3& a, const Vector3& b) noexcept
 	{
@@ -226,17 +225,17 @@ namespace csyren::math
 
 	inline Vector3 Vector3::lerp(const Vector3& a, const Vector3& b, float t)
 	{
-		return Vector3(DirectX::XMVectorLerp(a._vec, b._vec, std::clamp(t, 0.0f, 1.0f)));
+		return Vector3(DirectX::XMVectorLerp(a, b, std::clamp(t, 0.0f, 1.0f)));
 	}
 
 	inline Vector3 Vector3::lerpUnclamped(const Vector3& a, const Vector3& b, float t)
 	{
-		return Vector3(DirectX::XMVectorLerp(a._vec, b._vec, t));
+		return Vector3(DirectX::XMVectorLerp(a, b, t));
 	}
 
 	inline Vector3 Vector3::reflect(const Vector3& incident, const Vector3& normal)
 	{
-		return Vector3(DirectX::XMVector3Reflect(incident._vec, normal._vec));
+		return Vector3(DirectX::XMVector3Reflect(incident, normal));
 	}
 
 	inline Vector3 Vector3::project(const Vector3& vector, const Vector3& onto)
@@ -269,14 +268,14 @@ namespace csyren::math
 		}
 		return *this;
 	}
-	//TODO smging strange about this 2 function. should find out what
+
 	inline Vector3 Vector3::max(const Vector3& a, const Vector3& b)
 	{
-		return Vector3(DirectX::XMVectorMax(a._vec, b._vec));
+		return Vector3(DirectX::XMVectorMax(a, b));
 	}
 	inline Vector3 Vector3::min(const Vector3& a, const Vector3& b)
 	{
-		return Vector3(DirectX::XMVectorMin(a._vec, b._vec));
+		return Vector3(DirectX::XMVectorMin(a, b));
 	}
 
 	inline Vector3 Vector3::moveTowards(const Vector3& current, const Vector3& target, float maxDelta)
@@ -293,13 +292,13 @@ namespace csyren::math
 		return a.scale(b);
 	}
 
-	inline bool Vector3::equal(const Vector3& a) const noexcept
+	inline bool Vector3::exactEqual(const Vector3& a) const noexcept
 	{
-		return DirectX::XMVector3Equal(_vec, a._vec);
+		return DirectX::XMVector3Equal(*this, a);
 	}
-	inline bool Vector3::equal(const Vector3& a, const Vector3& b) noexcept
+	inline bool Vector3::exactEqual(const Vector3& a, const Vector3& b) noexcept
 	{
-		return a.equal(b);
+		return a.exactEqual(b);
 	}
 
 
