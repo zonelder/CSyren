@@ -8,6 +8,8 @@
 #include "core/camera.h"
 #include "core/serializer.h"
 
+#include "physics/physic_system.h"
+
 namespace csyren
 {
 
@@ -37,5 +39,6 @@ namespace csyren
 		core::Scene _scene;
 		core::SystemManager _systems;
 		core::Serializer	_serializer;
+		physics::PhysicsEngine  _physics;
 	};
 }

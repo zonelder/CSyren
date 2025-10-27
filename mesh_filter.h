@@ -4,7 +4,7 @@
 #include "core/renderer.h"
 #include "core/serializer.h"
 
-namespace csyren::components
+namespace csyren::render::components
 {
     struct MeshFilter
     {

@@ -31,6 +31,7 @@ namespace csyren::core
 
 		size_t frameCount() const noexcept { return _frameCount; }
 
+		float fixedDeltaTime{ 0.016f };
 	private:
 		float _time{ 0.0f };
 		float  _deltaTime{ 0.0f };

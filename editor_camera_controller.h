@@ -2,7 +2,7 @@
 #include "core/serializer.h"
 
 
-namespace csyren::components
+namespace csyren
 {
 	struct EditorCameraController
 	{

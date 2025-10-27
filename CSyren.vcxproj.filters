@@ -32,9 +32,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="transform.h">
-      <Filter>component</Filter>
-    </ClInclude>
     <ClInclude Include="mesh_filter.h">
       <Filter>component</Filter>
     </ClInclude>
@@ -43,9 +40,6 @@
     </ClInclude>
     <ClInclude Include="application.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="camera.h">
-      <Filter>component</Filter>
     </ClInclude>
     <ClInclude Include="editor_camera_controller_system.h">
       <Filter>system</Filter>

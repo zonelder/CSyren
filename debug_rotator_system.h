@@ -6,11 +6,11 @@
 #include "core/scene.h"
 
 #include "debug_rotator.h"
-#include "transform.h"
+#include "core/transform.h"
 #include "math/math.h"
 #include "core/time.h"
 
-using namespace csyren::core;
+using namespace csyren::core::components;
 using namespace csyren::components;
 
 namespace csyren

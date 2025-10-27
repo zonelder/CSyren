@@ -7,15 +7,15 @@
 #include "core/camera.h"
 #include "math/math.h"
 #include "core/time.h"
+#include "core/transform.h"
 
-#include "transform.h"
 #include "editor_camera_controller.h"
 
 
-using namespace csyren::core;
-using namespace csyren::components;
+using namespace csyren::core::components;
 using namespace csyren::core::input;
 using namespace csyren::math;
+using namespace csyren::core::events;
 
 namespace csyren
 {
@@ -24,11 +24,11 @@ namespace csyren
     public:
         explicit EditorCameraControllerSystem() = default;
 
-        void update(events::UpdateEvent& event) override
+        void update(UpdateEvent& event) override
         {
             auto& keyboard = event.devices.keyboard();
             auto& mouse = event.devices.mouse();
-			for (auto [mainCameraID, camera, cameraTransform, editorController] : event.scene.view<Camera, Transform, EditorCameraController>())
+			for (auto [mainCameraID, camera, cameraTransform, editorController] : event.scene.view<Camera, Transform,csyren::EditorCameraController>())
 			{
 
 

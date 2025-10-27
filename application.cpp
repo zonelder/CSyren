@@ -13,6 +13,7 @@
 #include "core/context.h"
 #include "core/time.h"
 #include "core/camera.h"
+#include "core/transform.h"
 #include "core/input_dispatcher.h"
 
 #include "mesh_render_system.h"
@@ -25,11 +26,11 @@
 namespace
 {
 
-	DirectX::XMMATRIX createProjection(csyren::core::Camera& camera)
+	DirectX::XMMATRIX createProjection(csyren::core::components::Camera& camera)
 	{
 
 		using namespace DirectX;
-		using namespace csyren::core;
+		using namespace csyren::core::components;
 
 		if (camera.projection == ProjectionType::Perspective)
 		{
@@ -88,6 +89,7 @@ namespace csyren
 		const FLOAT clearColor[4] = { 0.1f, 0.1f, 0.3f, 1.0f };
 
 		core::Time time;
+		using namespace core::components;
 		core::details::TimeHandler timeHandler;
 
 		core::events::UpdateEvent updateEvent{ _inputDispatcher.devices(), _scene,_resource,*_bus,time			};
@@ -96,7 +98,7 @@ namespace csyren
 
 		log::info("-------------------------------Setup Start Up------------------------------------------------");
 		_render.beginResourceUpload();
-
+		_physics.initialize(systemEvent);
 		render::Primitives::registerFabricsAll(_resource);
 		onSceneStart();
 		_systems.init(systemEvent);
@@ -116,6 +118,7 @@ namespace csyren
 
 					log::info("-------------------------------Shutdown------------------------------------------------------");
 					_systems.shutdown(systemEvent);
+					_physics.shutdown(systemEvent);
 					_inputDispatcher.shutdown(*_bus);
 					log::shutdown();
 					return static_cast<int>(msg.wParam);
@@ -163,7 +166,8 @@ namespace csyren
 	 */
 	void Application::onSceneStart()
 	{
-
+		using namespace core::components;
+		using namespace render::components;
 		//-----------------------------init systems---------------------------------------------------
 		//
 		//--------------------------------------------------------------------------------------------

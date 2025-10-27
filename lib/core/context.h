@@ -10,6 +10,7 @@ namespace DirectX
 namespace csyren::render
 {
 	class ResourceManager;
+	class Renderer;
 }
 
 namespace csyren::core

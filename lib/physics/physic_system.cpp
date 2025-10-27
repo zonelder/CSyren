@@ -3,181 +3,245 @@
 
 #include <iostream>
 
+#include <Jolt/Jolt.h>
+#include <Jolt/RegisterTypes.h>
+#include <Jolt/Core/Factory.h>
+#include <Jolt/Core/TempAllocator.h>
+#include <Jolt/Physics/PhysicsSystem.h>
+#include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/RegisterTypes.h>
 #include <Jolt/Core/JobSystemThreadPool.h>
 
-void* PhysicsEngine::sAllocate(size_t inSize) { return malloc(inSize); }
-void PhysicsEngine::sFree(void* inBlock) { free(inBlock); }
-void* PhysicsEngine::sAlignedAllocate(size_t inSize, size_t inAlignment) { return _aligned_malloc(inSize, inAlignment); }
-void PhysicsEngine::sAlignedFree(void* inBlock) { _aligned_free(inBlock); }
+//#include "core/time.h"
+//#include "core/scene.h"
+//#include "core/entity.h"
+//#include "core/transform.h"
 
-namespace Layers
+#include "rigid_body.h"
+
+namespace
 {
-    static constexpr JPH::ObjectLayer NON_MOVING = 0;
-    static constexpr JPH::ObjectLayer MOVING = 1;
-    static constexpr JPH::ObjectLayer COUNT = 2;
-};
+    void* sAllocate(size_t inSize) { return malloc(inSize); }
+    void sFree(void* inBlock) { free(inBlock); }
+    void* sAlignedAllocate(size_t inSize, size_t inAlignment) { return _aligned_malloc(inSize, inAlignment); }
+    void sAlignedFree(void* inBlock) { _aligned_free(inBlock); }
+}
 
-namespace BroadPhaseLayers
+namespace csyren::physics
 {
-    // Каждый слой объектов должен быть отнесен к своему "широкому" слою.
-    // Мы можем создать простое соответствие.
-    static constexpr JPH::BroadPhaseLayer NON_MOVING(0);
-    static constexpr JPH::BroadPhaseLayer MOVING(1);
-    static constexpr JPH::uint COUNT(2);
-};
-
-// 1. ИНТЕРФЕЙС ДЛЯ BROAD PHASE СЛОЕВ (BPLayerInterface)
-// Определяет, к какому "широкому" слою относится каждый "объектный" слой.
-class BPLayerInterfaceImpl final : public JPH::BroadPhaseLayerInterface
-{
-public:
-    BPLayerInterfaceImpl()
+    namespace Layers
     {
-        // Создаем соответствие между слоями объектов и широкими слоями
-        mObjectToBroadPhase[Layers::NON_MOVING] = BroadPhaseLayers::NON_MOVING;
-        mObjectToBroadPhase[Layers::MOVING] = BroadPhaseLayers::MOVING;
-    }
+        static constexpr JPH::ObjectLayer NON_MOVING = 0;
+        static constexpr JPH::ObjectLayer MOVING = 1;
+        static constexpr JPH::ObjectLayer COUNT = 2;
+    };
 
-    virtual JPH::uint GetNumBroadPhaseLayers() const override
+    namespace BroadPhaseLayers
     {
-        return BroadPhaseLayers::COUNT;
-    }
+        static constexpr JPH::BroadPhaseLayer NON_MOVING(0);
+        static constexpr JPH::BroadPhaseLayer MOVING(1);
+        static constexpr JPH::uint COUNT(2);
+    };
 
-    virtual JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer inLayer) const override
+    class BPLayerInterfaceImpl final : public JPH::BroadPhaseLayerInterface
     {
-        JPH_ASSERT(inLayer < Layers::COUNT);
-        return mObjectToBroadPhase[inLayer];
-    }
-
-private:
-    JPH::BroadPhaseLayer mObjectToBroadPhase[Layers::COUNT];
-};
-
-
-// 2. ФИЛЬТР СТОЛКНОВЕНИЙ ОБЪЕКТОВ И BROAD PHASE СЛОЕВ (ObjectVsBroadPhaseLayerFilter)
-class ObjectVsBroadPhaseLayerFilterImpl : public JPH::ObjectVsBroadPhaseLayerFilter
-{
-public:
-    // Возвращает true, если объект 'inLayer1' должен сталкиваться с широким слоем 'inLayer2'
-    virtual bool ShouldCollide(JPH::ObjectLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const override
-    {
-        switch (inLayer1)
+    public:
+        BPLayerInterfaceImpl()
         {
-        case Layers::NON_MOVING:
-            // Статические объекты сталкиваются только с динамическими
-            return inLayer2 == BroadPhaseLayers::MOVING;
-        case Layers::MOVING:
-            // Динамические объекты сталкиваются со всеми
-            return true;
-        default:
-            return false;
+            mObjectToBroadPhase[Layers::NON_MOVING] = BroadPhaseLayers::NON_MOVING;
+            mObjectToBroadPhase[Layers::MOVING] = BroadPhaseLayers::MOVING;
         }
-    }
-};
 
-// 3. ФИЛЬТР СТОЛКНОВЕНИЙ МЕЖДУ ДВУМЯ СЛОЯМИ ОБЪЕКТОВ (ObjectLayerPairFilter)
-class ObjectLayerPairFilterImpl : public JPH::ObjectLayerPairFilter
-{
-public:
-    // Возвращает true, если два слоя объектов должны сталкиваться
-    virtual bool ShouldCollide(JPH::ObjectLayer inObject1, JPH::ObjectLayer inObject2) const override
-    {
-        switch (inObject1)
+        virtual JPH::uint GetNumBroadPhaseLayers() const override
         {
-        case Layers::NON_MOVING:
-            // Статические объекты сталкиваются только с динамическими
-            return inObject2 == Layers::MOVING;
-        case Layers::MOVING:
-            // Динамические объекты сталкиваются со всеми
-            return true;
-        default:
-            return false;
+            return BroadPhaseLayers::COUNT;
         }
-    }
-};
+
+        virtual JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer inLayer) const override
+        {
+            JPH_ASSERT(inLayer < Layers::COUNT);
+            return mObjectToBroadPhase[inLayer];
+        }
+
+        virtual const char* GetBroadPhaseLayerName(JPH::BroadPhaseLayer inLayer) const override
+        {
+            switch ((JPH::BroadPhaseLayer::Type)inLayer)
+            {
+            case (JPH::BroadPhaseLayer::Type)BroadPhaseLayers::NON_MOVING: return "NON_MOVING";
+            case (JPH::BroadPhaseLayer::Type)BroadPhaseLayers::MOVING:     return "MOVING";
+            default:                                                      return "INVALID";
+            }
+        }
+
+    private:
+        JPH::BroadPhaseLayer mObjectToBroadPhase[Layers::COUNT];
+    };
 
 
-PhysicsEngine::PhysicsEngine()
-{
-    std::cout << "PhysicsEngine created." << std::endl;
-}
-
-PhysicsEngine::~PhysicsEngine()
-{
-    if (m_physicsSystem)
+    class ObjectVsBroadPhaseLayerFilterImpl : public JPH::ObjectVsBroadPhaseLayerFilter
     {
-        shutdown();
-    }
-}
+    public:
+        virtual bool ShouldCollide(JPH::ObjectLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const override
+        {
+            switch (inLayer1)
+            {
+            case Layers::NON_MOVING:
+                return inLayer2 == BroadPhaseLayers::MOVING;
+            case Layers::MOVING:
+                return true;
+            default:
+                return false;
+            }
+        }
+    };
 
-void PhysicsEngine::initialize()
-{
-    // ... регистрация аллокаторов, типов, создание TempAllocator и JobSystem без изменений ...
-    JPH::RegisterDefaultAllocator();
-    JPH::Factory::sInstance = new JPH::Factory();
-    JPH::RegisterTypes();
-    m_tempAllocator = new JPH::TempAllocatorImpl(10 * 1024 * 1024);
-    m_jobSystem = new JPH::JobSystemThreadPool(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, std::thread::hardware_concurrency() - 1);
-
-    // Создаем экземпляры наших интерфейсов.
-    // Они должны существовать все время, пока работает физическая система,
-    // поэтому делаем их статическими или членами класса.
-    static BPLayerInterfaceImpl sBroadPhaseLayerInterface;
-    static ObjectVsBroadPhaseLayerFilterImpl sObjectVsBroadPhaseLayerFilter;
-    static ObjectLayerPairFilterImpl sObjectLayerPairFilter;
-
-    // Создание самой физической системы
-    m_physicsSystem = new JPH::PhysicsSystem();
-
-    // ПРАВИЛЬНЫЙ ВЫЗОВ INIT
-    m_physicsSystem->Init(
-        1024, // Максимальное количество тел
-        0,    // Максимальное количество мьютексов тел (0 - хорошее значение по умолчанию)
-        1024, // Максимальное количество пар "тело-тело"
-        1024, // Максимальное количество пар "тело-триггер"
-        sBroadPhaseLayerInterface,
-        sObjectVsBroadPhaseLayerFilter,
-        sObjectLayerPairFilter
-    );
-
-    csyren::log::debug("Jolt Physics System Initialized CORRECTLY.");
-}
-
-
-void PhysicsEngine::shutdown()
-{
-    // 1. Очищаем ресурсы в обратном порядке
-    delete m_physicsSystem;
-    m_physicsSystem = nullptr;
-
-    delete m_jobSystem;
-    m_jobSystem = nullptr;
-
-    delete m_tempAllocator;
-    m_tempAllocator = nullptr;
-
-    // 2. Дерегистрация типов
-    JPH::UnregisterTypes();
-
-    csyren::log::debug("Jolt Physics System shutdown.");
-}
-
-void PhysicsEngine::TestCreateObject()
-{
-    if (!m_physicsSystem) return;
-
-    // Просто создаем форму коробки, чтобы проверить, что классы Jolt доступны
-    JPH::BoxShapeSettings box_settings(JPH::Vec3(0.5f, 1.0f, 2.0f));
-    JPH::Shape::ShapeResult result;
-    JPH::ShapeRefC shape = box_settings.Create().Get(); // Get() вернет результат
-
-    if (result.HasError())
+    class ObjectLayerPairFilterImpl : public JPH::ObjectLayerPairFilter
     {
-        csyren::log::debug("Test failed: Could not create shape. Error: {} ", result.GetError());
-    }
-    else
+    public:
+        virtual bool ShouldCollide(JPH::ObjectLayer inObject1, JPH::ObjectLayer inObject2) const override
+        {
+            switch (inObject1)
+            {
+            case Layers::NON_MOVING:
+                return inObject2 == Layers::MOVING;
+            case Layers::MOVING:
+                return true;
+            default:
+                return false;
+            }
+        }
+    };
+
+    class PhysicsEngine::Impl
     {
-        csyren::log::debug("Test successful: Jolt shape created!");
+       // std::vector<core::Entity::ID> _pendingBodies;
+       // core::events::SubscriberToken _rbAddedToken;
+    public:
+
+        const float cPhysicsUpdateFrequency = 60.0f; // Симулировать 60 раз в секунду
+        float m_timeAccumulator = 0.0f;
+        JPH::PhysicsSystem* m_physicsSystem = nullptr;
+        JPH::TempAllocator* m_tempAllocator = nullptr;
+        JPH::JobSystem* m_jobSystem = nullptr;
+
+        BPLayerInterfaceImpl m_broadPhaseLayerInterface;
+        ObjectVsBroadPhaseLayerFilterImpl m_objectVsBroadPhaseLayerFilter;
+        ObjectLayerPairFilterImpl m_objectLayerPairFilter;
+
+        Impl() {}
+
+        ~Impl()
+        {
+        }
+        /*
+        void onRigidBodyAdded(const core::events::ComponentCreateEvent<RigidBody>& event)
+        {
+
+            _pendingBodies.push_back(event.entity);
+            log::debug("PhysicsEngine:: Queued entity for physics body creation");
+        }
+        */
+        void initialize(core::events::SystemEvent& event)
+        {
+            JPH::RegisterDefaultAllocator();
+            JPH::Factory::sInstance = new JPH::Factory();
+            JPH::RegisterTypes();
+
+            m_tempAllocator = new JPH::TempAllocatorImpl(10 * 1024 * 1024);
+            m_jobSystem = new JPH::JobSystemThreadPool(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, std::thread::hardware_concurrency() - 1);
+
+            m_physicsSystem = new JPH::PhysicsSystem();
+            m_physicsSystem->Init(1024, 0, 1024, 1024,
+                m_broadPhaseLayerInterface,
+                m_objectVsBroadPhaseLayerFilter,
+                m_objectLayerPairFilter
+            );
+            /*
+            event.bus.subscribe<csyren::core::events::ComponentCreateEvent<RigidBody>>(
+                [this](const auto& event) {
+                    this->onRigidBodyAdded(event);
+                }
+            );
+            */
+            csyren::log::debug("Jolt Physics System Initialized CORRECTLY.");
+        }
+
+        void shutdown(core::events::SystemEvent& event)
+        {
+            if (!m_physicsSystem) return; // Защита от двойного вызова
+
+            delete m_physicsSystem;
+            m_physicsSystem = nullptr;
+
+            delete m_jobSystem;
+            m_jobSystem = nullptr;
+
+            delete m_tempAllocator;
+            m_tempAllocator = nullptr;
+
+            JPH::UnregisterTypes();
+            delete JPH::Factory::sInstance;
+            JPH::Factory::sInstance = nullptr;
+
+            csyren::log::debug("Jolt Physics System shutdown.");
+        }
+
+        void update(core::events::SystemEvent& event, core::Scene& scene)
+        {
+            /*
+            using namespace core::components;
+            auto view = scene.view<RigidBody, Transform>();
+            float deltaTime = event.time.fixedDeltaTime;
+            if (!_pendingBodies.empty())
+            {
+                for (core::Entity::ID entt : _pendingBodies)
+                {
+                    if (!view.contains(entt))
+                        continue;
+
+                    auto [rb,transform] = view.get(entt);
+                }
+            }
+
+            for (auto [entt, rb, transform] : scene.view<RigidBody, Transform>())
+            {
+                if (rb.type == BodyType::Dynamic && rb.internalID != 0xFFFFFFFF)
+                {
+
+                }
+            }
+            */
+        }
+    };
+
+
+    PhysicsEngine::PhysicsEngine()
+        : _pImpl(new Impl())
+    {
+        csyren::log::debug("PhysicsEngine created.");
     }
+
+    PhysicsEngine::~PhysicsEngine()
+    {
+        delete _pImpl; // Удаляем экземпляр реализации
+    }
+
+    void PhysicsEngine::initialize(core::events::SystemEvent& event)
+    {
+        _pImpl->initialize(event);
+    }
+
+    void PhysicsEngine::shutdown(core::events::SystemEvent& event)
+    {
+        _pImpl->shutdown(event);
+    }
+
+
+    void PhysicsEngine::update(core::events::SystemEvent& event, core::Scene& scene)
+    {
+        _pImpl->update(event, scene);
+    }
+
+
+
 }

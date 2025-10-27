@@ -93,7 +93,7 @@
       <PrecompiledHeaderFile>E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/Jolt.dir/Debug/cmake_pch.hxx</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/VS2022_CL/Jolt.dir/Debug//cmake_pch.pch</PrecompiledHeaderOutputFile>
       <RemoveUnreferencedCodeData>true</RemoveUnreferencedCodeData>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <SupportJustMyCode>
       </SupportJustMyCode>
@@ -155,7 +155,7 @@
       <PrecompiledHeaderFile>E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/Jolt.dir/Release/cmake_pch.hxx</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/VS2022_CL/Jolt.dir/Release//cmake_pch.pch</PrecompiledHeaderOutputFile>
       <RemoveUnreferencedCodeData>true</RemoveUnreferencedCodeData>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <SupportJustMyCode>
       </SupportJustMyCode>

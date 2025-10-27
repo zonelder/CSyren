@@ -142,6 +142,7 @@
     <ClInclude Include="serialize_common.h" />
     <ClInclude Include="system_base.h" />
     <ClInclude Include="system_manager.h" />
+    <ClInclude Include="transform.h" />
     <ClInclude Include="window.h" />
     <ClInclude Include="win_exeption.h" />
   </ItemGroup>

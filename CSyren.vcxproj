@@ -19,7 +19,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application.h" />
-    <ClInclude Include="camera.h" />
     <ClInclude Include="debug_rotator.h" />
     <ClInclude Include="debug_rotator_system.h" />
     <ClInclude Include="editor_camera_controller.h" />
@@ -30,7 +29,11 @@
     <ClInclude Include="sprite_renderer.h" />
     <ClInclude Include="sprite_render_system.h" />
     <ClInclude Include="todo.h" />
-    <ClInclude Include="transform.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="lib\physics\physics.vcxproj">
+      <Project>{996e7bff-0176-4769-ad10-d9f68d3f755b}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

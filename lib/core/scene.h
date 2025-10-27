@@ -9,7 +9,7 @@
 #include "component_base.h"
 #include "component_pool.h"
 #include "component_order.h"
-#include "renderer.h"
+//#include "renderer.h"
 #include "input_dispatcher.h"
 
 #include "command_buffer.h"
@@ -419,6 +419,27 @@ namespace csyren::core
 				"function object must be callable via SceneView");
 			for (auto it = begin(); it != end(); ++it)
 				std::apply(fn, *it);
+		}
+
+		[[nodiscard]] bool contains(Entity::ID id) const
+		{
+			refresh();
+			if (_empty)
+			{
+				return false;
+			}
+			return has_all_components(id);
+		}
+
+		[[nodiscard]] std::tuple<Cs&...> get(Entity::ID id)
+		{
+			assert(contains(id) && "Entity does not belong to this view");
+			return std::tie((*std::get<PoolPtr<Cs>>(_pools))[id]...);
+		}
+		[[nodiscard]] std::tuple<const Cs&...> get(Entity::ID id) const
+		{
+			assert(contains(id) && "Entity does not belong to this view");
+			return std::tie((*std::get<PoolPtr<Cs>>(_pools))[id]...);
 		}
 
 	private:

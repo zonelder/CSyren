@@ -6,13 +6,14 @@
 #include "core/system_base.h"
 #include "core/scene.h"
 
-#include "transform.h"
+#include "core/transform.h"
 #include "mesh_filter.h"
 #include "math/math.h"
 
 using namespace csyren::core;
 using namespace csyren::math;
-using namespace csyren::components;
+using namespace csyren::render::components;
+using namespace csyren::core::components;
 
 namespace csyren
 {
