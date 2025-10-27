@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/VS2022_CL/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

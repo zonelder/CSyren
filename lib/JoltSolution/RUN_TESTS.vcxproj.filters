@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Build\VS2022_CL\CMakeFiles\115294df5edc745eccd51bef7030eac1\RUN_TESTS_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{31B0D3C2-F281-3774-BD76-BF8C28EB41C3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

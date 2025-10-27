@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\HelloWorld\HelloWorld.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Build\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\HelloWorld\HelloWorld.cmake" />
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+</Project>

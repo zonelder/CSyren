@@ -1,0 +1,396 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Build\VS2022_CL\CMakeFiles\TestFramework.dir\cmake_pch.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Application\Application.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Application\DebugUI.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\External\Perlin.cpp">
+      <Filter>External</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Image\BlitSurface.cpp">
+      <Filter>Image</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Image\LoadBMP.cpp">
+      <Filter>Image</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Image\LoadTGA.cpp">
+      <Filter>Image</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Image\Surface.cpp">
+      <Filter>Image</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Image\ZoomImage.cpp">
+      <Filter>Image</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\DebugRendererImp.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\Font.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\Renderer.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\RenderPrimitive.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UIAnimation.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UIAnimationSlide.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UIButton.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UICheckBox.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UIComboBox.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UIElement.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UIHorizontalStack.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UIImage.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UIManager.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UISlider.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UIStaticText.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UITextButton.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UIVerticalStack.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Utils\CustomMemoryHook.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Utils\ReadData.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Input\Win\KeyboardWin.cpp">
+      <Filter>Input\Win</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Input\Win\MouseWin.cpp">
+      <Filter>Input\Win</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\DX12\ConstantBufferDX12.cpp">
+      <Filter>Renderer\DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\DX12\FatalErrorIfFailedDX12.cpp">
+      <Filter>Renderer\DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\DX12\PipelineStateDX12.cpp">
+      <Filter>Renderer\DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\DX12\RendererDX12.cpp">
+      <Filter>Renderer\DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\DX12\RenderInstancesDX12.cpp">
+      <Filter>Renderer\DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\DX12\RenderPrimitiveDX12.cpp">
+      <Filter>Renderer\DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\DX12\TextureDX12.cpp">
+      <Filter>Renderer\DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Utils\AssetStream.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Utils\Log.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Window\ApplicationWindowWin.cpp">
+      <Filter>Window</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Application\Application.h">
+      <Filter>Application</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Application\DebugUI.h">
+      <Filter>Application</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Application\EntryPoint.h">
+      <Filter>Application</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\External\Perlin.h">
+      <Filter>External</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\External\stb_truetype.h">
+      <Filter>External</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Image\BlitSurface.h">
+      <Filter>Image</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Image\LoadBMP.h">
+      <Filter>Image</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Image\LoadTGA.h">
+      <Filter>Image</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Image\Surface.h">
+      <Filter>Image</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Image\ZoomImage.h">
+      <Filter>Image</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Input\Keyboard.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Input\Mouse.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\DebugRendererImp.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\Font.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\Frustum.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\PipelineState.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\PixelShader.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\Renderer.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\RenderInstances.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\RenderPrimitive.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\Texture.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\VertexShader.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\TestFramework.h" />
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UIAnimation.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UIAnimationSlide.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UIButton.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UICheckBox.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UIComboBox.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UIElement.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UIEventListener.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UIHorizontalStack.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UIImage.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UIManager.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UISlider.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UIStaticText.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UITextButton.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UITexturedQuad.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\UI\UIVerticalStack.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Utils\CustomMemoryHook.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Utils\AssetStream.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Utils\Log.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Utils\ReadData.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Window\ApplicationWindow.h">
+      <Filter>Window</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Input\Win\KeyboardWin.h">
+      <Filter>Input\Win</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Input\Win\MouseWin.h">
+      <Filter>Input\Win</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\DX12\ConstantBufferDX12.h">
+      <Filter>Renderer\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\DX12\CommandQueueDX12.h">
+      <Filter>Renderer\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\DX12\DescriptorHeapDX12.h">
+      <Filter>Renderer\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\DX12\FatalErrorIfFailedDX12.h">
+      <Filter>Renderer\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\DX12\PipelineStateDX12.h">
+      <Filter>Renderer\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\DX12\PixelShaderDX12.h">
+      <Filter>Renderer\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\DX12\RendererDX12.h">
+      <Filter>Renderer\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\DX12\RenderInstancesDX12.h">
+      <Filter>Renderer\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\DX12\RenderPrimitiveDX12.h">
+      <Filter>Renderer\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\DX12\TextureDX12.h">
+      <Filter>Renderer\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Renderer\DX12\VertexShaderDX12.h">
+      <Filter>Renderer\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\Window\ApplicationWindowWin.h">
+      <Filter>Window</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Assets\Shaders\DX\VertexConstants.h">
+      <Filter>Assets\Shaders\DX</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Build\VS2022_CL\CMakeFiles\TestFramework.dir\Debug\cmake_pch.hxx">
+      <Filter>Precompile Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Build\VS2022_CL\CMakeFiles\TestFramework.dir\Release\cmake_pch.hxx">
+      <Filter>Precompile Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Build\VS2022_CL\CMakeFiles\TestFramework.dir\Distribution\cmake_pch.hxx">
+      <Filter>Precompile Header File</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Build\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <FXCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Assets\Shaders\DX\FontVertexShader.hlsl">
+      <Filter>Assets\Shaders\DX</Filter>
+    </FXCompile>
+    <FXCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Assets\Shaders\DX\LineVertexShader.hlsl">
+      <Filter>Assets\Shaders\DX</Filter>
+    </FXCompile>
+    <FXCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Assets\Shaders\DX\TriangleDepthVertexShader.hlsl">
+      <Filter>Assets\Shaders\DX</Filter>
+    </FXCompile>
+    <FXCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Assets\Shaders\DX\TriangleVertexShader.hlsl">
+      <Filter>Assets\Shaders\DX</Filter>
+    </FXCompile>
+    <FXCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Assets\Shaders\DX\UIVertexShader.hlsl">
+      <Filter>Assets\Shaders\DX</Filter>
+    </FXCompile>
+    <FXCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Assets\Shaders\DX\FontPixelShader.hlsl">
+      <Filter>Assets\Shaders\DX</Filter>
+    </FXCompile>
+    <FXCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Assets\Shaders\DX\LinePixelShader.hlsl">
+      <Filter>Assets\Shaders\DX</Filter>
+    </FXCompile>
+    <FXCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Assets\Shaders\DX\TriangleDepthPixelShader.hlsl">
+      <Filter>Assets\Shaders\DX</Filter>
+    </FXCompile>
+    <FXCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Assets\Shaders\DX\TrianglePixelShader.hlsl">
+      <Filter>Assets\Shaders\DX</Filter>
+    </FXCompile>
+    <FXCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Assets\Shaders\DX\UIPixelShader.hlsl">
+      <Filter>Assets\Shaders\DX</Filter>
+    </FXCompile>
+    <FXCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Assets\Shaders\DX\UIPixelShaderUntextured.hlsl">
+      <Filter>Assets\Shaders\DX</Filter>
+    </FXCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\TestFramework\TestFramework.cmake" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Application">
+      <UniqueIdentifier>{9EFACF9E-4B87-3C35-A88D-57C8184A7015}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Assets">
+      <UniqueIdentifier>{79D7CA9C-572C-3597-9EE4-696A74F66EA0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Assets\Shaders">
+      <UniqueIdentifier>{5287846D-770E-32A0-943D-EEB67EEF21FB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Assets\Shaders\DX">
+      <UniqueIdentifier>{18F5887D-3FDF-3B03-B893-F9A0FD10A1D9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External">
+      <UniqueIdentifier>{0DCD53F2-405F-3810-A69B-073D99A8A849}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Image">
+      <UniqueIdentifier>{A3DBB7B5-4C58-3713-9E18-258847234EE4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Input">
+      <UniqueIdentifier>{5B52EE91-D011-3826-B7D3-3F771AAA1505}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Input\Win">
+      <UniqueIdentifier>{08BC8F4A-5339-3A09-B218-A29F5251A419}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Precompile Header File">
+      <UniqueIdentifier>{5D970524-2F59-3649-80FE-27DE8F6275AF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Renderer">
+      <UniqueIdentifier>{AC7F6F0D-A14A-356E-98E5-0674E0372CA0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Renderer\DX12">
+      <UniqueIdentifier>{009119E4-27CE-3018-AAD9-8BB037D12DEA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{6AD6748F-B245-3555-AE13-66BA93F45FCB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UI">
+      <UniqueIdentifier>{5352DAA4-F388-3EE1-B136-0A2EA3CA1AF7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utils">
+      <UniqueIdentifier>{B7A78064-5069-33DD-A1B7-14B399381616}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Window">
+      <UniqueIdentifier>{3BCB57F3-E5FA-3C7E-B7A4-84D998EBEF1A}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

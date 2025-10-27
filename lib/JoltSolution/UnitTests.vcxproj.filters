@@ -1,0 +1,263 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Build\VS2022_CL\CMakeFiles\UnitTests.dir\cmake_pch.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Core\ArrayTest.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Core\BinaryHeapTest.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Core\FPFlushDenormalsTest.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Core\HashCombineTest.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Core\InsertionSortTest.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Core\JobSystemTest.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Core\LinearCurveTest.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Core\PreciseMathTest.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Core\ScopeExitTest.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Core\STLLocalAllocatorTest.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Core\StringToolsTest.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Core\QuickSortTest.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Core\UnorderedSetTest.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Core\UnorderedMapTest.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Geometry\ClosestPointTests.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Geometry\ConvexHullBuilderTest.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Geometry\EllipseTest.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Geometry\EPATests.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Geometry\GJKTests.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Geometry\PlaneTests.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Geometry\RayAABoxTests.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Math\BVec16Tests.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Math\DMat44Tests.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Math\DVec3Tests.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Math\EigenValueSymmetricTests.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Math\HalfFloatTests.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Math\Mat44Tests.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Math\MathTests.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Math\MatrixTests.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Math\QuatTests.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Math\UVec4Tests.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Math\TrigonometryTests.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Math\Vec3Tests.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Math\Vec4Tests.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Math\VectorTests.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\ActiveEdgesTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\BroadPhaseTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\CastShapeTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\CharacterVirtualTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\CollideShapeTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\CollidePointTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\CollisionGroupTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\ContactListenerTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\ConvexVsTrianglesTest.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\DistanceConstraintTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\EstimateCollisionResponseTest.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\HeightFieldShapeTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\HingeConstraintTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\MotionQualityLinearCastTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\MutableCompoundShapeTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\ObjectLayerPairFilterTableTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\ObjectLayerPairFilterMaskTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\OffsetCenterOfMassShapeTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\PathConstraintTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\PhysicsDeterminismTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\PhysicsStepListenerTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\PhysicsTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\RayShapeTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\SensorTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\ShapeFilterTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\ShapeTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\SixDOFConstraintTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\SliderConstraintTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\SoftBodyTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\SubShapeIDTest.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\TaperedCylinderShapeTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\TransformedShapeTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Physics\WheeledVehicleTests.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\PhysicsTestContext.cpp" />
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\UnitTestFramework.cpp" />
+    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\ObjectStream\ObjectStreamTest.cpp">
+      <Filter>ObjectStream</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\doctest.h" />
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\Layers.h" />
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\LoggingBodyActivationListener.h" />
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\LoggingContactListener.h" />
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\PhysicsTestContext.h" />
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\UnitTestFramework.h" />
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Build\VS2022_CL\CMakeFiles\UnitTests.dir\Debug\cmake_pch.hxx">
+      <Filter>Precompile Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Build\VS2022_CL\CMakeFiles\UnitTests.dir\Release\cmake_pch.hxx">
+      <Filter>Precompile Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Build\VS2022_CL\CMakeFiles\UnitTests.dir\Distribution\cmake_pch.hxx">
+      <Filter>Precompile Header File</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Build\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\UnitTests\UnitTests.cmake" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Core">
+      <UniqueIdentifier>{A0337410-A1E4-3F82-9B50-4E120E5F38D8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Geometry">
+      <UniqueIdentifier>{03F8A17B-DA7C-3CDA-B571-6C04479232BF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Math">
+      <UniqueIdentifier>{10325CFF-5743-3E2C-8C81-9B0C2AF51A76}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ObjectStream">
+      <UniqueIdentifier>{712AE016-8363-3E17-978A-746FEB30672B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Physics">
+      <UniqueIdentifier>{91DCFB3E-91A6-3BA9-9E99-B73502F2DD30}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Precompile Header File">
+      <UniqueIdentifier>{5D970524-2F59-3649-80FE-27DE8F6275AF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{6AD6748F-B245-3555-AE13-66BA93F45FCB}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
