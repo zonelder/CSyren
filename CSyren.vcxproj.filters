@@ -27,6 +27,9 @@
     <ClCompile Include="application.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="serializer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -53,17 +56,14 @@
     <ClInclude Include="scene_loader.h">
       <Filter>system</Filter>
     </ClInclude>
-    <ClInclude Include="sprite_renderer.h">
-      <Filter>component</Filter>
-    </ClInclude>
-    <ClInclude Include="sprite_render_system.h">
-      <Filter>system</Filter>
-    </ClInclude>
     <ClInclude Include="debug_rotator_system.h">
       <Filter>system</Filter>
     </ClInclude>
     <ClInclude Include="debug_rotator.h">
       <Filter>component</Filter>
+    </ClInclude>
+    <ClInclude Include="serializer.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

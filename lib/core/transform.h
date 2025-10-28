@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/serializer.h"
+#include "core/serialize_base.h"
 #include "math/math.h"
 
 namespace csyren::core::components

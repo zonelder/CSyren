@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="application.cpp" />
+    <ClCompile Include="serializer.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -26,6 +27,7 @@
     <ClInclude Include="mesh_render_system.h" />
     <ClInclude Include="mesh_filter.h" />
     <ClInclude Include="scene_loader.h" />
+    <ClInclude Include="serializer.h" />
     <ClInclude Include="todo.h" />
   </ItemGroup>
   <ItemGroup>

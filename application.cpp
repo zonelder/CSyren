@@ -1,9 +1,14 @@
 #include "application.h"
 
-#include "cstdmf/log.h"
 #include <cassert>
 #include <format>
 #include <iostream>
+
+#include "cstdmf/log.h"
+#include "math/math.h"
+
+#include "core/serialize_common.h"
+#include "dx12_graphic/serialize_common.h"
 
 #include "dx12_graphic/primitives.h"
 #include "dx12_graphic/mesh.h"
@@ -21,7 +26,7 @@
 #include "debug_rotator_system.h"
 #include "scene_loader.h"
 
-#include "math/math.h"
+
 
 namespace
 {
@@ -231,11 +236,11 @@ namespace csyren
 		}
 
 		//---------------------------------------------------------------------------------------------
-		/*
+		//*
 		auto saveComponent = _scene.createEntity();
-		auto saveReq = _scene.addComponent<core::SceneLoaderRequest>(saveComponent);
-		saveReq->type = core::SceneLoaderRequest::LOAD;
+		auto saveReq = _scene.addComponent<SceneLoaderRequest>(saveComponent);
+		saveReq->type = SceneLoaderRequest::SAVE;
 		saveReq->path = "E:\\test_scene.scene";
-		*/
+		//*/
 	}
 }

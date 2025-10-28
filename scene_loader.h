@@ -3,25 +3,25 @@
 #include "core/context.h"
 #include "core/system_base.h"
 #include "core/scene.h"
-#include "core/serializer.h"
+#include "serializer.h"
 
 namespace csyren
 {
 	class SceneLoaderSystem : public core::System
 	{
 	public:
-		explicit SceneLoaderSystem(core::Serializer& s) : _serializer(s){}
+		explicit SceneLoaderSystem(Serializer& s) : _serializer(s){}
 
         void init(core::events::SystemEvent& event) override
         {
 
-            _publishTokens.emplace_back() = event.bus.register_publisher<core::events::LoadSceneRequest>();
-            _publishTokens.emplace_back() = event.bus.register_publisher<core::events::ReloadSceneRequest>();
-            _publishTokens.emplace_back() = event.bus.register_publisher<core::events::SaveSceneRequest>();
+            _publishTokens.emplace_back() = event.bus.register_publisher<events::LoadSceneRequest>();
+            _publishTokens.emplace_back() = event.bus.register_publisher<events::ReloadSceneRequest>();
+            _publishTokens.emplace_back() = event.bus.register_publisher<events::SaveSceneRequest>();
 
-            _tokens.emplace_back() = event.bus.subscribe<core::events::LoadSceneRequest>([this](auto request) { this->handleLoadScene(request); });
-            _tokens.emplace_back() = event.bus.subscribe<core::events::ReloadSceneRequest>([this](auto request) { this->handleReloadScene(request); });
-            _tokens.emplace_back() = event.bus.subscribe<core::events::SaveSceneRequest>([this](auto request) { this->handleSaveScene(request); });
+            _tokens.emplace_back() = event.bus.subscribe<events::LoadSceneRequest>([this](auto request) { this->handleLoadScene(request); });
+            _tokens.emplace_back() = event.bus.subscribe<events::ReloadSceneRequest>([this](auto request) { this->handleReloadScene(request); });
+            _tokens.emplace_back() = event.bus.subscribe<events::SaveSceneRequest>([this](auto request) { this->handleSaveScene(request); });
         };
 
         void shutdown(core::events::SystemEvent& event) override
@@ -44,8 +44,8 @@ namespace csyren
             std::vector<std::string> loadRequests;
             bool needReload = false;
 
-            using RequestType = core::SceneLoaderRequest::RequestType;
-            for (auto [entt, req] : event.scene.view<core::SceneLoaderRequest>())
+            using RequestType = SceneLoaderRequest::RequestType;
+            for (auto [entt, req] : event.scene.view<SceneLoaderRequest>())
             {
                 switch (req.type)
                 {
@@ -60,29 +60,29 @@ namespace csyren
                     break;
                 }
 
-                event.scene.removeComponent<core::SceneLoaderRequest>(entt);//temporal component
+                event.scene.removeComponent<SceneLoaderRequest>(entt);//temporal component
             }
 
             for (const auto& path: saveRequests)
             {
-                handleSaveScene(core::events::SaveSceneRequest(path));
+                handleSaveScene(events::SaveSceneRequest(path));
             }
 
             if (!loadRequests.empty())
             {
-                handleLoadScene(core::events::LoadSceneRequest(loadRequests.back()));
+                handleLoadScene(events::LoadSceneRequest(loadRequests.back()));
                 needReload = false;//we load new scene. reload dont needed;
             }
 
             if (needReload)
             {
-                handleReloadScene(core::events::ReloadSceneRequest{});
+                handleReloadScene(events::ReloadSceneRequest{});
             }
         }
 
 
     private:
-        void handleLoadScene(const core::events::LoadSceneRequest& event)
+        void handleLoadScene(const events::LoadSceneRequest& event)
         {
             log::info("Handling LoadSceneRequest for: {}", event.scenePath);
             if (_serializer.loadScene(event.scenePath))
@@ -91,7 +91,7 @@ namespace csyren
             }
         }
 
-        void handleReloadScene(const core::events::ReloadSceneRequest& event)
+        void handleReloadScene(const events::ReloadSceneRequest& event)
         {
             if (_loadedScenePath.empty())
             {
@@ -104,7 +104,7 @@ namespace csyren
 
         }
 
-        void handleSaveScene(const core::events::SaveSceneRequest& event)
+        void handleSaveScene(const events::SaveSceneRequest& event)
         {
             if (event.filepath.empty())
             {
@@ -120,9 +120,9 @@ namespace csyren
 
         }
 
-		core::Serializer& _serializer;
+		Serializer& _serializer;
         std::string _loadedScenePath;
-        std::vector<core::events::PublishToken>    _publishTokens;
-        std::vector<core::events::SubscriberToken> _tokens;
+        std::vector<events::PublishToken>    _publishTokens;
+        std::vector<events::SubscriberToken> _tokens;
 	};
 }

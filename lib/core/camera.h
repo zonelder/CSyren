@@ -2,7 +2,7 @@
 
 #include <DirectXMath.h>
 #include "math/color.h"
-#include "core/serializer.h"
+#include "core/serialize_base.h"
 
 #undef far
 #undef near

@@ -4,12 +4,6 @@
 #include "core/field_context.h"
 #include "core/serialize_common.h"
 
-#include <string>
-
-/* ================================================================== */
-/*              ¬спомогательные макросы-утилиты                      */
-/* ================================================================== */
-
 #define CSYREN_PASTE_IMPL(a, b) a##b
 #define CSYREN_PASTE(a, b) CSYREN_PASTE_IMPL(a, b)
 
@@ -48,9 +42,6 @@
 
 
 
-/* ================================================================== */
-/*          ћакросы дл€ определени€ сериализуемых полей              */
-/* ================================================================== */
 
 // Ќам нужен макрос-обертка, чтобы передать все аргументы в action.
 #define SERIALIZE_FIELD_ACTION(field) \
@@ -69,9 +60,6 @@
         j.at(#field).get_to(ctx); \
     }
 
-/* ================================================================== */
-/*                  √лавный макрос SERIALIZABLE                       */
-/* ================================================================== */
 
 #define SERIALIZABLE(Type, ...) \
     friend class csyren::core::reflection::ComponentRegistrar<Type>; \
@@ -87,49 +75,3 @@
     { \
         FOR_EACH(DESERIALIZE_FIELD_ACTION, __VA_ARGS__) \
     }
-
-namespace csyren::core::events
-{
-    struct LoadSceneRequest 
-    {
-        std::string scenePath;
-    };
-
-
-    struct SaveSceneRequest
-    {
-        std::string filepath;
-    };
-    struct ReloadSceneRequest{};
-}
-
-namespace csyren::core
-{
-
-    class Scene;
-
-    struct SceneLoaderRequest
-    {
-        enum RequestType
-        {
-            LOAD,
-            RELOAD,
-            SAVE,
-        };
-        RequestType type;
-        std::string path;
-    };
-
-	class Serializer
-	{
-	public:
-        Serializer(Scene& scene, render::ResourceManager& rm);
-
-        bool loadScene(const std::string& filepath);
-        bool saveScene(const std::string& filepath);
-
-	private:
-        Scene& _scene;
-        render::ResourceManager& _resourceManager;
-	};
-}

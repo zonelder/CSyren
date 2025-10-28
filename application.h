@@ -6,7 +6,8 @@
 #include "core/renderer.h"
 #include "core/time.h"
 #include "core/camera.h"
-#include "core/serializer.h"
+
+#include "serializer.h"
 
 #include "physics/physic_system.h"
 
@@ -38,7 +39,7 @@ namespace csyren
 		core::Window _window;
 		core::Scene _scene;
 		core::SystemManager _systems;
-		core::Serializer	_serializer;
+		Serializer	_serializer;
 		physics::PhysicsEngine  _physics;
 	};
 }

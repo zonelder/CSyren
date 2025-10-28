@@ -1,5 +1,5 @@
 #pragma once
-#include "core/serializer.h"
+#include "core/serialize_base.h"
 
 
 namespace csyren

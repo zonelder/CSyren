@@ -1,16 +1,17 @@
-#include "pch.h"
 #include "serializer.h"
-#include "serialize_common.h"
 
+#include "core/scene.h"
+#include "core/serialize_base.h"
 
 #include <fstream>
 
-namespace csyren::core
+namespace csyren
 {
-    Serializer::Serializer(Scene& scene, render::ResourceManager& rm) :
+    Serializer::Serializer(core::Scene& scene, render::ResourceManager& rm) :
         _scene(scene),
         _resourceManager(rm)
-    {}
+    {
+    }
 
     bool Serializer::saveScene(const std::string& filepath)
     {
@@ -24,7 +25,7 @@ namespace csyren::core
 
             json componentsJson;
 
-            for (const auto& [name, info] :reflection::ComponentRegistry::getAll())
+            for (const auto& [name, info] : core::reflection::ComponentRegistry::getAll())
             {
                 if (info.has(_scene, entt.id))
                 {
@@ -87,13 +88,13 @@ namespace csyren::core
 
         for (const auto& entityData : data["entities"])
         {
-            Entity::ID newEntity = _scene.createEntity();
+            core::Entity::ID newEntity = _scene.createEntity();
 
-            if(!entityData.contains("components")) continue;
+            if (!entityData.contains("components")) continue;
 
             for (const auto& [name, componentData] : entityData["components"].items())
             {
-                const auto info = reflection::ComponentRegistry::get(name);
+                const auto info = core::reflection::ComponentRegistry::get(name);
 
                 if (!info)
                 {

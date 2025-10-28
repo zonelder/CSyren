@@ -138,7 +138,7 @@
     <ClInclude Include="keyboard_device.h" />
     <ClInclude Include="renderer.h" />
     <ClInclude Include="scene.h" />
-    <ClInclude Include="serializer.h" />
+    <ClInclude Include="serialize_base.h" />
     <ClInclude Include="serialize_common.h" />
     <ClInclude Include="system_base.h" />
     <ClInclude Include="system_manager.h" />
@@ -151,7 +151,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="serializer.cpp" />
     <ClCompile Include="window.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -87,6 +87,9 @@
     <ClInclude Include="vertex_formats.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="serialize_common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
