@@ -315,7 +315,7 @@ namespace csyren::physics
             settings.mRotation = details::to_jolt(transform->rotation);
             settings.mObjectLayer  = Layers::MOVING;
             settings.mFriction = 0.6f;
-            settings.mRestitution = 0.4f; // 0.0 = гаснет, 1.0 = идеально отскакивает
+            settings.mRestitution = 1.0f; // 0.0 = гаснет, 1.0 = идеально отскакивает
 
 
             if (rb->type == BodyType::Dynamic)

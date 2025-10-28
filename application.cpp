@@ -260,6 +260,27 @@ namespace csyren
 		saveReq->type = SceneLoaderRequest::SAVE;
 		saveReq->path = "E:\\test_scene.scene";
 		//*/
+		float containerHalfX = 5.0f;
+		float containerHalfY = 3.0f; // высота ящика
+		float containerHalfZ = 5.0f;
+		float wallThickness = 0.5f;
+		auto createInvisibleWall = [&](Vector3 position, Vector3 size) {
+			auto wall = _scene.createEntity();
+			auto tr = _scene.addComponent<core::components::Transform>(wall);
+			tr->position = position;
+			tr->scale = size;
+
+			auto collider = _scene.addComponent<physics::BoxCollider>(wall);
+			collider->size = size;
+
+			auto rb = _scene.addComponent<physics::RigidBody>(wall, physics::RigidBody{ physics::BodyType::Static });
+			};
+
+		createInvisibleWall(Vector3{ -containerHalfX - wallThickness / 2, containerHalfY / 2, 0 }, Vector3{ wallThickness, containerHalfY * 2, containerHalfZ * 2 });
+		createInvisibleWall(Vector3{ containerHalfX + wallThickness / 2, containerHalfY / 2, 0 }, Vector3{ wallThickness, containerHalfY * 2, containerHalfZ * 2 });
+
+		createInvisibleWall(Vector3{ 0, containerHalfY / 2, -containerHalfZ - wallThickness / 2 }, Vector3{ containerHalfX * 2, containerHalfY * 2, wallThickness });
+		createInvisibleWall(Vector3{ 0, containerHalfY / 2, containerHalfZ + wallThickness / 2 }, Vector3{ containerHalfX * 2, containerHalfY * 2, wallThickness });
 
 
 		auto ground = _scene.createEntity();
