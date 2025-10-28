@@ -4,7 +4,6 @@
 
 #include "core/entity.h"
 #include "core/scene.h"
-#include "core/renderer.h"
 
 #include "third_party/json/json.hpp"
 
@@ -25,9 +24,9 @@ namespace csyren::core::reflection
 
 		std::function<void* (Scene&, Entity::ID)> get;
 
-		std::function<void(const void*, json&, json&,render::ResourceManager&)> serialize;
+		std::function<void(const void*, json&)> serialize;
 
-		std::function<void(void*, const json&, json&,render::ResourceManager&)> deserialize;
+		std::function<void(void*, const json&)> deserialize;
 	};
 
 	/**
@@ -97,14 +96,14 @@ namespace csyren::core::reflection
 			ComponentRegistry::registerComponentImpl<T>(name);
 		}
 
-		static void serialize_impl(const void* comp, json& j, json& root, render::ResourceManager& rm)
+		static void serialize_impl(const void* comp, json& j)
 		{
-			static_cast<const T*>(comp)->serialize(j, root, rm);
+			static_cast<const T*>(comp)->serialize(j);
 		}
 
-		static void deserialize_impl(void* comp, const json& j, json& root, render::ResourceManager& rm)
+		static void deserialize_impl(void* comp, const json& j)
 		{
-			static_cast<T*>(comp)->deserialize(j, root, rm);
+			static_cast<T*>(comp)->deserialize(j);
 		}
 	};
 

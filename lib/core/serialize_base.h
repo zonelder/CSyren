@@ -52,12 +52,11 @@
 
 // ¬нутренн€€ реализаци€, котора€ получает j, root, rm из "окружени€"
 #define SERIALIZE_FIELD_IMPL(field) \
-    j[#field] = csyren::core::reflection::FieldContext<decltype(field)>{const_cast<decltype(field)&>(field), rm, root};
+    j[#field] = field;
 
 #define DESERIALIZE_FIELD_IMPL(field) \
     if (j.contains(#field)) { \
-        auto ctx = csyren::core::reflection::FieldContext<decltype(field)>{field, rm, root}; \
-        j.at(#field).get_to(ctx); \
+        j.at(#field).get_to(field); \
     }
 
 
@@ -66,12 +65,12 @@
     \
     inline static const csyren::core::reflection::ComponentRegistrar<Type> CSYREN_PASTE(registrar_, __COUNTER__){#Type}; \
     \
-    void serialize(json& j, json& root, csyren::render::ResourceManager& rm) const \
+    void serialize(json& j) const \
     { \
         FOR_EACH(SERIALIZE_FIELD_ACTION, __VA_ARGS__) \
     } \
     \
-    void deserialize(const json& j, json& root, csyren::render::ResourceManager& rm) \
+    void deserialize(const json& j) \
     { \
         FOR_EACH(DESERIALIZE_FIELD_ACTION, __VA_ARGS__) \
     }

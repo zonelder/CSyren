@@ -34,7 +34,7 @@ namespace csyren
                 if (info.has(_scene, entt.id))
                 {
                     json componentJson;
-                    info.serialize(info.get(_scene, entt.id), componentJson, sceneJson, _resourceManager);
+                    info.serialize(info.get(_scene, entt.id), componentJson);
                     componentsJson[name] = componentJson;
                 }
             }
@@ -111,7 +111,7 @@ namespace csyren
                 }
 
                 void* componentPtr = info->add(_scene, newEntity);
-                info->deserialize(componentPtr, componentData, data, _resourceManager);
+                info->deserialize(componentPtr, componentData);
             }
         }
 
