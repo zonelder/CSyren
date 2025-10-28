@@ -13,8 +13,6 @@
 
 namespace csyren
 {
-
-
 	class Application
 	{
 	public:

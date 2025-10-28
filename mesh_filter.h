@@ -2,7 +2,7 @@
 #define __CSYREN_MESH_FILTER__
 #include <DirectXMath.h>
 #include "core/renderer.h"
-#include "core/serialize_base.h"
+#include "dx12_graphic/serialize_base.h"
 
 namespace csyren::render::components
 {

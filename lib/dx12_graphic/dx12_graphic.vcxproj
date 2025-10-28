@@ -186,6 +186,7 @@
     <ClInclude Include="resource_manager.h" />
     <ClInclude Include="sampler_manager.h" />
     <ClInclude Include="semantic_provider.h" />
+    <ClInclude Include="serialize_base.h" />
     <ClInclude Include="serialize_common.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="shader_meta.h" />

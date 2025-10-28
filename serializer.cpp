@@ -2,6 +2,7 @@
 
 #include "core/scene.h"
 #include "core/serialize_base.h"
+#include "dx12_graphic/serialize_common.h"
 
 #include <fstream>
 
@@ -18,6 +19,9 @@ namespace csyren
         json sceneJson;
         json entitiesArray = json::array();
 
+        auto& serv = render::SerializationServices::get();
+        serv.resourceManager = &_resourceManager;
+        serv.rootJson = &sceneJson;
         for (auto entt : _scene.entities())
         {
             json entityJson;
@@ -85,6 +89,10 @@ namespace csyren
         }
 
         if (!data.contains("entities")) return true;
+
+        auto& serv = render::SerializationServices::get();
+        serv.resourceManager = &_resourceManager;
+        serv.rootJson = &data;
 
         for (const auto& entityData : data["entities"])
         {
