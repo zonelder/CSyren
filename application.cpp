@@ -27,6 +27,9 @@
 #include "scene_loader.h"
 
 
+#include "physics/rigid_body.h"
+#include "physics/colliders.h"
+
 
 namespace
 {
@@ -48,6 +51,12 @@ namespace
 			float viewWidth = viewHeight * camera.aspectRatio;
 			return DirectX::XMMatrixOrthographicLH(viewWidth, viewHeight, camera.near, camera.far);
 		}
+	}
+
+	float randomDegree(float minDeg, float maxDeg)
+	{
+		float t = (float)rand() / RAND_MAX;
+		return minDeg + t * (maxDeg - minDeg);
 	}
 }
 
@@ -139,6 +148,8 @@ namespace csyren
 
 			_inputDispatcher.update(*_bus);
 			_systems.update(ctx);
+			_physics.update(ctx);
+
 			auto [mainCameraID,camera,cameraTransform] = *(_scene.view<Camera,Transform>().begin());//only first camera accepted
 
 			auto engineVariables = _render.getEngineVariableBuffer();
@@ -176,6 +187,8 @@ namespace csyren
 	 */
 	void Application::onSceneStart()
 	{
+
+		srand(time(0));
 		using namespace core::components;
 		using namespace render::components;
 		//-----------------------------init systems---------------------------------------------------
@@ -201,7 +214,7 @@ namespace csyren
 		editorCameraController->movementSpeed = 1.0f;
 		mainCamera->aspectRatio = _window.width() / _window.height();
 		mainCamera->background = math::Vector4{ 1.f,0.0f,0.0f,1.0f };
-		cameraTransform->position = math::Vector3::back * 2;
+		cameraTransform->position = math::Vector3::back * 4 + math::Vector3::up*2;
 		
 		//-------------------------------------Material and mesh----------------------------------------
 		auto matDefault = render::Primitives::getDefaultMaterial(_resource);
@@ -210,7 +223,7 @@ namespace csyren
 		_resource.getMaterial(matRainbow)->setVector("tint", DirectX::XMFLOAT4(1, 1, 1, 1));
 		auto meshQuad = render::Primitives::getQuad(_resource);
 		auto meshCube = render::Primitives::getCube(_resource);
-
+		/*
 		const int gridX = 100;
 		const int gridY = 20;
 		const float spacing = 1.5f;
@@ -238,14 +251,71 @@ namespace csyren
 				rotEnt->speed = DirectX::XMFLOAT3(0, 0.5f + 0.3f * (x % 5), 0);
 			}
 		}
+		*/
 
 		//---------------------------------------------------------------------------------------------
-		//*
+		/*
 		auto saveComponent = _scene.createEntity();
 		auto saveReq = _scene.addComponent<SceneLoaderRequest>(saveComponent);
 		saveReq->type = SceneLoaderRequest::SAVE;
 		saveReq->path = "E:\\test_scene.scene";
 		//*/
+
+
+		auto ground = _scene.createEntity();
+		auto box = _scene.createEntity();
+
+		{
+			auto tr = _scene.addComponent<core::components::Transform>(ground);
+			tr->position = Vector3{ 0.0f, -1.0f, 0.0f };
+			tr->scale = Vector3(10, 1, 10);
+			auto collider = _scene.addComponent<physics::BoxCollider>(ground);
+			collider->size = Vector3{ 10.0f, 1.0f, 10.0f };
+			auto rb = _scene.addComponent<physics::RigidBody>(ground, physics::RigidBody{ physics::BodyType::Static });
+			auto cubeRenderer = _scene.addComponent<render::components::MeshRenderer>(ground);
+			cubeRenderer->material = matDefault;
+			auto cubeMesh = _scene.addComponent<render::components::MeshFilter>(ground);
+			cubeMesh->mesh = meshCube;
+		}
+
+		const int numCubesX = 5;
+		const int numCubesY = 5;
+		const int numCubesZ = 5;
+		float spacing = 1.2f;
+		Vector3 basePos{ 0,3,0 };
+		Vector3 scale{ 0.5,0.5,0.5 };
+		physics::RigidBody templateRB;
+		templateRB.type = physics::BodyType::Dynamic;
+		templateRB.mass = 5.0f;
+		for (int x = 0; x < numCubesX; ++x)
+			for (int y = 0; y < numCubesY; ++y)
+				for (int z = 0; z < numCubesZ; ++z)
+				{
+					auto cube = _scene.createEntity();
+					auto tr = _scene.addComponent<core::components::Transform>(cube);
+					tr->position = Vector3{
+						(x - numCubesX / 2) * spacing,
+						1.0f + y * spacing,
+						(z - numCubesZ / 2) * spacing
+					};
+					tr->position += basePos;
+
+					tr->scale = scale;
+
+					float angleX = randomDegree(-15.0f, 15.0f);
+					float angleY = randomDegree(-15.0f, 15.0f);
+					float angleZ = randomDegree(-15.0f, 15.0f);
+					tr->rotation = math::Quaternion::euler(Vector3{ angleX, angleY, angleZ });
+
+
+					auto collider = _scene.addComponent<physics::BoxCollider>(cube);//should be a bug here as physic cant update this data.
+					collider->size = scale;
+					auto rb = _scene.addComponent<physics::RigidBody>(cube, templateRB);
+					auto meshRenderer = _scene.addComponent<render::components::MeshRenderer>(cube);
+					meshRenderer->material = matDefault;
+					auto meshFilter = _scene.addComponent<render::components::MeshFilter>(cube);
+					meshFilter->mesh = meshCube;
+				}
 
 	}
 }

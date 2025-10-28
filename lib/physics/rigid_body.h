@@ -1,9 +1,6 @@
 #pragma once
 #include <cstdint>
-
-
-namespace JPH { class BodyID; }
-
+#include "math/math.h"
 
 namespace csyren::physics
 {
@@ -19,9 +16,9 @@ namespace csyren::physics
 	{
 		BodyType type = BodyType::Static;
 		float mass = 1.0f;
+		bool useGravity = true;
 
-		uint32_t internalID = 0xFFFFFFFF;
-		bool isNew = true;
-
+		math::Vector3 linearVelocity = math::Vector3::zero;
+		math::Vector3 angularVelocity = math::Vector3::zero;
 	};
 }

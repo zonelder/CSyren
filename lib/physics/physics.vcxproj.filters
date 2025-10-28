@@ -27,6 +27,15 @@
     <ClInclude Include="rigid_body.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="colliders.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="math_converter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="default_shapes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="physics.cpp">
