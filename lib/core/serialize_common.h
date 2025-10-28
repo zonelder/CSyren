@@ -1,7 +1,5 @@
 #pragma once
-#include "core/field_context.h"
 #include "cstdmf/log.h"
-#include "core/renderer.h"
 #include "math/math.h"
 
 

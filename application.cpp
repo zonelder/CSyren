@@ -195,7 +195,7 @@ namespace csyren
 		auto editorCameraController = _scene.addComponent<EditorCameraController>(mainCameraEntt);
 		editorCameraController->movementSpeed = 1.0f;
 		mainCamera->aspectRatio = _window.width() / _window.height();
-		mainCamera->background = { 1.f,0.0f,0.0f,1.0f };
+		mainCamera->background = math::Vector4{ 1.f,0.0f,0.0f,1.0f };
 		cameraTransform->position = math::Vector3::back * 2;
 		
 		//-------------------------------------Material and mesh----------------------------------------

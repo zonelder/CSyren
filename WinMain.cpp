@@ -1,8 +1,9 @@
+#define DX12_RENDER
+#define CONSOLE_ENABLE
+
 #include <iostream>
 #include "application.h"
 
-
-#define CONSOLE_ENABLE
 
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE pPrevInstance, LPSTR plCmdLine, INT nCmdShow)
 {

@@ -31,6 +31,12 @@
     <ClInclude Include="todo.h" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="lib\core\core.vcxproj">
+      <Project>{c2d419d8-5a36-4905-bf2f-7fbc3cd025e9}</Project>
+    </ProjectReference>
+    <ProjectReference Include="lib\dx12_graphic\dx12_graphic.vcxproj">
+      <Project>{02615bfc-b339-45ba-bf9f-22820d9e80a2}</Project>
+    </ProjectReference>
     <ProjectReference Include="lib\physics\physics.vcxproj">
       <Project>{996e7bff-0176-4769-ad10-d9f68d3f755b}</Project>
     </ProjectReference>

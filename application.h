@@ -5,11 +5,15 @@
 #include "core/system_manager.h"
 #include "core/renderer.h"
 #include "core/time.h"
-#include "core/camera.h"
 
-#include "serializer.h"
+#ifdef DX12_RENDER
+#include "dx12_graphic/renderer.h"
+#include "dx12_graphic/resource_manager.h"
+#endif
 
 #include "physics/physic_system.h"
+
+#include "serializer.h"
 
 namespace csyren
 {
@@ -28,16 +32,18 @@ namespace csyren
 		void onSceneStart();
 
 	private:
-		core::input::InputDispatcher	_inputDispatcher;
-		render::Renderer		_render;
-		render::ResourceManager	_resource;
-		core::Time					_time;
-		std::unique_ptr<core::events::EventBus2> _bus;
+		std::unique_ptr<core::events::EventBus2>	_bus;
+		core::input::InputDispatcher				_inputDispatcher;
+		core::Time									_time;
+		core::Scene									_scene;
+		core::SystemManager							_systems;
+		core::Window								_window;
 
-		core::Window _window;
-		core::Scene _scene;
-		core::SystemManager _systems;
-		Serializer	_serializer;
-		physics::PhysicsEngine  _physics;
+		render::Renderer							_render;
+		render::ResourceManager						_resource;
+
+		physics::PhysicsEngine						_physics;
+
+		Serializer									_serializer;
 	};
 }

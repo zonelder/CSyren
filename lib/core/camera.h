@@ -1,7 +1,6 @@
 #pragma once
 
-#include <DirectXMath.h>
-#include "math/color.h"
+#include "math/vector4.h"
 #include "core/serialize_base.h"
 
 #undef far
@@ -32,7 +31,7 @@ namespace csyren::core::components
 
 		int priority{ 0 };
 		ProjectionType projection = Perspective;
-		DirectX::XMFLOAT4 background = { 0.1f, 0.1f, 0.1f, 1.0f };
+		math::Vector4 background{ 0.1f, 0.1f, 0.1f, 1.0f };
 		ViewportRect viewportRect;//unused
 	private:
 		SERIALIZABLE(Camera, far, near, aspectRatio, fov,priority, projection,background);

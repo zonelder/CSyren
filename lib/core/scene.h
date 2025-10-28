@@ -9,7 +9,6 @@
 #include "component_base.h"
 #include "component_pool.h"
 #include "component_order.h"
-//#include "renderer.h"
 #include "input_dispatcher.h"
 
 #include "command_buffer.h"
