@@ -10,10 +10,10 @@ namespace csyren::physics
         PhysicsEngine();
         ~PhysicsEngine();
 
-        void initialize(core::events::SystemEvent& event);
-        void shutdown(core::events::SystemEvent& event);
+        void initialize(core::ServiceContext& ctx);
+        void shutdown(core::ServiceContext& ctx);
 
-        void update(core::events::SystemEvent& event, core::Scene& scene);
+        void update(core::ServiceContext& ctx);
 
     private:
 

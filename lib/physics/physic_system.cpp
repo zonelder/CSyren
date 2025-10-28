@@ -17,6 +17,8 @@
 //#include "core/entity.h"
 //#include "core/transform.h"
 
+//#include "core/event_bus.h"
+
 #include "rigid_body.h"
 
 namespace
@@ -141,8 +143,9 @@ namespace csyren::physics
             log::debug("PhysicsEngine:: Queued entity for physics body creation");
         }
         */
-        void initialize(core::events::SystemEvent& event)
+        void initialize(core::ServiceContext& ctx)
         {
+            //auto bus = ctx.get<core::events::EventBus2>();
             JPH::RegisterDefaultAllocator();
             JPH::Factory::sInstance = new JPH::Factory();
             JPH::RegisterTypes();
@@ -166,7 +169,7 @@ namespace csyren::physics
             csyren::log::debug("Jolt Physics System Initialized CORRECTLY.");
         }
 
-        void shutdown(core::events::SystemEvent& event)
+        void shutdown(core::ServiceContext& ctx)
         {
             if (!m_physicsSystem) return; // Защита от двойного вызова
 
@@ -186,7 +189,7 @@ namespace csyren::physics
             csyren::log::debug("Jolt Physics System shutdown.");
         }
 
-        void update(core::events::SystemEvent& event, core::Scene& scene)
+        void update(core::ServiceContext& ctx)
         {
             /*
             using namespace core::components;
@@ -226,20 +229,20 @@ namespace csyren::physics
         delete _pImpl; // Удаляем экземпляр реализации
     }
 
-    void PhysicsEngine::initialize(core::events::SystemEvent& event)
+    void PhysicsEngine::initialize(core::ServiceContext& ctx)
     {
-        _pImpl->initialize(event);
+        _pImpl->initialize(ctx);
     }
 
-    void PhysicsEngine::shutdown(core::events::SystemEvent& event)
+    void PhysicsEngine::shutdown(core::ServiceContext& ctx)
     {
-        _pImpl->shutdown(event);
+        _pImpl->shutdown(ctx);
     }
 
 
-    void PhysicsEngine::update(core::events::SystemEvent& event, core::Scene& scene)
+    void PhysicsEngine::update(core::ServiceContext& ctx)
     {
-        _pImpl->update(event, scene);
+        _pImpl->update(ctx);
     }
 
 

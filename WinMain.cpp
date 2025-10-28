@@ -1,4 +1,3 @@
-#define DX12_RENDER
 #define CONSOLE_ENABLE
 
 #include <iostream>

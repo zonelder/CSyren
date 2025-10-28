@@ -20,14 +20,17 @@ namespace csyren
     public:
         explicit DebugRotatorSystem() = default;
 
-        void update(events::UpdateEvent& event) override
+#pragma optimize("",off)
+        void update(ServiceContext& ctx) override
         {
-            float dt = event.time.deltaTime();
-            float totalTime = event.time.totalTime();
+            auto time = ctx.get<core::Time>();
+            auto scene = ctx.get<core::Scene>();
+            float dt = time->deltaTime();
+            float totalTime = time->totalTime();
             constexpr float waveSpeed = 2.0f;
             constexpr float waveLength = 3.0f;   
             constexpr float amplitude = 0.1f;    
-            event.scene.view<Transform, DebugRotator>().each([&](Entity::ID entt, Transform& tr, DebugRotator& rot)
+            scene->view<Transform, DebugRotator>().each([&](Entity::ID entt, Transform& tr, DebugRotator& rot)
                 {
                     tr.rotation *= math::Quaternion(DirectX::XMQuaternionRotationRollPitchYaw(rot.speed.x * dt, rot.speed.y * dt, rot.speed.z * dt));
 

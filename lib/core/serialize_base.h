@@ -1,7 +1,6 @@
 #pragma once
 
 #include "core/component_registry.h"
-#include "core/field_context.h"
 #include "core/serialize_common.h"
 
 #define CSYREN_PASTE_IMPL(a, b) a##b

@@ -12,40 +12,43 @@ namespace csyren
 	public:
 		explicit SceneLoaderSystem(Serializer& s) : _serializer(s){}
 
-        void init(core::events::SystemEvent& event) override
+        void init(ServiceContext& ctx) override
         {
+            auto bus = ctx.get<events::EventBus2>();
+            _publishTokens.emplace_back() = bus->register_publisher<events::LoadSceneRequest>();
+            _publishTokens.emplace_back() = bus->register_publisher<events::ReloadSceneRequest>();
+            _publishTokens.emplace_back() = bus->register_publisher<events::SaveSceneRequest>();
 
-            _publishTokens.emplace_back() = event.bus.register_publisher<events::LoadSceneRequest>();
-            _publishTokens.emplace_back() = event.bus.register_publisher<events::ReloadSceneRequest>();
-            _publishTokens.emplace_back() = event.bus.register_publisher<events::SaveSceneRequest>();
-
-            _tokens.emplace_back() = event.bus.subscribe<events::LoadSceneRequest>([this](auto request) { this->handleLoadScene(request); });
-            _tokens.emplace_back() = event.bus.subscribe<events::ReloadSceneRequest>([this](auto request) { this->handleReloadScene(request); });
-            _tokens.emplace_back() = event.bus.subscribe<events::SaveSceneRequest>([this](auto request) { this->handleSaveScene(request); });
+            _tokens.emplace_back() = bus->subscribe<events::LoadSceneRequest>([this](auto request) { this->handleLoadScene(request); });
+            _tokens.emplace_back() = bus->subscribe<events::ReloadSceneRequest>([this](auto request) { this->handleReloadScene(request); });
+            _tokens.emplace_back() = bus->subscribe<events::SaveSceneRequest>([this](auto request) { this->handleSaveScene(request); });
         };
 
-        void shutdown(core::events::SystemEvent& event) override
+        void shutdown(ServiceContext& ctx) override
         {
+            auto bus = ctx.get<events::EventBus2>();
             for (auto token : _tokens)
             {
-                event.bus.unsubscribe(token);
+                bus->unsubscribe(token);
             }
 
             for (auto token : _publishTokens)
             {
-                event.bus.unregister_publisher(token);
+                bus->unregister_publisher(token);
             }
         }
 
 
-        void update(core::events::UpdateEvent& event) override
+        void update(ServiceContext& ctx) override
         {
+            auto scene = ctx.get<core::Scene>();
+
             std::vector<std::string> saveRequests;
             std::vector<std::string> loadRequests;
             bool needReload = false;
 
             using RequestType = SceneLoaderRequest::RequestType;
-            for (auto [entt, req] : event.scene.view<SceneLoaderRequest>())
+            for (auto [entt, req] : scene->view<SceneLoaderRequest>())
             {
                 switch (req.type)
                 {
@@ -60,7 +63,7 @@ namespace csyren
                     break;
                 }
 
-                event.scene.removeComponent<SceneLoaderRequest>(entt);//temporal component
+                scene->removeComponent<SceneLoaderRequest>(entt);//temporal component
             }
 
             for (const auto& path: saveRequests)

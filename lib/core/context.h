@@ -1,64 +1,46 @@
 #ifndef __CSYREN_CONTEXT__
 #define __CSYREN_CONTEXT__
 
-namespace DirectX
-{
-	struct XMMATRIX;
-}
+#include <unordered_map>
+#include <cassert>
+#include "family_generator.h"
 
-
-namespace csyren::render
+namespace csyren::core::reflection
 {
-	class ResourceManager;
-	class Renderer;
+	class ServiceFamilyID {};
+	using ServiceFamily = Family<ServiceFamilyID>;
 }
 
 namespace csyren::core
 {
-	namespace events
+	class ServiceContext
 	{
-		class EventBus2;
-	}
-	class Scene;
-	class Time;
+	public:
+		template<typename T> void registerService(T* service)
+		{
+			auto type_id = reflection::ServiceFamily::getID<std::remove_const_t<T>>();
+			assert(_services.find(type_id) == _services.end() && "Attempt to register service but its already registered.");
+			_services[type_id] = const_cast<std::remove_const_t<T>*>(service);
+		}	
 
-}
+		template<typename T>const T* get() const
+		{
+			auto it = _services.find(reflection::ServiceFamily::getID<std::remove_const_t<T>>());
+			assert(it != _services.end() && "Attempt to get service but none it has not registered.");
 
-namespace csyren::core::input
-{
-	class Devices;
-}
+			return reinterpret_cast<const T*>(it->second);
+		}
 
+		template<typename T>
+		T* get()
+		{
+			auto it = _services.find(reflection::ServiceFamily::getID<std::remove_const_t<T>>());
+			assert(it != _services.end() && "Service not registered.");
+			return reinterpret_cast<T*>(it->second);
+		}
 
-namespace csyren::core::events
-{
-
-	//base class for generic app event
-	struct ContextualEvent
-	{
-		const input::Devices& devices;
-		Scene& scene;
-		render::ResourceManager& resources;
-		EventBus2& bus;
-	};
-
-	//class for Update call
-	struct UpdateEvent : ContextualEvent
-	{
-		Time& time;
-	};
-
-	//class for draw call
-	struct DrawEvent : ContextualEvent
-	{
-		render::Renderer& render;
-	};
-
-	//class for sustem init\shutdown
-	struct SystemEvent : ContextualEvent
-	{
-		Time& time;
-		render::Renderer& render;
+	private:
+		std::unordered_map<size_t, void*> _services;
 	};
 }
 

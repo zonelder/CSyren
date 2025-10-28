@@ -22,45 +22,50 @@ namespace csyren
     public:
         explicit MeshRenderSystem() = default;
 
-        void draw(events::DrawEvent& event) override
+        void draw(core::ServiceContext& ctx) override
         {
+
+            auto render = ctx.get<render::Renderer>();
+            auto scene = ctx.get<core::Scene>();
+            auto resources = ctx.get<render::ResourceManager>();
 
             struct EntityData { Transform* tr; Entity::ID id; };
             using MeshGroups = std::unordered_map<render::MeshHandle,std::vector<EntityData>>;
             using MaterialGroups = std::unordered_map<render::MaterialHandle, MeshGroups>;
 
+
             MaterialGroups batches;
-            auto entityParams = event.render.getEntityVariableBuffer();
-            for (auto [entt, tr, mf, mr] : event.scene.view<Transform, MeshFilter, MeshRenderer>())
+            auto entityParams = render->getEntityVariableBuffer();
+            for (auto [entt, tr, mf, mr] : scene->view<Transform, MeshFilter, MeshRenderer>())
             {
                 batches[mr.material][mf.mesh].push_back({ &tr,entt });
             }
 
             for (auto& [matID, meshGroups] : batches)
             {
-                auto* mat = event.resources.getMaterial(matID);
+                auto* mat = resources->getMaterial(matID);
                 if (!mat) continue;
 
-                auto* shader = event.resources.getShader(mat->getShader());
+                auto* shader = resources->getShader(mat->getShader());
                 if (!shader) continue;
 
-                if (!event.render.bindMaterial(event.resources, matID)) continue;
+                if (!render->bindMaterial(*resources, matID)) continue;
                 auto* cb = shader->getSemanticBuffer(render::details::CBufferUpdateType::Entity);
 
                 for (auto& [meshID, entities] : meshGroups)
                 {
-                    auto* mesh = event.resources.getMesh(meshID);
+                    auto* mesh = resources->getMesh(meshID);
                     if (!mesh) continue;
 
-                    mesh->bind(event.render);
+                    mesh->bind(*render);
 
                     for (auto& data : entities)
                     {
                         //TODO instancing look pretty well here.
                         DirectX::XMStoreFloat4x4(&entityParams->worldMatrix, data.tr->world());
                         entityParams->entityID = data.id;
-                        if (!event.render.bindEntity(cb)) continue;
-                        mesh->draw(event.render);
+                        if (!render->bindEntity(cb)) continue;
+                        mesh->draw(*render);
                     }
                 }
             }

@@ -6,12 +6,12 @@ namespace csyren::core
 	class System
 	{
 	public:
-		virtual void init(events::SystemEvent& event) {}
+		virtual void init(ServiceContext& event) {}
 
-		virtual void update(events::UpdateEvent& event){}
-		virtual void draw(events::DrawEvent& event) {}
+		virtual void update(ServiceContext& event){}
+		virtual void draw(ServiceContext& event) {}
 
-		virtual void shutdown(events::SystemEvent& event){}
+		virtual void shutdown(ServiceContext& event){}
 
 	private:
 

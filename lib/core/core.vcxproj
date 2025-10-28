@@ -121,10 +121,10 @@
     <ClInclude Include="component_order.h" />
     <ClInclude Include="component_pool.h" />
     <ClInclude Include="component_registry.h" />
+    <ClInclude Include="context.h" />
     <ClInclude Include="entity.h" />
     <ClInclude Include="event_bus.h" />
     <ClInclude Include="family_generator.h" />
-    <ClInclude Include="field_context.h" />
     <ClInclude Include="input_dispatcher.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="devices.h" />

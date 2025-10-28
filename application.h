@@ -3,17 +3,20 @@
 #include "core/window.h"
 #include "core/scene.h"
 #include "core/system_manager.h"
-#include "core/renderer.h"
 #include "core/time.h"
 
-#ifdef DX12_RENDER
-#include "dx12_graphic/renderer.h"
-#include "dx12_graphic/resource_manager.h"
-#endif
 
 #include "physics/physic_system.h"
 
 #include "serializer.h"
+
+#define DX12_RENDER
+#ifdef DX12_RENDER
+#include "dx12_graphic/renderer.h"
+#include "dx12_graphic/resource_manager.h"
+#else
+static_assert(false && "none render pipeline was added.\n");
+#endif
 
 namespace csyren
 {
@@ -34,7 +37,6 @@ namespace csyren
 	private:
 		std::unique_ptr<core::events::EventBus2>	_bus;
 		core::input::InputDispatcher				_inputDispatcher;
-		core::Time									_time;
 		core::Scene									_scene;
 		core::SystemManager							_systems;
 		core::Window								_window;

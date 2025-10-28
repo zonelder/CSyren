@@ -97,16 +97,21 @@ namespace csyren
 		using namespace core::components;
 		core::details::TimeHandler timeHandler;
 
-		core::events::UpdateEvent updateEvent{ _inputDispatcher.devices(), _scene,_resource,*_bus,time			};
-		core::events::DrawEvent   drawEvent  { _inputDispatcher.devices(), _scene,_resource,*_bus,_render		};
-		core::events::SystemEvent systemEvent{ _inputDispatcher.devices(), _scene,_resource,*_bus,time,_render  };
+		core::ServiceContext ctx;
+
+		ctx.registerService(&_inputDispatcher.devices());
+		ctx.registerService(&_scene);
+		ctx.registerService(&_resource);
+		ctx.registerService(_bus.get());
+		ctx.registerService(&time);
+		ctx.registerService(&_render);
 
 		log::info("-------------------------------Setup Start Up------------------------------------------------");
 		_render.beginResourceUpload();
-		_physics.initialize(systemEvent);
+		_physics.initialize(ctx);
 		render::Primitives::registerFabricsAll(_resource);
 		onSceneStart();
-		_systems.init(systemEvent);
+		_systems.init(ctx);
 
 		_render.endResourceUpload();
 		log::info("---------------------------------------------------------------------------------------------");
@@ -122,8 +127,8 @@ namespace csyren
 					log::info("---------------------------------------------------------------------------------------------");
 
 					log::info("-------------------------------Shutdown------------------------------------------------------");
-					_systems.shutdown(systemEvent);
-					_physics.shutdown(systemEvent);
+					_systems.shutdown(ctx);
+					_physics.shutdown(ctx);
 					_inputDispatcher.shutdown(*_bus);
 					log::shutdown();
 					return static_cast<int>(msg.wParam);
@@ -133,7 +138,7 @@ namespace csyren
 			}
 
 			_inputDispatcher.update(*_bus);
-			_systems.update(updateEvent);
+			_systems.update(ctx);
 			auto [mainCameraID,camera,cameraTransform] = *(_scene.view<Camera,Transform>().begin());//only first camera accepted
 
 			auto engineVariables = _render.getEngineVariableBuffer();
@@ -156,7 +161,7 @@ namespace csyren
 			_render.beginFrame();
 			_render.clear(&(camera.background.x));
 
-			_systems.draw(drawEvent);
+			_systems.draw(ctx);
 
 			_render.endFrame();
 
@@ -199,7 +204,6 @@ namespace csyren
 		cameraTransform->position = math::Vector3::back * 2;
 		
 		//-------------------------------------Material and mesh----------------------------------------
-
 		auto matDefault = render::Primitives::getDefaultMaterial(_resource);
 		auto matRainbow = render::Primitives::getRainbowMaterial(_resource);
 		_resource.getMaterial(matDefault)->setVector("tint", DirectX::XMFLOAT4(1, 1, 1,1));
@@ -242,5 +246,6 @@ namespace csyren
 		saveReq->type = SceneLoaderRequest::SAVE;
 		saveReq->path = "E:\\test_scene.scene";
 		//*/
+
 	}
 }

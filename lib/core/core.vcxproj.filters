@@ -96,13 +96,13 @@
     <ClInclude Include="serialize_common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="field_context.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="transform.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="serialize_base.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="context.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

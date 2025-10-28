@@ -24,11 +24,16 @@ namespace csyren
     public:
         explicit EditorCameraControllerSystem() = default;
 
-        void update(UpdateEvent& event) override
+        void update(core::ServiceContext& ctx) override
         {
-            auto& keyboard = event.devices.keyboard();
-            auto& mouse = event.devices.mouse();
-			for (auto [mainCameraID, camera, cameraTransform, editorController] : event.scene.view<Camera, Transform,csyren::EditorCameraController>())
+			auto devices = ctx.get<core::input::Devices>();
+			auto scene = ctx.get<core::Scene>();
+			auto time = ctx.get<core::Time>();
+
+            auto& keyboard = devices->keyboard();
+            auto& mouse = devices->mouse();
+
+			for (auto [mainCameraID, camera, cameraTransform, editorController] : scene->view<Camera, Transform,csyren::EditorCameraController>())
 			{
 
 
@@ -74,7 +79,7 @@ namespace csyren
 					// Calculate movement vector in world space
 					Vector3 moveVector = right * movement[0] + up * movement[1] + forward * movement[2];
 					moveVector.normalize();
-					moveVector *= movementSpeed * event.time.deltaTime();
+					moveVector *= movementSpeed * time->deltaTime();
 					cameraTransform.position += moveVector;
 				}
 		    }

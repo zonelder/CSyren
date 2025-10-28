@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <memory>
+
 namespace csyren::core
 {
 	class SystemManager
@@ -40,54 +41,44 @@ namespace csyren::core
 			_sorted = true;
 		}
 
-		void init(events::SystemEvent& event)
+		void init(ServiceContext& ctx)
 		{
 			for (auto entry : _systems)
 			{
-				entry.system->init(event);
+				entry.system->init(ctx);
 			}
-			//_updateSub = event.bus.subscribe<events::UpdateEvent>([&](events::UpdateEvent& event){ this->update(event);});
-			//_drawSub   = event.bus.subscribe<events::DrawEvent>([&](events::DrawEvent& event) { this->draw(event); });
-
 			sort();
 		}
 
-		void shutdown(events::SystemEvent& event)
+		void shutdown(ServiceContext& ctx)
 		{
 			for (auto entry : _systems)
 			{
-				entry.system->shutdown(event);
+				entry.system->shutdown(ctx);
 			}
 
 			_systems.clear();
-			//event.bus.unsubscribe(_updateSub);
-			//event.bus.unsubscribe(_drawSub);
 		}
 
-		void update(events::UpdateEvent& event)
+		void update(ServiceContext& ctx)
 		{
 			for (auto entry : _systems)
 			{
-				entry.system->update(event);
+				entry.system->update(ctx);
 			}
 		}
 
-		void draw(events::DrawEvent& event)
+		void draw(ServiceContext& ctx)
 		{
 			for (auto entry : _systems)
 			{
-				entry.system->draw(event);
+				entry.system->draw(ctx);
 			}
 		}
 	private:
 
 		std::vector<SystemEntry> _systems;
 		bool _sorted{ true };
-
-
-		events::SubscriberToken _updateSub;
-		events::SubscriberToken _drawSub;
-
 	};
 }
 
