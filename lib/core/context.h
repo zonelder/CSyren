@@ -42,6 +42,8 @@ namespace csyren::core
 	private:
 		std::unordered_map<size_t, void*> _services;
 	};
+
+
 }
 
 #endif

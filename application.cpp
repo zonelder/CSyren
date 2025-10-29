@@ -20,6 +20,7 @@
 #include "core/camera.h"
 #include "core/transform.h"
 #include "core/input_dispatcher.h"
+#include "core/camera_service.h"
 
 #include "mesh_render_system.h"
 #include "editor_camera_controller_system.h"
@@ -106,6 +107,8 @@ namespace csyren
 		using namespace core::components;
 		core::details::TimeHandler timeHandler;
 
+		core::Entity::ID currentCameraEntt;
+		core::CameraContextService cameraServ([&currentCameraEntt]() { return currentCameraEntt; });
 		core::ServiceContext ctx;
 
 		ctx.registerService(&_inputDispatcher.devices());
@@ -114,12 +117,13 @@ namespace csyren
 		ctx.registerService(_bus.get());
 		ctx.registerService(&time);
 		ctx.registerService(&_render);
+		ctx.registerService(&cameraServ);
 
 		log::info("-------------------------------Setup Start Up------------------------------------------------");
 		_render.beginResourceUpload();
 		_physics.initialize(ctx);
 		render::Primitives::registerFabricsAll(_resource);
-		onSceneStart();
+		onSceneStart(ctx);
 		_systems.init(ctx);
 
 		_render.endResourceUpload();
@@ -151,7 +155,7 @@ namespace csyren
 			_physics.update(ctx);
 
 			auto [mainCameraID,camera,cameraTransform] = *(_scene.view<Camera,Transform>().begin());//only first camera accepted
-
+			currentCameraEntt = mainCameraID;
 			auto engineVariables = _render.getEngineVariableBuffer();
 			engineVariables->totalTime = time.totalTime();
 			DirectX::XMMATRIX invView = cameraTransform.world();
@@ -185,7 +189,7 @@ namespace csyren
 	/**
 	 * @brief method where you can place you custom scene initialization.
 	 */
-	void Application::onSceneStart()
+	void Application::onSceneStart(core::ServiceContext& ctx)
 	{
 
 		srand(time(0));
@@ -337,6 +341,67 @@ namespace csyren
 					auto meshFilter = _scene.addComponent<render::components::MeshFilter>(cube);
 					meshFilter->mesh = meshCube;
 				}
+		//*
+
+		_bus->subscribe<core::input::InputEvent>(static_cast<uint32_t>(core::input::InputEvent::Type::KeyDown), [&](core::input::InputEvent& event)
+			{
+				using namespace core::components;
+				using namespace physics;
+				using namespace render::components;
+				if (event.code != static_cast<int>(core::input::KeyCode::Space))
+				{
+					return;
+				}
+				auto camServ = ctx.get<core::CameraContextService>();
+				auto cameraEntity = camServ->get();
+				if (cameraEntity == core::Entity::invalidID) 
+				{
+					log::warning("No main camera in scene!");
+					return;
+				}
+				auto cube = _scene.createEntity();
+				auto tr = _scene.addComponent<Transform>(cube);
+				//todo fix issue with relocating camTr if cube creation relocated camTr.
+				auto camTr = _scene.getComponent<Transform>(cameraEntity);
+				if (!camTr)
+				{
+					log::warning("Camera has no Transform!");
+					return;
+				}
+				auto cubeMat = render::Primitives::getDefaultMaterial(_resource);
+				auto cubeMesh = render::Primitives::getCube(_resource);
+				auto world = camTr->world();
+				Vector3 spawnOffset = world.forward() * 1.0f;
+				Vector3 spawnPos = camTr->position + spawnOffset;
+				Vector3 shootDir = world.forward();
+				Vector3 velocity = shootDir * 15.0f;
+				
+				
+
+				tr->position = spawnPos;
+				tr->rotation = camTr->rotation;
+				tr->scale = Vector3(0.3f, 0.3f, 0.3f);
+
+				auto collider = _scene.addComponent<BoxCollider>(cube);
+				collider->size = Vector3(0.3f, 0.3f, 0.3f);
+
+				RigidBody rb;
+				rb.type = BodyType::Dynamic;
+				rb.mass = 1.0f;
+				rb.linearVelocity = velocity;
+				rb.useGravity = true;
+
+				_scene.addComponent<RigidBody>(cube,rb);
+
+				auto meshRenderer = _scene.addComponent<MeshRenderer>(cube);
+				meshRenderer->material = cubeMat;
+				auto meshFilter = _scene.addComponent<MeshFilter>(cube);
+				meshFilter->mesh = cubeMesh;
+
+				log::debug("Cube spawned at {}, {}, {}", spawnPos.x, spawnPos.y, spawnPos.z);
+
+			});
+			//*/
 
 	}
 }

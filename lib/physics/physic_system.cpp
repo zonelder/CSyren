@@ -323,6 +323,8 @@ namespace csyren::physics
                 JPH::MassProperties massProps = finalShape->GetMassProperties();
                 massProps.ScaleToMass(rb->mass);
                 settings.mMassPropertiesOverride = massProps;
+                settings.mLinearVelocity = details::to_jolt(rb->linearVelocity);
+                settings.mAngularVelocity = details::to_jolt(rb->angularVelocity);
 
             }
 
@@ -388,6 +390,12 @@ namespace csyren::physics
                     const JPH::Body& body = lock.GetBody();
                     tr->position = details::from_jolt(body.GetPosition());
                     tr->rotation = details::from_jolt(body.GetRotation());
+
+                    if (rb->type == physics::BodyType::Dynamic)
+                    {
+                        rb->linearVelocity = details::from_jolt(body.GetLinearVelocity());
+                        rb->angularVelocity = details::from_jolt(body.GetAngularVelocity());
+                    }
                 }
             }
         }
