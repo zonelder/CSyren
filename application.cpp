@@ -359,9 +359,7 @@ namespace csyren
 					log::warning("No main camera in scene!");
 					return;
 				}
-				auto cube = _scene.createEntity();
-				auto tr = _scene.addComponent<Transform>(cube);
-				//todo fix issue with relocating camTr if cube creation relocated camTr.
+
 				auto camTr = _scene.getComponent<Transform>(cameraEntity);
 				if (!camTr)
 				{
@@ -376,7 +374,8 @@ namespace csyren
 				Vector3 shootDir = world.forward();
 				Vector3 velocity = shootDir * 15.0f;
 				
-				
+				auto cube = _scene.createEntity();
+				auto tr = _scene.addComponent<Transform>(cube);
 
 				tr->position = spawnPos;
 				tr->rotation = camTr->rotation;

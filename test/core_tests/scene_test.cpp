@@ -50,12 +50,12 @@ TEST_F(SceneTest, ComponentOperations) {
     auto id = scene.createEntity();
 
 
-    auto* comp = scene.addComponent<TestComponent>(id, 42);
+    auto comp = scene.addComponent<TestComponent>(id, 42);
     ASSERT_NE(comp, nullptr);
     EXPECT_EQ(comp->value, 42);
 
 
-    auto* sameComp = scene.getComponent<TestComponent>(id);
+    auto sameComp = scene.getComponent<TestComponent>(id);
     EXPECT_EQ(sameComp, comp);
 
 
@@ -146,7 +146,7 @@ TEST_F(SceneTest, HighLoadOperations) {
 
   
     for (auto id : ids) {
-        auto* comp = scene.getComponent<TestComponent>(id);
+        auto comp = scene.getComponent<TestComponent>(id);
         ASSERT_NE(comp, nullptr);
         EXPECT_EQ(comp->value, 42);
     }

@@ -16,6 +16,70 @@
 
 class SceneTest;
 
+namespace csyren::core
+{
+	template<typename T>
+	class ComponentRef
+	{
+	public:
+		ComponentRef() = default;
+		ComponentRef(Entity::ID id, std::shared_ptr<ComponentPool<T>> pool) :
+			_pool(pool),
+			_id(id)
+		{}
+
+		T* get() noexcept 
+		{
+			_cached = _pool ? _pool->try_get(_id) : nullptr;
+			return _cached;
+		}
+
+		const T* get() const noexcept 
+		{
+			_cached = _pool ? _pool->try_get(_id) : nullptr;
+			return _cached;
+		}
+
+		T& operator*() noexcept
+		{
+			T* ptr = get();
+			assert(ptr && "Dereferencing invalid ComponentRef!");
+			return *ptr;
+		}
+
+		const T& operator*() const noexcept
+		{
+			const T* ptr = get();
+			assert(ptr && "Dereferencing invalid ComponentRef!");
+			return *ptr;
+		}
+
+		T* operator->() noexcept { return get(); }
+		const T* operator->() const noexcept { return get(); }
+		Entity::ID id() const noexcept { return _id; }
+
+		bool operator==(std::nullptr_t) const { return !static_cast<bool>(*this); }
+		bool operator!=(std::nullptr_t) const { return static_cast<bool>(*this); }
+
+		bool operator==(const ComponentRef& other) const noexcept 
+		{
+			return _id == other._id && _pool == other._pool;
+		}
+
+		bool operator!=(const ComponentRef& other) const noexcept
+		{
+			return !(*this == other);
+		}
+		operator bool() const noexcept { return _pool && _pool->contains(_id); }
+	private:
+
+		std::shared_ptr<ComponentPool<T>> _pool{ nullptr };
+		Entity::ID _id{ Entity::invalidID };
+		mutable T* _cached{ nullptr };//for debug olny;it is not save to address to this field.
+	};
+
+}
+
 namespace csyren::core::events
 {
 	struct EntityCreateEvent { Entity::ID id; };
@@ -24,15 +88,13 @@ namespace csyren::core::events
 	template<typename T>
 	struct ComponentCreateEvent
 	{
-		Entity::ID   entity;
-		T* ptr;
+		ComponentRef<T> comp;
 	};
 
 	template<typename T>
 	struct ComponentDestroyEvent
 	{
-		Entity::ID   entity;
-		T* ptr;
+		ComponentRef<T> comp;
 	};
 }
 
@@ -42,6 +104,9 @@ namespace csyren::core
 	class SceneView;
 
 	class Application;
+
+
+
 
 
 	class Scene
@@ -70,7 +135,7 @@ namespace csyren::core
 				T* ptr = pool ? pool->try_get(c.entt) : nullptr;
 				if (ptr)
 				{
-					bus.publish(token, events::ComponentDestroyEvent<T>{c.entt, ptr});
+					bus.publish(token, events::ComponentDestroyEvent<T>{ComponentRef<T>(c.entt,pool)});
 					pool->erase(c.entt);
 					if (Entity* ent = self->_entities.try_get(c.entt))
 					{
@@ -130,23 +195,24 @@ namespace csyren::core
 		}
 
 		template<typename T, typename... Args>
-		T* addComponent(Entity::ID id, Args&&... args)
+		ComponentRef<T> addComponent(Entity::ID id, Args&&... args)
 		{
 			Entity* ent = _entities.try_get(id);
-			if (!ent) return nullptr;
+			if (!ent) return ComponentRef<T>();
 
 			const size_t family = reflection::ComponentFamily::getID<T>();
 			if (ent->components.test(family)) throw std::runtime_error("Component Already presented)");
 
 			auto pool = getOrCreatePool<T>(family);
 			T* ptr = pool->emplace(id, std::forward<Args>(args)...);
+			ComponentRef<T> compRef(id, pool);
 			if (ptr)
 			{
 				ent->components[family] = true;
 				_bus.publish(getAddToken<T>(),
-					events::ComponentCreateEvent<T>{id, ptr});
+					events::ComponentCreateEvent<T>{compRef});
 			}
-			return ptr;
+			return compRef;
 		}
 
 		template<typename T>
@@ -180,10 +246,10 @@ namespace csyren::core
 		}
 
 		template<typename T>
-		T* getComponent(Entity::ID id)
+		ComponentRef<T> getComponent(Entity::ID id)
 		{
-			if (!_entities.contains(id)) return nullptr;
-			return getPool<T>() ? getPool<T>()->try_get(id) : nullptr;
+			if (!_entities.contains(id)) return ComponentRef<T>();
+			return ComponentRef<T>(id, getPool<T>());
 		}
 
 		template<typename... Cs>

@@ -192,28 +192,28 @@ namespace csyren::physics
 
             // Подписка на RigidBody
             rbAddedToken = bus->subscribe<csyren::core::events::ComponentCreateEvent<RigidBody>>(
-                [this](const auto& event) { this->onRigidBodyAdded(event.entity); });
+                [this](const auto& event) { this->onRigidBodyAdded(event.comp.id()); });
 
             rbRemovedToken = bus->subscribe<csyren::core::events::ComponentDestroyEvent<RigidBody>>(
-                [this](const auto& event) { this->onRigidBodyRemoved(event.entity); });
+                [this](const auto& event) { this->onRigidBodyRemoved(event.comp.id()); });
 
             // Подписка на BoxCollider
             boxAddedToken = bus->subscribe<csyren::core::events::ComponentCreateEvent<BoxCollider>>(
-                [this](const auto& event) { this->onColliderAdded(event.entity); });
+                [this](const auto& event) { this->onColliderAdded(event.comp.id()); });
             boxRemovedToken = bus->subscribe<csyren::core::events::ComponentDestroyEvent<BoxCollider>>(
-                [this](const auto& event) { this->onColliderRemoved(event.entity); });
+                [this](const auto& event) { this->onColliderRemoved(event.comp.id()); });
 
             // Подписка на SphereCollider
             sphereAddedToken = bus->subscribe<csyren::core::events::ComponentCreateEvent<SphereCollider>>(
-                [this](const auto& event) { this->onColliderAdded(event.entity); });
+                [this](const auto& event) { this->onColliderAdded(event.comp.id()); });
             sphereRemovedToken = bus->subscribe<csyren::core::events::ComponentDestroyEvent<SphereCollider>>(
-                [this](const auto& event) { this->onColliderRemoved(event.entity); });
+                [this](const auto& event) { this->onColliderRemoved(event.comp.id()); });
 
             // Подписка на CapsuleCollider
             capsuleAddedToken = bus->subscribe<csyren::core::events::ComponentCreateEvent<CapsuleCollider>>(
-                [this](const auto& event) { this->onColliderAdded(event.entity); });
+                [this](const auto& event) { this->onColliderAdded(event.comp.id()); });
             capsuleRemovedToken = bus->subscribe<csyren::core::events::ComponentDestroyEvent<CapsuleCollider>>(
-                [this](const auto& event) { this->onColliderRemoved(event.entity); });
+                [this](const auto& event) { this->onColliderRemoved(event.comp.id()); });
 
             m_physicsSystem->SetGravity(JPH::Vec3(0.0f, -2, 0.0f));
         }
@@ -356,8 +356,8 @@ namespace csyren::physics
             auto& bodyInterface = m_physicsSystem->GetBodyInterface();
             for (auto ent : m_activeBodies)
             {
-                auto* rb = scene->getComponent<RigidBody>(ent);
-                auto* tr = scene->getComponent<core::components::Transform>(ent);
+                auto rb = scene->getComponent<RigidBody>(ent);
+                auto tr = scene->getComponent<core::components::Transform>(ent);
                 if (!tr || !rb) continue;
 
                 if (rb->type == BodyType::Static || rb->type == BodyType::Kinematic)
@@ -377,8 +377,8 @@ namespace csyren::physics
 
             for (auto ent : m_activeBodies)
             {
-                auto* rb = scene->getComponent<RigidBody>(ent);
-                auto* tr = scene->getComponent<core::components::Transform>(ent);
+                auto rb = scene->getComponent<RigidBody>(ent);
+                auto tr = scene->getComponent<core::components::Transform>(ent);
                 if (!rb || !tr) continue;
 
                 if (rb->type == BodyType::Dynamic)

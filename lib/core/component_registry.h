@@ -68,11 +68,11 @@ namespace csyren::core::reflection
 
 			getRegistry()[name] = {
 				// add
-				[](Scene& scene, Entity::ID entity) -> void* { return scene.addComponent<T>(entity); },
+				[](Scene& scene, Entity::ID entity) -> void* { return scene.addComponent<T>(entity).get(); },
 				// has
 				[](Scene& scene, Entity::ID entity) { return scene.hasComponent<T>(entity); },
 				// get
-				[](Scene& scene, Entity::ID entity) -> void* { return scene.getComponent<T>(entity); },
+				[](Scene& scene, Entity::ID entity) -> void* { return scene.getComponent<T>(entity).get(); },
 				& ComponentRegistrar<T>::serialize_impl,
 				& ComponentRegistrar<T>::deserialize_impl
 			};
