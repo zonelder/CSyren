@@ -49,6 +49,15 @@ namespace csyren
 				// Calculate the forward vector from the current rotation
 				Vector3 forwardVector = cameraTransform.rotation * Vector3::forward;
 				Vector3 rightVector = Vector3::up.cross(forwardVector);
+				float rightLenSq = rightVector.sqrMagnitude();
+				if (rightLenSq > 1e-6f) 
+				{
+					rightVector.normalize();
+				}
+				else 
+				{
+					cam_pitch = 0.0f;
+				}
 				rightVector.normalize();
 
 				Quaternion pitchQuat = Quaternion::angleAxis(cam_pitch, rightVector);
