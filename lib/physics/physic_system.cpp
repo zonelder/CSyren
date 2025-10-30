@@ -239,8 +239,10 @@ namespace csyren::physics
         {
             removeBody(ent);
             if (!scene->hasComponent<RigidBody>(ent))
+            {
+                log::debug("cant find rb");
                 return;
-
+            }
             auto rb = scene->getComponent<RigidBody>(ent);
 
             std::vector<JPH::Ref<JPH::Shape>> shapes;
@@ -354,19 +356,20 @@ namespace csyren::physics
         void pushTransform()
         {
             auto& bodyInterface = m_physicsSystem->GetBodyInterface();
-            for (auto ent : m_activeBodies)
+            auto view = scene->view<RigidBody, core::components::Transform>();
+            for (auto [ent,rb,tr] : view)
             {
-                auto rb = scene->getComponent<RigidBody>(ent);
-                auto tr = scene->getComponent<core::components::Transform>(ent);
-                if (!tr || !rb) continue;
+                //body is not created yet;
+                if (entityToBody.find(ent) == entityToBody.end())
+                    continue;
 
-                if (rb->type == BodyType::Static || rb->type == BodyType::Kinematic)
+                if (rb.type == BodyType::Static || rb.type == BodyType::Kinematic)
                 {
                     auto bodyID = entityToBody[ent];
                     bodyInterface.SetPositionAndRotation(
                         bodyID,
-                        details::to_jolt(tr->position),
-                        details::to_jolt(tr->rotation),
+                        details::to_jolt(tr.position),
+                        details::to_jolt(tr.rotation),
                         JPH::EActivation::DontActivate
                     );
                 }
@@ -375,26 +378,26 @@ namespace csyren::physics
         void pullTransforms()
         {
 
-            for (auto ent : m_activeBodies)
+            auto view = scene->view<RigidBody, core::components::Transform>();
+            for (auto [ent,rb,tr] : view)
             {
-                auto rb = scene->getComponent<RigidBody>(ent);
-                auto tr = scene->getComponent<core::components::Transform>(ent);
-                if (!rb || !tr) continue;
+                if (entityToBody.find(ent) == entityToBody.end())
+                    continue;
 
-                if (rb->type == BodyType::Dynamic)
+                if (rb.type == BodyType::Dynamic)
                 {
                     auto bodyID = entityToBody[ent];
                     const JPH::BodyLockRead lock(m_physicsSystem->GetBodyLockInterface(), bodyID);
                     if (!lock.Succeeded()) continue;
 
                     const JPH::Body& body = lock.GetBody();
-                    tr->position = details::from_jolt(body.GetPosition());
-                    tr->rotation = details::from_jolt(body.GetRotation());
+                    tr.position = details::from_jolt(body.GetPosition());
+                    tr.rotation = details::from_jolt(body.GetRotation());
 
-                    if (rb->type == physics::BodyType::Dynamic)
+                    if (rb.type == physics::BodyType::Dynamic)
                     {
-                        rb->linearVelocity = details::from_jolt(body.GetLinearVelocity());
-                        rb->angularVelocity = details::from_jolt(body.GetAngularVelocity());
+                        rb.linearVelocity = details::from_jolt(body.GetLinearVelocity());
+                        rb.angularVelocity = details::from_jolt(body.GetAngularVelocity());
                     }
                 }
             }
