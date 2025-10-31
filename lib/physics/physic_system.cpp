@@ -165,6 +165,8 @@ namespace csyren::physics
         std::unordered_map<JPH::BodyID, core::Entity::ID> bodyToEntity;
         std::vector<core::Entity::ID> m_activeBodies;
 
+        std::unordered_map<core::Entity::ID, math::Vector3> pendingForces;
+
         void initialize(core::ServiceContext& ctx)
         {
             scene = ctx.get<core::Scene>();
@@ -215,7 +217,7 @@ namespace csyren::physics
             capsuleRemovedToken = bus->subscribe<csyren::core::events::ComponentDestroyEvent<CapsuleCollider>>(
                 [this](const auto& event) { this->onColliderRemoved(event.comp.id()); });
 
-            m_physicsSystem->SetGravity(JPH::Vec3(0.0f, -2, 0.0f));
+            m_physicsSystem->SetGravity(JPH::Vec3(0.0f, -10.0f, 0.0f));
         }
 
         void onRigidBodyAdded(core::Entity::ID ent) {
@@ -316,8 +318,8 @@ namespace csyren::physics
             settings.mPosition = details::to_jolt(transform->position);
             settings.mRotation = details::to_jolt(transform->rotation);
             settings.mObjectLayer  = Layers::MOVING;
-            settings.mFriction = 0.6f;
-            settings.mRestitution = 1.0f; // 0.0 = гаснет, 1.0 = идеально отскакивает
+            settings.mFriction = rb->friction;
+            settings.mRestitution = rb->restitution;
 
 
             if (rb->type == BodyType::Dynamic)
@@ -351,6 +353,30 @@ namespace csyren::physics
             bodyToEntity.erase(bodyId);
             entityToBody.erase(it);
             std::erase(m_activeBodies, ent);
+        }
+
+        void addForce(core::Entity::ID ent, const math::Vector3& force)
+        {
+            //no previous checks. expect user not to do shit;
+            pendingForces[ent] += force;
+        }
+
+        void applyPendingForces()
+        {
+            auto& bodyInterface = m_physicsSystem->GetBodyInterface();
+
+            for (const auto& [ent, force] : pendingForces)
+            {
+                auto it = entityToBody.find(ent);
+                if (it == entityToBody.end())
+                {
+                    log::warning("PhysicEngine::addForce: attempt to add force to unexist body.");
+                    continue;
+                }
+                auto bodyID = it->second;
+                bodyInterface.AddForce(bodyID, details::to_jolt(force));
+            }
+            pendingForces.clear();
         }
 
         void pushTransform()
@@ -405,10 +431,14 @@ namespace csyren::physics
 
         void update(core::ServiceContext& ctx)
         {
-            pushTransform();
             auto time = ctx.get<core::Time>();
             auto deltaTime = time->deltaTime();
+
+            pushTransform();
+            applyPendingForces();
+
             m_physicsSystem->Update(deltaTime, 1,m_tempAllocator.get(), m_jobSystem.get());
+
             pullTransforms();
         }
 
@@ -455,6 +485,11 @@ namespace csyren::physics
     void PhysicsEngine::update(core::ServiceContext& ctx)
     {
         _pImpl->update(ctx);
+    }
+
+    void PhysicsEngine::addForce(core::Entity::ID ent, const math::Vector3& force)
+    {
+        _pImpl->addForce(ent, force);
     }
 
 

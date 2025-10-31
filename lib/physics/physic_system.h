@@ -1,6 +1,8 @@
 #pragma once
 
 #include "core/context.h"
+#include "core/entity.h"
+#include "math/math.h"
 
 namespace csyren::physics
 {
@@ -14,6 +16,8 @@ namespace csyren::physics
         void shutdown(core::ServiceContext& ctx);
 
         void update(core::ServiceContext& ctx);
+
+        void addForce(core::Entity::ID, const math::Vector3& force);
 
     private:
 

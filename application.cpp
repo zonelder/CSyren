@@ -30,7 +30,9 @@
 
 #include "physics/rigid_body.h"
 #include "physics/colliders.h"
+#include "physics/spring_join.h"
 
+#include "physics/spring_join_system.h"
 
 namespace
 {
@@ -118,6 +120,7 @@ namespace csyren
 		ctx.registerService(&time);
 		ctx.registerService(&_render);
 		ctx.registerService(&cameraServ);
+		ctx.registerService(&_physics);
 
 		log::info("-------------------------------Setup Start Up------------------------------------------------");
 		_render.beginResourceUpload();
@@ -202,8 +205,10 @@ namespace csyren
 		auto editorCameraControllerSystem = std::make_shared<csyren::EditorCameraControllerSystem>();
 		auto debugRotatorSystem = std::make_shared<csyren::DebugRotatorSystem>();
 		auto meshRenderSystem = std::make_shared<csyren::MeshRenderSystem>();
+		auto springJoinSystem = std::make_shared<csyren::physics::SpringJoinSystem>();
 
-		_systems.addSystem(sceneLoaderSystem, -100); 
+		_systems.addSystem(sceneLoaderSystem, -100);
+		_systems.addSystem(springJoinSystem, -3);
 		_systems.addSystem(debugRotatorSystem, -2);
 		_systems.addSystem(editorCameraControllerSystem, -1);
 		_systems.addSystem(meshRenderSystem, 0);
@@ -258,12 +263,13 @@ namespace csyren
 		*/
 
 		//---------------------------------------------------------------------------------------------
-		/*
+		//*
 		auto saveComponent = _scene.createEntity();
 		auto saveReq = _scene.addComponent<SceneLoaderRequest>(saveComponent);
 		saveReq->type = SceneLoaderRequest::SAVE;
 		saveReq->path = "E:\\test_scene.scene";
 		//*/
+		//*
 		float containerHalfX = 5.0f;
 		float containerHalfY = 3.0f; // высота ящика
 		float containerHalfZ = 5.0f;
@@ -341,6 +347,7 @@ namespace csyren
 					auto meshFilter = _scene.addComponent<render::components::MeshFilter>(cube);
 					meshFilter->mesh = meshCube;
 				}
+		//*/
 		//*
 
 		_bus->subscribe<core::input::InputEvent>(static_cast<uint32_t>(core::input::InputEvent::Type::KeyDown), [&](core::input::InputEvent& event)
@@ -401,6 +408,46 @@ namespace csyren
 
 			});
 			//*/
+
+		{
+			//balancer
+
+			auto pivot = _scene.createEntity();
+			auto pivotTr = _scene.addComponent<Transform>(pivot);
+			pivotTr->position = Vector3(0.0f, 5.0f, 0.0f);
+			pivotTr->scale = Vector3(0.2f, 0.2f, 0.2f);
+
+			auto pivotMesh = _scene.addComponent<MeshFilter>(pivot);
+			pivotMesh->mesh = render::Primitives::getSphere(_resource);
+			auto pivotRenderer = _scene.addComponent<MeshRenderer>(pivot);
+			pivotRenderer->material = render::Primitives::getRainbowMaterial(_resource);
+
+			auto pendulum = _scene.createEntity();
+			auto pendTr = _scene.addComponent<Transform>(pendulum);
+			pendTr->position = pivotTr->position + Vector3{ 0, -2.0f, 0 }; // подвешен на 2 метра ниже
+			pendTr->scale = Vector3(0.4f, 0.4f, 0.4f);
+
+			auto collider = _scene.addComponent<physics::SphereCollider>(pendulum);
+			collider->radius = 0.4f;
+
+			physics::RigidBody rb;
+			rb.type = physics::BodyType::Dynamic;
+			rb.mass = 2.0f;
+			rb.useGravity = true;
+			rb.friction = 0.5f;
+			rb.restitution = 0.2f;
+			auto rbComp = _scene.addComponent<physics::RigidBody>(pendulum, rb);
+
+			auto joinComp = _scene.addComponent<physics::SpringJoin>(pendulum);
+			joinComp->connectedEntity = pivot;
+			joinComp->minDistance = 2.0f;
+			joinComp->maxDistance = 2.0f;
+			joinComp->spring = 1000.0f;
+			auto mesh = _scene.addComponent<MeshFilter>(pendulum);
+			mesh->mesh = render::Primitives::getSphere(_resource);
+			auto renderer = _scene.addComponent<MeshRenderer>(pendulum);
+			renderer->material = render::Primitives::getDefaultMaterial(_resource);
+		}
 
 	}
 }

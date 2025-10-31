@@ -24,6 +24,8 @@ namespace csyren::render
         constexpr char TRIANGLE_MESH_NAME[]         ="__primitive_triangle__";
         constexpr char QUAD_MESH_NAME[]             ="__primitive_quad__";
         constexpr char CUBE_MESH_NAME[]             ="__primitive_cube__";
+        constexpr char SPHERE_MESH_NAME[]           = "__primitive_sphere__";
+        
 
         //TODO create basic shaders file
         const char* g_primitiveShaderCode = R"(
@@ -217,6 +219,64 @@ namespace csyren::render
             return rm.createMesh(CUBE_MESH_NAME, verts.data(), verts.size() * sizeof(VertexXYZC), sizeof(VertexXYZC), idx);
             };
 
+        ResourceManager::ProceduralResourceFactory<Mesh> sphereMeshFabric = [](ResourceManager& rm) {
+                const int latitudeBands = 16;
+                const int longitudeBands = 16;
+                const float radius = 0.5f;
+
+                std::vector<VertexXYZC> verts;
+                std::vector<uint16_t> idx;
+
+                verts.reserve((latitudeBands + 1) * (longitudeBands + 1));
+                idx.reserve(latitudeBands * longitudeBands * 6);
+
+                for (int lat = 0; lat <= latitudeBands; ++lat)
+                {
+                    float theta = lat * DirectX::XM_PI / latitudeBands;
+                    float sinTheta = sinf(theta);
+                    float cosTheta = cosf(theta);
+
+                    for (int lon = 0; lon <= longitudeBands; ++lon)
+                    {
+                        float phi = lon * 2.0f * DirectX::XM_PI / longitudeBands;
+                        float sinPhi = sinf(phi);
+                        float cosPhi = cosf(phi);
+
+                        float x = cosPhi * sinTheta;
+                        float y = cosTheta;
+                        float z = sinPhi * sinTheta;
+
+                        VertexXYZC v;
+                        v.pos = DirectX::XMFLOAT3(x * radius, y * radius, z * radius);
+                        v.color = Color(
+                            0.5f + 0.5f * x,
+                            0.5f + 0.5f * y,
+                            0.5f + 0.5f * z,
+                            1.0f
+                        );
+                        verts.push_back(v);
+                    }
+                }
+
+                for (int lat = 0; lat < latitudeBands; ++lat)
+                {
+                    for (int lon = 0; lon < longitudeBands; ++lon)
+                    {
+                        int first = (lat * (longitudeBands + 1)) + lon;
+                        int second = first + longitudeBands + 1;
+
+                        idx.push_back(static_cast<uint16_t>(first));
+                        idx.push_back(static_cast<uint16_t>(second));
+                        idx.push_back(static_cast<uint16_t>(first + 1));
+
+                        idx.push_back(static_cast<uint16_t>(second));
+                        idx.push_back(static_cast<uint16_t>(second + 1));
+                        idx.push_back(static_cast<uint16_t>(first + 1));
+                    }
+                }
+                return rm.createMesh(SPHERE_MESH_NAME, verts.data(), verts.size() * sizeof(VertexXYZC), sizeof(VertexXYZC), idx);
+            };
+
         // --- Регистрация всех фабрик ---
         rm.registerProcedural(DEFAULT_SHADER_NAME, defaultShaderFabric);
         rm.registerProcedural(DEFAULT_MATERIAL_NAME, defaultMaterialFabric);
@@ -226,6 +286,7 @@ namespace csyren::render
         rm.registerProcedural(CUBE_MESH_NAME, cubeMeshFabric);
         rm.registerProcedural(RAINBOW_SHADER_NAME, rainbowShaderFabric);
         rm.registerProcedural(RAINBOW_MATERIAL_NAME, rainbowMaterialFabric);
+        rm.registerProcedural(SPHERE_MESH_NAME,sphereMeshFabric);
 
         return true; // Возвращаем true в случае успеха
     }
@@ -272,5 +333,11 @@ namespace csyren::render
     {
         return rm.get<Mesh>(CUBE_MESH_NAME);
     }
+
+    MeshHandle Primitives::getSphere(ResourceManager& rm)
+    {
+        return rm.get<Mesh>(SPHERE_MESH_NAME);
+    }
+
 
 }
