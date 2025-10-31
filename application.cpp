@@ -124,7 +124,6 @@ namespace csyren
 
 		log::info("-------------------------------Setup Start Up------------------------------------------------");
 		_render.beginResourceUpload();
-		_physics.initialize(ctx);
 		render::Primitives::registerFabricsAll(_resource);
 		onSceneStart(ctx);
 		_systems.init(ctx);
@@ -144,7 +143,6 @@ namespace csyren
 
 					log::info("-------------------------------Shutdown------------------------------------------------------");
 					_systems.shutdown(ctx);
-					_physics.shutdown(ctx);
 					_inputDispatcher.shutdown(*_bus);
 					log::shutdown();
 					return static_cast<int>(msg.wParam);
@@ -155,7 +153,6 @@ namespace csyren
 
 			_inputDispatcher.update(*_bus);
 			_systems.update(ctx);
-			_physics.update(ctx);
 
 			auto [mainCameraID,camera,cameraTransform] = *(_scene.view<Camera,Transform>().begin());//only first camera accepted
 			currentCameraEntt = mainCameraID;
@@ -201,14 +198,21 @@ namespace csyren
 		//-----------------------------init systems---------------------------------------------------
 		//
 		//--------------------------------------------------------------------------------------------
-		auto sceneLoaderSystem = std::make_shared<csyren::SceneLoaderSystem>(_serializer);
-		auto editorCameraControllerSystem = std::make_shared<csyren::EditorCameraControllerSystem>();
-		auto debugRotatorSystem = std::make_shared<csyren::DebugRotatorSystem>();
-		auto meshRenderSystem = std::make_shared<csyren::MeshRenderSystem>();
-		auto springJoinSystem = std::make_shared<csyren::physics::SpringJoinSystem>();
+		auto sceneLoaderSystem				= std::make_shared<csyren::SceneLoaderSystem>(_serializer);
+		auto editorCameraControllerSystem	= std::make_shared<csyren::EditorCameraControllerSystem>();
+		auto debugRotatorSystem				= std::make_shared<csyren::DebugRotatorSystem>();
+		auto meshRenderSystem				= std::make_shared<csyren::MeshRenderSystem>();
+		auto physicSystem					= std::make_shared<csyren::physics::PhysicsSystem>();
+		auto springJoinSystem				= std::make_shared<csyren::physics::SpringJoinSystem>();
 
+		//----------------------------technical systems block-----------------------------------------
 		_systems.addSystem(sceneLoaderSystem, -100);
+		//--------------------------------------------------------------------------------------------
+		//----------------------------physical systems block------------------------------------------
+		_systems.addSystem(physicSystem,-4);
 		_systems.addSystem(springJoinSystem, -3);
+		//--------------------------------------------------------------------------------------------
+		//----------------------------main systems----------------------------------------------------
 		_systems.addSystem(debugRotatorSystem, -2);
 		_systems.addSystem(editorCameraControllerSystem, -1);
 		_systems.addSystem(meshRenderSystem, 0);

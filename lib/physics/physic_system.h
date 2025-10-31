@@ -2,25 +2,32 @@
 
 #include "core/context.h"
 #include "core/entity.h"
+#include "core/system_base.h"
+
 #include "math/math.h"
 
 namespace csyren::physics
 {
+    class PhysicsSystem : public core::System
+    {
+    public:
+        PhysicsSystem() = default;
+        void init(core::ServiceContext& ctx) override;
+        void update(core::ServiceContext& ctx) override;
+        void shutdown(core::ServiceContext& ctx) override;
+
+    };
     class PhysicsEngine
     {
+        friend PhysicsSystem;
     public:
         PhysicsEngine();
         ~PhysicsEngine();
 
-        void initialize(core::ServiceContext& ctx);
-        void shutdown(core::ServiceContext& ctx);
-
-        void update(core::ServiceContext& ctx);
-
         void addForce(core::Entity::ID, const math::Vector3& force);
+        void setGravity(const math::Vector3& g);
 
     private:
-
         class Impl;
         Impl* _pImpl;
     };

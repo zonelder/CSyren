@@ -38,21 +38,6 @@ namespace
 
 namespace csyren::physics
 {
-    struct PhysCmd {
-        enum Type { CreateBody, RemoveBody, SetTransform, ApplyImpulse, Wake, Sleep } type;
-        core::Entity::ID entity;
-        
-        math::Matrix4x4 transform;
-        math::Vector3 impulse;
-    };
-
-
-    struct PhysResultTransform
-    {
-        core::Entity::ID entity;
-        math::Matrix4x4 world;
-    };
-
     namespace Layers
     {
         static constexpr JPH::ObjectLayer NON_MOVING = 0;
@@ -138,8 +123,6 @@ namespace csyren::physics
 
     class PhysicsEngine::Impl
     {
-       // std::vector<core::Entity::ID> _pendingBodies;
-       // core::events::SubscriberToken _rbAddedToken;
     public:
         core::Scene* scene;
         std::unique_ptr<JPH::TempAllocatorImpl> m_tempAllocator;
@@ -166,6 +149,8 @@ namespace csyren::physics
         std::vector<core::Entity::ID> m_activeBodies;
 
         std::unordered_map<core::Entity::ID, math::Vector3> pendingForces;
+        math::Vector3 gravity{ 0.0f,-9.98f,0.0f };
+        bool isGravityDirty{ false };
 
         void initialize(core::ServiceContext& ctx)
         {
@@ -217,7 +202,7 @@ namespace csyren::physics
             capsuleRemovedToken = bus->subscribe<csyren::core::events::ComponentDestroyEvent<CapsuleCollider>>(
                 [this](const auto& event) { this->onColliderRemoved(event.comp.id()); });
 
-            m_physicsSystem->SetGravity(JPH::Vec3(0.0f, -10.0f, 0.0f));
+            m_physicsSystem->SetGravity(details::to_jolt(gravity));
         }
 
         void onRigidBodyAdded(core::Entity::ID ent) {
@@ -361,10 +346,20 @@ namespace csyren::physics
             pendingForces[ent] += force;
         }
 
+        void setGravity(const math::Vector3& g)
+        {
+            gravity = g;
+            isGravityDirty = true;
+        }
+
         void applyPendingForces()
         {
             auto& bodyInterface = m_physicsSystem->GetBodyInterface();
-
+            if (isGravityDirty)
+            {
+                m_physicsSystem->SetGravity(details::to_jolt(gravity));
+                isGravityDirty = false;
+            }
             for (const auto& [ent, force] : pendingForces)
             {
                 auto it = entityToBody.find(ent);
@@ -428,20 +423,6 @@ namespace csyren::physics
                 }
             }
         }
-
-        void update(core::ServiceContext& ctx)
-        {
-            auto time = ctx.get<core::Time>();
-            auto deltaTime = time->deltaTime();
-
-            pushTransform();
-            applyPendingForces();
-
-            m_physicsSystem->Update(deltaTime, 1,m_tempAllocator.get(), m_jobSystem.get());
-
-            pullTransforms();
-        }
-
         void shutdown(core::ServiceContext& ctx) 
         {
             auto bus = ctx.get<core::events::EventBus2>();
@@ -468,23 +449,7 @@ namespace csyren::physics
 
     PhysicsEngine::~PhysicsEngine()
     {
-        delete _pImpl; // Удаляем экземпляр реализации
-    }
-
-    void PhysicsEngine::initialize(core::ServiceContext& ctx)
-    {
-        _pImpl->initialize(ctx);
-    }
-
-    void PhysicsEngine::shutdown(core::ServiceContext& ctx)
-    {
-        _pImpl->shutdown(ctx);
-    }
-
-
-    void PhysicsEngine::update(core::ServiceContext& ctx)
-    {
-        _pImpl->update(ctx);
+        delete _pImpl;
     }
 
     void PhysicsEngine::addForce(core::Entity::ID ent, const math::Vector3& force)
@@ -492,6 +457,39 @@ namespace csyren::physics
         _pImpl->addForce(ent, force);
     }
 
+    void PhysicsEngine::setGravity(const math::Vector3& g)
+    {
+        _pImpl->setGravity(g);
+    }
 
+    //-----------------------------------------------------------------------------------------
+
+    void PhysicsSystem::init(core::ServiceContext& ctx)
+    {
+        auto physic = ctx.get<PhysicsEngine>();
+        physic->_pImpl->initialize(ctx);
+    }
+
+    void PhysicsSystem::update(core::ServiceContext& ctx)
+    {
+        auto physic = ctx.get<PhysicsEngine>();
+        auto impl = physic->_pImpl;
+        auto time = ctx.get<core::Time>();
+        auto deltaTime = time->deltaTime();
+
+        impl->pushTransform();
+        impl->applyPendingForces();
+
+        impl->m_physicsSystem->Update(deltaTime, 1, impl->m_tempAllocator.get(), impl->m_jobSystem.get());
+
+        impl->pullTransforms();
+    }
+
+    void PhysicsSystem::shutdown(core::ServiceContext& ctx)
+    {
+        auto physic = ctx.get<PhysicsEngine>();
+        auto impl = physic->_pImpl;
+        impl->shutdown(ctx);
+    }
 
 }
