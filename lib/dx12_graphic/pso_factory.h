@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include "material.h" // Äëÿ MaterialStateDesc
 #include "shader.h"
+#include "vertex_layout.h"
 
 namespace
 {
@@ -13,16 +14,16 @@ namespace
 namespace csyren::render::details
 {
 	class Renderer;
-	
+	using VertexLayoutHash = size_t;
 	struct PSOKey
 	{
 		ShaderHandle shaderHandle;
 		MaterialStateDesc materialState;
-
+		VertexLayoutHash vertexLayoutHash;
 		bool operator==(const PSOKey& other) const 
 		{
 			return shaderHandle == other.shaderHandle &&
-				memcmp(&materialState, &other.materialState, sizeof(MaterialStateDesc)) == 0;
+				memcmp(&materialState, &other.materialState, sizeof(MaterialStateDesc)) == 0 && vertexLayoutHash == other.vertexLayoutHash;
 		}
 	};
 
@@ -38,7 +39,7 @@ namespace csyren::render::details
 		PSOFactory(ID3D12Device* device) noexcept : _device(device) {};
 
 		ID3D12PipelineState* try_get(Shader* shader, const MaterialStateDesc& desc);
-		ID3D12PipelineState* get(ShaderHandle sh,Shader* shader, const MaterialStateDesc& desc);
+		ID3D12PipelineState* get(ShaderHandle sh,Shader* shader, const MaterialStateDesc& desc,const VertexLayout& vertexLayout);
 
 	private:
 		ID3D12Device* _device;

@@ -7,20 +7,19 @@
 #include <DirectXMath.h>
 #include <DirectXPackedVector.h>
 
+#include "vertex_layout.h"
+#include "mesh_builder.h"
+
 namespace csyren::render
 {
 	class Renderer;
 	class Material;
 	template<typename T> class ResourceStorage;
 
-
-	using MeshIndex = uint16_t;
-
 	class Mesh
 	{
 		friend class ResourceStorage<Mesh>;
 	public:
-
 		enum class Usage
 		{
 			Static,
@@ -30,23 +29,17 @@ namespace csyren::render
 		Mesh() noexcept = default;
 		void bind(Renderer& renderer);
 		void draw(Renderer& renderer);
+
+		const VertexLayout& getLayout() const { return _layout; }
 	private:
 
 		bool init(Renderer& renderer,const std::string& filepath);
 		bool init(
-			Renderer& renderer,
-			const void* vertexData,
-			size_t vertexDataSize,
-			uint32_t vertexStride,
-			const std::vector<uint16_t>& indices,
+			Renderer& renderer, const MeshBuilder& builder,
 			Usage usage = Usage::Static
 		);
 
-		bool update(
-			const void* vertexData,
-			size_t vertexDataSize,
-			const std::vector<uint16_t>& indices
-		);
+		bool update( const MeshBuilder::MeshRawData& rw );
 		bool createBuffer(
 			ID3D12Device* device,
 			D3D12_HEAP_TYPE heapType,
@@ -62,6 +55,7 @@ namespace csyren::render
 		D3D12_INDEX_BUFFER_VIEW  _indexView{};
 		UINT _indexCount{ 0 };
 		Usage _usage = Usage::Static;
+		VertexLayout	_layout;
 	};
 }
 

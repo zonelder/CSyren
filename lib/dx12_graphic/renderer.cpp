@@ -325,14 +325,8 @@ namespace csyren::render
         return S_OK;
     }
 
-
-    ID3D12PipelineState* Renderer::getPSO(ShaderHandle sh,Shader* shader,const MaterialStateDesc& state)
-    {
-        return _pPSOFactory->get(sh,shader, state);
-    }
-
     //TODO CHANGE API
-    bool Renderer::bindMaterial(ResourceManager& rm, MaterialHandle mathandle)
+    bool Renderer::bindMaterial(ResourceManager& rm, MaterialHandle mathandle,const VertexLayout& vertexLayout)
     {
         auto* material = rm.getMaterial(mathandle);
         if (!material)
@@ -343,7 +337,7 @@ namespace csyren::render
         if (!shader)
             return false;
 
-        auto pso = getPSO(shaderHandle, shader, material->getStates());
+        auto pso = _pPSOFactory->get(shaderHandle, shader, material->getStates(), vertexLayout);
         _commandList->SetPipelineState(pso);
         _commandList->SetGraphicsRootSignature(shader->getRootSignature());
 

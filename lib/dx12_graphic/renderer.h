@@ -20,6 +20,7 @@
 #include "engine_semantics.h"
 #include "pso_factory.h"
 #include "shader_parameter_binder.h"
+#include "vertex_layout.h"
 
 
 namespace csyren::render
@@ -69,11 +70,10 @@ namespace csyren::render
 		EngineVariableBuffer* getEngineVariableBuffer() noexcept { return &_engineVariableBuffer; };
 		EntityVariableBuffer* getEntityVariableBuffer() noexcept { return &_entityVariableBuffer; };
 
-		bool bindMaterial(ResourceManager& rm, MaterialHandle material);
+		bool bindMaterial(ResourceManager& rm, MaterialHandle material,const VertexLayout& vertexLayout);
 
 		bool bindEntity(const SemanticBufferLayout* layout);
 	private:
-		ID3D12PipelineState* getPSO(ShaderHandle sh, Shader* shader, const MaterialStateDesc& state);
 		void waitForGpu();
 
 		static constexpr UINT FrameCount = 2;

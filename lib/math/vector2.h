@@ -17,17 +17,17 @@ namespace csyren::math
     {
     public:
         // Constructors
-        Vector2() noexcept : DirectX::XMFLOAT2(0.0f, 0.0f) {}
-        Vector2(float x, float y) noexcept : DirectX::XMFLOAT2(x, y) {}
+        constexpr Vector2() noexcept : DirectX::XMFLOAT2(0.0f, 0.0f) {}
+        constexpr Vector2(float x, float y) noexcept : DirectX::XMFLOAT2(x, y) {}
         explicit Vector2(DirectX::XMVECTOR vec) noexcept
         {
             DirectX::XMStoreFloat2(this, vec);
         }
 
-        Vector2(const Vector2&) = default;
-        Vector2& operator=(const Vector2&) = default;
-        Vector2(Vector2&&) = default;
-        Vector2& operator=(Vector2&&) = default;
+        constexpr Vector2(const Vector2&) = default;
+        constexpr Vector2& operator=(const Vector2&) = default;
+        constexpr Vector2(Vector2&&) = default;
+        constexpr Vector2& operator=(Vector2&&) = default;
 
         Vector2& operator=(DirectX::FXMVECTOR vec) noexcept
         {

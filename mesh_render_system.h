@@ -48,14 +48,14 @@ namespace csyren
 
                 auto* shader = resources->getShader(mat->getShader());
                 if (!shader) continue;
-
-                if (!render->bindMaterial(*resources, matID)) continue;
                 auto* cb = shader->getSemanticBuffer(render::details::CBufferUpdateType::Entity);
 
                 for (auto& [meshID, entities] : meshGroups)
                 {
                     auto* mesh = resources->getMesh(meshID);
                     if (!mesh) continue;
+
+                    if (!render->bindMaterial(*resources, matID,mesh->getLayout())) continue;
 
                     mesh->bind(*render);
 

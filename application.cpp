@@ -173,6 +173,14 @@ namespace csyren
 			DirectX::XMMATRIX viewProj = DirectX::XMMatrixMultiply(view, proj);
 			DirectX::XMStoreFloat4x4(&engineVariables->viewProjectionMatrix, viewProj);
 
+			float rotationSpeed = DirectX::XM_2PI / 10.0f;
+			float angle = time.totalTime() * rotationSpeed;
+			DirectX::XMVECTOR baseDir = DirectX::XMVectorSet(0.3f, -1.0f, 0.3f, 0.0f);
+			DirectX::XMMATRIX rot = DirectX::XMMatrixRotationZ(angle);
+			DirectX::XMVECTOR rotatedDir = DirectX::XMVector3TransformNormal(baseDir, rot);
+			rotatedDir = DirectX::XMVector3Normalize(rotatedDir);
+			DirectX::XMStoreFloat4(&engineVariables->lightDirection, rotatedDir);
+
 			_render.beginFrame();
 			_render.clear(&(camera.background.x));
 
@@ -347,7 +355,7 @@ namespace csyren
 					collider->size = scale;
 					auto rb = _scene.addComponent<physics::RigidBody>(cube, templateRB);
 					auto meshRenderer = _scene.addComponent<render::components::MeshRenderer>(cube);
-					meshRenderer->material = matDefault;
+					meshRenderer->material = matRainbow;
 					auto meshFilter = _scene.addComponent<render::components::MeshFilter>(cube);
 					meshFilter->mesh = meshCube;
 				}

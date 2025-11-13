@@ -54,7 +54,6 @@ namespace csyren::render
             struct VS_Input
             {
                 float3 position : POSITION;
-                float4 color    : COLOR;
             };
 
             struct PS_Input
@@ -72,14 +71,13 @@ namespace csyren::render
                 pos = mul(pos, viewProjection);
         
                 output.position = pos;
-                output.color = input.color;
                 return output;
             }
 
             // --- Pixel Shader ---
             float4 PSMain(PS_Input input) : SV_TARGET
             {
-                return input.color*tint;
+                return tint;
             }
         )";
 
@@ -92,6 +90,8 @@ namespace csyren::render
                 matrix viewProjection;
                 //@semantic Time
                 float time;
+                //@semantic LightDirection
+                float4 lightDir;
             }
 
             //@update entity
@@ -111,13 +111,13 @@ namespace csyren::render
             struct VS_Input
             {
                 float3 position : POSITION;
-                float4 color    : COLOR;
+                float3 normal   : NORMAL;
             };
 
             struct PS_Input
             {
                 float4 position : SV_POSITION;
-                float4 color    : COLOR;
+                float3 normal   : NORMAL;
             };
 
             PS_Input VSMain(VS_Input input)
@@ -127,15 +127,22 @@ namespace csyren::render
                 pos = mul(pos, world);
                 pos = mul(pos, viewProjection);
                 o.position = pos;
-
-                float wave = sin(time * 2.0f + input.position.x * 5.0f) * 0.5f + 0.5f;
-                o.color = lerp(input.color, float4(wave, 1.0f - wave, 1.0f, 1.0f), 0.5f);
+                o.normal = mul(input.normal,(float3x3)world);
+                o.normal = normalize(o.normal);
                 return o;
             }
 
             float4 PSMain(PS_Input input) : SV_TARGET
             {
-                float3 c = input.color.rgb * tint.rgb;
+                float3 L = normalize(-lightDir);
+                float3 N = normalize(input.normal);
+
+                // diffuse
+                float NdotL = max(dot(N, L), 0.0f);
+
+                // базовый цвет
+                float3 c = tint.rgb * NdotL;
+
                 return float4(c, 1.0f);
             }
         )";
@@ -154,15 +161,12 @@ namespace csyren::render
             };
 
         ResourceManager::ProceduralResourceFactory<Mesh> lineMeshFabric = [](ResourceManager& rm) {
-            std::vector<VertexXYZC> verts = {
-                { XMFLOAT3(0.0f, 0.0f, 0.0f), Color(1.0f, 1.0f, 1.0f, 1.0f) },
-                { XMFLOAT3(1.0f, 0.0f, 0.0f), Color(1.0f, 1.0f, 1.0f, 1.0f) }
-            };
-            std::vector<uint16_t> idx = { 0, 1 };
-            return rm.createMesh(LINE_MESH_NAME, verts.data(),
-                verts.size() * sizeof(VertexXYZC),
-                sizeof(VertexXYZC),
-                idx);
+            MeshBuilder builder;
+            builder
+                .addVertex({ 0,0,0 }).addColor({ 1,1,1,1 })
+                .addVertex({ 1,0,0 }).addColor({ 1,1,1,1 })
+                .addIndex(0).addIndex(1);
+            return rm.createMesh(LINE_MESH_NAME,builder);
             };
 
         ResourceManager::ProceduralResourceFactory<Shader> rainbowShaderFabric =
@@ -177,104 +181,125 @@ namespace csyren::render
             };
 
         ResourceManager::ProceduralResourceFactory<Mesh> triangleMeshFabric = [](ResourceManager& rm) {
-            std::vector<VertexXYZC> verts = {
-                { XMFLOAT3(0.0f, 0.0f, 0.0f), Color(1.0f, 1.0f, 1.0f, 1.0f) },
-                { XMFLOAT3(1.0f, 0.0f, 0.0f), Color(1.0f, 1.0f, 1.0f, 1.0f) },
-                { XMFLOAT3(0.0f, 1.0f, 0.0f), Color(1.0f, 1.0f, 1.0f, 1.0f) }
-            };
-            std::vector<uint16_t> idx = { 0, 1, 2 };
-            return rm.createMesh(TRIANGLE_MESH_NAME, verts.data(),verts.size()*sizeof(VertexXYZC),sizeof(VertexXYZC), idx);
+            MeshBuilder builder;
+            builder
+                .addVertex({ 0,0,0 }).addColor({ 1, 1, 1, 1 })
+                .addVertex({ 1,0,0 }).addColor({ 1, 1, 1, 1 })
+                .addVertex({ 0,1,0 }).addColor({ 1, 1, 1, 1 })
+                .addTriangle(0, 1, 2);
+            return rm.createMesh(TRIANGLE_MESH_NAME,builder);
             };
 
         ResourceManager::ProceduralResourceFactory<Mesh> quadMeshFabric = [](ResourceManager& rm) {
-            std::vector<VertexXYZC> verts = {
-                { XMFLOAT3(-0.5f, -0.5f, 0.0f), Color(1.0f, 1.0f, 1.0f, 1.0f) },
-                { XMFLOAT3(-0.5f,  0.5f, 0.0f), Color(1.0f, 1.0f, 1.0f, 1.0f) },
-                { XMFLOAT3(0.5f,  0.5f, 0.0f), Color(1.0f, 1.0f, 1.0f, 1.0f) },
-                { XMFLOAT3(0.5f, -0.5f, 0.0f), Color(1.0f, 1.0f, 1.0f, 1.0f) }
+            MeshBuilder builder;
+            std::array<math::Vector3, 4> positions = 
+            {
+                math::Vector3{-0.5f, 0.0f, -0.5f},
+                math::Vector3{-0.5f, 0.0f,  0.5f},
+                math::Vector3{ 0.5f, 0.0f,  0.5f},
+                math::Vector3{ 0.5f, 0.0f, -0.5f}
             };
-            std::vector<uint16_t> idx = { 0, 1, 2, 0, 2, 3 };
-            return rm.createMesh(QUAD_MESH_NAME, verts.data(), verts.size() * sizeof(VertexXYZC), sizeof(VertexXYZC), idx);
+
+            math::Vector3 normal{ 0.0f, 1.0f, 0.0f };
+
+            vertex_meta::color_type color(1.0f, 1.0f, 1.0f, 1.0f);
+
+            std::array<math::Vector2, 4> uvs = {
+                math::Vector2{0.0f, 1.0f},
+                math::Vector2{0.0f, 0.0f},
+                math::Vector2{1.0f, 0.0f},
+                math::Vector2{1.0f, 1.0f}
+            };
+
+            for (size_t i = 0; i < 4; ++i) {
+                builder.addVertex(positions[i])
+                    .addNormal(normal)
+                    .addUV(uvs[i])
+                    .addColor(color);
+            }
+
+            builder.addTriangle(0, 1, 2)
+                .addTriangle(0, 2, 3);
+
+            return rm.createMesh(QUAD_MESH_NAME, builder);
             };
 
         ResourceManager::ProceduralResourceFactory<Mesh> cubeMeshFabric = [](ResourceManager& rm) {
-            std::vector<VertexXYZC> verts = {
-                { XMFLOAT3(-0.5f, -0.5f, -0.5f), Color(1.0f, 0.0f, 0.0f, 1.0f) },
-                { XMFLOAT3(-0.5f,  0.5f, -0.5f), Color(1.0f, 0.0f, 0.0f, 1.0f) },
-                { XMFLOAT3(0.5f,  0.5f, -0.5f), Color(1.0f, 0.0f, 0.0f, 1.0f) },
-                { XMFLOAT3(0.5f, -0.5f, -0.5f), Color(1.0f, 0.0f, 0.0f, 1.0f) },
-                { XMFLOAT3(-0.5f, -0.5f,  0.5f), Color(0.0f, 1.0f, 0.0f, 1.0f) },
-                { XMFLOAT3(-0.5f,  0.5f,  0.5f), Color(0.0f, 1.0f, 0.0f, 1.0f) },
-                { XMFLOAT3(0.5f,  0.5f,  0.5f), Color(0.0f, 1.0f, 0.0f, 1.0f) },
-                { XMFLOAT3(0.5f, -0.5f,  0.5f), Color(0.0f, 1.0f, 0.0f, 1.0f) }
+            MeshBuilder builder;
+            const float hs = 0.5f; // half-size
+            struct Face
+            {
+                math::Vector3 normal;
+                vertex_meta::color_type color;
+                std::array<math::Vector3, 4> positions;
             };
-            std::vector<uint16_t> idx = {
-                0, 1, 2,   0, 2, 3,
-                7, 6, 5,   7, 5, 4,
-                4, 5, 1,   4, 1, 0,
-                3, 2, 6,   3, 6, 7,
-                1, 5, 6,   1, 6, 2,
-                4, 0, 3,   4, 3, 7
+            std::array<Face, 6> faces =
+            {
+                Face{{0,0,1},{1,1,1,1},  {{ { -hs,-hs, hs }, {hs,-hs, hs}, {hs,hs, hs}, {-hs,hs, hs} } }},    // front
+                Face{{0,0,-1},{1,1,1,1}, {{ {hs,-hs,-hs}, {-hs,-hs,-hs}, {-hs,hs,-hs}, {hs,hs,-hs}   }},},   // back
+                Face{{-1,0,0},{1,1,1,1}, {{ {-hs,-hs,-hs}, {-hs,-hs, hs}, {-hs,hs, hs}, {-hs,hs,-hs} }},},   // left
+                Face{{1,0,0},{1,1,1,1},  {{ {hs,-hs, hs}, {hs,-hs,-hs}, {hs,hs,-hs}, {hs,hs, hs}     }},},   // right
+                Face{{0,1,0},{1,1,1,1},  {{ {-hs, hs, hs}, {hs, hs, hs}, {hs, hs,-hs}, {-hs, hs,-hs} }},},   // top
+                Face{{0,-1,0},{1,1,1,1}, {{ {-hs,-hs,-hs}, {hs,-hs,-hs}, {hs,-hs, hs}, {-hs,-hs, hs} }},}    // bottom
             };
-            return rm.createMesh(CUBE_MESH_NAME, verts.data(), verts.size() * sizeof(VertexXYZC), sizeof(VertexXYZC), idx);
+            uint32_t vertexOffset = 0;
+
+            for (const auto& f : faces)
+            {
+                for (size_t i = 0; i < 4; ++i)
+                {
+                    builder.addVertex(f.positions[i]);
+                    builder.addNormal(f.normal);
+                    builder.addColor(f.color);
+                }
+                builder.addTriangle(vertexOffset + 0, vertexOffset + 1, vertexOffset + 2);
+                builder.addTriangle(vertexOffset + 0, vertexOffset + 2, vertexOffset + 3);
+
+                vertexOffset += 4;
+            }
+            return rm.createMesh(CUBE_MESH_NAME, builder);
             };
 
         ResourceManager::ProceduralResourceFactory<Mesh> sphereMeshFabric = [](ResourceManager& rm) {
-                const int latitudeBands = 16;
-                const int longitudeBands = 16;
-                const float radius = 0.5f;
+            const int latBands = 16;
+            const int longBands = 16;
+            const float radius = 0.5f;
+            MeshBuilder builder;
 
-                std::vector<VertexXYZC> verts;
-                std::vector<uint16_t> idx;
-
-                verts.reserve((latitudeBands + 1) * (longitudeBands + 1));
-                idx.reserve(latitudeBands * longitudeBands * 6);
-
-                for (int lat = 0; lat <= latitudeBands; ++lat)
+            for (int lat = 0; lat <= latBands; lat++)
+            {
+                float theta = lat * XM_PI / latBands;
+                float sinTheta = sinf(theta);
+                float cosTheta = cosf(theta);
+                for (int lon = 0; lon <= longBands; lon++)
                 {
-                    float theta = lat * DirectX::XM_PI / latitudeBands;
-                    float sinTheta = sinf(theta);
-                    float cosTheta = cosf(theta);
+                    float phi = lon * 2.0f * XM_PI / longBands;
+                    float sinPhi = sinf(phi);
+                    float cosPhi = cosf(phi);
 
-                    for (int lon = 0; lon <= longitudeBands; ++lon)
-                    {
-                        float phi = lon * 2.0f * DirectX::XM_PI / longitudeBands;
-                        float sinPhi = sinf(phi);
-                        float cosPhi = cosf(phi);
+                    math::Vector3 pos{ cosPhi * sinTheta * radius, cosTheta * radius, sinPhi * sinTheta * radius };
+                    render::vertex_meta::color_type c{ 0.5f + 0.5f * pos.x, 0.5f + 0.5f * pos.y, 0.5f + 0.5f * pos.z,1.0f };
+                    math::Vector3 normal = pos; // center in (0,0,0)
+                    normal.normalize();
+                    math::Vector2 uv{ static_cast<float>(lon) / longBands, static_cast<float>(lat) / latBands };
 
-                        float x = cosPhi * sinTheta;
-                        float y = cosTheta;
-                        float z = sinPhi * sinTheta;
-
-                        VertexXYZC v;
-                        v.pos = DirectX::XMFLOAT3(x * radius, y * radius, z * radius);
-                        v.color = Color(
-                            0.5f + 0.5f * x,
-                            0.5f + 0.5f * y,
-                            0.5f + 0.5f * z,
-                            1.0f
-                        );
-                        verts.push_back(v);
-                    }
+                    builder.addVertex(pos).addColor(c).addNormal(normal).addUV(uv);
                 }
+            }
 
-                for (int lat = 0; lat < latitudeBands; ++lat)
+            for (int lat = 0; lat < latBands; lat++)
+            {
+                for (int lon = 0; lon < longBands; lon++)
                 {
-                    for (int lon = 0; lon < longitudeBands; ++lon)
-                    {
-                        int first = (lat * (longitudeBands + 1)) + lon;
-                        int second = first + longitudeBands + 1;
+                    int first = lat * (longBands + 1) + lon;
+                    int second = first + longBands + 1;
 
-                        idx.push_back(static_cast<uint16_t>(first));
-                        idx.push_back(static_cast<uint16_t>(second));
-                        idx.push_back(static_cast<uint16_t>(first + 1));
-
-                        idx.push_back(static_cast<uint16_t>(second));
-                        idx.push_back(static_cast<uint16_t>(second + 1));
-                        idx.push_back(static_cast<uint16_t>(first + 1));
-                    }
+                    builder.addTriangle(first, second, first + 1);
+                    builder.addTriangle(second, second + 1, first + 1);
                 }
-                return rm.createMesh(SPHERE_MESH_NAME, verts.data(), verts.size() * sizeof(VertexXYZC), sizeof(VertexXYZC), idx);
+            }
+
+                return rm.createMesh(SPHERE_MESH_NAME, builder);
             };
 
         // --- Регистрация всех фабрик ---
