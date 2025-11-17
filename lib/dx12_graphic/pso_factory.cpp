@@ -20,6 +20,9 @@ namespace csyren::render::details
         psoDesc.pRootSignature = shader->getRootSignature();
         psoDesc.VS = shader->getVSBytecode();
         psoDesc.PS = shader->getPSBytecode();
+        psoDesc.HS = shader->getHSBytecode();
+        psoDesc.DS = shader->getDSBytecode();
+        psoDesc.GS = shader->getGSBytecode();
         const auto& d3dLayout = vertexLayout.getD3DLayout();
         const auto& shaderLayout = shader->getInputLayout();
         psoDesc.InputLayout = {d3dLayout.data(), (UINT)d3dLayout.size() };

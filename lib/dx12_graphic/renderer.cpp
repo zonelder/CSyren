@@ -1,7 +1,9 @@
 #include "pch.h"
 #include "resource_manager.h"
-#include "renderer.h"
 #include "texture.h"
+
+#include "renderer.h"
+
 #include <d3dx12.h>
 
 

@@ -110,6 +110,22 @@ namespace csyren::render
 			if (!_vsBlob) return  { nullptr,0 };
 			return { _vsBlob->GetBufferPointer(), _vsBlob->GetBufferSize() };
 		}
+		D3D12_SHADER_BYTECODE getGSBytecode() const noexcept
+		{
+			if (!_gsBlob) return  { nullptr,0 };
+			return { _gsBlob->GetBufferPointer(), _gsBlob->GetBufferSize() };
+		}
+		D3D12_SHADER_BYTECODE getHSBytecode() const noexcept
+		{
+			if (!_hsBlob) return  { nullptr,0 };
+			return { _hsBlob->GetBufferPointer(), _hsBlob->GetBufferSize() };
+		}
+		D3D12_SHADER_BYTECODE getDSBytecode() const noexcept
+		{
+			if (!_dsBlob) return  { nullptr,0 };
+			return { _dsBlob->GetBufferPointer(), _dsBlob->GetBufferSize() };
+		}
+
 		void setEngineParameters(const EngineVariableBuffer& engineBuffer,details::CBufferUpdateType updateType);
 
 		void commit(ID3D12GraphicsCommandList* cmd, UploadRingBuffer& uploadBuffer);
@@ -126,7 +142,7 @@ namespace csyren::render
 		bool finalizeInit(Renderer& renderer, const D3D12_SHADER_BYTECODE& vs,const D3D12_SHADER_BYTECODE& ps);
 		bool loadPrecompiledAndInit(Renderer& renderer, const std::filesystem::path& relativePath);
 
-		Microsoft::WRL::ComPtr<ID3DBlob> compileShader(const std::string& source, const char* target, const std::string& entryPoint);
+		Microsoft::WRL::ComPtr<ID3DBlob> compileShader(const std::string& source, const char* target, const std::string& entryPoint,bool ignorMissing);
 
 		bool validateMeta(const D3D12_SHADER_BYTECODE& vs, const D3D12_SHADER_BYTECODE& ps);
 		void linkSemantics();
@@ -136,6 +152,9 @@ namespace csyren::render
 
 		Microsoft::WRL::ComPtr< ID3DBlob> _vsBlob;
 		Microsoft::WRL::ComPtr< ID3DBlob> _psBlob;
+		Microsoft::WRL::ComPtr< ID3DBlob> _gsBlob;
+		Microsoft::WRL::ComPtr< ID3DBlob> _hsBlob;
+		Microsoft::WRL::ComPtr< ID3DBlob> _dsBlob;
 
 		std::unordered_map<std::string, ConstantBufferVariableInfo> _variableInfoMap;
 		std::unordered_map<std::string, ShaderResourceInfo>			_resourceMap;

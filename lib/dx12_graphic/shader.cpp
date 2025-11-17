@@ -190,7 +190,7 @@ namespace csyren::render
 
 	}
 
-    Microsoft::WRL::ComPtr<ID3DBlob> Shader::compileShader(const std::string& source, const char* target, const std::string& entryPoint)
+    Microsoft::WRL::ComPtr<ID3DBlob> Shader::compileShader(const std::string& source, const char* target, const std::string& entryPoint,bool ignoreMissingEntryPoint = false)
     {
         UINT compileFlags = 0;
 #if defined(_DEBUG)
@@ -209,9 +209,19 @@ namespace csyren::render
             &byteCode, &errors
         );
 
+        //optional shader step
+        if (ignoreMissingEntryPoint && FAILED(hr) && errors)
+        {
+            std::string msg = (char*)errors->GetBufferPointer();
+            if (msg.find("X3501") != std::string::npos)
+            {
+                return nullptr;
+            }
+        }
+
         if (errors) 
         {
-            log::error("Shader compilation error: {}", (char*)errors->GetBufferPointer());
+            log::error("Shader compilation {}", (char*)errors->GetBufferPointer());
         }
         if (FAILED(hr)) 
         {
@@ -253,9 +263,13 @@ namespace csyren::render
     {
         auto path = relativePath.string();
         log::info("Shader {}: Compiling on the fly...", path);
+        constexpr bool INGORE_MISSING_SHADER_STEP = true;
 
         _vsBlob = compileShader(shaderCode, "vs_5_1", "VSMain");
         _psBlob = compileShader(shaderCode, "ps_5_1", "PSMain");
+        _gsBlob = compileShader(shaderCode, "gs_5_1", "GSMain", INGORE_MISSING_SHADER_STEP);
+        _hsBlob = compileShader(shaderCode, "hs_5_1", "HSMain", INGORE_MISSING_SHADER_STEP);
+        _dsBlob = compileShader(shaderCode, "ds_5_1", "DSMain", INGORE_MISSING_SHADER_STEP);
 
         _meta = ShaderMetaBuilder::build(shaderCode);
         if (!_meta)
@@ -274,20 +288,34 @@ namespace csyren::render
             metaPath.replace_extension("json");
             ShaderMetaBuilder::save(*_meta, metaPath.string());
 
-            std::filesystem::path vsBlobPath = buildPath;
-            vsBlobPath.replace_extension("_vs.cso");
-            D3DWriteBlobToFile(_vsBlob.Get(), vsBlobPath.c_str(), TRUE);
+            // universal shader stage saver
+            std::vector<std::pair<ID3DBlob*, std::string>> stages = {
+                { _vsBlob.Get(), "_vs.cso" },
+                { _psBlob.Get(), "_ps.cso" },
+                { _gsBlob.Get(), "_gs.cso" },
+                { _hsBlob.Get(), "_hs.cso" },
+                { _dsBlob.Get(), "_ds.cso" }
+            };
 
-            std::filesystem::path psBlobPath = buildPath;
-            psBlobPath.replace_extension("_ps.cso");
-            D3DWriteBlobToFile(_psBlob.Get(), psBlobPath.c_str(), TRUE);
+            for (auto& [blob, suffix] : stages)
+            {
+                if (!blob)
+                    continue; // optional stage (missing entry point)
 
+                std::filesystem::path blobPath = buildPath;
+                blobPath.replace_extension(suffix);
+
+                HRESULT hr = D3DWriteBlobToFile(blob, blobPath.c_str(), TRUE);
+                if (FAILED(hr))
+                {
+                    log::error("Failed to save shader blob {}", blobPath.string());
+                }
+            }
+
+            //TODO save opitional shader steps
             log::info("Shader {}: Build shader saved.", path);
         }
-
-        D3D12_SHADER_BYTECODE vs = { _vsBlob->GetBufferPointer(), _vsBlob->GetBufferSize() };
-        D3D12_SHADER_BYTECODE ps = { _psBlob->GetBufferPointer(), _psBlob->GetBufferSize() };
-        return finalizeInit(renderer, vs, ps);
+        return finalizeInit(renderer, getVSBytecode(), getPSBytecode());
     }
 
     bool Shader::loadPrecompiledAndInit(Renderer& renderer, const std::filesystem::path& relativePath)
