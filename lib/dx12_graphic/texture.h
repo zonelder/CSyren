@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include "renderer.h"
+#include "load_status.h"
 
 namespace csyren::render
 {
@@ -13,6 +14,7 @@ namespace csyren::render
     class Texture
     {
         friend class ResourceStorage<Texture>;
+        friend class TextureUploadTask;
     public:
         D3D12_CPU_DESCRIPTOR_HANDLE getCpuSrvHandle() const;
         D3D12_GPU_DESCRIPTOR_HANDLE getGpuSrvHandle() const;
@@ -40,6 +42,7 @@ namespace csyren::render
         UINT _width{ 0 };
         UINT _height{ 0 };
         DXGI_FORMAT _format{ DXGI_FORMAT_UNKNOWN };
+        LoadStatus _loadStatus{ Loading };
     };
 }
 

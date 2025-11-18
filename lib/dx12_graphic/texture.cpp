@@ -1,9 +1,12 @@
 #include "pch.h"
 #include "texture.h"
-#include "renderer.h"
-#include <DirectXTex.h>
-
 #include "cstdmf/string_utils.h"
+#include "renderer.h"
+
+#include <DirectXTex.h>
+#include <DDSTextureLoader.h>
+#include <WICTextureLoader.h>
+#include <ResourceUploadBatch.h>
 
 namespace csyren::render
 {
@@ -54,7 +57,8 @@ namespace csyren::render
             log::warning("Texture: texture file is not found.({})", cstdmf::to_string(filePath));
             return false;
         }
-
+        return true;//pass loading to the upload thread;
+        /*
         _heapManager = renderer.getDescriptorHeapManager();
         if (!_heapManager)
         {
@@ -63,14 +67,16 @@ namespace csyren::render
 
         DirectX::TexMetadata metadata;
         DirectX::ScratchImage scratchImage;
+        Microsoft::WRL::ComPtr<ID3D12Resource> uploadHeap;
+        std::vector<D3D12_SUBRESOURCE_DATA> subresources;
 
-
-        HRESULT hr;
+        HRESULT hr = S_OK;
         std::wstring extension = filePath.substr(filePath.find_last_of(L".") + 1);
 
         if (_wcsicmp(extension.c_str(), L"dds") == 0)
         {
-            hr = DirectX::LoadFromDDSFile(filePath.c_str(), DirectX::DDS_FLAGS_NONE, &metadata, scratchImage);
+            hr = DirectX::CreateDDSTextureFromFile(renderer.device(), renderer.commandList(), filePath.c_str(), _textureResource.ReleaseAndGetAddressOf(), uploadHeap.ReleaseAndGetAddressOf(), 0, // maxsize
+                DirectX::DDS_LOADER_DEFAULT);
         }
         else
         {
@@ -115,7 +121,7 @@ namespace csyren::render
         srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
         renderer.device()->CreateShaderResourceView(_textureResource.Get(), &srvDesc, _srvHandles.cpuHandle);
-
+        */
         return true;
     }
 

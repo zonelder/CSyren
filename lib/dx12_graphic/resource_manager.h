@@ -15,6 +15,21 @@
 #include "texture.h"
 #include "material.h"
 #include "shader.h"
+#include "resource_upload_thread.h"
+
+#include "texture_upload_task.h"
+
+namespace csyren::render::reflection
+{
+    template<class Resource>
+    struct UploadResourceTask;
+
+    template<>
+    struct UploadResourceTask<Texture>
+    {
+        using Type = TextureUploadTask;
+    };
+}
 
 namespace csyren::render
 {
@@ -27,8 +42,8 @@ namespace csyren::render
     {
     public:
         // Constructor takes core dependencies
-        ResourceStorage(Renderer& renderer, ResourceManager& resourceManager)
-            : _renderer(renderer), _resourceManager(resourceManager) {
+        ResourceStorage(ResourceManager& resourceManager)
+            :_resourceManager(resourceManager) {
         }
 
         ~ResourceStorage() = default;
@@ -45,23 +60,27 @@ namespace csyren::render
                 return it->second;
             }
 
-            THandle<TResource> handle{ _storage.emplace() };
-            if (!handle) return {};
-
-            TResource* resource_ptr = _storage.get(handle.id);
-
-            // Call the resource's init method, passing dependencies and specific init args
-            if (!resource_ptr->init(_renderer, std::forward<TInitArgs>(init_args)...))
+            auto [handle, resource_ptr] = create(name);
+            if (!handle)return{};
+            if (!resource_ptr->init(std::forward<TInitArgs>(init_args)...))
             {
-                _storage.erase(handle.id);
+                unload(name);
                 log::error("Failed to initialize resource: {}", name);
                 return {};
             }
-
-            _nameToHandleMap[name] = handle;
-            _handleToNameMap[handle] = name;
             log::debug("Resource loaded/created: {}", name);
             return handle;
+        }
+
+        std::pair<THandle<TResource>, TResource*> create(const std::string& name)
+        {
+            THandle<TResource> handle{ _storage.emplace() };
+            if (!handle) return { handle ,nullptr};
+
+            TResource* resource_ptr = _storage.get(handle.id);
+            _nameToHandleMap[name] = handle;
+            _handleToNameMap[handle] = name;
+            return { handle,resource_ptr };
         }
 
         // Basic accessors
@@ -119,7 +138,6 @@ namespace csyren::render
         }
 
     private:
-        Renderer& _renderer;
         ResourceManager& _resourceManager;
 
         std::unordered_map<std::string, THandle<TResource>> _nameToHandleMap;
@@ -133,12 +151,11 @@ namespace csyren::render
     public:
         explicit ResourceManager(Renderer& renderer)
             : _renderer(renderer),
-            _meshStorage(renderer, *this),
-            _textureStorage(renderer, *this),
-            _materialStorage(renderer, *this),
-            _shaderStorage(renderer, *this)
-        {
-        }
+            _meshStorage(*this),
+            _textureStorage(*this),
+            _materialStorage(*this),
+            _shaderStorage(*this)
+        {}
 
         ~ResourceManager() = default;
         ResourceManager(const ResourceManager&) = delete;
@@ -154,6 +171,37 @@ namespace csyren::render
         {
             getFactoryMap<TResource>()[name] = factory;
             log::debug("Procedural resource factory registered: {}", name);
+        }
+
+        template<typename TResource>
+        THandle<TResource> getAsync(const std::string& name)
+        {
+            // 1. Check if already in cache
+            auto& storage = getStorage<TResource>();
+            auto handle = storage.find(name);
+            if (handle.id != THandle<TResource>::INVALID)
+            {
+                log::debug("Resource found in cache: {}", name);
+                return handle;
+            }
+
+            // 2. Check if a procedural factory is registered for this name
+            auto& factoryMap = getFactoryMap<TResource>();
+            if (auto it = factoryMap.find(name); it != factoryMap.end())
+            {
+                log::debug("Creating procedural resource: {}", name);
+                return it->second(*this); // Factory will call create... and store it
+            }
+
+            // 3. Assume it's a file path and try to load from disk
+            log::debug("Loading resource from file: {}", name);
+            auto [new_handle,ptr] = storage.create(name);
+
+            if (new_handle.id == THandle<TResource>::INVALID) return {};
+            using TaskType = typename reflection::UploadResourceTask<TResource>::Type;
+            _pUploadThread->addTask(std::make_unique<TaskType>(new_handle, name));
+
+            return new_handle;
         }
 
         // --- Unified Get Method (main entry point for all resources) ---
@@ -180,7 +228,7 @@ namespace csyren::render
             // 3. Assume it's a file path and try to load from disk
             log::debug("Loading resource from file: {}", name);
             // This assumes TResource::init has an overload that takes a single string (filepath)
-            return storage.load(name, name);
+            return storage.load(name,_renderer,name);
         }
 
         // --- Explicit Create Methods (for in-memory/programmatic creation) ---
@@ -190,7 +238,7 @@ namespace csyren::render
         // Meshes
         MeshHandle createMesh(const std::string& name,const MeshBuilder& builder)
         {
-            return _meshStorage.load(name, builder);
+            return _meshStorage.load(name,_renderer,builder);
         }
 
         // Textures
@@ -203,18 +251,18 @@ namespace csyren::render
         // Shaders (from string code)
         ShaderHandle createShader(const std::string& name, const std::string& filepath)
         {
-            return _shaderStorage.load(name, filepath);
+            return _shaderStorage.load(name,_renderer,filepath);
         }
 
         ShaderHandle createShaderFromCode(const std::string& name, const std::string& code)
         {
-            return _shaderStorage.load(name, from_source_code,code);
+            return _shaderStorage.load(name, _renderer,from_source_code,code);
         }
 
         // Materials
         MaterialHandle createMaterial(const std::string& name, ShaderHandle shader, const MaterialStateDesc& states)
         {
-            return _materialStorage.load(name, shader, states);
+            return _materialStorage.load(name, _renderer, shader, states);
         }
 
         // --- Accessors for resource data (e.g., for rendering) ---
@@ -251,8 +299,21 @@ namespace csyren::render
             log::debug("All resources unloaded.");
         }
 
+        Renderer& renderer() noexcept { return _renderer; }
+        //main loop shoud call this method for handling optimizations;
+        void init_thread()
+        {
+            if(!_pUploadThread)
+                _pUploadThread = std::make_unique<ResourceUploadThread>(&_renderer);
+        }
+
+        void update()
+        {
+            _pUploadThread->sync(*this);
+        }
     private:
         Renderer& _renderer;
+        std::unique_ptr< ResourceUploadThread> _pUploadThread;
 
         // Specialized ResourceStorage instances
         ResourceStorage<Mesh> _meshStorage;
