@@ -24,6 +24,8 @@ namespace csyren::render
 
         Texture(Texture&&) noexcept;
         Texture& operator=(Texture&&) noexcept;
+
+        LoadStatus status() const noexcept { return _loadStatus; }
     private:
 
         Texture(const Texture&) = delete;

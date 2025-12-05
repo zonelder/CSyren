@@ -1,9 +1,7 @@
 #include "pch.h"
 #include "resource_manager.h"
 #include "texture.h"
-
 #include "renderer.h"
-
 #include <d3dx12.h>
 
 
@@ -348,10 +346,24 @@ namespace csyren::render
             return false;
         }
 
+        auto& textures = material->textures();
+        for (const auto& [name, handle] : textures)
+        {
+            Texture* tex = rm.getTexture(handle);
+            if (!tex || tex->status() != LoadStatus::Loaded) continue;
+
+            auto gpuHandle = tex->getGpuSrvHandle();
+            // assume rootParameterIndex is known by shader reflection
+            UINT rootIndex = shader->getRootParameterIndex(name);
+            _commandList->SetGraphicsRootDescriptorTable(rootIndex, gpuHandle);
+        }
+
         if (!_parameterBinder.updateFrameBuffer(_commandList.Get(), _engineVariableBuffer, shader->getSemanticBuffer(details::CBufferUpdateType::Pass), _perEntityCB))
         {
             return false;
         }
+
+
 
         return true;
     }

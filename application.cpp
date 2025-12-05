@@ -326,6 +326,22 @@ namespace csyren
 			cubeMesh->mesh = meshCube;
 		}
 
+		{
+			//*
+			auto textured = _scene.createEntity();
+
+			auto tr = _scene.addComponent<core::components::Transform>(textured);
+			tr->rotation = Quaternion::euler(-45, 0, 0);
+			tr->scale = Vector3(3, 1, 3);
+			auto renderer = _scene.addComponent<render::components::MeshRenderer>(textured);
+			renderer->material = render::Primitives::getTextureMaterial(_resource);
+			auto mat = _resource.getMaterial(renderer->material);
+			mat->setTexture("diffuseTexture", texture);
+			auto mesh = _scene.addComponent<render::components::MeshFilter>(textured);
+			mesh->mesh = render::Primitives::getQuad(_resource);
+			//*/
+		}
+
 		const int numCubesX = 5;
 		const int numCubesY = 5;
 		const int numCubesZ = 5;

@@ -63,6 +63,14 @@ namespace csyren::render
 
 			return _params[name];
 		}
+
+		TextureHandle getTexture(const std::string& name)
+		{
+			if (_textures.find(name) == _textures.end()) return {};
+			return _textures[name];
+		}
+
+		const TextureMap& textures() const noexcept { return _textures; }
 	private:
 
 		void setRaw(const std::string& name, const void* data, size_t size)

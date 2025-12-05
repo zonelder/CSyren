@@ -132,6 +132,7 @@ namespace csyren::render
         texture->_width = _resourceDesc.Width;
         texture->_mipmapCount = _resourceDesc.MipLevels;
         texture->_textureResource = std::move(_textureResource);
+        texture->_srvHandles = std::move(srvHandles);
         texture->_loadStatus = LoadStatus::Loaded;
 
         log::debug("texture loading is complete,{}", _name);

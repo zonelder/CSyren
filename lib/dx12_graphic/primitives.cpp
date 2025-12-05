@@ -15,6 +15,9 @@ namespace csyren::render
 {
     namespace
     {
+        constexpr char TEXTURE_SHADER_NAME[]        = "__csyren_texture_shader__";
+        constexpr char TEXTURE_MATERIAL_NAME[]      = "__primitive_texture_material__";
+
         constexpr char DEFAULT_SHADER_NAME[]        = "__csyren_default_shader__";
         constexpr char DEFAULT_MATERIAL_NAME[]      = "__primitive_default_material__";
 
@@ -146,6 +149,66 @@ namespace csyren::render
                 return float4(c, 1.0f);
             }
         )";
+
+        const char* g_primitiveShaderCode3 = R"(
+            
+            //@update frame
+            cbuffer perFrame
+            {
+                //@semantic ViewProjection
+               matrix viewProjection;
+            }
+
+            //@update entity
+            cbuffer perEntity
+            {
+                //@semantic World
+                matrix world;
+            }
+
+            //@update material
+            cbuffer material
+            {
+                //@editable 
+                float4 tint;
+            }
+
+            struct VS_Input
+            {
+                float3 position : POSITION;
+                float2 uv : TEXCOORD0;
+            };
+
+            struct PS_Input
+            {
+                float4 position : SV_POSITION;
+                float2 uv       : TEXCOORD0;
+            };
+            
+            Texture2D diffuseTexture : register(t0);
+            SamplerState samplerLinear : register(s0);
+
+
+            // --- Vertex Shader ---
+            PS_Input VSMain(VS_Input input)
+            {
+                PS_Input output;
+                float4 pos = float4(input.position, 1.0f);
+                pos = mul(pos, world);
+                pos = mul(pos, viewProjection);
+                output.position = pos;
+
+                output.uv = input.uv;
+                return output;
+            }
+
+            // --- Pixel Shader ---
+            float4 PSMain(PS_Input input) : SV_TARGET
+            {
+                float4 color = diffuseTexture.Sample(samplerLinear, input.uv);
+                return color * tint;
+            }
+        )";
     }
 
 
@@ -159,6 +222,12 @@ namespace csyren::render
                 MaterialStateDesc defaultStates = {};
                 return rm.createMaterial(DEFAULT_MATERIAL_NAME, shader, defaultStates);
             };
+        ResourceManager::ProceduralResourceFactory<Material> textureMaterialFabric = [](ResourceManager& rm)
+            {
+                auto shader = rm.get<Shader>(TEXTURE_SHADER_NAME);
+                MaterialStateDesc defaultStates = {};
+                return rm.createMaterial(TEXTURE_MATERIAL_NAME, shader, defaultStates);
+            };
 
         ResourceManager::ProceduralResourceFactory<Mesh> lineMeshFabric = [](ResourceManager& rm) {
             MeshBuilder builder;
@@ -171,6 +240,11 @@ namespace csyren::render
 
         ResourceManager::ProceduralResourceFactory<Shader> rainbowShaderFabric =
             [](ResourceManager& rm) { return rm.createShaderFromCode(RAINBOW_SHADER_NAME, std::string(g_primitiveShaderCode2)); };
+
+
+        ResourceManager::ProceduralResourceFactory<Shader> textureShaderFabric =
+            [](ResourceManager& rm) { return rm.createShaderFromCode(TEXTURE_SHADER_NAME, std::string(g_primitiveShaderCode3)); };
+
 
         ResourceManager::ProceduralResourceFactory<Material> rainbowMaterialFabric =
             [](ResourceManager& rm)
@@ -303,6 +377,9 @@ namespace csyren::render
             };
 
         // --- Регистрация всех фабрик ---
+        rm.registerProcedural(TEXTURE_SHADER_NAME, textureShaderFabric);
+        rm.registerProcedural(TEXTURE_MATERIAL_NAME, textureMaterialFabric);
+
         rm.registerProcedural(DEFAULT_SHADER_NAME, defaultShaderFabric);
         rm.registerProcedural(DEFAULT_MATERIAL_NAME, defaultMaterialFabric);
         rm.registerProcedural(LINE_MESH_NAME, lineMeshFabric);
@@ -315,7 +392,14 @@ namespace csyren::render
 
         return true; // Возвращаем true в случае успеха
     }
-
+    ShaderHandle Primitives::getTextureShader(ResourceManager& rm)
+    {
+        return rm.get<Shader>(TEXTURE_SHADER_NAME);
+    }
+    MaterialHandle Primitives::getTextureMaterial(ResourceManager& rm)
+    {
+        return rm.get<Material>(TEXTURE_MATERIAL_NAME);
+    }
 
     ShaderHandle Primitives::getDefaultShader(ResourceManager& rm)
     {
