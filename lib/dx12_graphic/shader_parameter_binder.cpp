@@ -58,10 +58,10 @@ namespace csyren::render
 		{
 			if (cache.buffer.size() > 0)
 			{
-				log::info("Material (handle: {}) switched to s shader with no material buffer.Destroy cache.", mathandle.id);
+				log::info("Material (handle: {}) switched to shader with no material buffer.Destroy cache.", mathandle.id);
 				_materialCache.erase(it);
 			}
-			return false;
+			return true;
 		}
 		//everything up to date;
 		if (material->version() != cache.lastUpdatedVersion)

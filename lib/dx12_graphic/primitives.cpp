@@ -166,13 +166,6 @@ namespace csyren::render
                 matrix world;
             }
 
-            //@update material
-            cbuffer material
-            {
-                //@editable 
-                float4 tint;
-            }
-
             struct VS_Input
             {
                 float3 position : POSITION;
@@ -206,7 +199,7 @@ namespace csyren::render
             float4 PSMain(PS_Input input) : SV_TARGET
             {
                 float4 color = diffuseTexture.Sample(samplerLinear, input.uv);
-                return color * tint;
+                return color;
             }
         )";
     }
