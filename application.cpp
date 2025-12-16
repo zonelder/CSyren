@@ -230,8 +230,7 @@ namespace csyren
 
 		//------------------------------------LOAD SCENE------------------------------------------------
 
-		auto texture = _resource.getAsync<render::Texture>("E:\\stalker_online_git\\res\\textures\\default\\chess_red.dds");
-		auto texture1 = _resource.getAsync<render::Texture>("E:\\stalker_online_git\\res\\textures\\default\\beach_probe.dds");
+		auto texture = _resource.getAsync<render::Texture>("E:\\stalker_online_git\\res\\textures\\default\\white.dds");
 		//------------------------------------Camera----------------------------------------------------
 		auto mainCameraEntt = _scene.createEntity();
 		auto mainCamera = _scene.addComponent<Camera>(mainCameraEntt);

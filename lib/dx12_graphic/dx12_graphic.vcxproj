@@ -173,6 +173,7 @@
     <ClInclude Include="descriptor_heap_manager.h" />
     <ClInclude Include="dx_log.h" />
     <ClInclude Include="engine_semantics.h" />
+    <ClInclude Include="forward_decl.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="load_status.h" />
     <ClInclude Include="material.h" />
@@ -195,6 +196,7 @@
     <ClInclude Include="shader_meta.h" />
     <ClInclude Include="shader_parameter_binder.h" />
     <ClInclude Include="texture.h" />
+    <ClInclude Include="texture_creation_task.h" />
     <ClInclude Include="texture_upload_task.h" />
     <ClInclude Include="upload_context.h" />
     <ClInclude Include="upload_ring_buffer.h" />
@@ -221,7 +223,9 @@
     <ClCompile Include="shader_meta.cpp" />
     <ClCompile Include="shader_parameter_binder.cpp" />
     <ClCompile Include="texture.cpp" />
+    <ClCompile Include="texture_creation_task.cpp" />
     <ClCompile Include="texture_upload_task.cpp" />
+    <ClCompile Include="upload_context.cpp" />
     <ClCompile Include="upload_ring_buffer.cpp" />
     <ClCompile Include="vertex_layout.cpp" />
   </ItemGroup>

@@ -1,13 +1,6 @@
 #pragma once
 
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <functional>
-
-
-#include "cstdmf/page_view.h"
-#include "cstdmf/log.h"
+#include "forward_decl.h"
 
 #include "resource_handle.h"
 #include "renderer.h"
@@ -16,8 +9,15 @@
 #include "material.h"
 #include "shader.h"
 #include "resource_upload_thread.h"
-
 #include "texture_upload_task.h"
+
+#include "cstdmf/page_view.h"
+#include "cstdmf/log.h"
+
+#include <string>
+#include <vector>
+#include <unordered_map>
+#include <functional>
 
 namespace csyren::render::reflection
 {

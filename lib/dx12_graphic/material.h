@@ -3,13 +3,13 @@
 
 #include <wrl.h>
 #include <d3d12.h>
+
+#include "forward_decl.h"
 #include "resource_handle.h"
 
 
 namespace csyren::render
 {
-	class Renderer;
-	
 	struct alignas(sizeof(size_t)) MaterialStateDesc
 	{
 		D3D12_BLEND_DESC blendState;

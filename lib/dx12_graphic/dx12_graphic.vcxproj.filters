@@ -114,6 +114,9 @@
     <ClInclude Include="load_status.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="forward_decl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -162,6 +165,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="texture_upload_task.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="upload_context.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

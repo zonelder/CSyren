@@ -26,11 +26,13 @@ namespace csyren::render
 		HRESULT hr = S_OK;
 		std::wstring filePathW = cstdmf::to_wstring(_name);
 		std::wstring extension = filePathW.substr(filePathW.find_last_of(L".") + 1);
+        auto device = context.renderer()->device();
+        auto renderer = context.renderer();
         if (_wcsicmp(extension.c_str(), L"dds") == 0)
         {
             // Use DDSTextureLoader
             hr = DirectX::CreateDDSTextureFromFile(
-                context.device(),
+                device,
                 context.batcher(),
                 filePathW.c_str(),
                 _textureResource.ReleaseAndGetAddressOf()
@@ -40,7 +42,7 @@ namespace csyren::render
         {
             // Use WICTextureLoader
             hr = DirectX::CreateWICTextureFromFile(
-                context.device(),
+                device,
                 context.batcher(),
                 filePathW.c_str(),
                 _textureResource.ReleaseAndGetAddressOf()
@@ -53,6 +55,7 @@ namespace csyren::render
             _loadFailed = true;
             return;
         }
+        //context.batcher().Transition(_textureResource.Get(), D3D12_RESOURCE_STATE_COPY_DEST,D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
 
         // 2. ѕолучаем описание ресурса дл€ создани€ SRV в onSync
         _resourceDesc = _textureResource->GetDesc();
@@ -65,6 +68,7 @@ namespace csyren::render
 
         if (_loadFailed)
         {
+            log::error("TextureUploadTask: Failed to load texture {}", _name);
             rm.unload(_handle);
             return;
         }
@@ -112,16 +116,6 @@ namespace csyren::render
         {
             srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
         }
-        D3D12_RESOURCE_BARRIER barrier = {};
-        barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-        barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-        barrier.Transition.pResource = _textureResource.Get();
-        barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-        barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-        barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-
-        renderer.commandList()->ResourceBarrier(1, &barrier);
-
         // D3D12_CPU_DESCRIPTOR_HANDLE is only safe to use in the Main Thread
         renderer.device()->CreateShaderResourceView(_textureResource.Get(), &srvDesc, srvHandles.cpuHandle);
 
@@ -135,6 +129,6 @@ namespace csyren::render
         texture->_srvHandles = std::move(srvHandles);
         texture->_loadStatus = LoadStatus::Loaded;
 
-        log::debug("texture loading is complete,{}", _name);
+        log::debug("texture loading is complete {}", _name);
 	}
 }

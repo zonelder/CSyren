@@ -1,6 +1,5 @@
 #pragma once
 
-
 namespace csyren::render
 {
 	enum LoadStatus

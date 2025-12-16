@@ -4,8 +4,6 @@
 
 namespace csyren::render
 {
-	class Renderer;
-
 	class TextureUploadTask : public UploadTaskBase
 	{
 	public:

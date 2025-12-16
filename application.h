@@ -13,6 +13,7 @@
 
 #define DX12_RENDER
 #ifdef DX12_RENDER
+#include "dx12_graphic/forward_decl.h"
 #include "dx12_graphic/renderer.h"
 #include "dx12_graphic/resource_manager.h"
 #else

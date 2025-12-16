@@ -1,6 +1,7 @@
 #pragma once
 
-#include "resource_handle.h"
+#include "forward_decl.h"
+
 #include "upload_task.h"
 #include "upload_context.h"
 
@@ -13,11 +14,10 @@
 #include <thread>
 #include <condition_variable>
 #include <future>
+#include <deque>
 
 namespace csyren::render
 {
-	class ResourceManager;
-
 	class ResourceUploadThread
 	{
 	public:

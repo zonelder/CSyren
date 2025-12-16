@@ -1,10 +1,11 @@
 #pragma once
+
+#include "forward_decl.h"
+
 #include <memory>
 
 namespace csyren::render
 {
-	class ResourceManager;
-	class UploadContext;
 	class UploadTaskBase
 	{
 	public:

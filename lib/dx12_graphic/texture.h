@@ -1,19 +1,14 @@
 #ifndef __CSYREN_TEXTURE__
 #define __CSYREN_TEXTURE__
 
-
-#include <filesystem>
-#include "renderer.h"
+#include "forward_decl.h"
 #include "load_status.h"
 
 namespace csyren::render
 {
-    class Renderer;
-    template<typename T> class ResourceStorage;
-
     class Texture
     {
-        friend class ResourceStorage<Texture>;
+        friend ResourceStorage<Texture>;
         friend class TextureUploadTask;
     public:
         D3D12_CPU_DESCRIPTOR_HANDLE getCpuSrvHandle() const;

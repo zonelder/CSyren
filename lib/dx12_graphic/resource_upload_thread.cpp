@@ -1,18 +1,18 @@
 #include "pch.h"
+#include "renderer.h"
 #include "resource_upload_thread.h"
-
 #include <chrono>
 
 namespace csyren::render
 {
 
 	ResourceUploadThread::ResourceUploadThread(Renderer* renderer)
-		: _context(renderer->device(), renderer)
+		: _context(renderer)
 	{
         auto device = renderer->device();
 		if (!device) throw std::invalid_argument("device is null");
 		D3D12_COMMAND_QUEUE_DESC qdesc = {};
-		qdesc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
+		qdesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 		qdesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
 		qdesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 		qdesc.NodeMask = 0;
@@ -102,70 +102,32 @@ namespace csyren::render
             // If we have tasks, create a batch, issue uploads and keep the future + tasks pair
             if (!tasksToProcess.empty())
             {
-                try
+                auto& batcher = _context.batcher();
+                batcher.Begin();
+
+                for (auto& task : tasksToProcess)
                 {
-                    auto& batcher = _context.batcher();
-                    batcher.Begin(D3D12_COMMAND_LIST_TYPE_COPY);
-
-                    for (auto& task : tasksToProcess)
+                    try
                     {
-                        try
-                        {
-                            task->onUpload(_context);
-                        }
-                        catch (const std::exception& e)
-                        {
-                            log::error("ResourceUploadThread: error occure while trying to upload resource.{}", e.what());
-                        }
+                        task->onUpload(_context);
                     }
-
-                    std::future<void> fut = batcher.End(_commandQueue.Get());
+                    catch (const std::exception& e)
                     {
-                        std::lock_guard<std::mutex> lg(_inflightMutex);
-                        _inflight.push_back(Inflight{ std::move(fut), std::move(tasksToProcess) });
+                        log::error("ResourceUploadThread: error occure while trying to upload resource.{}", e.what());
                     }
                 }
-                catch (const std::exception& e)
-                {
-                    {
-                        std::lock_guard<std::mutex> lg(_completeTaskMutex);
-                        for (auto& t : tasksToProcess)
-                            _completedTasks.emplace_back(std::move(t));
-                    }
-                }
+
+                std::future<void> fut = batcher.End(_commandQueue.Get());
+                fut.wait();
+                log::debug("ResourceUploadThread: batch completed, {} tasks", tasksToProcess.size());
+
+                std::lock_guard<std::mutex> lg(_completeTaskMutex);
+                _completedTasks.insert(
+                    _completedTasks.end(),
+                    std::make_move_iterator(tasksToProcess.begin()),
+                    std::make_move_iterator(tasksToProcess.end())
+                );
             }
-            {
-                std::lock_guard<std::mutex> lg(_inflightMutex);
-                while (!_inflight.empty())
-                {
-                    Inflight& front = _inflight.front();
-                    if (front.future.wait_for(zeroWait) == std::future_status::ready)
-                    {
-                        try
-                        {
-                            front.future.get();
-                        }
-                        catch (const std::exception& e)
-                        {
-                            log::error("Upload batch future threw: {}", e.what());
-                        }
-
-                        {
-                            std::lock_guard<std::mutex> lg2(_completeTaskMutex);
-                            _completedTasks.insert(_completedTasks.end(),
-                                std::make_move_iterator(front.tasks.begin()),
-                                std::make_move_iterator(front.tasks.end()));
-                        }
-
-                        _inflight.pop_front();
-                        continue;                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-            }
-
             std::this_thread::sleep_for(pollInterval);
         }
         flushAndShutdown();

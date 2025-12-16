@@ -1,24 +1,22 @@
 #pragma once
+
+#include "forward_decl.h"
+#include "math/math.h"
+#include "engine_semantics.h"
+#include "shader_meta.h"
+
+#include <d3d12.h>
+#include <wrl.h>
+#include <d3d12shader.h>
+
 #include <string>
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
 #include <filesystem>
 
-#include <d3d12.h>
-#include <wrl.h>
-#include "d3d12shader.h"
-#include "math/math.h"
-#include "engine_semantics.h"
-#include "shader_meta.h"
-
 namespace csyren::render
 {
-	class Renderer;
-	class Texture;
-	class UploadRingBuffer;
-	template<typename T> class ResourceStorage;
-
 	struct ShaderResourceInfo
 	{
 		std::string name;
@@ -57,7 +55,6 @@ namespace csyren::render
 		size_t rootParameterIndex;
 		std::vector<LinkedVariable> variables;
 	};
-
 
 	struct SemanticCopyCommand
 	{
