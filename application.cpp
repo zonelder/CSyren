@@ -234,7 +234,7 @@ namespace csyren
 
 		auto texture1 = _resource.getAsync<render::Texture>("E:\\stalker_online_git\\res\\textures\\default\\white.dds");
 
-		auto texture2 = _resource.getAsync<render::Texture>("E:\\stalker_online_git\\res\\textures\\materials\\carpet\carpet04.dds");
+		auto texture2 = _resource.getAsync<render::Texture>("E:\\stalker_online_git\\res\\textures\\materials\\carpet\\carpet04.dds");
 		//------------------------------------Camera----------------------------------------------------
 		auto mainCameraEntt = _scene.createEntity();
 		auto mainCamera = _scene.addComponent<Camera>(mainCameraEntt);
@@ -339,7 +339,7 @@ namespace csyren
 			auto renderer = _scene.addComponent<render::components::MeshRenderer>(textured);
 			renderer->material = render::Primitives::getTextureMaterial(_resource);
 			auto mat = _resource.getMaterial(renderer->material);
-			mat->setTexture("diffuseTexture", texture);
+			mat->setTexture("diffuseTexture", texture2);
 			auto mesh = _scene.addComponent<render::components::MeshFilter>(textured);
 			mesh->mesh = render::Primitives::getQuad(_resource);
 			//*/
