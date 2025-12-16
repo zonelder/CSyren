@@ -6,6 +6,16 @@
 namespace csyren::render
 {
 
+    /**
+     * @brief Constructs a resource upload thread for asynchronously uploading resources.
+     *
+     * This constructor initializes the thread and the command queue used for resource uploads.
+     * A new thread is created that will process resource upload tasks.
+     *
+     * @param renderer The renderer that owns the resources and manages the device.
+     * @throws std::invalid_argument If the device is null.
+     * @throws std::runtime_error If creating the command queue fails.
+     */
 	ResourceUploadThread::ResourceUploadThread(Renderer* renderer)
 		: _context(renderer)
 	{
@@ -24,6 +34,15 @@ namespace csyren::render
 		_running = true;
 		_workerThread = std::thread(&ResourceUploadThread::run, this);
 	}
+
+
+    /**
+     * @brief Destructor that shuts down the upload thread and ensures that all tasks are completed.
+     *
+     * The destructor stops the upload thread and waits for all tasks to finish before joining the thread.
+     *
+     * @note This method ensures that the thread is properly shut down and cleaned up.
+     */
 	ResourceUploadThread::~ResourceUploadThread()
 	{
 		_running = false;
@@ -34,6 +53,19 @@ namespace csyren::render
 		}
 	}
 
+    /**
+     * @brief Adds a new upload task to the task queue.
+     *
+     * This method adds a task for uploading resources to the queue. The task is then processed by the upload thread.
+     * The task is moved into the queue, and the upload thread is notified to process it.
+     *
+     * @param task The upload task to be added.
+     * @note The task must be moved into the queue to avoid keeping a reference to resources that might be used in the upload thread.
+     * @throws std::invalid_argument If the task is invalid (nullptr).
+     *
+     * @warning This method must never take the task by reference because it can lead to resource access conflicts in the main thread.
+     * @warning The resource data must not remain accessible in the main thread after the task is added, as it may be modified by the upload thread.
+     */
 	void ResourceUploadThread::addTask(UploadTaskBase::Ptr&& task)
 	{
 		{
@@ -43,11 +75,15 @@ namespace csyren::render
 		_taskCondition.notify_one();
 	}
 	
-	/**
-	 * @brief Method is called by main thread to sync states if upload thread has something we already can use.
-	 * 
-	 * \param rm
-	 */
+    /**
+     * @brief Synchronizes the upload tasks with the resource manager.
+     *
+     * This method is called by the main thread to synchronize resources after they have been uploaded.
+     * It processes the completed tasks and updates the resource manager accordingly.
+     *
+     * @param rm The resource manager that will be updated with the uploaded resources.
+     * @throws std::exception If an error occurs during synchronization.
+     */
 	void ResourceUploadThread::sync(ResourceManager& rm)
 	{
      
@@ -74,6 +110,14 @@ namespace csyren::render
 		}
 	}
 
+    /**
+     * @brief Main execution loop for the upload thread.
+     *
+     * This method processes the queued tasks by uploading resources and synchronizing the completion of each task.
+     * Tasks are processed in batches for better performance. The thread continues to run until it is stopped.
+     *
+     * @note This method will periodically wake up to process tasks, and ensure that the thread exits gracefully when stopped.
+     */
     void ResourceUploadThread::run()
     {
         const std::chrono::milliseconds pollInterval(5);
@@ -133,6 +177,12 @@ namespace csyren::render
         flushAndShutdown();
     }
 
+    /**
+     * @brief Waits for all in-flight tasks to complete before shutting down the thread.
+     *
+     * This method blocks until all in-flight tasks have been processed and completed. It ensures that no tasks
+     * are left unfinished before the thread shuts down.
+     */
     void ResourceUploadThread::flushAndShutdown()
     {
         while (true)

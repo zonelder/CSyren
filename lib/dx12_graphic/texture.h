@@ -4,6 +4,16 @@
 #include "forward_decl.h"
 #include "load_status.h"
 
+
+namespace csyren::render::details
+{
+    struct TextureBase
+    {
+        Microsoft::WRL::ComPtr<ID3D12Resource> buffer;
+        D3D12_RESOURCE_DESC                    desc;
+    };
+}
+
 namespace csyren::render
 {
     class Texture
@@ -26,20 +36,14 @@ namespace csyren::render
         Texture(const Texture&) = delete;
         Texture& operator=(const Texture&) = delete;
 
-
-
         bool init(Renderer& renderer, const std::wstring& filePath);
 
         bool init(Renderer& renderer, const std::string& filePath);
     private:
-        Microsoft::WRL::ComPtr<ID3D12Resource> _textureResource;
-        DescriptorHandles _srvHandles{};
-        DescriptorHeapManager* _heapManager{ nullptr };
-        UINT _mipmapCount{ 0 };
-        UINT _width{ 0 };
-        UINT _height{ 0 };
-        DXGI_FORMAT _format{ DXGI_FORMAT_UNKNOWN };
-        LoadStatus _loadStatus{ Loading };
+        details::TextureBase    _dxData;
+        DescriptorHandles       _srvHandles{};
+        DescriptorHeapManager*  _heapManager{ nullptr };
+        LoadStatus              _loadStatus{ Loading };
     };
 }
 

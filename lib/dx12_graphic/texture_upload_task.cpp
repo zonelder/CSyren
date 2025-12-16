@@ -30,22 +30,20 @@ namespace csyren::render
         auto renderer = context.renderer();
         if (_wcsicmp(extension.c_str(), L"dds") == 0)
         {
-            // Use DDSTextureLoader
             hr = DirectX::CreateDDSTextureFromFile(
                 device,
                 context.batcher(),
                 filePathW.c_str(),
-                _textureResource.ReleaseAndGetAddressOf()
+                _dxData.buffer.ReleaseAndGetAddressOf()
             );
         }
         else
         {
-            // Use WICTextureLoader
             hr = DirectX::CreateWICTextureFromFile(
                 device,
                 context.batcher(),
                 filePathW.c_str(),
-                _textureResource.ReleaseAndGetAddressOf()
+                _dxData.buffer.ReleaseAndGetAddressOf()
             );
         }
 
@@ -54,11 +52,8 @@ namespace csyren::render
             log::error("TextureUploadTask: DDSTextureLoader/WICTextureLoader failed to load texture file.({}) HRESULT: 0x{:X}", _name, hr);
             _loadFailed = true;
             return;
-        }
-        //context.batcher().Transition(_textureResource.Get(), D3D12_RESOURCE_STATE_COPY_DEST,D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-
-        // 2. ѕолучаем описание ресурса дл€ создани€ SRV в onSync
-        _resourceDesc = _textureResource->GetDesc();
+        }  
+        _dxData.desc = _dxData.buffer->GetDesc();
 	}
 
 
@@ -102,13 +97,13 @@ namespace csyren::render
 
         D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
         srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-        srvDesc.Format = _resourceDesc.Format;
-        srvDesc.Texture2D.MipLevels = _resourceDesc.MipLevels;
+        srvDesc.Format = _dxData.desc.Format;
+        srvDesc.Texture2D.MipLevels = _dxData.desc.MipLevels;
         srvDesc.Texture2D.MostDetailedMip = 0;
         srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
         // Simplified SRV dimension check
-        if (_resourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D)
+        if (_dxData.desc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D)
         {
             srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
         }
@@ -117,15 +112,11 @@ namespace csyren::render
             srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
         }
         // D3D12_CPU_DESCRIPTOR_HANDLE is only safe to use in the Main Thread
-        renderer.device()->CreateShaderResourceView(_textureResource.Get(), &srvDesc, srvHandles.cpuHandle);
+        renderer.device()->CreateShaderResourceView(_dxData.buffer.Get(), &srvDesc, srvHandles.cpuHandle);
 
 
         texture->_heapManager = heapManager;
-        texture->_format = _resourceDesc.Format;
-        texture->_height = _resourceDesc.Height;
-        texture->_width = _resourceDesc.Width;
-        texture->_mipmapCount = _resourceDesc.MipLevels;
-        texture->_textureResource = std::move(_textureResource);
+        texture->_dxData = std::move(_dxData);
         texture->_srvHandles = std::move(srvHandles);
         texture->_loadStatus = LoadStatus::Loaded;
 
