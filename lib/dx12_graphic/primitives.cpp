@@ -8,9 +8,6 @@
 #include <d3dcompiler.h>
 #include <vector>
 
-using Microsoft::WRL::ComPtr;
-using namespace DirectX;
-
 namespace csyren::render
 {
     namespace
@@ -335,12 +332,12 @@ namespace csyren::render
 
             for (int lat = 0; lat <= latBands; lat++)
             {
-                float theta = lat * XM_PI / latBands;
+                float theta = lat * DirectX::XM_PI / latBands;
                 float sinTheta = sinf(theta);
                 float cosTheta = cosf(theta);
                 for (int lon = 0; lon <= longBands; lon++)
                 {
-                    float phi = lon * 2.0f * XM_PI / longBands;
+                    float phi = lon * 2.0f * DirectX::XM_PI / longBands;
                     float sinPhi = sinf(phi);
                     float cosPhi = cosf(phi);
 

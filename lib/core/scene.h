@@ -103,7 +103,7 @@ namespace csyren::core
 	template<typename... Cs>
 	class SceneView;
 
-	class Application;
+	//class Application;
 
 
 

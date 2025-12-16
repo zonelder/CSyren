@@ -74,5 +74,4 @@ obj\Win32\*
 doxygen/
 pydoc/
 build/
-client/enc_temp_folder/
-tools/worldeditor/enc_temp_folder/
+third_party/

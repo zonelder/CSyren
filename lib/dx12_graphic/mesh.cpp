@@ -4,12 +4,13 @@
 #include "resource_manager.h"
 
 using Microsoft::WRL::ComPtr;
-using namespace DirectX;
+
 
 namespace csyren::render
 {
     bool Mesh::createBuffer(ID3D12Device* device, D3D12_HEAP_TYPE heapType, UINT64 size, D3D12_RESOURCE_STATES initialState, Microsoft::WRL::ComPtr<ID3D12Resource>& outResource)
     {
+        using namespace DirectX;
         D3D12_HEAP_PROPERTIES heapProps = {};
         heapProps.Type = heapType;
         heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;

@@ -18,6 +18,7 @@
 #include <vector>
 #include <unordered_map>
 #include <functional>
+#include <type_traits>
 
 namespace csyren::render::reflection
 {
@@ -41,6 +42,8 @@ namespace csyren::render
     class ResourceStorage
     {
     public:
+
+        using handle_type = THandle<TResource>;
         // Constructor takes core dependencies
         ResourceStorage(ResourceManager& resourceManager)
             :_resourceManager(resourceManager) {
@@ -53,7 +56,7 @@ namespace csyren::render
         // Unified method for creating/loading a resource
         // TInitArgs will be passed to TResource::init
         template<typename... TInitArgs>
-        THandle<TResource> load(const std::string& name, TInitArgs&&... init_args)
+        handle_type load(const std::string& name, TInitArgs&&... init_args)
         {
             if (auto it = _nameToHandleMap.find(name); it != _nameToHandleMap.end())
             {
@@ -72,9 +75,9 @@ namespace csyren::render
             return handle;
         }
 
-        std::pair<THandle<TResource>, TResource*> create(const std::string& name)
+        std::pair<handle_type, TResource*> create(const std::string& name)
         {
-            THandle<TResource> handle{ _storage.emplace() };
+            handle_type handle{ _storage.emplace() };
             if (!handle) return { handle ,nullptr};
 
             TResource* resource_ptr = _storage.get(handle.id);
@@ -84,21 +87,21 @@ namespace csyren::render
         }
 
         // Basic accessors
-        TResource* get(THandle<TResource> handle)
+        TResource* get(handle_type handle)
         {
             return _storage.get(handle.id);
         }
 
-        THandle<TResource> find(const std::string& name)
+        handle_type find(const std::string& name)
         {
             if (auto it = _nameToHandleMap.find(name); it != _nameToHandleMap.end())
             {
                 return it->second;
             }
-            return { THandle<TResource> ::INVALID };
+            return { handle_type::INVALID };
         }
 
-        const std::string& getName(THandle<TResource> handle) const
+        const std::string& getName(handle_type handle) const
         {
             if (auto it = _handleToNameMap.find(handle); it != _handleToNameMap.end())
             {
@@ -109,7 +112,7 @@ namespace csyren::render
         }
 
         // Unloading
-        void unload(THandle<TResource> handle)
+        void unload(handle_type handle)
         {
             if (_storage.contains(handle.id))
             {
@@ -140,8 +143,8 @@ namespace csyren::render
     private:
         ResourceManager& _resourceManager;
 
-        std::unordered_map<std::string, THandle<TResource>> _nameToHandleMap;
-        std::unordered_map<THandle<TResource>, std::string> _handleToNameMap; // For reverse lookup
+        std::unordered_map<std::string, handle_type> _nameToHandleMap;
+        std::unordered_map<handle_type, std::string> _handleToNameMap; // For reverse lookup
         cstdmf::PageView<TResource> _storage;
     };
 
@@ -173,42 +176,10 @@ namespace csyren::render
             log::debug("Procedural resource factory registered: {}", name);
         }
 
-        template<typename TResource>
-        THandle<TResource> getAsync(const std::string& name)
-        {
-            // 1. Check if already in cache
-            auto& storage = getStorage<TResource>();
-            auto handle = storage.find(name);
-            if (handle.id != THandle<TResource>::INVALID)
-            {
-                log::debug("Resource found in cache: {}", name);
-                return handle;
-            }
-
-            // 2. Check if a procedural factory is registered for this name
-            auto& factoryMap = getFactoryMap<TResource>();
-            if (auto it = factoryMap.find(name); it != factoryMap.end())
-            {
-                log::debug("Creating procedural resource: {}", name);
-                return it->second(*this); // Factory will call create... and store it
-            }
-
-            // 3. Assume it's a file path and try to load from disk
-            log::debug("Loading resource from file: {}", name);
-            auto [new_handle,ptr] = storage.create(name);
-
-            if (new_handle.id == THandle<TResource>::INVALID) return {};
-            using TaskType = typename reflection::UploadResourceTask<TResource>::Type;
-            _pUploadThread->addTask(std::make_unique<TaskType>(new_handle, name));
-
-            return new_handle;
-        }
-
         // --- Unified Get Method (main entry point for all resources) ---
         template<typename TResource>
         THandle<TResource> get(const std::string& name)
         {
-            // 1. Check if already in cache
             auto& storage = getStorage<TResource>();
             auto handle = storage.find(name);
             if (handle.id != THandle<TResource>::INVALID)
@@ -217,7 +188,6 @@ namespace csyren::render
                 return handle;
             }
 
-            // 2. Check if a procedural factory is registered for this name
             auto& factoryMap = getFactoryMap<TResource>();
             if (auto it = factoryMap.find(name); it != factoryMap.end())
             {
@@ -225,10 +195,22 @@ namespace csyren::render
                 return it->second(*this); // Factory will call create... and store it
             }
 
-            // 3. Assume it's a file path and try to load from disk
-            log::debug("Loading resource from file: {}", name);
-            // This assumes TResource::init has an overload that takes a single string (filepath)
-            return storage.load(name,_renderer,name);
+            if constexpr (std::is_same<TResource, Texture>::value)
+            {
+                log::debug("ResourceManager::get: async load from file: {} ", name);
+                auto [new_handle, ptr] = storage.create(name);
+
+                if (new_handle.id == THandle<TResource>::INVALID) return {};
+                using TaskType = typename reflection::UploadResourceTask<TResource>::Type;
+                _pUploadThread->addTask(std::make_unique<TaskType>(new_handle, name));
+                return new_handle;
+            }
+            else
+            {
+                log::debug("sync load resource from file: {}", name);
+                return storage.load(name, _renderer, name);
+            }
+
         }
 
         // --- Explicit Create Methods (for in-memory/programmatic creation) ---
