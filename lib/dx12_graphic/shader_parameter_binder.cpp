@@ -49,7 +49,7 @@ namespace csyren::render
 		auto shader = rm->getShader(material->getShader());
 		if (!shader)
 		{
-			log::warning("Shader for material( handle: {}) not found. Cannot update buffer.", material->getShader().id);
+			log::warning("GraphicShader for material( handle: {}) not found. Cannot update buffer.", material->getShader().id);
 			return false;
 		}
 		const LinkedBuffer* materialBufferDesc = shader->getConstantBuffer(details::CBufferUpdateType::Material);
@@ -92,7 +92,7 @@ namespace csyren::render
 
 				if (varData.size() != varDesc.size)
 				{
-					log::error("Size mismatch for variable '{}' in material (handle: {}). Shader expects {} bytes, but material provides {} bytes. Skipping update for this variable.",
+					log::error("Size mismatch for variable '{}' in material (handle: {}). GraphicShader expects {} bytes, but material provides {} bytes. Skipping update for this variable.",
 						varDesc.name, mathandle.id, varDesc.size, varData.size());
 					continue;
 				}

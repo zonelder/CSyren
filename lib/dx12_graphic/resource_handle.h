@@ -19,7 +19,7 @@ namespace csyren::render
     using MeshHandle = THandle<Mesh>;
     using TextureHandle = THandle<Texture>;
     using MaterialHandle = THandle<Material>;
-    using ShaderHandle = THandle<Shader>;
+    using ShaderHandle = THandle<GraphicShader>;
 
 }
 

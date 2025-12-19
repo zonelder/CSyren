@@ -7,7 +7,7 @@ namespace csyren::render
 	//<resources>
 	class Texture;
 	class Mesh;
-	class Shader;
+	class GraphicShader;
 	class Material;
 
 	template<typename T> class ResourceStorage;

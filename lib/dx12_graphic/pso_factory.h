@@ -38,8 +38,8 @@ namespace csyren::render::details
 	public:
 		PSOFactory(ID3D12Device* device) noexcept : _device(device) {};
 
-		ID3D12PipelineState* try_get(Shader* shader, const MaterialStateDesc& desc);
-		ID3D12PipelineState* get(ShaderHandle sh,Shader* shader, const MaterialStateDesc& desc,const VertexLayout& vertexLayout);
+		ID3D12PipelineState* try_get(GraphicShader* shader, const MaterialStateDesc& desc);
+		ID3D12PipelineState* get(ShaderHandle sh,GraphicShader* shader, const MaterialStateDesc& desc,const VertexLayout& vertexLayout);
 
 	private:
 		ID3D12Device* _device;

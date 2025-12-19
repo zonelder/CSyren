@@ -117,6 +117,12 @@
     <ClInclude Include="forward_decl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="texture_creation_task.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shader_base.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -168,6 +174,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="upload_context.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="texture_creation_task.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="shader_base.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

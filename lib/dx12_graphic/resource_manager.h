@@ -251,7 +251,7 @@ namespace csyren::render
         Mesh* getMesh(MeshHandle handle) { return _meshStorage.get(handle); }
         Texture* getTexture(TextureHandle handle) { return _textureStorage.get(handle); }
         Material* getMaterial(MaterialHandle handle) { return _materialStorage.get(handle); }
-        Shader* getShader(ShaderHandle handle) { return _shaderStorage.get(handle); }
+        GraphicShader* getShader(ShaderHandle handle) { return _shaderStorage.get(handle); }
 
         // --- Get resource name by handle ---
         const std::string& getMeshName(MeshHandle handle) const { return _meshStorage.getName(handle); }
@@ -301,26 +301,26 @@ namespace csyren::render
         ResourceStorage<Mesh> _meshStorage;
         ResourceStorage<Texture> _textureStorage;
         ResourceStorage<Material> _materialStorage;
-        ResourceStorage<Shader> _shaderStorage;
+        ResourceStorage<GraphicShader> _shaderStorage;
 
         // Maps for procedural resource factories
         std::unordered_map<std::string, ProceduralResourceFactory<Mesh>> _proceduralMeshFactories;
         std::unordered_map<std::string, ProceduralResourceFactory<Texture>> _proceduralTextureFactories;
         std::unordered_map<std::string, ProceduralResourceFactory<Material>> _proceduralMaterialFactories;
-        std::unordered_map<std::string, ProceduralResourceFactory<Shader>> _proceduralShaderFactories;
+        std::unordered_map<std::string, ProceduralResourceFactory<GraphicShader>> _proceduralShaderFactories;
 
         // Helper to get the correct storage based on type
         template<typename T> ResourceStorage<T>& getStorage();
         template<> ResourceStorage<Mesh>& getStorage<Mesh>() { return _meshStorage; }
         template<> ResourceStorage<Texture>& getStorage<Texture>() { return _textureStorage; }
         template<> ResourceStorage<Material>& getStorage<Material>() { return _materialStorage; }
-        template<> ResourceStorage<Shader>& getStorage<Shader>() { return _shaderStorage; }
+        template<> ResourceStorage<GraphicShader>& getStorage<GraphicShader>() { return _shaderStorage; }
 
         // Helper to get the correct factory map based on type
         template<typename T> std::unordered_map<std::string, ProceduralResourceFactory<T>>& getFactoryMap();
         template<> std::unordered_map<std::string, ProceduralResourceFactory<Mesh>>& getFactoryMap<Mesh>() { return _proceduralMeshFactories; }
         template<> std::unordered_map<std::string, ProceduralResourceFactory<Texture>>& getFactoryMap<Texture>() { return _proceduralTextureFactories; }
         template<> std::unordered_map<std::string, ProceduralResourceFactory<Material>>& getFactoryMap<Material>() { return _proceduralMaterialFactories; }
-        template<> std::unordered_map<std::string, ProceduralResourceFactory<Shader>>& getFactoryMap<Shader>() { return _proceduralShaderFactories; }
+        template<> std::unordered_map<std::string, ProceduralResourceFactory<GraphicShader>>& getFactoryMap<GraphicShader>() { return _proceduralShaderFactories; }
     };
 }

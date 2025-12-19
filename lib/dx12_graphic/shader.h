@@ -4,37 +4,14 @@
 #include "math/math.h"
 #include "engine_semantics.h"
 #include "shader_meta.h"
+#include "shader_base.h"
 
 #include <d3d12.h>
 #include <wrl.h>
 #include <d3d12shader.h>
 
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <unordered_set>
-#include <filesystem>
-
 namespace csyren::render
 {
-	struct ShaderResourceInfo
-	{
-		std::string name;
-		UINT shaderRegister;
-		UINT rootParameterIndex;
-		UINT registerSpace;
-	};
-
-	// Новая структура для хранения информации о переменных внутри cbuffer
-	struct ConstantBufferVariableInfo
-	{
-		std::string bufferName;
-		UINT offset;
-		UINT size;
-		std::vector<uint8_t> defaultValue;
-		bool needsTranspose;
-	};
-
 	struct LinkedVariable
 	{
 		std::string name;
@@ -80,19 +57,14 @@ namespace csyren::render
 	inline constexpr from_source_code_t from_source_code{};
 
 
-	class Shader
+	class GraphicShader final : public ShaderBase
 	{
-		friend class ResourceStorage<Shader>;
+		friend class ResourceStorage<GraphicShader>;
 	public:
-		Shader() = default;
+		GraphicShader() = default;
 		bool init(Renderer& renderer,from_source_code_t, const std::string& code);
 		bool init(Renderer& renderer,from_asset_path_t, const std::string& filepath);
 		bool init(Renderer& renderer,const std::string& filepath);
-		ID3D12RootSignature* getRootSignature() const 
-		{
-			return  _rootSignature.Get();
-		}
-		UINT getRootParameterIndex(const std::string& resourceName) const;
 
 		const std::vector< D3D12_INPUT_ELEMENT_DESC>& getInputLayout() const noexcept { return _inputLayout; };
 
@@ -123,29 +95,17 @@ namespace csyren::render
 			return { _dsBlob->GetBufferPointer(), _dsBlob->GetBufferSize() };
 		}
 
-		void setEngineParameters(const EngineVariableBuffer& engineBuffer,details::CBufferUpdateType updateType);
-
-		void commit(ID3D12GraphicsCommandList* cmd, UploadRingBuffer& uploadBuffer);
-
-
 		const LinkedBuffer* getConstantBuffer(details::CBufferUpdateType updateType) const noexcept;
 
 		const SemanticBufferLayout* getSemanticBuffer(details::CBufferUpdateType updateType) const noexcept;
 	private:
-		bool buildRootSignatureFromReflection(ID3D12Device* device, const D3D12_SHADER_BYTECODE& vs, const D3D12_SHADER_BYTECODE& ps);
-		bool buildInputLayoutFromReflection(const D3D12_SHADER_BYTECODE& vs);
+		bool buildInputLayoutFromReflection();
 
 		bool compileAndInit(Renderer& renderer, const std::string& shaderCode, const std::filesystem::path relativePath);
-		bool finalizeInit(Renderer& renderer, const D3D12_SHADER_BYTECODE& vs,const D3D12_SHADER_BYTECODE& ps);
+		bool finalizeInit(Renderer& renderer);
 		bool loadPrecompiledAndInit(Renderer& renderer, const std::filesystem::path& relativePath);
-
-		Microsoft::WRL::ComPtr<ID3DBlob> compileShader(const std::string& source, const char* target, const std::string& entryPoint,bool ignorMissing);
-
-		bool validateMeta(const D3D12_SHADER_BYTECODE& vs, const D3D12_SHADER_BYTECODE& ps);
 		void linkSemantics();
 		void buildSemanticLayout();
-
-		Microsoft::WRL::ComPtr<ID3D12RootSignature> _rootSignature;
 
 		Microsoft::WRL::ComPtr< ID3DBlob> _vsBlob;
 		Microsoft::WRL::ComPtr< ID3DBlob> _psBlob;
@@ -153,17 +113,10 @@ namespace csyren::render
 		Microsoft::WRL::ComPtr< ID3DBlob> _hsBlob;
 		Microsoft::WRL::ComPtr< ID3DBlob> _dsBlob;
 
-		std::unordered_map<std::string, ConstantBufferVariableInfo> _variableInfoMap;
-		std::unordered_map<std::string, ShaderResourceInfo>			_resourceMap;
-
-		std::unordered_map<std::string, UINT>					_constantBufferSizes;
-
 		std::vector<LinkedBuffer>								_linkedBuffers;
 		std::vector<SemanticBufferLayout>						_semanticLayouts;
 
 		std::vector<std::string>								_InputLayoutSemantic;
 		std::vector< D3D12_INPUT_ELEMENT_DESC>					_inputLayout;
-
-		ShaderMetaPtr		_meta;
 	};
 }

@@ -62,7 +62,7 @@ namespace csyren::render
                 float4 color    : COLOR;
             };
 
-            // --- Vertex Shader ---
+            // --- Vertex GraphicShader ---
             PS_Input VSMain(VS_Input input)
             {
                 PS_Input output;
@@ -74,7 +74,7 @@ namespace csyren::render
                 return output;
             }
 
-            // --- Pixel Shader ---
+            // --- Pixel GraphicShader ---
             float4 PSMain(PS_Input input) : SV_TARGET
             {
                 return tint;
@@ -179,7 +179,7 @@ namespace csyren::render
             SamplerState samplerLinear : register(s0);
 
 
-            // --- Vertex Shader ---
+            // --- Vertex GraphicShader ---
             PS_Input VSMain(VS_Input input)
             {
                 PS_Input output;
@@ -192,7 +192,7 @@ namespace csyren::render
                 return output;
             }
 
-            // --- Pixel Shader ---
+            // --- Pixel GraphicShader ---
             float4 PSMain(PS_Input input) : SV_TARGET
             {
                 float4 color = diffuseTexture.Sample(samplerLinear, input.uv);
@@ -204,17 +204,17 @@ namespace csyren::render
 
     bool Primitives::registerFabricsAll(ResourceManager& rm)
     {
-        ResourceManager::ProceduralResourceFactory<Shader> defaultShaderFabric = [](ResourceManager& rm) { return rm.createShaderFromCode(DEFAULT_SHADER_NAME, std::string(g_primitiveShaderCode)); };
+        ResourceManager::ProceduralResourceFactory<GraphicShader> defaultShaderFabric = [](ResourceManager& rm) { return rm.createShaderFromCode(DEFAULT_SHADER_NAME, std::string(g_primitiveShaderCode)); };
 
         ResourceManager::ProceduralResourceFactory<Material> defaultMaterialFabric = [](ResourceManager& rm)
             {
-                auto shader = rm.get<Shader>(DEFAULT_SHADER_NAME);
+                auto shader = rm.get<GraphicShader>(DEFAULT_SHADER_NAME);
                 MaterialStateDesc defaultStates = {};
                 return rm.createMaterial(DEFAULT_MATERIAL_NAME, shader, defaultStates);
             };
         ResourceManager::ProceduralResourceFactory<Material> textureMaterialFabric = [](ResourceManager& rm)
             {
-                auto shader = rm.get<Shader>(TEXTURE_SHADER_NAME);
+                auto shader = rm.get<GraphicShader>(TEXTURE_SHADER_NAME);
                 MaterialStateDesc defaultStates = {};
                 return rm.createMaterial(TEXTURE_MATERIAL_NAME, shader, defaultStates);
             };
@@ -228,18 +228,18 @@ namespace csyren::render
             return rm.createMesh(LINE_MESH_NAME,builder);
             };
 
-        ResourceManager::ProceduralResourceFactory<Shader> rainbowShaderFabric =
+        ResourceManager::ProceduralResourceFactory<GraphicShader> rainbowShaderFabric =
             [](ResourceManager& rm) { return rm.createShaderFromCode(RAINBOW_SHADER_NAME, std::string(g_primitiveShaderCode2)); };
 
 
-        ResourceManager::ProceduralResourceFactory<Shader> textureShaderFabric =
+        ResourceManager::ProceduralResourceFactory<GraphicShader> textureShaderFabric =
             [](ResourceManager& rm) { return rm.createShaderFromCode(TEXTURE_SHADER_NAME, std::string(g_primitiveShaderCode3)); };
 
 
         ResourceManager::ProceduralResourceFactory<Material> rainbowMaterialFabric =
             [](ResourceManager& rm)
             {
-                auto shader = rm.get<Shader>(RAINBOW_SHADER_NAME);
+                auto shader = rm.get<GraphicShader>(RAINBOW_SHADER_NAME);
                 MaterialStateDesc states = {};
                 return rm.createMaterial(RAINBOW_MATERIAL_NAME, shader, states);
             };
@@ -384,7 +384,7 @@ namespace csyren::render
     }
     ShaderHandle Primitives::getTextureShader(ResourceManager& rm)
     {
-        return rm.get<Shader>(TEXTURE_SHADER_NAME);
+        return rm.get<GraphicShader>(TEXTURE_SHADER_NAME);
     }
     MaterialHandle Primitives::getTextureMaterial(ResourceManager& rm)
     {
@@ -393,7 +393,7 @@ namespace csyren::render
 
     ShaderHandle Primitives::getDefaultShader(ResourceManager& rm)
     {
-        return rm.get<Shader>(DEFAULT_SHADER_NAME);
+        return rm.get<GraphicShader>(DEFAULT_SHADER_NAME);
     }
 
     MaterialHandle Primitives::getDefaultMaterial(ResourceManager& rm)
@@ -403,7 +403,7 @@ namespace csyren::render
 
     ShaderHandle Primitives::getRainbowShader(ResourceManager& rm)
     {
-        return rm.get<Shader>(RAINBOW_SHADER_NAME);
+        return rm.get<GraphicShader>(RAINBOW_SHADER_NAME);
     }
 
     MaterialHandle Primitives::getRainbowMaterial(ResourceManager& rm)
