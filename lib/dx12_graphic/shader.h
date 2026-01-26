@@ -49,12 +49,7 @@ namespace csyren::render
 		std::vector<SemanticCopyCommand> copyCommands;
 	};
 
-	struct from_asset_path_t {};
-	inline constexpr from_asset_path_t from_asset_path{};
 
-	// Тэг для инициализации из исходного кода в строке
-	struct from_source_code_t {};
-	inline constexpr from_source_code_t from_source_code{};
 
 
 	class GraphicShader final : public ShaderBase

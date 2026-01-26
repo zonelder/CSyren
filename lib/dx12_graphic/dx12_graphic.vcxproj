@@ -168,6 +168,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="compute_shader.h" />
     <ClInclude Include="constant_buffer.h" />
     <ClInclude Include="constant_buffer_manager.h" />
     <ClInclude Include="descriptor_heap_manager.h" />

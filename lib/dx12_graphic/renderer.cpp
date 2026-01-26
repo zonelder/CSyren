@@ -12,8 +12,9 @@
 #pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 
-using Microsoft::WRL::ComPtr;
 
+using Microsoft::WRL::ComPtr;
+#define DEBUG_RENDER = defined(_DEBUG) && (_WIN32_WINNT >= 0x0603);
 namespace csyren::render
 {
     Renderer::~Renderer()
@@ -33,15 +34,25 @@ namespace csyren::render
     {
         UINT factoryFlags = 0;
         ComPtr<IDXGIFactory4> factory;
-        if (DX_FAILED(CreateDXGIFactory2(factoryFlags, IID_PPV_ARGS(&factory))))
-            return false;
+        HRESULT hr;
+        #if defined(_DEBUG) && (_WIN32_WINNT >= 0x0603)
+              hr = CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, IID_PPV_ARGS(&factory));
+        #else
+              hr = CreateDXGIFactory1(IID_PPV_ARGS(&factory));
+        #endif
 
+        if (FAILED(hr))
+        {
+            log::error("Render::init: failed to initialize IDXGIFactory");
+            return false;
+        }
+#if defined(_DEBUG) && (_WIN32_WINNT >= 0x0603)
         ComPtr<ID3D12Debug> debugController;
         if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
         {
             debugController->EnableDebugLayer();
         }
-
+#endif
 
 
         if (DX_FAILED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&_device))))
@@ -143,6 +154,11 @@ namespace csyren::render
         if (DX_FAILED(_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_fence))))
             return false;
 
+        _fenceValue = 1;
+        _fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+        if (!_fenceEvent)
+            return false;
+
         _pSrvHeapManager = std::make_unique<DescriptorHeapManager>();
         if (!_pSrvHeapManager->init(_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, true))
         {
@@ -150,10 +166,6 @@ namespace csyren::render
         }
 
 
-        _fenceValue = 1;
-        _fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-        if (!_fenceEvent)
-            return false;
         constexpr size_t MB = 1024 * 1024;
         constexpr size_t perEntitySize = 2* MB; // Size for world matrix + other per-object data for whole scene render.
         
@@ -177,7 +189,6 @@ namespace csyren::render
         _commandAllocator->Reset();
         _commandList->Reset(_commandAllocator.Get(), nullptr);
         _perEntityCB.beginFrame();
-
         // --- Barrier для swapchain ---
         D3D12_RESOURCE_BARRIER rtvBarrier = {};
         rtvBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;

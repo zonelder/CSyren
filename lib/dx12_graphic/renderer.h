@@ -75,6 +75,7 @@ namespace csyren::render
 		bool bindEntity(const SemanticBufferLayout* layout);
 	private:
 		void waitForGpu();
+		void resizeSwapChain(uint32_t width, uint32_t height);
 
 		static constexpr UINT FrameCount = 2;
 

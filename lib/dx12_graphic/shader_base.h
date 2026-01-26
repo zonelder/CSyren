@@ -13,6 +13,11 @@
 
 namespace csyren::render
 {
+	struct from_asset_path_t {};
+	inline constexpr from_asset_path_t from_asset_path{};
+
+	struct from_source_code_t {};
+	inline constexpr from_source_code_t from_source_code{};
 
 	struct ShaderResourceInfo
 	{
