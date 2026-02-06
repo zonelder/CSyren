@@ -5,14 +5,6 @@
 #include <d3dx12.h>
 
 
-
-
-#pragma comment(lib, "d3d12.lib")
-#pragma comment(lib, "dxgi.lib")
-#pragma comment(lib, "dxguid.lib")
-#pragma comment(lib, "d3dcompiler.lib")
-
-
 using Microsoft::WRL::ComPtr;
 #define DEBUG_RENDER = defined(_DEBUG) && (_WIN32_WINNT >= 0x0603);
 namespace csyren::render
