@@ -13,6 +13,8 @@
 #include <vector>
 #include <memory>
 
+#include "dx_main.h"
+
 #include "descriptor_heap_manager.h"
 #include "sampler_manager.h"
 #include "constant_buffer.h"
@@ -76,25 +78,31 @@ namespace csyren::render
 	private:
 		void waitForGpu();
 		void resizeSwapChain(uint32_t width, uint32_t height);
+		void enableDebugLayer();
+		void createFactory();
+		void createDevice();
+		void createCommandQueue();
+		void createSwapChain(HWND hwnd,uint32_t width, uint32_t height);
 
 		static constexpr UINT FrameCount = 2;
 
-		Microsoft::WRL::ComPtr<ID3D12Device> _device;
-		Microsoft::WRL::ComPtr<IDXGISwapChain3> _swapChain;
-		Microsoft::WRL::ComPtr<ID3D12CommandQueue> _commandQueue;
-		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> _rtvHeap;
-		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> _dsvHeap;
+		details::ComPtr<ID3D12Device>			_device;
+		details::ComPtr<IDXGISwapChain3>		_swapChain;
+		details::ComPtr<ID3D12CommandQueue>		_commandQueue;
+		details::ComPtr<ID3D12DescriptorHeap>	_rtvHeap;
+		details::ComPtr<ID3D12DescriptorHeap>	_dsvHeap;
+		details::ComPtr<IDXGIFactory4>			_factory;
 		UINT _dsvDescriptorSize = 0;
 		UINT _rtvDescriptorSize{ 0 };
 
 		D3D12_VIEWPORT _viewport{};
 		D3D12_RECT		_scissor{};
-		Microsoft::WRL::ComPtr<ID3D12Resource> _renderTargets[FrameCount];
-		Microsoft::WRL::ComPtr<ID3D12Resource> _depthStencil;
+		details::ComPtr<ID3D12Resource> _renderTargets[FrameCount];
+		details::ComPtr<ID3D12Resource> _depthStencil;
 		D3D12_RESOURCE_STATES _depthStencilCurrentState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
-		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> _commandAllocator;
-		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> _commandList;
-		Microsoft::WRL::ComPtr<ID3D12Fence> _fence;
+		details::ComPtr<ID3D12CommandAllocator> _commandAllocator;
+		details::ComPtr<ID3D12GraphicsCommandList> _commandList;
+		details::ComPtr<ID3D12Fence> _fence;
 		UINT64 _fenceValue{ 0 };
 		HANDLE _fenceEvent{ nullptr };
 		UINT _frameIndex{ 0 };

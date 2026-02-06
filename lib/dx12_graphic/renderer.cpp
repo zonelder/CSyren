@@ -17,6 +17,75 @@ using Microsoft::WRL::ComPtr;
 #define DEBUG_RENDER = defined(_DEBUG) && (_WIN32_WINNT >= 0x0603);
 namespace csyren::render
 {
+    void Renderer::enableDebugLayer()
+    {
+#if defined(_DEBUG)
+        details::ComPtr<ID3D12Debug> debug;
+        if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debug))))
+        {
+            debug->EnableDebugLayer();
+        }
+
+        ComPtr<ID3D12Debug1> debug1;
+        if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debug1))))
+        {
+            debug1->SetEnableGPUBasedValidation(TRUE);
+            debug1->SetEnableSynchronizedCommandQueueValidation(TRUE);
+        }
+#endif
+    }
+
+    void Renderer::createFactory()
+    {
+        UINT flags = 0;
+#if defined(_DEBUG)
+        flags |= DXGI_CREATE_FACTORY_DEBUG;
+#endif
+        if (DX_FAILED(CreateDXGIFactory2(flags, IID_PPV_ARGS(&_factory))))
+            throw std::runtime_error("Failed to create DXGI factory");
+    }
+    void Renderer::createDevice()
+    {
+        if (DX_FAILED(D3D12CreateDevice(
+            nullptr,
+            D3D_FEATURE_LEVEL_11_0,
+            IID_PPV_ARGS(&_device))))
+        {
+            throw std::runtime_error("Failed to create D3D12 device");
+        }
+    }
+    void Renderer::createCommandQueue()
+    {
+        D3D12_COMMAND_QUEUE_DESC desc = {};
+        desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+
+        if (DX_FAILED(_device->CreateCommandQueue(&desc, IID_PPV_ARGS(&_commandQueue))))
+            throw std::runtime_error("Failed to create command queue");
+    }
+
+    void Renderer::createSwapChain(HWND hwnd, UINT width, UINT height)
+    {
+        DXGI_SWAP_CHAIN_DESC1 desc = {};
+        desc.BufferCount = FrameCount;
+        desc.Width = width;
+        desc.Height = height;
+        desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+        desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+        desc.SampleDesc.Count = 1;
+
+        ComPtr<IDXGISwapChain1> sc1;
+        if (FAILED(_factory->CreateSwapChainForHwnd(
+            _commandQueue.Get(), hwnd, &desc, nullptr, nullptr, &sc1)))
+        {
+            throw std::runtime_error("Failed to create swapchain");
+        }
+
+        sc1.As(&_swapChain);
+        _factory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER);
+        _frameIndex = _swapChain->GetCurrentBackBufferIndex();
+    }
+
     Renderer::~Renderer()
     {
         if (_device)
@@ -30,60 +99,14 @@ namespace csyren::render
         }
     }
 
+
     bool Renderer::init(HWND hwnd, UINT width, UINT height)
     {
-        UINT factoryFlags = 0;
-        ComPtr<IDXGIFactory4> factory;
-        HRESULT hr;
-        #if defined(_DEBUG) && (_WIN32_WINNT >= 0x0603)
-              hr = CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, IID_PPV_ARGS(&factory));
-        #else
-              hr = CreateDXGIFactory1(IID_PPV_ARGS(&factory));
-        #endif
-
-        if (FAILED(hr))
-        {
-            log::error("Render::init: failed to initialize IDXGIFactory");
-            return false;
-        }
-#if defined(_DEBUG) && (_WIN32_WINNT >= 0x0603)
-        ComPtr<ID3D12Debug> debugController;
-        if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
-        {
-            debugController->EnableDebugLayer();
-        }
-#endif
-
-
-        if (DX_FAILED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&_device))))
-            return false;
-
-        D3D12_COMMAND_QUEUE_DESC queueDesc = {};
-        queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-        queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-        if (DX_FAILED(_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&_commandQueue))))
-            return false;
-
-        DXGI_SWAP_CHAIN_DESC1 swapDesc = {};
-        swapDesc.BufferCount = FrameCount;
-        swapDesc.Width = width;
-        swapDesc.Height = height;
-        swapDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-        swapDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-        swapDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-        swapDesc.SampleDesc.Count = 1;
-
-        ComPtr<IDXGISwapChain1> swapChain1;
-        if (DX_FAILED(factory->CreateSwapChainForHwnd(_commandQueue.Get(), hwnd, &swapDesc, nullptr, nullptr, &swapChain1)))
-            return false;
-
-        if (DX_FAILED(factory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER)))
-            return false;
-
-        if (DX_FAILED(swapChain1.As(&_swapChain)))
-            return false;
-
-        _frameIndex = _swapChain->GetCurrentBackBufferIndex();
+        enableDebugLayer();
+        createFactory();
+        createDevice();
+        createCommandQueue();
+        createSwapChain(hwnd, width, height);
 
         D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
         rtvHeapDesc.NumDescriptors = FrameCount;

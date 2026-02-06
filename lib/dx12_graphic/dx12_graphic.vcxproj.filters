@@ -123,6 +123,12 @@
     <ClInclude Include="shader_base.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="compute_shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dx_main.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

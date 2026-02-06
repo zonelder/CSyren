@@ -173,6 +173,7 @@
     <ClInclude Include="constant_buffer_manager.h" />
     <ClInclude Include="descriptor_heap_manager.h" />
     <ClInclude Include="dx_log.h" />
+    <ClInclude Include="dx_main.h" />
     <ClInclude Include="engine_semantics.h" />
     <ClInclude Include="forward_decl.h" />
     <ClInclude Include="framework.h" />
