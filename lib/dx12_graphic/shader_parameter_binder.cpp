@@ -116,7 +116,7 @@ namespace csyren::render
 			cmdList->CopyBufferRegion(
 				cache.buffer.getResource(),         // Destination resource (наш DEFAULT буфер)
 				0,                                  // Destination offset
-				ringBuffer.currentResource().Get(), // Source resource (текущий буфер из кольца)
+				ringBuffer.resource().Get(),		// Source resource (текущий буфер из кольца)
 				uploadOffset,                       // Source offset (смещение, которое мы получили)
 				materialBufferDesc->size            // Size of data to copy
 			);

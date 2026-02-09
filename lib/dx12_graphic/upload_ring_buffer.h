@@ -6,7 +6,13 @@ namespace csyren::render
 	class UploadRingBuffer
 	{
 	public:
-		UploadRingBuffer() = default;
+        struct Allocation
+        {
+            size_t offset;
+            size_t size;
+        };
+
+		UploadRingBuffer() noexcept = default;
 
         bool init(ID3D12Device* device, size_t frameBufferSize, UINT numFrames = 3);
 
@@ -15,11 +21,6 @@ namespace csyren::render
             _currentFrame = (_currentFrame + 1) % _numFrames;
             _offset = 0;
         }
-        struct Allocation
-        {
-            size_t offset;
-            size_t size;
-        };
         size_t allocate(size_t size, void** cpuPtr, D3D12_GPU_VIRTUAL_ADDRESS* gpuAddr);
 
 
@@ -27,19 +28,20 @@ namespace csyren::render
 
         size_t currentOffset() const noexcept { return _offset; }
 
-        Microsoft::WRL::ComPtr<ID3D12Resource> currentResource() const noexcept { return _buffers[_currentFrame]; }
+        details::ComPtr<ID3D12Resource> resource() const noexcept { return _buffer; }
     private:
         static size_t align256(size_t size)
         {
             return (size + 255) & ~255;
         }
 
-        UINT _numFrames = 0;
-        UINT _currentFrame = 0;
-        size_t _frameSize = 0;
-        size_t _offset = 0;
+        UINT _numFrames;
+        UINT _currentFrame;
+        size_t _frameSize;
+        size_t _totalSize;
+        size_t _offset;
 
-        std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> _buffers;
-        std::vector<uint8_t*> _mapped;
+        details::ComPtr<ID3D12Resource> _buffer;
+        uint8_t* _mapped;
 	};
 }

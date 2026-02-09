@@ -113,8 +113,8 @@ namespace csyren::render
             barriers[1].Transition.pResource = _indexBuffer.Get();
             cmdList->ResourceBarrier(2, barriers);
 
-            cmdList->CopyBufferRegion(_vertexBuffer.Get(), 0, uploadBuffer->currentResource().Get(), uploadVertexOffset, vertexDataSize);
-            cmdList->CopyBufferRegion(_indexBuffer.Get(), 0, uploadBuffer->currentResource().Get(), uploadIndexOffset, indexDataSize);
+            cmdList->CopyBufferRegion(_vertexBuffer.Get(), 0, uploadBuffer->resource().Get(), uploadVertexOffset, vertexDataSize);
+            cmdList->CopyBufferRegion(_indexBuffer.Get(), 0, uploadBuffer->resource().Get(), uploadIndexOffset, indexDataSize);
 
             barriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
             barriers[0].Transition.StateAfter = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;

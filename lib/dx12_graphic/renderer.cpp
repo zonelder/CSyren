@@ -30,6 +30,7 @@ namespace csyren::render
     void Renderer::createFactory()
     {
         UINT flags = 0;
+        static_assert(_WIN32_WINNT >= 0x0A00);//TODO to be documented.
 #if defined(_DEBUG)
         flags |= DXGI_CREATE_FACTORY_DEBUG;
 #endif
