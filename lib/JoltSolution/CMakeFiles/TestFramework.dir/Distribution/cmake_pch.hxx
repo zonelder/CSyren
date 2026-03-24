@@ -2,5 +2,5 @@
 
 #pragma system_header
 #ifdef __cplusplus
-#include "E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/..//TestFramework/TestFramework.h"
+#include "$(SolutionDir)lib/third_party/JoltPhysics/Build/..//TestFramework/TestFramework.h"
 #endif // __cplusplus

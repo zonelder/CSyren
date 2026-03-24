@@ -95,14 +95,14 @@ C:/Program Files/CMake/share/cmake-4.2/Modules/Platform/Windows-MSVC-CXX.cmake
 C:/Program Files/CMake/share/cmake-4.2/Modules/Platform/Windows-MSVC.cmake
 C:/Program Files/CMake/share/cmake-4.2/Modules/Platform/Windows.cmake
 C:/Program Files/CMake/share/cmake-4.2/Modules/Platform/WindowsPaths.cmake
-E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/CMakeLists.txt
-E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/4.2.0-rc1/CMakeCXXCompiler.cmake
-E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/4.2.0-rc1/CMakeRCCompiler.cmake
-E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/4.2.0-rc1/CMakeSystem.cmake
-E:/other projects/CSyren/lib/third_party/JoltPhysics/HelloWorld/HelloWorld.cmake
-E:/other projects/CSyren/lib/third_party/JoltPhysics/Jolt/Jolt.cmake
-E:/other projects/CSyren/lib/third_party/JoltPhysics/JoltViewer/JoltViewer.cmake
-E:/other projects/CSyren/lib/third_party/JoltPhysics/PerformanceTest/PerformanceTest.cmake
-E:/other projects/CSyren/lib/third_party/JoltPhysics/Samples/Samples.cmake
-E:/other projects/CSyren/lib/third_party/JoltPhysics/TestFramework/TestFramework.cmake
-E:/other projects/CSyren/lib/third_party/JoltPhysics/UnitTests/UnitTests.cmake
+$(SolutionDir)lib/third_party/JoltPhysics/Build/CMakeLists.txt
+$(SolutionDir)lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/4.2.0-rc1/CMakeCXXCompiler.cmake
+$(SolutionDir)lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/4.2.0-rc1/CMakeRCCompiler.cmake
+$(SolutionDir)lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/4.2.0-rc1/CMakeSystem.cmake
+$(SolutionDir)lib/third_party/JoltPhysics/HelloWorld/HelloWorld.cmake
+$(SolutionDir)lib/third_party/JoltPhysics/Jolt/Jolt.cmake
+$(SolutionDir)lib/third_party/JoltPhysics/JoltViewer/JoltViewer.cmake
+$(SolutionDir)lib/third_party/JoltPhysics/PerformanceTest/PerformanceTest.cmake
+$(SolutionDir)lib/third_party/JoltPhysics/Samples/Samples.cmake
+$(SolutionDir)lib/third_party/JoltPhysics/TestFramework/TestFramework.cmake
+$(SolutionDir)lib/third_party/JoltPhysics/UnitTests/UnitTests.cmake
