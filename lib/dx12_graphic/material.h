@@ -3,13 +3,13 @@
 
 #include <wrl.h>
 #include <d3d12.h>
+
+#include "forward_decl.h"
 #include "resource_handle.h"
 
 
 namespace csyren::render
 {
-	class Renderer;
-	
 	struct alignas(sizeof(size_t)) MaterialStateDesc
 	{
 		D3D12_BLEND_DESC blendState;
@@ -63,6 +63,14 @@ namespace csyren::render
 
 			return _params[name];
 		}
+
+		TextureHandle getTexture(const std::string& name)
+		{
+			if (_textures.find(name) == _textures.end()) return {};
+			return _textures[name];
+		}
+
+		const TextureMap& textures() const noexcept { return _textures; }
 	private:
 
 		void setRaw(const std::string& name, const void* data, size_t size)

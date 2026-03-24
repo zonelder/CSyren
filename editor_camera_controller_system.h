@@ -56,7 +56,7 @@ namespace csyren
 				}
 				else 
 				{
-					cam_pitch = 0.0f;
+					rightVector = Vector3::right;
 				}
 				rightVector.normalize();
 

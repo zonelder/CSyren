@@ -19,7 +19,7 @@ namespace csyren::render
 			_deivce = device;
 		}
 
-		void commit(const Shader& shader, const Material& material, UploadRingBuffer)
+		void commit(const GraphicShader& shader, const Material& material, UploadRingBuffer)
 		{
 			for (auto& lb : shader.getLinkedBuffers())
 			{

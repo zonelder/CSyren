@@ -1,13 +1,9 @@
 #pragma once
+#include "forward_decl.h"
 #include <limits>
 
 namespace csyren::render
 {
-    class Mesh;
-    class Texture;
-    class Material;
-    class Shader;
-
     template<typename T>
     struct THandle
     {
@@ -20,12 +16,10 @@ namespace csyren::render
         explicit operator bool() const { return id != INVALID; }
     };
 
-    
-
     using MeshHandle = THandle<Mesh>;
     using TextureHandle = THandle<Texture>;
     using MaterialHandle = THandle<Material>;
-    using ShaderHandle = THandle<Shader>;
+    using ShaderHandle = THandle<GraphicShader>;
 
 }
 

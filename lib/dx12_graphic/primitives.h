@@ -22,6 +22,10 @@ namespace csyren::render
         static ShaderHandle getRainbowShader(ResourceManager& rm);
         static MaterialHandle getRainbowMaterial(ResourceManager& rm);
 
+
+        static ShaderHandle getTextureShader(ResourceManager& rm);
+        static MaterialHandle getTextureMaterial(ResourceManager& rm);
+
         static bool registerFabricsAll(ResourceManager&);
     private:
 

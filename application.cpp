@@ -34,6 +34,8 @@
 
 #include "physics/spring_join_system.h"
 
+#include "dx12_graphic/texture.h"
+
 namespace
 {
 
@@ -91,7 +93,7 @@ namespace csyren
 		{
 			return false;
 		}
-
+		_resource.init_thread();
 		_inputDispatcher.init(*_bus);
 		log::info("-------------------------------------------------------------------------------------------");
 		return true;
@@ -173,6 +175,15 @@ namespace csyren
 			DirectX::XMMATRIX viewProj = DirectX::XMMatrixMultiply(view, proj);
 			DirectX::XMStoreFloat4x4(&engineVariables->viewProjectionMatrix, viewProj);
 
+			float rotationSpeed = DirectX::XM_2PI / 10.0f;
+			float angle = time.totalTime() * rotationSpeed;
+			DirectX::XMVECTOR baseDir = DirectX::XMVectorSet(0.3f, -1.0f, 0.3f, 0.0f);
+			DirectX::XMMATRIX rot = DirectX::XMMatrixRotationZ(angle);
+			DirectX::XMVECTOR rotatedDir = DirectX::XMVector3TransformNormal(baseDir, rot);
+			rotatedDir = DirectX::XMVector3Normalize(rotatedDir);
+			DirectX::XMStoreFloat4(&engineVariables->lightDirection, rotatedDir);
+
+			_resource.update();
 			_render.beginFrame();
 			_render.clear(&(camera.background.x));
 
@@ -219,6 +230,11 @@ namespace csyren
 
 		//------------------------------------LOAD SCENE------------------------------------------------
 
+		auto texture = _resource.get<render::Texture>("E:\\stalker_online_git\\res\\textures\\default\\red.dds");
+
+		auto texture1 = _resource.get<render::Texture>("E:\\stalker_online_git\\res\\textures\\default\\white.dds");
+
+		auto texture2 = _resource.get<render::Texture>("E:\\stalker_online_git\\res\\textures\\materials\\carpet\\carpet04.dds");
 		//------------------------------------Camera----------------------------------------------------
 		auto mainCameraEntt = _scene.createEntity();
 		auto mainCamera = _scene.addComponent<Camera>(mainCameraEntt);
@@ -228,9 +244,10 @@ namespace csyren
 		mainCamera->aspectRatio = _window.width() / _window.height();
 		mainCamera->background = math::Vector4{ 1.f,0.0f,0.0f,1.0f };
 		cameraTransform->position = math::Vector3::back * 4 + math::Vector3::up*2;
-		
+
 		//-------------------------------------Material and mesh----------------------------------------
 		auto matDefault = render::Primitives::getDefaultMaterial(_resource);
+		//*
 		auto matRainbow = render::Primitives::getRainbowMaterial(_resource);
 		_resource.getMaterial(matDefault)->setVector("tint", DirectX::XMFLOAT4(1, 1, 1,1));
 		_resource.getMaterial(matRainbow)->setVector("tint", DirectX::XMFLOAT4(1, 1, 1, 1));
@@ -266,14 +283,13 @@ namespace csyren
 		}
 		*/
 
+
 		//---------------------------------------------------------------------------------------------
-		//*
 		auto saveComponent = _scene.createEntity();
 		auto saveReq = _scene.addComponent<SceneLoaderRequest>(saveComponent);
 		saveReq->type = SceneLoaderRequest::SAVE;
 		saveReq->path = "E:\\test_scene.scene";
-		//*/
-		//*
+
 		float containerHalfX = 5.0f;
 		float containerHalfY = 3.0f; // высота ящика
 		float containerHalfZ = 5.0f;
@@ -313,6 +329,22 @@ namespace csyren
 			cubeMesh->mesh = meshCube;
 		}
 
+		{
+			//*
+			auto textured = _scene.createEntity();
+
+			auto tr = _scene.addComponent<core::components::Transform>(textured);
+			tr->rotation = Quaternion::euler(-45, 0, 0);
+			tr->scale = Vector3(3, 1, 3);
+			auto renderer = _scene.addComponent<render::components::MeshRenderer>(textured);
+			renderer->material = render::Primitives::getTextureMaterial(_resource);
+			auto mat = _resource.getMaterial(renderer->material);
+			mat->setTexture("diffuseTexture", texture2);
+			auto mesh = _scene.addComponent<render::components::MeshFilter>(textured);
+			mesh->mesh = render::Primitives::getQuad(_resource);
+			//*/
+		}
+
 		const int numCubesX = 5;
 		const int numCubesY = 5;
 		const int numCubesZ = 5;
@@ -347,13 +379,12 @@ namespace csyren
 					collider->size = scale;
 					auto rb = _scene.addComponent<physics::RigidBody>(cube, templateRB);
 					auto meshRenderer = _scene.addComponent<render::components::MeshRenderer>(cube);
-					meshRenderer->material = matDefault;
+					meshRenderer->material = matRainbow;
 					auto meshFilter = _scene.addComponent<render::components::MeshFilter>(cube);
 					meshFilter->mesh = meshCube;
 				}
 		//*/
 		//*
-
 		_bus->subscribe<core::input::InputEvent>(static_cast<uint32_t>(core::input::InputEvent::Type::KeyDown), [&](core::input::InputEvent& event)
 			{
 				using namespace core::components;
@@ -411,47 +442,5 @@ namespace csyren
 				log::debug("Cube spawned at {}, {}, {}", spawnPos.x, spawnPos.y, spawnPos.z);
 
 			});
-			//*/
-
-		{
-			//balancer
-
-			auto pivot = _scene.createEntity();
-			auto pivotTr = _scene.addComponent<Transform>(pivot);
-			pivotTr->position = Vector3(0.0f, 5.0f, 0.0f);
-			pivotTr->scale = Vector3(0.2f, 0.2f, 0.2f);
-
-			auto pivotMesh = _scene.addComponent<MeshFilter>(pivot);
-			pivotMesh->mesh = render::Primitives::getSphere(_resource);
-			auto pivotRenderer = _scene.addComponent<MeshRenderer>(pivot);
-			pivotRenderer->material = render::Primitives::getRainbowMaterial(_resource);
-
-			auto pendulum = _scene.createEntity();
-			auto pendTr = _scene.addComponent<Transform>(pendulum);
-			pendTr->position = pivotTr->position + Vector3{ 0, -2.0f, 0 }; // подвешен на 2 метра ниже
-			pendTr->scale = Vector3(0.4f, 0.4f, 0.4f);
-
-			auto collider = _scene.addComponent<physics::SphereCollider>(pendulum);
-			collider->radius = 0.4f;
-
-			physics::RigidBody rb;
-			rb.type = physics::BodyType::Dynamic;
-			rb.mass = 2.0f;
-			rb.useGravity = true;
-			rb.friction = 0.5f;
-			rb.restitution = 0.2f;
-			auto rbComp = _scene.addComponent<physics::RigidBody>(pendulum, rb);
-
-			auto joinComp = _scene.addComponent<physics::SpringJoin>(pendulum);
-			joinComp->connectedEntity = pivot;
-			joinComp->minDistance = 2.0f;
-			joinComp->maxDistance = 2.0f;
-			joinComp->spring = 1000.0f;
-			auto mesh = _scene.addComponent<MeshFilter>(pendulum);
-			mesh->mesh = render::Primitives::getSphere(_resource);
-			auto renderer = _scene.addComponent<MeshRenderer>(pendulum);
-			renderer->material = render::Primitives::getDefaultMaterial(_resource);
-		}
-
 	}
 }

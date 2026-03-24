@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\..\packages\Microsoft.Direct3D.D3D12.1.616.1\build\native\Microsoft.Direct3D.D3D12.props" Condition="Exists('..\..\packages\Microsoft.Direct3D.D3D12.1.616.1\build\native\Microsoft.Direct3D.D3D12.props')" />
   <ItemGroup Label="ProjectConfigurations">
@@ -168,14 +168,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="compute_shader.h" />
     <ClInclude Include="constant_buffer.h" />
     <ClInclude Include="constant_buffer_manager.h" />
     <ClInclude Include="descriptor_heap_manager.h" />
     <ClInclude Include="dx_log.h" />
+    <ClInclude Include="dx_main.h" />
     <ClInclude Include="engine_semantics.h" />
+    <ClInclude Include="forward_decl.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="load_status.h" />
     <ClInclude Include="material.h" />
     <ClInclude Include="mesh.h" />
+    <ClInclude Include="mesh_builder.h" />
     <ClInclude Include="pass_data_manager.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="pso_factory.h" />
@@ -184,16 +189,23 @@
     <ClInclude Include="resources.h" />
     <ClInclude Include="resource_handle.h" />
     <ClInclude Include="resource_manager.h" />
+    <ClInclude Include="resource_upload_thread.h" />
     <ClInclude Include="sampler_manager.h" />
     <ClInclude Include="semantic_provider.h" />
     <ClInclude Include="serialize_base.h" />
     <ClInclude Include="serialize_common.h" />
     <ClInclude Include="shader.h" />
+    <ClInclude Include="shader_base.h" />
     <ClInclude Include="shader_meta.h" />
     <ClInclude Include="shader_parameter_binder.h" />
     <ClInclude Include="texture.h" />
+    <ClInclude Include="texture_creation_task.h" />
+    <ClInclude Include="texture_upload_task.h" />
+    <ClInclude Include="upload_context.h" />
     <ClInclude Include="upload_ring_buffer.h" />
+    <ClInclude Include="upload_task.h" />
     <ClInclude Include="vertex_formats.h" />
+    <ClInclude Include="vertex_layout.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="constant_buffer.cpp" />
@@ -209,11 +221,17 @@
     <ClCompile Include="primitives.cpp" />
     <ClCompile Include="pso_factory.cpp" />
     <ClCompile Include="renderer.cpp" />
+    <ClCompile Include="resource_upload_thread.cpp" />
     <ClCompile Include="shader.cpp" />
+    <ClCompile Include="shader_base.cpp" />
     <ClCompile Include="shader_meta.cpp" />
     <ClCompile Include="shader_parameter_binder.cpp" />
     <ClCompile Include="texture.cpp" />
+    <ClCompile Include="texture_creation_task.cpp" />
+    <ClCompile Include="texture_upload_task.cpp" />
+    <ClCompile Include="upload_context.cpp" />
     <ClCompile Include="upload_ring_buffer.cpp" />
+    <ClCompile Include="vertex_layout.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -222,7 +240,6 @@
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\..\packages\directxtex_uwp.2025.7.10.1\build\native\directxtex_uwp.targets" Condition="Exists('..\..\packages\directxtex_uwp.2025.7.10.1\build\native\directxtex_uwp.targets')" />
     <Import Project="..\..\packages\directxtk12_uwp.2025.7.10.1\build\native\directxtk12_uwp.targets" Condition="Exists('..\..\packages\directxtk12_uwp.2025.7.10.1\build\native\directxtk12_uwp.targets')" />
-    <Import Project="..\..\packages\directxtk_uwp.2025.7.10.1\build\native\directxtk_uwp.targets" Condition="Exists('..\..\packages\directxtk_uwp.2025.7.10.1\build\native\directxtk_uwp.targets')" />
     <Import Project="..\..\packages\Microsoft.Direct3D.D3D12.1.616.1\build\native\Microsoft.Direct3D.D3D12.targets" Condition="Exists('..\..\packages\Microsoft.Direct3D.D3D12.1.616.1\build\native\Microsoft.Direct3D.D3D12.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
@@ -231,7 +248,6 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\..\packages\directxtex_uwp.2025.7.10.1\build\native\directxtex_uwp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\directxtex_uwp.2025.7.10.1\build\native\directxtex_uwp.targets'))" />
     <Error Condition="!Exists('..\..\packages\directxtk12_uwp.2025.7.10.1\build\native\directxtk12_uwp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\directxtk12_uwp.2025.7.10.1\build\native\directxtk12_uwp.targets'))" />
-    <Error Condition="!Exists('..\..\packages\directxtk_uwp.2025.7.10.1\build\native\directxtk_uwp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\directxtk_uwp.2025.7.10.1\build\native\directxtk_uwp.targets'))" />
     <Error Condition="!Exists('..\..\packages\Microsoft.Direct3D.D3D12.1.616.1\build\native\Microsoft.Direct3D.D3D12.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Direct3D.D3D12.1.616.1\build\native\Microsoft.Direct3D.D3D12.props'))" />
     <Error Condition="!Exists('..\..\packages\Microsoft.Direct3D.D3D12.1.616.1\build\native\Microsoft.Direct3D.D3D12.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Direct3D.D3D12.1.616.1\build\native\Microsoft.Direct3D.D3D12.targets'))" />
   </Target>

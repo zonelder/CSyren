@@ -101,4 +101,11 @@ namespace csyren::cstdmf
 		}
 		return std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 	}
+
+	inline std::string toUpper(std::string s) 
+	{
+		std::transform(s.begin(), s.end(), s.begin(),
+			[](unsigned char c) { return std::toupper(c); });
+		return s;
+	}
 }

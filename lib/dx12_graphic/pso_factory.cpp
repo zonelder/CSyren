@@ -8,9 +8,9 @@ inline void hash_combine(std::size_t& seed, std::size_t hash)
 
 namespace csyren::render::details
 {
-	ID3D12PipelineState* PSOFactory::get(ShaderHandle sh,Shader* shader, const MaterialStateDesc& states)
+	ID3D12PipelineState* PSOFactory::get(ShaderHandle sh,GraphicShader* shader, const MaterialStateDesc& states,const VertexLayout& vertexLayout)
 	{
-        PSOKey key{ sh, states };
+        PSOKey key{ sh, states,vertexLayout.getHash()};
 
         auto it = _psoCache.find(key);
         if (it != _psoCache.end())
@@ -20,9 +20,13 @@ namespace csyren::render::details
         psoDesc.pRootSignature = shader->getRootSignature();
         psoDesc.VS = shader->getVSBytecode();
         psoDesc.PS = shader->getPSBytecode();
-        psoDesc.InputLayout = { shader->getInputLayout().data(), (UINT)shader->getInputLayout().size() };
+        psoDesc.HS = shader->getHSBytecode();
+        psoDesc.DS = shader->getDSBytecode();
+        psoDesc.GS = shader->getGSBytecode();
+        const auto& d3dLayout = vertexLayout.getD3DLayout();
+        const auto& shaderLayout = shader->getInputLayout();
+        psoDesc.InputLayout = {d3dLayout.data(), (UINT)d3dLayout.size() };
 
-        // Применяем кастомные состояния из MaterialStateDesc
         psoDesc.BlendState = states.blendState;
         psoDesc.RasterizerState = states.rasterizerState;
         psoDesc.DepthStencilState = states.depthStencilState;
@@ -37,7 +41,7 @@ namespace csyren::render::details
 
         Microsoft::WRL::ComPtr<ID3D12PipelineState> pso;
         HRESULT hr = _device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pso));
-        if (FAILED(hr))
+        if (DX_FAILED(hr))
         {
             log::error("PSOFactory::get: Failed to create Graphics PSO.");
             return nullptr;
@@ -60,6 +64,7 @@ namespace csyren::render::details
         for (size_t i = 0; i < size; ++i) {
             hash_combine(seed, data[i]);
         }
+        hash_combine(seed, key.vertexLayoutHash);
 
         return seed;
     }

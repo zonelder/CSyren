@@ -1,13 +1,6 @@
 #pragma once
 
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <functional>
-
-
-#include "cstdmf/page_view.h"
-#include "cstdmf/log.h"
+#include "forward_decl.h"
 
 #include "resource_handle.h"
 #include "renderer.h"
@@ -15,6 +8,29 @@
 #include "texture.h"
 #include "material.h"
 #include "shader.h"
+#include "resource_upload_thread.h"
+#include "texture_upload_task.h"
+
+#include "cstdmf/page_view.h"
+#include "cstdmf/log.h"
+
+#include <string>
+#include <vector>
+#include <unordered_map>
+#include <functional>
+#include <type_traits>
+
+namespace csyren::render::reflection
+{
+    template<class Resource>
+    struct UploadResourceTask;
+
+    template<>
+    struct UploadResourceTask<Texture>
+    {
+        using Type = TextureUploadTask;
+    };
+}
 
 namespace csyren::render
 {
@@ -26,9 +42,11 @@ namespace csyren::render
     class ResourceStorage
     {
     public:
+
+        using handle_type = THandle<TResource>;
         // Constructor takes core dependencies
-        ResourceStorage(Renderer& renderer, ResourceManager& resourceManager)
-            : _renderer(renderer), _resourceManager(resourceManager) {
+        ResourceStorage(ResourceManager& resourceManager)
+            :_resourceManager(resourceManager) {
         }
 
         ~ResourceStorage() = default;
@@ -38,48 +56,52 @@ namespace csyren::render
         // Unified method for creating/loading a resource
         // TInitArgs will be passed to TResource::init
         template<typename... TInitArgs>
-        THandle<TResource> load(const std::string& name, TInitArgs&&... init_args)
+        handle_type load(const std::string& name, TInitArgs&&... init_args)
         {
             if (auto it = _nameToHandleMap.find(name); it != _nameToHandleMap.end())
             {
                 return it->second;
             }
 
-            THandle<TResource> handle{ _storage.emplace() };
-            if (!handle) return {};
-
-            TResource* resource_ptr = _storage.get(handle.id);
-
-            // Call the resource's init method, passing dependencies and specific init args
-            if (!resource_ptr->init(_renderer, std::forward<TInitArgs>(init_args)...))
+            auto [handle, resource_ptr] = create(name);
+            if (!handle)return{};
+            if (!resource_ptr->init(std::forward<TInitArgs>(init_args)...))
             {
-                _storage.erase(handle.id);
+                unload(name);
                 log::error("Failed to initialize resource: {}", name);
                 return {};
             }
-
-            _nameToHandleMap[name] = handle;
-            _handleToNameMap[handle] = name;
             log::debug("Resource loaded/created: {}", name);
             return handle;
         }
 
+        std::pair<handle_type, TResource*> create(const std::string& name)
+        {
+            handle_type handle{ _storage.emplace() };
+            if (!handle) return { handle ,nullptr};
+
+            TResource* resource_ptr = _storage.get(handle.id);
+            _nameToHandleMap[name] = handle;
+            _handleToNameMap[handle] = name;
+            return { handle,resource_ptr };
+        }
+
         // Basic accessors
-        TResource* get(THandle<TResource> handle)
+        TResource* get(handle_type handle)
         {
             return _storage.get(handle.id);
         }
 
-        THandle<TResource> find(const std::string& name)
+        handle_type find(const std::string& name)
         {
             if (auto it = _nameToHandleMap.find(name); it != _nameToHandleMap.end())
             {
                 return it->second;
             }
-            return { THandle<TResource> ::INVALID };
+            return { handle_type::INVALID };
         }
 
-        const std::string& getName(THandle<TResource> handle) const
+        const std::string& getName(handle_type handle) const
         {
             if (auto it = _handleToNameMap.find(handle); it != _handleToNameMap.end())
             {
@@ -90,7 +112,7 @@ namespace csyren::render
         }
 
         // Unloading
-        void unload(THandle<TResource> handle)
+        void unload(handle_type handle)
         {
             if (_storage.contains(handle.id))
             {
@@ -119,11 +141,10 @@ namespace csyren::render
         }
 
     private:
-        Renderer& _renderer;
         ResourceManager& _resourceManager;
 
-        std::unordered_map<std::string, THandle<TResource>> _nameToHandleMap;
-        std::unordered_map<THandle<TResource>, std::string> _handleToNameMap; // For reverse lookup
+        std::unordered_map<std::string, handle_type> _nameToHandleMap;
+        std::unordered_map<handle_type, std::string> _handleToNameMap; // For reverse lookup
         cstdmf::PageView<TResource> _storage;
     };
 
@@ -133,12 +154,11 @@ namespace csyren::render
     public:
         explicit ResourceManager(Renderer& renderer)
             : _renderer(renderer),
-            _meshStorage(renderer, *this),
-            _textureStorage(renderer, *this),
-            _materialStorage(renderer, *this),
-            _shaderStorage(renderer, *this)
-        {
-        }
+            _meshStorage(*this),
+            _textureStorage(*this),
+            _materialStorage(*this),
+            _shaderStorage(*this)
+        {}
 
         ~ResourceManager() = default;
         ResourceManager(const ResourceManager&) = delete;
@@ -160,7 +180,6 @@ namespace csyren::render
         template<typename TResource>
         THandle<TResource> get(const std::string& name)
         {
-            // 1. Check if already in cache
             auto& storage = getStorage<TResource>();
             auto handle = storage.find(name);
             if (handle.id != THandle<TResource>::INVALID)
@@ -169,7 +188,6 @@ namespace csyren::render
                 return handle;
             }
 
-            // 2. Check if a procedural factory is registered for this name
             auto& factoryMap = getFactoryMap<TResource>();
             if (auto it = factoryMap.find(name); it != factoryMap.end())
             {
@@ -177,10 +195,22 @@ namespace csyren::render
                 return it->second(*this); // Factory will call create... and store it
             }
 
-            // 3. Assume it's a file path and try to load from disk
-            log::debug("Loading resource from file: {}", name);
-            // This assumes TResource::init has an overload that takes a single string (filepath)
-            return storage.load(name, name);
+            if constexpr (std::is_same<TResource, Texture>::value)
+            {
+                log::debug("ResourceManager::get: async load from file: {} ", name);
+                auto [new_handle, ptr] = storage.create(name);
+
+                if (new_handle.id == THandle<TResource>::INVALID) return {};
+                using TaskType = typename reflection::UploadResourceTask<TResource>::Type;
+                _pUploadThread->addTask(std::make_unique<TaskType>(new_handle, name));
+                return new_handle;
+            }
+            else
+            {
+                log::debug("sync load resource from file: {}", name);
+                return storage.load(name, _renderer, name);
+            }
+
         }
 
         // --- Explicit Create Methods (for in-memory/programmatic creation) ---
@@ -188,9 +218,9 @@ namespace csyren::render
         // They bypass the procedural factory lookup and file loading.
 
         // Meshes
-        MeshHandle createMesh(const std::string& name,void* vertexData, size_t vertexDataSize, uint32_t vertexStride,const std::vector<MeshIndex>& indices)
+        MeshHandle createMesh(const std::string& name,const MeshBuilder& builder)
         {
-            return _meshStorage.load(name, vertexData, vertexDataSize, vertexStride, indices);
+            return _meshStorage.load(name,_renderer,builder);
         }
 
         // Textures
@@ -203,25 +233,25 @@ namespace csyren::render
         // Shaders (from string code)
         ShaderHandle createShader(const std::string& name, const std::string& filepath)
         {
-            return _shaderStorage.load(name, filepath);
+            return _shaderStorage.load(name,_renderer,filepath);
         }
 
         ShaderHandle createShaderFromCode(const std::string& name, const std::string& code)
         {
-            return _shaderStorage.load(name, from_source_code,code);
+            return _shaderStorage.load(name, _renderer,from_source_code,code);
         }
 
         // Materials
         MaterialHandle createMaterial(const std::string& name, ShaderHandle shader, const MaterialStateDesc& states)
         {
-            return _materialStorage.load(name, shader, states);
+            return _materialStorage.load(name, _renderer, shader, states);
         }
 
         // --- Accessors for resource data (e.g., for rendering) ---
         Mesh* getMesh(MeshHandle handle) { return _meshStorage.get(handle); }
         Texture* getTexture(TextureHandle handle) { return _textureStorage.get(handle); }
         Material* getMaterial(MaterialHandle handle) { return _materialStorage.get(handle); }
-        Shader* getShader(ShaderHandle handle) { return _shaderStorage.get(handle); }
+        GraphicShader* getShader(ShaderHandle handle) { return _shaderStorage.get(handle); }
 
         // --- Get resource name by handle ---
         const std::string& getMeshName(MeshHandle handle) const { return _meshStorage.getName(handle); }
@@ -251,33 +281,46 @@ namespace csyren::render
             log::debug("All resources unloaded.");
         }
 
+        Renderer& renderer() noexcept { return _renderer; }
+        //main loop shoud call this method for handling optimizations;
+        void init_thread()
+        {
+            if(!_pUploadThread)
+                _pUploadThread = std::make_unique<ResourceUploadThread>(&_renderer);
+        }
+
+        void update()
+        {
+            _pUploadThread->sync(*this);
+        }
     private:
         Renderer& _renderer;
+        std::unique_ptr< ResourceUploadThread> _pUploadThread;
 
         // Specialized ResourceStorage instances
         ResourceStorage<Mesh> _meshStorage;
         ResourceStorage<Texture> _textureStorage;
         ResourceStorage<Material> _materialStorage;
-        ResourceStorage<Shader> _shaderStorage;
+        ResourceStorage<GraphicShader> _shaderStorage;
 
         // Maps for procedural resource factories
         std::unordered_map<std::string, ProceduralResourceFactory<Mesh>> _proceduralMeshFactories;
         std::unordered_map<std::string, ProceduralResourceFactory<Texture>> _proceduralTextureFactories;
         std::unordered_map<std::string, ProceduralResourceFactory<Material>> _proceduralMaterialFactories;
-        std::unordered_map<std::string, ProceduralResourceFactory<Shader>> _proceduralShaderFactories;
+        std::unordered_map<std::string, ProceduralResourceFactory<GraphicShader>> _proceduralShaderFactories;
 
         // Helper to get the correct storage based on type
         template<typename T> ResourceStorage<T>& getStorage();
         template<> ResourceStorage<Mesh>& getStorage<Mesh>() { return _meshStorage; }
         template<> ResourceStorage<Texture>& getStorage<Texture>() { return _textureStorage; }
         template<> ResourceStorage<Material>& getStorage<Material>() { return _materialStorage; }
-        template<> ResourceStorage<Shader>& getStorage<Shader>() { return _shaderStorage; }
+        template<> ResourceStorage<GraphicShader>& getStorage<GraphicShader>() { return _shaderStorage; }
 
         // Helper to get the correct factory map based on type
         template<typename T> std::unordered_map<std::string, ProceduralResourceFactory<T>>& getFactoryMap();
         template<> std::unordered_map<std::string, ProceduralResourceFactory<Mesh>>& getFactoryMap<Mesh>() { return _proceduralMeshFactories; }
         template<> std::unordered_map<std::string, ProceduralResourceFactory<Texture>>& getFactoryMap<Texture>() { return _proceduralTextureFactories; }
         template<> std::unordered_map<std::string, ProceduralResourceFactory<Material>>& getFactoryMap<Material>() { return _proceduralMaterialFactories; }
-        template<> std::unordered_map<std::string, ProceduralResourceFactory<Shader>>& getFactoryMap<Shader>() { return _proceduralShaderFactories; }
+        template<> std::unordered_map<std::string, ProceduralResourceFactory<GraphicShader>>& getFactoryMap<GraphicShader>() { return _proceduralShaderFactories; }
     };
 }

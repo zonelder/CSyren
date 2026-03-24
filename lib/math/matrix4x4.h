@@ -1,11 +1,13 @@
 #ifndef __MATRIX_H__
 #define __MATRIX_H__
 
-#include <DirectXMath.h>
-#include <iostream>
-#include "quaternion.h"
+
 #include "vector3.h"
 #include "vector4.h"
+#include "quaternion.h"
+
+#include <DirectXMath.h>
+#include <iostream>
 
 
 namespace csyren::math

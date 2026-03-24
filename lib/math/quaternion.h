@@ -1,5 +1,4 @@
-#ifndef __QUATERNION_H__
-#define __QUATERNION_H__
+#pragma once
 #include <DirectXMath.h>
 #include <cmath>
 #include "vector3.h"
@@ -339,4 +338,3 @@ namespace csyren::math
         return lhs.exactEqual(rhs);
     }
 }
-#endif

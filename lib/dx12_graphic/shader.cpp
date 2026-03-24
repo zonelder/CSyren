@@ -3,234 +3,59 @@
 #include "cstdmf/string_utils.h"
 #include "renderer.h"
 #include "resource_manager.h"
+#include "cstdmf/string_utils.h"
 
-#include <d3dcompiler.h>
 #include <algorithm>
 #include <regex>
 #include <filesystem>
 
 
-
-#pragma comment(lib, "d3dcompiler.lib")
-
-namespace
-{
-    std::string toUpper(std::string s) {
-        std::transform(s.begin(), s.end(), s.begin(),
-            [](unsigned char c) { return std::toupper(c); });
-        return s;
-    }
-    struct ReflectionData
-    {
-        std::unordered_map<std::string, csyren::render::ShaderResourceInfo>& resourceMap;
-        std::unordered_map<std::string, csyren::render::ConstantBufferVariableInfo>& variableInfoMap;
-        std::unordered_map<std::string, UINT>& constantBufferSizes;
-        std::vector<D3D12_ROOT_PARAMETER1>& rootParameters;
-        std::vector<std::unique_ptr<D3D12_DESCRIPTOR_RANGE1[]>>& descriptorRanges;
-        std::unordered_map<UINT, D3D12_STATIC_SAMPLER_DESC>& samplerMap;
-    };
-
-   void reflectShaderStage(
-       ID3D12ShaderReflection* reflection,
-       D3D12_SHADER_VISIBILITY visibility,
-       ReflectionData& data)
-   {
-       D3D12_SHADER_DESC shaderDesc;
-       reflection->GetDesc(&shaderDesc);
-
-       // 1. Рефлексия связанных ресурсов (CBV, SRV, Samplers)
-       for (UINT i = 0; i < shaderDesc.BoundResources; ++i)
-       {
-           D3D12_SHADER_INPUT_BIND_DESC bindDesc;
-           reflection->GetResourceBindingDesc(i, &bindDesc);
-
-           std::string resourceName = bindDesc.Name;
-           auto it = data.resourceMap.find(resourceName);
-
-           if (it != data.resourceMap.end())
-           {
-               // Ресурс уже был найден в другой стадии. Просто повышаем видимость.
-               UINT rootParamIndex = it->second.rootParameterIndex;
-               data.rootParameters[rootParamIndex].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-
-               // Для сэмплеров делаем то же самое
-               if (bindDesc.Type == D3D_SIT_SAMPLER) {
-                   auto samp_it = data.samplerMap.find(bindDesc.BindPoint);
-                   if (samp_it != data.samplerMap.end()) {
-                       samp_it->second.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-                   }
-               }
-               continue;
-           }
-
-           csyren::render::ShaderResourceInfo info;
-           info.name = resourceName;
-           info.shaderRegister = bindDesc.BindPoint;
-           info.registerSpace = bindDesc.Space;
-           info.rootParameterIndex = static_cast<UINT>(data.rootParameters.size());
-
-           D3D12_ROOT_PARAMETER1 param = {};
-           param.ShaderVisibility = visibility;
-
-           switch (bindDesc.Type)
-           {
-           case D3D_SIT_CBUFFER:
-           {
-               param.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-               param.Descriptor.ShaderRegister = bindDesc.BindPoint;
-               param.Descriptor.RegisterSpace = bindDesc.Space;
-               param.Descriptor.Flags = D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC;
-               break;
-           }
-           case D3D_SIT_TEXTURE:
-           case D3D_SIT_STRUCTURED:
-           case D3D_SIT_TBUFFER:
-           {
-               param.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-               auto newRange = std::make_unique<D3D12_DESCRIPTOR_RANGE1[]>(1);
-               newRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-               newRange[0].NumDescriptors = 1;
-               newRange[0].BaseShaderRegister = bindDesc.BindPoint;
-               newRange[0].RegisterSpace = bindDesc.Space;
-               newRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-               newRange[0].Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC;
-
-               param.DescriptorTable.NumDescriptorRanges = 1;
-               param.DescriptorTable.pDescriptorRanges = newRange.get();
-               data.descriptorRanges.push_back(std::move(newRange));
-               break;
-           }
-           case D3D_SIT_SAMPLER:
-           {
-               D3D12_STATIC_SAMPLER_DESC samplerDesc = {};
-               samplerDesc.Filter = D3D12_FILTER_ANISOTROPIC;
-               samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-               samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-               samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-               samplerDesc.MaxAnisotropy = 16;
-               samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
-               samplerDesc.MinLOD = 0.0f;
-               samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
-               samplerDesc.ShaderRegister = bindDesc.BindPoint;
-               samplerDesc.RegisterSpace = bindDesc.Space;
-               samplerDesc.ShaderVisibility = visibility;
-               data.samplerMap[bindDesc.BindPoint] = samplerDesc;
-               continue;
-           }
-           default:
-               continue;
-           }
-
-           data.rootParameters.push_back(param);
-           data.resourceMap[resourceName] = info;
-       }
-
-       for (UINT i = 0; i < shaderDesc.ConstantBuffers; ++i)
-       {
-           ID3D12ShaderReflectionConstantBuffer* cbuffer = reflection->GetConstantBufferByIndex(i);
-           D3D12_SHADER_BUFFER_DESC cbDesc;
-           cbuffer->GetDesc(&cbDesc);
-
-           if (data.constantBufferSizes.count(cbDesc.Name)) continue;
-
-           data.constantBufferSizes[cbDesc.Name] = cbDesc.Size;
-
-           for (UINT j = 0; j < cbDesc.Variables; ++j)
-           {
-               ID3D12ShaderReflectionVariable* var = cbuffer->GetVariableByIndex(j);
-               D3D12_SHADER_VARIABLE_DESC varDesc;
-               var->GetDesc(&varDesc);
-
-               ID3D12ShaderReflectionType* varType = var->GetType();
-               D3D12_SHADER_TYPE_DESC typeDesc;
-               varType->GetDesc(&typeDesc);
-
-               csyren::render::ConstantBufferVariableInfo varInfo;
-               varInfo.bufferName = cbDesc.Name;
-               varInfo.offset = varDesc.StartOffset;
-               varInfo.size = varDesc.Size;
-               varInfo.needsTranspose = typeDesc.Class == D3D_SVC_MATRIX_COLUMNS;
-
-               data.variableInfoMap[varDesc.Name] = std::move(varInfo);
-           }
-       }
-   }
-
-}
-
 namespace csyren::render
 {
-	bool Shader::finalizeInit(Renderer& renderer, const D3D12_SHADER_BYTECODE& vs,const D3D12_SHADER_BYTECODE& ps)
+	bool GraphicShader::finalizeInit(Renderer& renderer)
 	{
         auto device = renderer.device();
 
-        if (!validateMeta(vs, ps))
+        std::vector<std::pair<D3D12_SHADER_VISIBILITY, ID3DBlob*>> blobs;
+        blobs.reserve(6);
+
+        blobs.emplace_back(D3D12_SHADER_VISIBILITY_VERTEX,   _vsBlob.Get());
+        blobs.emplace_back(D3D12_SHADER_VISIBILITY_PIXEL,    _psBlob.Get());
+        blobs.emplace_back(D3D12_SHADER_VISIBILITY_DOMAIN,   _dsBlob.Get());
+        blobs.emplace_back(D3D12_SHADER_VISIBILITY_HULL,     _hsBlob.Get());
+        blobs.emplace_back(D3D12_SHADER_VISIBILITY_GEOMETRY, _gsBlob.Get());
+
+        if (!buildRootSignatureFromReflection(device, blobs))
         {
-            log::error("Shader: Metadata validation failed.");
+            log::error("GraphicShader::init : cant read reflection from shader.");
             return false;
         }
 
-        if (!buildRootSignatureFromReflection(device, vs, ps))
+        if (!buildInputLayoutFromReflection())
         {
-            log::error("Shader::init : cant read reflection from shader.");
-            return false;
-        }
-
-        if (!buildInputLayoutFromReflection(vs))
-        {
-            log::error("Shader::init : failed to build Input Layout from reflection.");
+            log::error("GraphicShader::init : failed to build Input Layout from reflection.");
             return false;
         }
 
         linkSemantics();
         buildSemanticLayout();
-        log::info("Shader : initialized successfully.");
+        log::info("GraphicShader : initialized successfully.");
 
         return true;
 
 	}
 
-    Microsoft::WRL::ComPtr<ID3DBlob> Shader::compileShader(const std::string& source, const char* target, const std::string& entryPoint)
-    {
-        UINT compileFlags = 0;
-#if defined(_DEBUG)
-       // compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#endif
-
-        Microsoft::WRL::ComPtr<ID3DBlob> byteCode;
-        Microsoft::WRL::ComPtr<ID3DBlob> errors;
-        HRESULT hr = D3DCompile(
-            source.c_str(),
-            source.length(),
-            nullptr, nullptr, nullptr,
-            entryPoint.c_str(),
-            target,
-            compileFlags, 0,
-            &byteCode, &errors
-        );
-
-        if (errors) 
-        {
-            log::error("Shader compilation error: {}", (char*)errors->GetBufferPointer());
-        }
-        if (FAILED(hr)) 
-        {
-            return nullptr;
-        }
-        return byteCode;
-    }
-
-    bool Shader::init(Renderer& renderer,from_source_code_t, const std::string& code)
+    bool GraphicShader::init(Renderer& renderer,from_source_code_t, const std::string& code)
     {
         return compileAndInit(renderer,code,"");
     }
 
-    bool Shader::init(Renderer& renderer,from_asset_path_t, const std::string& filepath)
+    bool GraphicShader::init(Renderer& renderer,from_asset_path_t, const std::string& filepath)
     {
         return init(renderer,filepath);
     }
 
-    bool Shader::init(Renderer& renderer, const std::string& assetPath)
+    bool GraphicShader::init(Renderer& renderer, const std::string& assetPath)
     {
         std::filesystem::path relativePath(assetPath);
 
@@ -240,7 +65,7 @@ namespace csyren::render
         std::string shaderCode = cstdmf::loadStringFromFile(sourcePath);
         if (shaderCode.empty())
         {
-            log::error("Shader::init: Source file not found in DEBUG mode: {}", assetPath);
+            log::error("GraphicShader::init: Source file not found in DEBUG mode: {}", assetPath);
             return false;
         }
         return compileAndInit(renderer, shaderCode, relativePath);
@@ -249,18 +74,22 @@ namespace csyren::render
 #endif
     }
 
-    bool Shader::compileAndInit(Renderer& renderer, const std::string& shaderCode, const std::filesystem::path relativePath)
+    bool GraphicShader::compileAndInit(Renderer& renderer, const std::string& shaderCode, const std::filesystem::path relativePath)
     {
         auto path = relativePath.string();
-        log::info("Shader {}: Compiling on the fly...", path);
+        log::info("GraphicShader {}: Compiling on the fly...", path);
+        constexpr bool INGORE_MISSING_SHADER_STEP = true;
 
         _vsBlob = compileShader(shaderCode, "vs_5_1", "VSMain");
         _psBlob = compileShader(shaderCode, "ps_5_1", "PSMain");
+        _gsBlob = compileShader(shaderCode, "gs_5_1", "GSMain", INGORE_MISSING_SHADER_STEP);
+        _hsBlob = compileShader(shaderCode, "hs_5_1", "HSMain", INGORE_MISSING_SHADER_STEP);
+        _dsBlob = compileShader(shaderCode, "ds_5_1", "DSMain", INGORE_MISSING_SHADER_STEP);
 
         _meta = ShaderMetaBuilder::build(shaderCode);
         if (!_meta)
         {
-            log::error("Shader {}: Failed to build metadata from source", path);
+            log::error("GraphicShader {}: Failed to build metadata from source", path);
             return false;
         }
 
@@ -274,25 +103,39 @@ namespace csyren::render
             metaPath.replace_extension("json");
             ShaderMetaBuilder::save(*_meta, metaPath.string());
 
-            std::filesystem::path vsBlobPath = buildPath;
-            vsBlobPath.replace_extension("_vs.cso");
-            D3DWriteBlobToFile(_vsBlob.Get(), vsBlobPath.c_str(), TRUE);
+            // universal shader stage saver
+            std::vector<std::pair<ID3DBlob*, std::string>> stages = {
+                { _vsBlob.Get(), "_vs.cso" },
+                { _psBlob.Get(), "_ps.cso" },
+                { _gsBlob.Get(), "_gs.cso" },
+                { _hsBlob.Get(), "_hs.cso" },
+                { _dsBlob.Get(), "_ds.cso" }
+            };
 
-            std::filesystem::path psBlobPath = buildPath;
-            psBlobPath.replace_extension("_ps.cso");
-            D3DWriteBlobToFile(_psBlob.Get(), psBlobPath.c_str(), TRUE);
+            for (auto& [blob, suffix] : stages)
+            {
+                if (!blob)
+                    continue; // optional stage (missing entry point)
 
-            log::info("Shader {}: Build shader saved.", path);
+                std::filesystem::path blobPath = buildPath;
+                blobPath.replace_extension(suffix);
+
+                HRESULT hr = D3DWriteBlobToFile(blob, blobPath.c_str(), TRUE);
+                if (FAILED(hr))
+                {
+                    log::error("Failed to save shader blob {}", blobPath.string());
+                }
+            }
+
+            //TODO save opitional shader steps
+            log::info("GraphicShader {}: Build shader saved.", path);
         }
-
-        D3D12_SHADER_BYTECODE vs = { _vsBlob->GetBufferPointer(), _vsBlob->GetBufferSize() };
-        D3D12_SHADER_BYTECODE ps = { _psBlob->GetBufferPointer(), _psBlob->GetBufferSize() };
-        return finalizeInit(renderer, vs, ps);
+        return finalizeInit(renderer);
     }
 
-    bool Shader::loadPrecompiledAndInit(Renderer& renderer, const std::filesystem::path& relativePath)
+    bool GraphicShader::loadPrecompiledAndInit(Renderer& renderer, const std::filesystem::path& relativePath)
     {
-        log::info("Shader {} : loading pre compiled data...", relativePath.string());
+        log::info("GraphicShader {} : loading pre compiled data...", relativePath.string());
         std::filesystem::path buildPath = std::filesystem::path("build") / relativePath;
 
         std::filesystem::path metaPath = buildPath;
@@ -302,14 +145,14 @@ namespace csyren::render
 
         if (!metaFile.is_open())
         {
-            log::error("Shader : Could not load metadata file: {}", metaPath.string());
+            log::error("GraphicShader : Could not load metadata file: {}", metaPath.string());
             return false;
         }
 
         _meta = ShaderMetaBuilder::build(nlohmann::json::parse(metaFile));
         if (!_meta)
         {
-            log::error("Shader : Filed to build metadata from file {}.", metaPath.string());
+            log::error("GraphicShader : Filed to build metadata from file {}.", metaPath.string());
             return false;
         }
 
@@ -327,99 +170,14 @@ namespace csyren::render
         {
             return false;
         }
-
-        D3D12_SHADER_BYTECODE vs = { _vsBlob->GetBufferPointer(), _vsBlob->GetBufferSize() };
-        D3D12_SHADER_BYTECODE ps = { _psBlob->GetBufferPointer(), _psBlob->GetBufferSize() };
-        return finalizeInit(renderer, vs, ps);
+        return finalizeInit(renderer);
 
     }
 
-
-	UINT Shader::getRootParameterIndex(const std::string& resourceName) const
-	{
-		auto it = _resourceMap.find(resourceName);
-		if (it == _resourceMap.end()) return UINT_MAX;
-
-		return it->second.rootParameterIndex;
-	}
-
-
-	bool Shader::buildRootSignatureFromReflection(ID3D12Device* device, const D3D12_SHADER_BYTECODE& vs, const D3D12_SHADER_BYTECODE& ps)
-	{
-        Microsoft::WRL::ComPtr<ID3D12ShaderReflection> vsReflection, psReflection;
-        if (DX_FAILED(D3DReflect(vs.pShaderBytecode, vs.BytecodeLength, IID_PPV_ARGS(&vsReflection))))
-        {
-            return false;
-        }
-        if (DX_FAILED(D3DReflect(ps.pShaderBytecode, ps.BytecodeLength, IID_PPV_ARGS(&psReflection))))
-        {
-            return false;
-        }
-        std::vector<D3D12_ROOT_PARAMETER1> rootParameters;
-        std::vector<std::unique_ptr<D3D12_DESCRIPTOR_RANGE1[]>> descriptorRanges;
-        std::unordered_map<UINT, D3D12_STATIC_SAMPLER_DESC> samplerMap; // register -> desc
-
-        _resourceMap.clear();
-        _variableInfoMap.clear();
-        _constantBufferSizes.clear();
-
-        ReflectionData data
-        {
-            _resourceMap,
-            _variableInfoMap,
-            _constantBufferSizes,
-            rootParameters,
-            descriptorRanges,
-            samplerMap
-        };
-        reflectShaderStage(vsReflection.Get(), D3D12_SHADER_VISIBILITY_VERTEX, data);
-        reflectShaderStage(psReflection.Get(), D3D12_SHADER_VISIBILITY_PIXEL, data);
-
-
-
-        std::vector<D3D12_STATIC_SAMPLER_DESC> finalSamplers;
-        for (const auto& pair : samplerMap) 
-        {
-            finalSamplers.push_back(pair.second);
-        }
-        // --- Шаг 2:serialize and create Root Signature ---
-        D3D12_VERSIONED_ROOT_SIGNATURE_DESC rootSigDesc = {};
-        rootSigDesc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
-        rootSigDesc.Desc_1_1.NumParameters = static_cast<UINT>(rootParameters.size());
-        rootSigDesc.Desc_1_1.pParameters = rootParameters.empty() ? nullptr : rootParameters.data();
-        rootSigDesc.Desc_1_1.NumStaticSamplers = static_cast<UINT>(finalSamplers.size());
-        rootSigDesc.Desc_1_1.pStaticSamplers = finalSamplers.empty()? nullptr : finalSamplers.data();
-        rootSigDesc.Desc_1_1.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-        Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob;
-        Microsoft::WRL::ComPtr<ID3DBlob> errorBlob;
-
-        HRESULT hr = D3D12SerializeVersionedRootSignature(&rootSigDesc, &signatureBlob, &errorBlob);
-        if (DX_FAILED(hr))
-        {
-            if (errorBlob) { log::error("D3D12SerializeVersionedRootSignature failed: {}", (char*)errorBlob->GetBufferPointer()); }
-            return false;
-        }
-
-        hr = device->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(&_rootSignature));
-        if (DX_FAILED(hr))
-        {
-            if (hr == DXGI_ERROR_DEVICE_REMOVED)
-            {
-                HRESULT reason = device->GetDeviceRemovedReason();
-                log::error("Device removed! Reason: {:#x}", reason);
-            }
-            log::error("CreateRootSignature failed");
-            return false;
-        }
-        return true;
-
-	}
-
-    bool Shader::buildInputLayoutFromReflection(const D3D12_SHADER_BYTECODE& vs)
+    bool GraphicShader::buildInputLayoutFromReflection()
     {
         Microsoft::WRL::ComPtr<ID3D12ShaderReflection> reflection;
-        HRESULT hr = D3DReflect(vs.pShaderBytecode, vs.BytecodeLength, IID_PPV_ARGS(&reflection));
+        HRESULT hr = D3DReflect(_vsBlob->GetBufferPointer(), _vsBlob->GetBufferSize(), IID_PPV_ARGS(&reflection));
         if (DX_FAILED(hr))
         {
             return false;
@@ -471,7 +229,7 @@ namespace csyren::render
                 if (mask & 1) componentCount++;
                 mask >>= 1;
             }
-            std::string semanticNameUpper = toUpper(_InputLayoutSemantic.back());
+            std::string semanticNameUpper = cstdmf::toUpper(_InputLayoutSemantic.back());
             DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN;
             if (semanticNameUpper.find("POSITION") != std::string::npos) {
                 if (componentCount == 3) format = DXGI_FORMAT_R32G32B32_FLOAT;
@@ -526,7 +284,7 @@ namespace csyren::render
                 }
                 else 
                 {
-                   log::error("Shader::buildInputLayout: Could not deduce format for semantic '{}' with component mask{}. Aborting layout creation.", _InputLayoutSemantic.back(), paramDesc.Mask);
+                   log::error("GraphicShader::buildInputLayout: Could not deduce format for semantic '{}' with component mask{}. Aborting layout creation.", _InputLayoutSemantic.back(), paramDesc.Mask);
                    return false;
                 }
             }
@@ -538,7 +296,7 @@ namespace csyren::render
     }
 
     #pragma optimize("",off)
-    void Shader::linkSemantics()
+    void GraphicShader::linkSemantics()
     {
         _linkedBuffers.clear();
         if (!_meta) return;
@@ -550,7 +308,7 @@ namespace csyren::render
         {
             if (!_resourceMap.contains(cbufferMeta.name))
             {
-                log::error("Shader::linkSemantics : Failed to find constant data '{}' in shader but meta file reference to it. different version between shader and meta files??", cbufferMeta.name);
+                log::error("GraphicShader::linkSemantics : Failed to find constant data '{}' in shader but meta file reference to it. different version between shader and meta files??", cbufferMeta.name);
                 continue;
             }
 
@@ -560,7 +318,7 @@ namespace csyren::render
             auto resourceInfoIt = _resourceMap.find(cbufferMeta.name);
             if (resourceInfoIt == _resourceMap.end())
             {
-                log::warning("Shader::linkSemantics: CBuffer '{}' found in meta, but not reflected in shader. Skipping.", cbufferMeta.name);
+                log::warning("GraphicShader::linkSemantics: CBuffer '{}' found in meta, but not reflected in shader. Skipping.", cbufferMeta.name);
                 continue;
             }
 
@@ -606,7 +364,7 @@ namespace csyren::render
         }
     }
 
-    void Shader::buildSemanticLayout()
+    void GraphicShader::buildSemanticLayout()
     {
         _semanticLayouts.clear();
 
@@ -648,13 +406,7 @@ namespace csyren::render
         }
     }
 
-    bool Shader::validateMeta(const D3D12_SHADER_BYTECODE& vs, const D3D12_SHADER_BYTECODE& ps)
-    {
-        log::warning("Shader : Metadata validation is not yet implemented.");
-        return true;
-    }
-
-    const LinkedBuffer* Shader::getConstantBuffer(details::CBufferUpdateType updateType) const noexcept
+    const LinkedBuffer* GraphicShader::getConstantBuffer(details::CBufferUpdateType updateType) const noexcept
     {
         auto it = std::find_if(_linkedBuffers.begin(), _linkedBuffers.end(), [updateType](const auto& buffer) {return updateType == buffer.type; });
         if (it == _linkedBuffers.end())
@@ -662,7 +414,7 @@ namespace csyren::render
         return &(*it);
     }
 
-    const SemanticBufferLayout* Shader::getSemanticBuffer(details::CBufferUpdateType updateType) const noexcept
+    const SemanticBufferLayout* GraphicShader::getSemanticBuffer(details::CBufferUpdateType updateType) const noexcept
     {
         auto it = std::find_if(_semanticLayouts.begin(), _semanticLayouts.end(), [updateType](const auto& buffer) {return updateType == buffer.type; });
         if (it == _semanticLayouts.end())

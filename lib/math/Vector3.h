@@ -1,5 +1,4 @@
-#ifndef __SYREN_VECTOR3_H__
-#define __SYREN_VECTOR3_H__
+#pragma once
 #include <DirectXMath.h>
 #include <cmath>
 #include <algorithm>
@@ -309,5 +308,3 @@ namespace csyren::math
 		return os;
 	}
 }
-
-#endif

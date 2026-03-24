@@ -4,12 +4,13 @@
 #include "resource_manager.h"
 
 using Microsoft::WRL::ComPtr;
-using namespace DirectX;
+
 
 namespace csyren::render
 {
     bool Mesh::createBuffer(ID3D12Device* device, D3D12_HEAP_TYPE heapType, UINT64 size, D3D12_RESOURCE_STATES initialState, Microsoft::WRL::ComPtr<ID3D12Resource>& outResource)
     {
+        using namespace DirectX;
         D3D12_HEAP_PROPERTIES heapProps = {};
         heapProps.Type = heapType;
         heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
@@ -46,35 +47,32 @@ namespace csyren::render
         return false;
     }
 
-    bool Mesh::init(Renderer& renderer, const void* vertexData, size_t vertexDataSize, uint32_t vertexStride, const std::vector<MeshIndex>& indices, Usage usage)
+    bool Mesh::init(Renderer& renderer,const MeshBuilder& builder, Usage usage)
     {
 
-        static_assert(sizeof(MeshIndex) == 2, "MeshIndex must be a 16-bit unsigned integer for DXGI_FORMAT_R16_UINT.");
-        if (vertexDataSize == 0 || indices.empty())
+        static_assert(sizeof(vertex_meta::index_type) == 2, "MeshIndex must be a 16-bit unsigned integer for DXGI_FORMAT_R16_UINT.");
+
+        auto raw = builder.build();
+
+        if (raw.vertexBuffer.empty()|| raw.indices.empty())
         {
             log::error("Mesh::init failed: vertex or index data is empty.");
             return false;
         }
-        if (!vertexData)
-        {
-            log::error("Mesh::init failed: expect valid ptr to vertex data but got nullptr");
-        }
         auto* device = renderer.device();
         auto* cmdList = renderer.commandList();
-        _usage = usage;
 
-        const size_t indexDataSize = indices.size() * sizeof(MeshIndex);
-        _indexCount = static_cast<UINT>(indices.size());
+        const size_t vertexDataSize = raw.vertexBuffer.size();
+        const size_t indexDataSize = raw.indices.size() * sizeof(vertex_meta::index_type);
+        _usage = usage;
+        _indexCount = static_cast<UINT>(raw.indices.size());
+        _layout = std::move(raw.layout);
 
         if (_usage == Usage::Dynamic)
         {
             if (!createBuffer(device, D3D12_HEAP_TYPE_UPLOAD, vertexDataSize, D3D12_RESOURCE_STATE_GENERIC_READ, _vertexBuffer)) return false;
             if (!createBuffer(device, D3D12_HEAP_TYPE_UPLOAD, indexDataSize, D3D12_RESOURCE_STATE_GENERIC_READ, _indexBuffer)) return false;
-
-            if (vertexData && !indices.empty())
-            {
-                update(vertexData, vertexDataSize, indices);
-            }
+            update(raw);
         }
         else
         {
@@ -100,8 +98,8 @@ namespace csyren::render
                 return false;
             }
 
-            memcpy(uploadVertexDataPtr, vertexData, vertexDataSize);
-            memcpy(uploadIndexBufferPtr, indices.data(), indexDataSize);
+            memcpy(uploadVertexDataPtr, raw.vertexBuffer.data(), vertexDataSize);
+            memcpy(uploadIndexBufferPtr, raw.indices.data(), indexDataSize);
 
             D3D12_RESOURCE_BARRIER barriers[2];
             barriers[0].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -115,8 +113,8 @@ namespace csyren::render
             barriers[1].Transition.pResource = _indexBuffer.Get();
             cmdList->ResourceBarrier(2, barriers);
 
-            cmdList->CopyBufferRegion(_vertexBuffer.Get(), 0, uploadBuffer->currentResource().Get(), uploadVertexOffset, vertexDataSize);
-            cmdList->CopyBufferRegion(_indexBuffer.Get(), 0, uploadBuffer->currentResource().Get(), uploadIndexOffset, indexDataSize);
+            cmdList->CopyBufferRegion(_vertexBuffer.Get(), 0, uploadBuffer->resource().Get(), uploadVertexOffset, vertexDataSize);
+            cmdList->CopyBufferRegion(_indexBuffer.Get(), 0, uploadBuffer->resource().Get(), uploadIndexOffset, indexDataSize);
 
             barriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
             barriers[0].Transition.StateAfter = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
@@ -128,7 +126,7 @@ namespace csyren::render
         _vertexBuffer->SetName(L"VertexBuffer");
         _vertexView.BufferLocation = _vertexBuffer->GetGPUVirtualAddress();
         _vertexView.SizeInBytes = static_cast<UINT>(vertexDataSize);
-        _vertexView.StrideInBytes = vertexStride;
+        _vertexView.StrideInBytes = static_cast<UINT>(_layout.getStride());
 
         _indexBuffer->SetName(L"IndexBuffer");
         _indexView.BufferLocation = _indexBuffer->GetGPUVirtualAddress();
@@ -138,7 +136,7 @@ namespace csyren::render
         return true;
     }
 
-    bool Mesh::update(const void* vertexData, size_t vertexDataSize, const std::vector<MeshIndex>& indices)
+    bool Mesh::update(const MeshBuilder::MeshRawData& raw)
     {
         if (_usage == Usage::Static)
         {
@@ -147,14 +145,13 @@ namespace csyren::render
         }
         if (!_vertexBuffer || !_indexBuffer) return false;
 
-        const size_t indexDataSize = indices.size() * sizeof(MeshIndex);
         D3D12_RANGE readRange{ 0, 0 };
         void* mappedData = nullptr;
 
         // Обновляем вершинный буфер
         if (SUCCEEDED(_vertexBuffer->Map(0, &readRange, &mappedData)))
         {
-            memcpy(mappedData, vertexData, vertexDataSize);
+            memcpy(mappedData, raw.vertexBuffer.data(), raw.vertexBuffer.size());
             _vertexBuffer->Unmap(0, nullptr);
         }
         else return false;
@@ -162,14 +159,14 @@ namespace csyren::render
         // Обновляем индексный буфер
         if (SUCCEEDED(_indexBuffer->Map(0, &readRange, &mappedData)))
         {
-            memcpy(mappedData, indices.data(), indexDataSize);
+            memcpy(mappedData, raw.indices.data(), raw.indices.size()*sizeof(vertex_meta::index_type));
             _indexBuffer->Unmap(0, nullptr);
         }
         else return false;
 
-        _indexCount = static_cast<UINT>(indices.size());
-        _vertexView.SizeInBytes = static_cast<UINT>(vertexDataSize);
-        _indexView.SizeInBytes = static_cast<UINT>(indexDataSize);
+        _indexCount = static_cast<UINT>(raw.indices.size());
+        _vertexView.SizeInBytes = static_cast<UINT>(raw.vertexBuffer.size());
+        _indexView.SizeInBytes = static_cast<UINT>(raw.indices.size()*sizeof(vertex_meta::index_type));
 
         return true;
     }

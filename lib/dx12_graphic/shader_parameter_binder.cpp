@@ -49,7 +49,7 @@ namespace csyren::render
 		auto shader = rm->getShader(material->getShader());
 		if (!shader)
 		{
-			log::warning("Shader for material( handle: {}) not found. Cannot update buffer.", material->getShader().id);
+			log::warning("GraphicShader for material( handle: {}) not found. Cannot update buffer.", material->getShader().id);
 			return false;
 		}
 		const LinkedBuffer* materialBufferDesc = shader->getConstantBuffer(details::CBufferUpdateType::Material);
@@ -58,10 +58,10 @@ namespace csyren::render
 		{
 			if (cache.buffer.size() > 0)
 			{
-				log::info("Material (handle: {}) switched to s shader with no material buffer.Destroy cache.", mathandle.id);
+				log::info("Material (handle: {}) switched to shader with no material buffer.Destroy cache.", mathandle.id);
 				_materialCache.erase(it);
 			}
-			return false;
+			return true;
 		}
 		//everything up to date;
 		if (material->version() != cache.lastUpdatedVersion)
@@ -92,7 +92,7 @@ namespace csyren::render
 
 				if (varData.size() != varDesc.size)
 				{
-					log::error("Size mismatch for variable '{}' in material (handle: {}). Shader expects {} bytes, but material provides {} bytes. Skipping update for this variable.",
+					log::error("Size mismatch for variable '{}' in material (handle: {}). GraphicShader expects {} bytes, but material provides {} bytes. Skipping update for this variable.",
 						varDesc.name, mathandle.id, varDesc.size, varData.size());
 					continue;
 				}
@@ -116,7 +116,7 @@ namespace csyren::render
 			cmdList->CopyBufferRegion(
 				cache.buffer.getResource(),         // Destination resource (наш DEFAULT буфер)
 				0,                                  // Destination offset
-				ringBuffer.currentResource().Get(), // Source resource (текущий буфер из кольца)
+				ringBuffer.resource().Get(),		// Source resource (текущий буфер из кольца)
 				uploadOffset,                       // Source offset (смещение, которое мы получили)
 				materialBufferDesc->size            // Size of data to copy
 			);

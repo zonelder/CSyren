@@ -15,6 +15,7 @@ namespace csyren::render
 		DirectX::XMFLOAT4X4 viewProjectionMatrix{};
 		DirectX::XMFLOAT4	cameraPosition{};
 		float				totalTime		= 0.0f;
+		DirectX::XMFLOAT4	lightDirection{ 1, 0, 0, 0 };
 		//----------------------------------------------------------------------
 
 
@@ -103,6 +104,7 @@ namespace csyren::render::details
 			registerSemantic<DirectX::XMMATRIX>("Projection"	, offsetof(EngineVariableBuffer, projectionMatrix)		, SemanticDataType::Matrix4x4);
 			registerSemantic<DirectX::XMMATRIX>("ViewProjection", offsetof(EngineVariableBuffer, viewProjectionMatrix)	, SemanticDataType::Matrix4x4);
 			registerSemantic<DirectX::XMVECTOR>("CameraPosition", offsetof(EngineVariableBuffer, cameraPosition)		, SemanticDataType::Float4);
+			registerSemantic<DirectX::XMVECTOR>("LightDirection", offsetof(EngineVariableBuffer, lightDirection)		, SemanticDataType::Float3);
 			registerSemantic<float>("Time"						, offsetof(EngineVariableBuffer, totalTime)				, SemanticDataType::Float);
 
 			//entity buffers
