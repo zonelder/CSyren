@@ -1,11 +1,11 @@
-E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/Jolt.dir
-E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/UnitTests.dir
-E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/HelloWorld.dir
-E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/PerformanceTest.dir
-E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/TestFramework.dir
-E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/Samples.dir
-E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/JoltViewer.dir
-E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/RUN_TESTS.dir
-E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/INSTALL.dir
-E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/ALL_BUILD.dir
-E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/ZERO_CHECK.dir
+$(SolutionDir)lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/Jolt.dir
+$(SolutionDir)lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/UnitTests.dir
+$(SolutionDir)lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/HelloWorld.dir
+$(SolutionDir)lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/PerformanceTest.dir
+$(SolutionDir)lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/TestFramework.dir
+$(SolutionDir)lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/Samples.dir
+$(SolutionDir)lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/JoltViewer.dir
+$(SolutionDir)lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/RUN_TESTS.dir
+$(SolutionDir)lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/INSTALL.dir
+$(SolutionDir)lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/ALL_BUILD.dir
+$(SolutionDir)lib/third_party/JoltPhysics/Build/VS2022_CL/CMakeFiles/ZERO_CHECK.dir

@@ -52,28 +52,28 @@ add_library(Jolt::Jolt STATIC IMPORTED)
 set_target_properties(Jolt::Jolt PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "\$<\$<CONFIG:Debug>:_DEBUG>;\$<\$<CONFIG:Release,Distribution,ReleaseASAN,ReleaseUBSAN,ReleaseTSAN,ReleaseCoverage>:NDEBUG>;\$<\$<CONFIG:ReleaseASAN,ReleaseTSAN>:JPH_DISABLE_TEMP_ALLOCATOR;JPH_DISABLE_CUSTOM_ALLOCATOR>;\$<\$<CONFIG:Debug,Release>:JPH_FLOATING_POINT_EXCEPTIONS_ENABLED>;\$<\$<CONFIG:Debug,Release,ReleaseASAN,ReleaseUBSAN,ReleaseTSAN>:JPH_DEBUG_RENDERER>;\$<\$<CONFIG:Debug,Release,ReleaseASAN,ReleaseUBSAN,ReleaseTSAN>:JPH_PROFILE_ENABLED>;JPH_OBJECT_STREAM;JPH_USE_AVX2;JPH_USE_AVX;JPH_USE_SSE4_1;JPH_USE_SSE4_2;JPH_USE_LZCNT;JPH_USE_TZCNT;JPH_USE_F16C;JPH_USE_FMADD"
   INTERFACE_COMPILE_OPTIONS "/arch:AVX2"
-  INTERFACE_INCLUDE_DIRECTORIES "E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/../"
+  INTERFACE_INCLUDE_DIRECTORIES "$(SolutionDir)lib/third_party/JoltPhysics/Build/../"
 )
 
 # Import target "Jolt::Jolt" for configuration "Debug"
 set_property(TARGET Jolt::Jolt APPEND PROPERTY IMPORTED_CONFIGURATIONS DEBUG)
 set_target_properties(Jolt::Jolt PROPERTIES
   IMPORTED_LINK_INTERFACE_LANGUAGES_DEBUG "CXX"
-  IMPORTED_LOCATION_DEBUG "E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/VS2022_CL/Debug/Jolt.lib"
+  IMPORTED_LOCATION_DEBUG "$(SolutionDir)lib/third_party/JoltPhysics/Build/VS2022_CL/Debug/Jolt.lib"
   )
 
 # Import target "Jolt::Jolt" for configuration "Release"
 set_property(TARGET Jolt::Jolt APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(Jolt::Jolt PROPERTIES
   IMPORTED_LINK_INTERFACE_LANGUAGES_RELEASE "CXX"
-  IMPORTED_LOCATION_RELEASE "E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/VS2022_CL/Release/Jolt.lib"
+  IMPORTED_LOCATION_RELEASE "$(SolutionDir)lib/third_party/JoltPhysics/Build/VS2022_CL/Release/Jolt.lib"
   )
 
 # Import target "Jolt::Jolt" for configuration "Distribution"
 set_property(TARGET Jolt::Jolt APPEND PROPERTY IMPORTED_CONFIGURATIONS DISTRIBUTION)
 set_target_properties(Jolt::Jolt PROPERTIES
   IMPORTED_LINK_INTERFACE_LANGUAGES_DISTRIBUTION "CXX"
-  IMPORTED_LOCATION_DISTRIBUTION "E:/other projects/CSyren/lib/third_party/JoltPhysics/Build/VS2022_CL/Distribution/Jolt.lib"
+  IMPORTED_LOCATION_DISTRIBUTION "$(SolutionDir)lib/third_party/JoltPhysics/Build/VS2022_CL/Distribution/Jolt.lib"
   )
 
 # This file does not depend on other imported targets which have

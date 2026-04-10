@@ -1,1339 +1,1339 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Build\VS2022_CL\CMakeFiles\Jolt.dir\cmake_pch.cxx">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Build\VS2022_CL\CMakeFiles\Jolt.dir\cmake_pch.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\AABBTree\AABBTreeBuilder.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\AABBTree\AABBTreeBuilder.cpp">
       <Filter>AABBTree</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\Color.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\Color.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\Factory.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\Factory.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\IssueReporting.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\IssueReporting.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\JobSystemSingleThreaded.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\JobSystemSingleThreaded.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\JobSystemThreadPool.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\JobSystemThreadPool.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\JobSystemWithBarrier.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\JobSystemWithBarrier.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\LinearCurve.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\LinearCurve.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\Memory.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\Memory.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\Profiler.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\Profiler.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\RTTI.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\RTTI.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\Semaphore.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\Semaphore.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\StringTools.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\StringTools.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\TickCounter.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\TickCounter.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\ConvexHullBuilder.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\ConvexHullBuilder.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\ConvexHullBuilder2D.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\ConvexHullBuilder2D.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\Indexify.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\Indexify.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\OrientedBox.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\OrientedBox.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\Vec3.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\Vec3.cpp">
       <Filter>Math</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\SerializableObject.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\SerializableObject.cpp">
       <Filter>ObjectStream</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\Body.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\Body.cpp">
       <Filter>Physics\Body</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyCreationSettings.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyCreationSettings.cpp">
       <Filter>Physics\Body</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyInterface.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyInterface.cpp">
       <Filter>Physics\Body</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyManager.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyManager.cpp">
       <Filter>Physics\Body</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\MassProperties.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\MassProperties.cpp">
       <Filter>Physics\Body</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\MotionProperties.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\MotionProperties.cpp">
       <Filter>Physics\Body</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Character\Character.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Character\Character.cpp">
       <Filter>Physics\Character</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Character\CharacterBase.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Character\CharacterBase.cpp">
       <Filter>Physics\Character</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Character\CharacterVirtual.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Character\CharacterVirtual.cpp">
       <Filter>Physics\Character</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\BroadPhase.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\BroadPhase.cpp">
       <Filter>Physics\Collision\BroadPhase</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\BroadPhaseBruteForce.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\BroadPhaseBruteForce.cpp">
       <Filter>Physics\Collision\BroadPhase</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\BroadPhaseQuadTree.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\BroadPhaseQuadTree.cpp">
       <Filter>Physics\Collision\BroadPhase</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\QuadTree.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\QuadTree.cpp">
       <Filter>Physics\Collision\BroadPhase</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\CastConvexVsTriangles.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\CastConvexVsTriangles.cpp">
       <Filter>Physics\Collision</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\CastSphereVsTriangles.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\CastSphereVsTriangles.cpp">
       <Filter>Physics\Collision</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollideConvexVsTriangles.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollideConvexVsTriangles.cpp">
       <Filter>Physics\Collision</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollideSphereVsTriangles.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollideSphereVsTriangles.cpp">
       <Filter>Physics\Collision</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollisionDispatch.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollisionDispatch.cpp">
       <Filter>Physics\Collision</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollisionGroup.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollisionGroup.cpp">
       <Filter>Physics\Collision</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\EstimateCollisionResponse.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\EstimateCollisionResponse.cpp">
       <Filter>Physics\Collision</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\GroupFilter.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\GroupFilter.cpp">
       <Filter>Physics\Collision</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\GroupFilterTable.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\GroupFilterTable.cpp">
       <Filter>Physics\Collision</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\ManifoldBetweenTwoFaces.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\ManifoldBetweenTwoFaces.cpp">
       <Filter>Physics\Collision</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\NarrowPhaseQuery.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\NarrowPhaseQuery.cpp">
       <Filter>Physics\Collision</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\NarrowPhaseStats.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\NarrowPhaseStats.cpp">
       <Filter>Physics\Collision</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\PhysicsMaterial.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\PhysicsMaterial.cpp">
       <Filter>Physics\Collision</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\PhysicsMaterialSimple.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\PhysicsMaterialSimple.cpp">
       <Filter>Physics\Collision</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\BoxShape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\BoxShape.cpp">
       <Filter>Physics\Collision\Shape</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\CapsuleShape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\CapsuleShape.cpp">
       <Filter>Physics\Collision\Shape</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\CompoundShape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\CompoundShape.cpp">
       <Filter>Physics\Collision\Shape</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\ConvexHullShape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\ConvexHullShape.cpp">
       <Filter>Physics\Collision\Shape</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\ConvexShape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\ConvexShape.cpp">
       <Filter>Physics\Collision\Shape</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\CylinderShape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\CylinderShape.cpp">
       <Filter>Physics\Collision\Shape</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\DecoratedShape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\DecoratedShape.cpp">
       <Filter>Physics\Collision\Shape</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\EmptyShape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\EmptyShape.cpp">
       <Filter>Physics\Collision\Shape</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\HeightFieldShape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\HeightFieldShape.cpp">
       <Filter>Physics\Collision\Shape</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\MeshShape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\MeshShape.cpp">
       <Filter>Physics\Collision\Shape</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\MutableCompoundShape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\MutableCompoundShape.cpp">
       <Filter>Physics\Collision\Shape</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\OffsetCenterOfMassShape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\OffsetCenterOfMassShape.cpp">
       <Filter>Physics\Collision\Shape</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\PlaneShape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\PlaneShape.cpp">
       <Filter>Physics\Collision\Shape</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\RotatedTranslatedShape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\RotatedTranslatedShape.cpp">
       <Filter>Physics\Collision\Shape</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\ScaledShape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\ScaledShape.cpp">
       <Filter>Physics\Collision\Shape</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\Shape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\Shape.cpp">
       <Filter>Physics\Collision\Shape</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\SphereShape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\SphereShape.cpp">
       <Filter>Physics\Collision\Shape</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\StaticCompoundShape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\StaticCompoundShape.cpp">
       <Filter>Physics\Collision\Shape</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\TaperedCapsuleShape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\TaperedCapsuleShape.cpp">
       <Filter>Physics\Collision\Shape</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\TaperedCylinderShape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\TaperedCylinderShape.cpp">
       <Filter>Physics\Collision\Shape</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\TriangleShape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\TriangleShape.cpp">
       <Filter>Physics\Collision\Shape</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\TransformedShape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\TransformedShape.cpp">
       <Filter>Physics\Collision</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConeConstraint.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConeConstraint.cpp">
       <Filter>Physics\Constraints</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\Constraint.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\Constraint.cpp">
       <Filter>Physics\Constraints</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintManager.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintManager.cpp">
       <Filter>Physics\Constraints</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ContactConstraintManager.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ContactConstraintManager.cpp">
       <Filter>Physics\Constraints</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\DistanceConstraint.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\DistanceConstraint.cpp">
       <Filter>Physics\Constraints</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\FixedConstraint.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\FixedConstraint.cpp">
       <Filter>Physics\Constraints</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\GearConstraint.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\GearConstraint.cpp">
       <Filter>Physics\Constraints</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\HingeConstraint.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\HingeConstraint.cpp">
       <Filter>Physics\Constraints</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\MotorSettings.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\MotorSettings.cpp">
       <Filter>Physics\Constraints</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\PathConstraint.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\PathConstraint.cpp">
       <Filter>Physics\Constraints</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\PathConstraintPath.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\PathConstraintPath.cpp">
       <Filter>Physics\Constraints</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\PathConstraintPathHermite.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\PathConstraintPathHermite.cpp">
       <Filter>Physics\Constraints</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\PointConstraint.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\PointConstraint.cpp">
       <Filter>Physics\Constraints</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\PulleyConstraint.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\PulleyConstraint.cpp">
       <Filter>Physics\Constraints</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\RackAndPinionConstraint.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\RackAndPinionConstraint.cpp">
       <Filter>Physics\Constraints</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\SixDOFConstraint.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\SixDOFConstraint.cpp">
       <Filter>Physics\Constraints</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\SliderConstraint.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\SliderConstraint.cpp">
       <Filter>Physics\Constraints</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\SpringSettings.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\SpringSettings.cpp">
       <Filter>Physics\Constraints</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\SwingTwistConstraint.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\SwingTwistConstraint.cpp">
       <Filter>Physics\Constraints</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\TwoBodyConstraint.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\TwoBodyConstraint.cpp">
       <Filter>Physics\Constraints</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\DeterminismLog.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\DeterminismLog.cpp">
       <Filter>Physics</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\IslandBuilder.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\IslandBuilder.cpp">
       <Filter>Physics</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\LargeIslandSplitter.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\LargeIslandSplitter.cpp">
       <Filter>Physics</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\PhysicsScene.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\PhysicsScene.cpp">
       <Filter>Physics</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\PhysicsSystem.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\PhysicsSystem.cpp">
       <Filter>Physics</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\PhysicsUpdateContext.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\PhysicsUpdateContext.cpp">
       <Filter>Physics</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Ragdoll\Ragdoll.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Ragdoll\Ragdoll.cpp">
       <Filter>Physics\Ragdoll</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodyCreationSettings.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodyCreationSettings.cpp">
       <Filter>Physics\SoftBody</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodyMotionProperties.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodyMotionProperties.cpp">
       <Filter>Physics\SoftBody</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodyShape.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodyShape.cpp">
       <Filter>Physics\SoftBody</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodySharedSettings.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodySharedSettings.cpp">
       <Filter>Physics\SoftBody</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\StateRecorderImpl.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\StateRecorderImpl.cpp">
       <Filter>Physics</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\MotorcycleController.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\MotorcycleController.cpp">
       <Filter>Physics\Vehicle</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\TrackedVehicleController.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\TrackedVehicleController.cpp">
       <Filter>Physics\Vehicle</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleAntiRollBar.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleAntiRollBar.cpp">
       <Filter>Physics\Vehicle</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleCollisionTester.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleCollisionTester.cpp">
       <Filter>Physics\Vehicle</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleConstraint.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleConstraint.cpp">
       <Filter>Physics\Vehicle</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleController.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleController.cpp">
       <Filter>Physics\Vehicle</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleDifferential.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleDifferential.cpp">
       <Filter>Physics\Vehicle</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleEngine.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleEngine.cpp">
       <Filter>Physics\Vehicle</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleTrack.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleTrack.cpp">
       <Filter>Physics\Vehicle</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleTransmission.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleTransmission.cpp">
       <Filter>Physics\Vehicle</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\Wheel.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\Wheel.cpp">
       <Filter>Physics\Vehicle</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\WheeledVehicleController.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\WheeledVehicleController.cpp">
       <Filter>Physics\Vehicle</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\RegisterTypes.cpp" />
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Renderer\DebugRenderer.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\RegisterTypes.cpp" />
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Renderer\DebugRenderer.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Renderer\DebugRendererPlayback.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Renderer\DebugRendererPlayback.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Renderer\DebugRendererRecorder.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Renderer\DebugRendererRecorder.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Renderer\DebugRendererSimple.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Renderer\DebugRendererSimple.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Skeleton\SkeletalAnimation.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Skeleton\SkeletalAnimation.cpp">
       <Filter>Skeleton</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Skeleton\Skeleton.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Skeleton\Skeleton.cpp">
       <Filter>Skeleton</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Skeleton\SkeletonMapper.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Skeleton\SkeletonMapper.cpp">
       <Filter>Skeleton</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Skeleton\SkeletonPose.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Skeleton\SkeletonPose.cpp">
       <Filter>Skeleton</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\TriangleSplitter\TriangleSplitter.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\TriangleSplitter\TriangleSplitter.cpp">
       <Filter>TriangleSplitter</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\TriangleSplitter\TriangleSplitterBinning.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\TriangleSplitter\TriangleSplitterBinning.cpp">
       <Filter>TriangleSplitter</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\TriangleSplitter\TriangleSplitterMean.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\TriangleSplitter\TriangleSplitterMean.cpp">
       <Filter>TriangleSplitter</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStream.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStream.cpp">
       <Filter>ObjectStream</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamBinaryIn.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamBinaryIn.cpp">
       <Filter>ObjectStream</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamBinaryOut.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamBinaryOut.cpp">
       <Filter>ObjectStream</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamIn.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamIn.cpp">
       <Filter>ObjectStream</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamOut.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamOut.cpp">
       <Filter>ObjectStream</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamTextIn.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamTextIn.cpp">
       <Filter>ObjectStream</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamTextOut.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamTextOut.cpp">
       <Filter>ObjectStream</Filter>
     </ClCompile>
-    <ClCompile Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\TypeDeclarations.cpp">
+    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\TypeDeclarations.cpp">
       <Filter>ObjectStream</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\AABBTree\AABBTreeBuilder.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\AABBTree\AABBTreeBuilder.h">
       <Filter>AABBTree</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\AABBTree\AABBTreeToBuffer.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\AABBTree\AABBTreeToBuffer.h">
       <Filter>AABBTree</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\AABBTree\NodeCodec\NodeCodecQuadTreeHalfFloat.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\AABBTree\NodeCodec\NodeCodecQuadTreeHalfFloat.h">
       <Filter>AABBTree\NodeCodec</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\AABBTree\TriangleCodec\TriangleCodecIndexed8BitPackSOA4Flags.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\AABBTree\TriangleCodec\TriangleCodecIndexed8BitPackSOA4Flags.h">
       <Filter>AABBTree\TriangleCodec</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ConfigurationString.h" />
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\ARMNeon.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ConfigurationString.h" />
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\ARMNeon.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\Array.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\Array.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\Atomics.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\Atomics.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\BinaryHeap.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\BinaryHeap.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\ByteBuffer.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\ByteBuffer.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\Color.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\Color.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\Core.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\Core.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\Factory.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\Factory.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\FixedSizeFreeList.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\FixedSizeFreeList.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\FixedSizeFreeList.inl">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\FixedSizeFreeList.inl">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\FPControlWord.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\FPControlWord.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\FPException.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\FPException.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\FPFlushDenormals.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\FPFlushDenormals.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\HashCombine.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\HashCombine.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\HashTable.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\HashTable.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\InsertionSort.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\InsertionSort.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\IssueReporting.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\IssueReporting.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\JobSystem.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\JobSystem.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\JobSystem.inl">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\JobSystem.inl">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\JobSystemSingleThreaded.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\JobSystemSingleThreaded.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\JobSystemThreadPool.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\JobSystemThreadPool.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\JobSystemWithBarrier.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\JobSystemWithBarrier.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\LinearCurve.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\LinearCurve.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\LockFreeHashMap.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\LockFreeHashMap.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\LockFreeHashMap.inl">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\LockFreeHashMap.inl">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\Memory.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\Memory.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\Mutex.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\Mutex.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\MutexArray.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\MutexArray.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\NonCopyable.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\NonCopyable.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\Profiler.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\Profiler.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\Profiler.inl">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\Profiler.inl">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\QuickSort.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\QuickSort.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\Reference.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\Reference.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\Result.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\Result.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\RTTI.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\RTTI.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\ScopeExit.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\ScopeExit.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\Semaphore.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\Semaphore.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\StaticArray.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\StaticArray.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\STLAlignedAllocator.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\STLAlignedAllocator.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\STLAllocator.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\STLAllocator.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\STLLocalAllocator.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\STLLocalAllocator.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\STLTempAllocator.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\STLTempAllocator.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\StreamIn.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\StreamIn.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\StreamOut.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\StreamOut.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\StreamUtils.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\StreamUtils.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\StreamWrapper.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\StreamWrapper.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\StridedPtr.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\StridedPtr.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\StringTools.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\StringTools.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\TempAllocator.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\TempAllocator.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\TickCounter.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\TickCounter.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\UnorderedMap.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\UnorderedMap.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Core\UnorderedSet.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Core\UnorderedSet.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\AABox.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\AABox.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\AABox4.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\AABox4.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\ClipPoly.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\ClipPoly.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\ClosestPoint.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\ClosestPoint.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\ConvexHullBuilder.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\ConvexHullBuilder.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\ConvexHullBuilder2D.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\ConvexHullBuilder2D.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\ConvexSupport.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\ConvexSupport.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\Ellipse.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\Ellipse.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\EPAConvexHullBuilder.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\EPAConvexHullBuilder.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\EPAPenetrationDepth.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\EPAPenetrationDepth.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\GJKClosestPoint.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\GJKClosestPoint.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\IndexedTriangle.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\IndexedTriangle.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\Indexify.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\Indexify.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\MortonCode.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\MortonCode.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\OrientedBox.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\OrientedBox.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\Plane.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\Plane.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\RayAABox.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\RayAABox.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\RayCapsule.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\RayCapsule.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\RayCylinder.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\RayCylinder.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\RaySphere.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\RaySphere.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\RayTriangle.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\RayTriangle.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\Sphere.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\Sphere.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Geometry\Triangle.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Geometry\Triangle.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Jolt.h" />
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\BVec16.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Jolt.h" />
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\BVec16.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\BVec16.inl">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\BVec16.inl">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\DMat44.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\DMat44.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\DMat44.inl">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\DMat44.inl">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\Double3.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\Double3.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\DVec3.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\DVec3.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\DVec3.inl">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\DVec3.inl">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\DynMatrix.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\DynMatrix.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\EigenValueSymmetric.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\EigenValueSymmetric.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\FindRoot.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\FindRoot.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\Float2.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\Float2.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\Float3.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\Float3.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\Float4.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\Float4.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\GaussianElimination.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\GaussianElimination.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\HalfFloat.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\HalfFloat.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\Mat44.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\Mat44.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\Mat44.inl">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\Mat44.inl">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\Math.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\Math.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\MathTypes.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\MathTypes.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\Matrix.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\Matrix.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\Quat.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\Quat.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\Quat.inl">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\Quat.inl">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\Real.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\Real.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\Swizzle.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\Swizzle.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\Trigonometry.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\Trigonometry.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\UVec4.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\UVec4.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\UVec4.inl">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\UVec4.inl">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\Vec3.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\Vec3.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\Vec3.inl">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\Vec3.inl">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\Vec4.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\Vec4.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\Vec4.inl">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\Vec4.inl">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Math\Vector.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Math\Vector.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStream.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStream.h">
       <Filter>ObjectStream</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\SerializableAttribute.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\SerializableAttribute.h">
       <Filter>ObjectStream</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\SerializableAttributeEnum.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\SerializableAttributeEnum.h">
       <Filter>ObjectStream</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\SerializableAttributeTyped.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\SerializableAttributeTyped.h">
       <Filter>ObjectStream</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\SerializableObject.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\SerializableObject.h">
       <Filter>ObjectStream</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\TypeDeclarations.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\TypeDeclarations.h">
       <Filter>ObjectStream</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\AllowedDOFs.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\AllowedDOFs.h">
       <Filter>Physics\Body</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\Body.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\Body.h">
       <Filter>Physics\Body</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\Body.inl">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\Body.inl">
       <Filter>Physics\Body</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyAccess.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyAccess.h">
       <Filter>Physics\Body</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyActivationListener.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyActivationListener.h">
       <Filter>Physics\Body</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyCreationSettings.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyCreationSettings.h">
       <Filter>Physics\Body</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyFilter.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyFilter.h">
       <Filter>Physics\Body</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyID.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyID.h">
       <Filter>Physics\Body</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyInterface.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyInterface.h">
       <Filter>Physics\Body</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyLock.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyLock.h">
       <Filter>Physics\Body</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyLockInterface.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyLockInterface.h">
       <Filter>Physics\Body</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyLockMulti.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyLockMulti.h">
       <Filter>Physics\Body</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyManager.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyManager.h">
       <Filter>Physics\Body</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyPair.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyPair.h">
       <Filter>Physics\Body</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyType.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\BodyType.h">
       <Filter>Physics\Body</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\MassProperties.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\MassProperties.h">
       <Filter>Physics\Body</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\MotionProperties.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\MotionProperties.h">
       <Filter>Physics\Body</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\MotionProperties.inl">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\MotionProperties.inl">
       <Filter>Physics\Body</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\MotionQuality.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\MotionQuality.h">
       <Filter>Physics\Body</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Body\MotionType.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Body\MotionType.h">
       <Filter>Physics\Body</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Character\Character.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Character\Character.h">
       <Filter>Physics\Character</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Character\CharacterBase.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Character\CharacterBase.h">
       <Filter>Physics\Character</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Character\CharacterID.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Character\CharacterID.h">
       <Filter>Physics\Character</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Character\CharacterVirtual.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Character\CharacterVirtual.h">
       <Filter>Physics\Character</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\AABoxCast.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\AABoxCast.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\ActiveEdgeMode.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\ActiveEdgeMode.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\ActiveEdges.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\ActiveEdges.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\BackFaceMode.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\BackFaceMode.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\BroadPhase.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\BroadPhase.h">
       <Filter>Physics\Collision\BroadPhase</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\BroadPhaseBruteForce.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\BroadPhaseBruteForce.h">
       <Filter>Physics\Collision\BroadPhase</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\BroadPhaseLayer.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\BroadPhaseLayer.h">
       <Filter>Physics\Collision\BroadPhase</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\BroadPhaseLayerInterfaceMask.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\BroadPhaseLayerInterfaceMask.h">
       <Filter>Physics\Collision\BroadPhase</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\BroadPhaseLayerInterfaceTable.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\BroadPhaseLayerInterfaceTable.h">
       <Filter>Physics\Collision\BroadPhase</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\BroadPhaseQuadTree.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\BroadPhaseQuadTree.h">
       <Filter>Physics\Collision\BroadPhase</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\BroadPhaseQuery.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\BroadPhaseQuery.h">
       <Filter>Physics\Collision\BroadPhase</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\ObjectVsBroadPhaseLayerFilterMask.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\ObjectVsBroadPhaseLayerFilterMask.h">
       <Filter>Physics\Collision\BroadPhase</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\ObjectVsBroadPhaseLayerFilterTable.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\ObjectVsBroadPhaseLayerFilterTable.h">
       <Filter>Physics\Collision\BroadPhase</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\QuadTree.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\BroadPhase\QuadTree.h">
       <Filter>Physics\Collision\BroadPhase</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\CastConvexVsTriangles.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\CastConvexVsTriangles.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\CastResult.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\CastResult.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\CastSphereVsTriangles.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\CastSphereVsTriangles.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollectFacesMode.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollectFacesMode.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollideConvexVsTriangles.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollideConvexVsTriangles.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollidePointResult.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollidePointResult.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollideShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollideShape.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollideShapeVsShapePerLeaf.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollideShapeVsShapePerLeaf.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollideSoftBodyVertexIterator.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollideSoftBodyVertexIterator.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollideSoftBodyVerticesVsTriangles.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollideSoftBodyVerticesVsTriangles.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollideSphereVsTriangles.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollideSphereVsTriangles.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollisionCollector.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollisionCollector.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollisionCollectorImpl.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollisionCollectorImpl.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollisionDispatch.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollisionDispatch.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollisionGroup.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\CollisionGroup.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\ContactListener.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\ContactListener.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\EstimateCollisionResponse.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\EstimateCollisionResponse.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\GroupFilter.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\GroupFilter.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\GroupFilterTable.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\GroupFilterTable.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\InternalEdgeRemovingCollector.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\InternalEdgeRemovingCollector.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\ManifoldBetweenTwoFaces.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\ManifoldBetweenTwoFaces.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\NarrowPhaseQuery.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\NarrowPhaseQuery.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\NarrowPhaseStats.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\NarrowPhaseStats.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\ObjectLayer.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\ObjectLayer.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\ObjectLayerPairFilterMask.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\ObjectLayerPairFilterMask.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\ObjectLayerPairFilterTable.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\ObjectLayerPairFilterTable.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\PhysicsMaterial.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\PhysicsMaterial.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\PhysicsMaterialSimple.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\PhysicsMaterialSimple.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\RayCast.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\RayCast.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\BoxShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\BoxShape.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\CapsuleShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\CapsuleShape.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\CompoundShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\CompoundShape.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\CompoundShapeVisitors.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\CompoundShapeVisitors.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\ConvexHullShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\ConvexHullShape.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\ConvexShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\ConvexShape.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\CylinderShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\CylinderShape.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\DecoratedShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\DecoratedShape.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\EmptyShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\EmptyShape.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\GetTrianglesContext.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\GetTrianglesContext.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\HeightFieldShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\HeightFieldShape.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\MeshShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\MeshShape.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\MutableCompoundShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\MutableCompoundShape.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\OffsetCenterOfMassShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\OffsetCenterOfMassShape.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\PlaneShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\PlaneShape.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\PolyhedronSubmergedVolumeCalculator.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\PolyhedronSubmergedVolumeCalculator.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\RotatedTranslatedShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\RotatedTranslatedShape.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\ScaledShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\ScaledShape.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\ScaleHelpers.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\ScaleHelpers.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\Shape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\Shape.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\SphereShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\SphereShape.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\StaticCompoundShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\StaticCompoundShape.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\SubShapeID.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\SubShapeID.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\SubShapeIDPair.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\SubShapeIDPair.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\TaperedCapsuleShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\TaperedCapsuleShape.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\TaperedCylinderShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\TaperedCylinderShape.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\TriangleShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\TriangleShape.h">
       <Filter>Physics\Collision\Shape</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\ShapeCast.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\ShapeCast.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\ShapeFilter.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\ShapeFilter.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\SimShapeFilter.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\SimShapeFilter.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\SimShapeFilterWrapper.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\SimShapeFilterWrapper.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\SortReverseAndStore.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\SortReverseAndStore.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\TransformedShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\TransformedShape.h">
       <Filter>Physics\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\CalculateSolverSteps.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\CalculateSolverSteps.h">
       <Filter>Physics\Constraints</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConeConstraint.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConeConstraint.h">
       <Filter>Physics\Constraints</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\Constraint.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\Constraint.h">
       <Filter>Physics\Constraints</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintManager.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintManager.h">
       <Filter>Physics\Constraints</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\AngleConstraintPart.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\AngleConstraintPart.h">
       <Filter>Physics\Constraints\ConstraintPart</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\AxisConstraintPart.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\AxisConstraintPart.h">
       <Filter>Physics\Constraints\ConstraintPart</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\DualAxisConstraintPart.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\DualAxisConstraintPart.h">
       <Filter>Physics\Constraints\ConstraintPart</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\GearConstraintPart.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\GearConstraintPart.h">
       <Filter>Physics\Constraints\ConstraintPart</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\HingeRotationConstraintPart.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\HingeRotationConstraintPart.h">
       <Filter>Physics\Constraints\ConstraintPart</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\IndependentAxisConstraintPart.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\IndependentAxisConstraintPart.h">
       <Filter>Physics\Constraints\ConstraintPart</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\PointConstraintPart.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\PointConstraintPart.h">
       <Filter>Physics\Constraints\ConstraintPart</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\RackAndPinionConstraintPart.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\RackAndPinionConstraintPart.h">
       <Filter>Physics\Constraints\ConstraintPart</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\RotationEulerConstraintPart.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\RotationEulerConstraintPart.h">
       <Filter>Physics\Constraints\ConstraintPart</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\RotationQuatConstraintPart.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\RotationQuatConstraintPart.h">
       <Filter>Physics\Constraints\ConstraintPart</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\SpringPart.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\SpringPart.h">
       <Filter>Physics\Constraints\ConstraintPart</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\SwingTwistConstraintPart.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ConstraintPart\SwingTwistConstraintPart.h">
       <Filter>Physics\Constraints\ConstraintPart</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ContactConstraintManager.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\ContactConstraintManager.h">
       <Filter>Physics\Constraints</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\DistanceConstraint.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\DistanceConstraint.h">
       <Filter>Physics\Constraints</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\FixedConstraint.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\FixedConstraint.h">
       <Filter>Physics\Constraints</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\GearConstraint.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\GearConstraint.h">
       <Filter>Physics\Constraints</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\HingeConstraint.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\HingeConstraint.h">
       <Filter>Physics\Constraints</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\MotorSettings.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\MotorSettings.h">
       <Filter>Physics\Constraints</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\PathConstraint.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\PathConstraint.h">
       <Filter>Physics\Constraints</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\PathConstraintPath.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\PathConstraintPath.h">
       <Filter>Physics\Constraints</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\PathConstraintPathHermite.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\PathConstraintPathHermite.h">
       <Filter>Physics\Constraints</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\PointConstraint.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\PointConstraint.h">
       <Filter>Physics\Constraints</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\PulleyConstraint.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\PulleyConstraint.h">
       <Filter>Physics\Constraints</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\RackAndPinionConstraint.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\RackAndPinionConstraint.h">
       <Filter>Physics\Constraints</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\SixDOFConstraint.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\SixDOFConstraint.h">
       <Filter>Physics\Constraints</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\SliderConstraint.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\SliderConstraint.h">
       <Filter>Physics\Constraints</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\SpringSettings.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\SpringSettings.h">
       <Filter>Physics\Constraints</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\SwingTwistConstraint.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\SwingTwistConstraint.h">
       <Filter>Physics\Constraints</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Constraints\TwoBodyConstraint.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Constraints\TwoBodyConstraint.h">
       <Filter>Physics\Constraints</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\DeterminismLog.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\DeterminismLog.h">
       <Filter>Physics</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\EActivation.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\EActivation.h">
       <Filter>Physics</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\EPhysicsUpdateError.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\EPhysicsUpdateError.h">
       <Filter>Physics</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\IslandBuilder.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\IslandBuilder.h">
       <Filter>Physics</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\LargeIslandSplitter.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\LargeIslandSplitter.h">
       <Filter>Physics</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\PhysicsLock.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\PhysicsLock.h">
       <Filter>Physics</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\PhysicsScene.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\PhysicsScene.h">
       <Filter>Physics</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\PhysicsSettings.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\PhysicsSettings.h">
       <Filter>Physics</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\PhysicsStepListener.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\PhysicsStepListener.h">
       <Filter>Physics</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\PhysicsSystem.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\PhysicsSystem.h">
       <Filter>Physics</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\PhysicsUpdateContext.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\PhysicsUpdateContext.h">
       <Filter>Physics</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Ragdoll\Ragdoll.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Ragdoll\Ragdoll.h">
       <Filter>Physics\Ragdoll</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodyContactListener.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodyContactListener.h">
       <Filter>Physics\SoftBody</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodyCreationSettings.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodyCreationSettings.h">
       <Filter>Physics\SoftBody</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodyManifold.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodyManifold.h">
       <Filter>Physics\SoftBody</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodyMotionProperties.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodyMotionProperties.h">
       <Filter>Physics\SoftBody</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodyShape.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodyShape.h">
       <Filter>Physics\SoftBody</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodySharedSettings.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodySharedSettings.h">
       <Filter>Physics\SoftBody</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodyUpdateContext.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodyUpdateContext.h">
       <Filter>Physics\SoftBody</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodyVertex.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\SoftBody\SoftBodyVertex.h">
       <Filter>Physics\SoftBody</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\StateRecorder.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\StateRecorder.h">
       <Filter>Physics</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\StateRecorderImpl.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\StateRecorderImpl.h">
       <Filter>Physics</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\MotorcycleController.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\MotorcycleController.h">
       <Filter>Physics\Vehicle</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\TrackedVehicleController.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\TrackedVehicleController.h">
       <Filter>Physics\Vehicle</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleAntiRollBar.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleAntiRollBar.h">
       <Filter>Physics\Vehicle</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleCollisionTester.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleCollisionTester.h">
       <Filter>Physics\Vehicle</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleConstraint.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleConstraint.h">
       <Filter>Physics\Vehicle</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleController.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleController.h">
       <Filter>Physics\Vehicle</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleDifferential.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleDifferential.h">
       <Filter>Physics\Vehicle</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleEngine.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleEngine.h">
       <Filter>Physics\Vehicle</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleTrack.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleTrack.h">
       <Filter>Physics\Vehicle</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleTransmission.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\VehicleTransmission.h">
       <Filter>Physics\Vehicle</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\Wheel.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\Wheel.h">
       <Filter>Physics\Vehicle</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\WheeledVehicleController.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Vehicle\WheeledVehicleController.h">
       <Filter>Physics\Vehicle</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\RegisterTypes.h" />
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Renderer\DebugRenderer.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\RegisterTypes.h" />
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Renderer\DebugRenderer.h">
       <Filter>Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Renderer\DebugRendererPlayback.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Renderer\DebugRendererPlayback.h">
       <Filter>Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Renderer\DebugRendererRecorder.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Renderer\DebugRendererRecorder.h">
       <Filter>Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Renderer\DebugRendererSimple.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Renderer\DebugRendererSimple.h">
       <Filter>Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Skeleton\SkeletalAnimation.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Skeleton\SkeletalAnimation.h">
       <Filter>Skeleton</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Skeleton\Skeleton.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Skeleton\Skeleton.h">
       <Filter>Skeleton</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Skeleton\SkeletonMapper.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Skeleton\SkeletonMapper.h">
       <Filter>Skeleton</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Skeleton\SkeletonPose.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Skeleton\SkeletonPose.h">
       <Filter>Skeleton</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\TriangleSplitter\TriangleSplitter.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\TriangleSplitter\TriangleSplitter.h">
       <Filter>TriangleSplitter</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\TriangleSplitter\TriangleSplitterBinning.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\TriangleSplitter\TriangleSplitterBinning.h">
       <Filter>TriangleSplitter</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\TriangleSplitter\TriangleSplitterMean.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\TriangleSplitter\TriangleSplitterMean.h">
       <Filter>TriangleSplitter</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\GetPrimitiveTypeOfType.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\GetPrimitiveTypeOfType.h">
       <Filter>ObjectStream</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamBinaryIn.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamBinaryIn.h">
       <Filter>ObjectStream</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamBinaryOut.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamBinaryOut.h">
       <Filter>ObjectStream</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamIn.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamIn.h">
       <Filter>ObjectStream</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamOut.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamOut.h">
       <Filter>ObjectStream</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamTextIn.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamTextIn.h">
       <Filter>ObjectStream</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamTextOut.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamTextOut.h">
       <Filter>ObjectStream</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamTypes.h">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamTypes.h">
       <Filter>ObjectStream</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Build\VS2022_CL\CMakeFiles\Jolt.dir\Debug\cmake_pch.hxx">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Build\VS2022_CL\CMakeFiles\Jolt.dir\Debug\cmake_pch.hxx">
       <Filter>Precompile Header File</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Build\VS2022_CL\CMakeFiles\Jolt.dir\Release\cmake_pch.hxx">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Build\VS2022_CL\CMakeFiles\Jolt.dir\Release\cmake_pch.hxx">
       <Filter>Precompile Header File</Filter>
     </ClInclude>
-    <ClInclude Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Build\VS2022_CL\CMakeFiles\Jolt.dir\Distribution\cmake_pch.hxx">
+    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Build\VS2022_CL\CMakeFiles\Jolt.dir\Distribution\cmake_pch.hxx">
       <Filter>Precompile Header File</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Build\CMakeLists.txt" />
+    <CustomBuild Include="$(SolutionDir)lib\third_party\JoltPhysics\Build\CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Jolt.natvis" />
+    <Natvis Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Jolt.natvis" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Jolt.cmake" />
-    <None Include="E:\other projects\CSyren\lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\TaperedCapsuleShape.gliffy">
+    <None Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Jolt.cmake" />
+    <None Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Physics\Collision\Shape\TaperedCapsuleShape.gliffy">
       <Filter>Physics\Collision\Shape</Filter>
     </None>
   </ItemGroup>
