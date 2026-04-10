@@ -129,6 +129,27 @@
     <ClInclude Include="dx_main.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="fence.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="render_queue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="command_list.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="buffer_view.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="command_list.ipp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="swap_chain.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="presentation_system.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -186,6 +207,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="shader_base.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="command_list.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="swap_chain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="presentation_system.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

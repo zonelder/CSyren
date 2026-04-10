@@ -22,7 +22,7 @@ namespace csyren
     public:
         explicit MeshRenderSystem() = default;
 
-        void draw(core::ServiceContext& ctx) override
+        void onFrame(core::ServiceContext& ctx) override
         {
 
             auto render = ctx.get<render::Renderer>();

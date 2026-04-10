@@ -24,6 +24,8 @@
 #include "shader_parameter_binder.h"
 #include "vertex_layout.h"
 
+#include "render_queue.h"
+
 
 namespace csyren::render
 {
@@ -61,7 +63,6 @@ namespace csyren::render
 		void beginResourceUpload();
 		void endResourceUpload();
 
-		HRESULT uploadTextureData(ID3D12Resource* destResource, const DirectX::ScratchImage& scratchImage);
 		DescriptorHeapManager* getDescriptorHeapManager() const noexcept { return _pSrvHeapManager.get(); }
 
 		ID3D12GraphicsCommandList* commandList() const noexcept { return _commandList.Get(); }
@@ -102,10 +103,8 @@ namespace csyren::render
 		D3D12_RESOURCE_STATES _depthStencilCurrentState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
 		details::ComPtr<ID3D12CommandAllocator> _commandAllocator;
 		details::ComPtr<ID3D12GraphicsCommandList> _commandList;
-		details::ComPtr<ID3D12Fence> _fence;
-		UINT64 _fenceValue{ 0 };
-		HANDLE _fenceEvent{ nullptr };
-		UINT _frameIndex{ 0 };
+		
+		RenderQueue _mainQueue;
 
 		UploadRingBuffer _perEntityCB;
 		EngineVariableBuffer					_engineVariableBuffer;

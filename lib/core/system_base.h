@@ -9,7 +9,9 @@ namespace csyren::core
 		virtual void init(ServiceContext& event) {}
 
 		virtual void update(ServiceContext& event){}
-		virtual void draw(ServiceContext& event) {}
+		virtual void startFrame(ServiceContext& event) {};
+		virtual void onFrame(ServiceContext& event) {}
+		virtual void endFrame(ServiceContext& event) {};
 
 		virtual void shutdown(ServiceContext& event){}
 

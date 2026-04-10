@@ -187,7 +187,7 @@ namespace csyren
 			_render.beginFrame();
 			_render.clear(&(camera.background.x));
 
-			_systems.draw(ctx);
+			_systems.onFrame(ctx);
 
 			_render.endFrame();
 

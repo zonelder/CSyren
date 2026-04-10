@@ -168,6 +168,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="buffer_view.h" />
+    <ClInclude Include="command_list.h" />
+    <ClInclude Include="command_list.ipp" />
     <ClInclude Include="compute_shader.h" />
     <ClInclude Include="constant_buffer.h" />
     <ClInclude Include="constant_buffer_manager.h" />
@@ -175,6 +178,7 @@
     <ClInclude Include="dx_log.h" />
     <ClInclude Include="dx_main.h" />
     <ClInclude Include="engine_semantics.h" />
+    <ClInclude Include="fence.h" />
     <ClInclude Include="forward_decl.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="load_status.h" />
@@ -183,9 +187,11 @@
     <ClInclude Include="mesh_builder.h" />
     <ClInclude Include="pass_data_manager.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="presentation_system.h" />
     <ClInclude Include="pso_factory.h" />
     <ClInclude Include="primitives.h" />
     <ClInclude Include="renderer.h" />
+    <ClInclude Include="render_queue.h" />
     <ClInclude Include="resources.h" />
     <ClInclude Include="resource_handle.h" />
     <ClInclude Include="resource_manager.h" />
@@ -198,6 +204,7 @@
     <ClInclude Include="shader_base.h" />
     <ClInclude Include="shader_meta.h" />
     <ClInclude Include="shader_parameter_binder.h" />
+    <ClInclude Include="swap_chain.h" />
     <ClInclude Include="texture.h" />
     <ClInclude Include="texture_creation_task.h" />
     <ClInclude Include="texture_upload_task.h" />
@@ -208,6 +215,7 @@
     <ClInclude Include="vertex_layout.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="command_list.cpp" />
     <ClCompile Include="constant_buffer.cpp" />
     <ClCompile Include="descriptor_heap_manager.cpp" />
     <ClCompile Include="material.cpp" />
@@ -218,6 +226,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="presentation_system.cpp" />
     <ClCompile Include="primitives.cpp" />
     <ClCompile Include="pso_factory.cpp" />
     <ClCompile Include="renderer.cpp" />
@@ -226,6 +235,7 @@
     <ClCompile Include="shader_base.cpp" />
     <ClCompile Include="shader_meta.cpp" />
     <ClCompile Include="shader_parameter_binder.cpp" />
+    <ClCompile Include="swap_chain.cpp" />
     <ClCompile Include="texture.cpp" />
     <ClCompile Include="texture_creation_task.cpp" />
     <ClCompile Include="texture_upload_task.cpp" />

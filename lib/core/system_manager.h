@@ -68,11 +68,11 @@ namespace csyren::core
 			}
 		}
 
-		void draw(ServiceContext& ctx)
+		void onFrame(ServiceContext& ctx)
 		{
 			for (auto entry : _systems)
 			{
-				entry.system->draw(ctx);
+				entry.system->onFrame(ctx);
 			}
 		}
 	private:

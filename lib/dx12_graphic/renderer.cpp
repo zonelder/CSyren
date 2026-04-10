@@ -312,46 +312,6 @@ namespace csyren::render
         WaitForSingleObject(_fenceEvent, INFINITE);
     }
 
-    HRESULT Renderer::uploadTextureData(ID3D12Resource* destResource, const DirectX::ScratchImage& scratchImage)
-    {
-        const auto& metadata = scratchImage.GetMetadata();
-        D3D12_RESOURCE_DESC uploadDesc = CD3DX12_RESOURCE_DESC::Buffer(GetRequiredIntermediateSize(destResource, 0, static_cast<UINT>(metadata.mipLevels)));
-        Microsoft::WRL::ComPtr<ID3D12Resource> uploadBuffer;
-        auto heapProp = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-        HRESULT hr = _device->CreateCommittedResource(
-            &heapProp,
-            D3D12_HEAP_FLAG_NONE,
-            &uploadDesc,
-            D3D12_RESOURCE_STATE_GENERIC_READ,
-            nullptr,
-            IID_PPV_ARGS(&uploadBuffer)
-        );
-        if (FAILED(hr)) return hr;
-        uploadBuffer->SetName(L"TextureUploadBuffer");
-
-        std::vector<D3D12_SUBRESOURCE_DATA> subresources;
-
-        _commandAllocator->Reset();
-        _commandList->Reset(_commandAllocator.Get(), nullptr);
-        
-        auto commonBarrier = CD3DX12_RESOURCE_BARRIER::Transition(destResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
-        _commandList->ResourceBarrier(1, &commonBarrier);
-        UpdateSubresources(_commandList.Get(), destResource, uploadBuffer.Get(), 0, 0, static_cast<UINT>(subresources.size()), subresources.data());
-        auto copyBarrier = CD3DX12_RESOURCE_BARRIER::Transition(destResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-        _commandList->ResourceBarrier(1, &copyBarrier);
-
-
-        hr = _commandList->Close();
-        if (FAILED(hr)) return hr;
-
-        ID3D12CommandList* ppCommandLists[] = { _commandList.Get() };
-        _commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-
-        waitForGpu();
-
-        return S_OK;
-    }
-
     //TODO CHANGE API
     bool Renderer::bindMaterial(ResourceManager& rm, MaterialHandle mathandle,const VertexLayout& vertexLayout)
     {
