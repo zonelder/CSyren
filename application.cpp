@@ -36,6 +36,8 @@
 
 #include "dx12_graphic/texture.h"
 
+#include "dx12_graphic/resource_manager.h"
+
 namespace
 {
 
@@ -73,8 +75,7 @@ namespace csyren
 		_bus(std::make_unique<csyren::core::events::EventBus2>()),
 		_scene(*_bus),
 		_render(),
-		_resource(_render),
-		_serializer(_scene,_resource)
+		_serializer(_scene)
 	{
 	}
 
@@ -93,7 +94,8 @@ namespace csyren
 		{
 			return false;
 		}
-		_resource.init_thread();
+
+		render::details::SingletonRegistry::add<render::ResourceManager>(_render);
 		_inputDispatcher.init(*_bus);
 		log::info("-------------------------------------------------------------------------------------------");
 		return true;
@@ -117,7 +119,6 @@ namespace csyren
 
 		ctx.registerService(&_inputDispatcher.devices());
 		ctx.registerService(&_scene);
-		ctx.registerService(&_resource);
 		ctx.registerService(_bus.get());
 		ctx.registerService(&time);
 		ctx.registerService(&_render);
@@ -126,7 +127,7 @@ namespace csyren
 
 		log::info("-------------------------------Setup Start Up------------------------------------------------");
 		_render.beginResourceUpload();
-		render::Primitives::registerFabricsAll(_resource);
+		render::Primitives::registerFabricsAll();
 		onSceneStart(ctx);
 		_systems.init(ctx);
 
@@ -183,7 +184,7 @@ namespace csyren
 			rotatedDir = DirectX::XMVector3Normalize(rotatedDir);
 			DirectX::XMStoreFloat4(&engineVariables->lightDirection, rotatedDir);
 
-			_resource.update();
+			render::ResourceManager::instance().update();
 			_render.beginFrame();
 			_render.clear(&(camera.background.x));
 
@@ -206,6 +207,7 @@ namespace csyren
 		srand(time(0));
 		using namespace core::components;
 		using namespace render::components;
+		auto& res = render::ResourceManager::instance();
 		//-----------------------------init systems---------------------------------------------------
 		//
 		//--------------------------------------------------------------------------------------------
@@ -230,11 +232,11 @@ namespace csyren
 
 		//------------------------------------LOAD SCENE------------------------------------------------
 
-		auto texture = _resource.get<render::Texture>("E:\\stalker_online_git\\res\\textures\\default\\red.dds");
+		auto texture = res.get<render::Texture>("E:\\stalker_online_git\\res\\textures\\default\\red.dds");
 
-		auto texture1 = _resource.get<render::Texture>("E:\\stalker_online_git\\res\\textures\\default\\white.dds");
+		auto texture1 = res.get<render::Texture>("E:\\stalker_online_git\\res\\textures\\default\\white.dds");
 
-		auto texture2 = _resource.get<render::Texture>("E:\\stalker_online_git\\res\\textures\\materials\\carpet\\carpet04.dds");
+		auto texture2 = res.get<render::Texture>("E:\\stalker_online_git\\res\\textures\\materials\\carpet\\carpet04.dds");
 		//------------------------------------Camera----------------------------------------------------
 		auto mainCameraEntt = _scene.createEntity();
 		auto mainCamera = _scene.addComponent<Camera>(mainCameraEntt);
@@ -246,13 +248,13 @@ namespace csyren
 		cameraTransform->position = math::Vector3::back * 4 + math::Vector3::up*2;
 
 		//-------------------------------------Material and mesh----------------------------------------
-		auto matDefault = render::Primitives::getDefaultMaterial(_resource);
+		auto matDefault = render::Primitives::getDefaultMaterial();
 		//*
-		auto matRainbow = render::Primitives::getRainbowMaterial(_resource);
-		_resource.getMaterial(matDefault)->setVector("tint", DirectX::XMFLOAT4(1, 1, 1,1));
-		_resource.getMaterial(matRainbow)->setVector("tint", DirectX::XMFLOAT4(1, 1, 1, 1));
-		auto meshQuad = render::Primitives::getQuad(_resource);
-		auto meshCube = render::Primitives::getCube(_resource);
+		auto matRainbow = render::Primitives::getRainbowMaterial();
+		res.getMaterial(matDefault)->setVector("tint", DirectX::XMFLOAT4(1, 1, 1,1));
+		res.getMaterial(matRainbow)->setVector("tint", DirectX::XMFLOAT4(1, 1, 1, 1));
+		auto meshQuad = render::Primitives::getQuad();
+		auto meshCube = render::Primitives::getCube();
 		/*
 		const int gridX = 100;
 		const int gridY = 20;
@@ -337,11 +339,11 @@ namespace csyren
 			tr->rotation = Quaternion::euler(-45, 0, 0);
 			tr->scale = Vector3(3, 1, 3);
 			auto renderer = _scene.addComponent<render::components::MeshRenderer>(textured);
-			renderer->material = render::Primitives::getTextureMaterial(_resource);
-			auto mat = _resource.getMaterial(renderer->material);
+			renderer->material = render::Primitives::getTextureMaterial();
+			auto mat = res.getMaterial(renderer->material);
 			mat->setTexture("diffuseTexture", texture2);
 			auto mesh = _scene.addComponent<render::components::MeshFilter>(textured);
-			mesh->mesh = render::Primitives::getQuad(_resource);
+			mesh->mesh = render::Primitives::getQuad();
 			//*/
 		}
 
@@ -408,8 +410,8 @@ namespace csyren
 					log::warning("Camera has no Transform!");
 					return;
 				}
-				auto cubeMat = render::Primitives::getDefaultMaterial(_resource);
-				auto cubeMesh = render::Primitives::getCube(_resource);
+				auto cubeMat = render::Primitives::getDefaultMaterial();
+				auto cubeMesh = render::Primitives::getCube();
 				auto world = camTr->world();
 				Vector3 spawnOffset = world.forward() * 1.0f;
 				Vector3 spawnPos = camTr->position + spawnOffset;

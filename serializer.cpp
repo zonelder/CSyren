@@ -8,9 +8,8 @@
 
 namespace csyren
 {
-    Serializer::Serializer(core::Scene& scene, render::ResourceManager& rm) :
-        _scene(scene),
-        _resourceManager(rm)
+    Serializer::Serializer(core::Scene& scene) :
+        _scene(scene)
     {
     }
 
@@ -20,7 +19,6 @@ namespace csyren
         json entitiesArray = json::array();
 
         auto& serv = render::SerializationServices::get();
-        serv.resourceManager = &_resourceManager;
         serv.rootJson = &sceneJson;
         for (auto entt : _scene.entities())
         {
@@ -91,7 +89,6 @@ namespace csyren
         if (!data.contains("entities")) return true;
 
         auto& serv = render::SerializationServices::get();
-        serv.resourceManager = &_resourceManager;
         serv.rootJson = &data;
 
         for (const auto& entityData : data["entities"])

@@ -85,11 +85,9 @@ namespace csyren::render
 
 
 		CS_FORCE_INLINE void clearRenderTarget(uint8_t slot, const math::Vector3& color);
-		CS_FORCE_INLINE void clearRenderTarget(uint8_t slot, const math::Color& color);
 		CS_FORCE_INLINE void clearRenderTarget(uint8_t slot, const float color[4]);
 
 		CS_FORCE_INLINE void clearRenderTarget(D3D12_CPU_DESCRIPTOR_HANDLE rtv, const math::Vector3& color);
-		CS_FORCE_INLINE void clearRenderTarget(D3D12_CPU_DESCRIPTOR_HANDLE rtv, const math::Color& color);
 		CS_FORCE_INLINE void clearRenderTarget(D3D12_CPU_DESCRIPTOR_HANDLE rtv, const float color[4]);
 		CS_FORCE_INLINE void clearDepthStencil(float depth = 1.0f, uint8_t stencil = 0);
 

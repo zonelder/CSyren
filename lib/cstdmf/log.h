@@ -2,10 +2,12 @@
 #define __CSYREN_LOG__
 
 #include <string>
+#include <string_view>
 #include <format>
 #include <fstream>
 #include <iostream>
 #include <mutex>
+
 
 namespace csyren::log
 {
@@ -35,7 +37,7 @@ namespace csyren::log
             g_logFile.close();
     }
 
-    inline void write(const std::string& msg)
+    inline void write(std::string_view msg)
     {
         std::scoped_lock lock(g_mutex);
         std::cout << msg << std::endl;
@@ -44,10 +46,9 @@ namespace csyren::log
     }
 
 
-    inline void write(Level level, const std::string& msg)
+    inline void write(Level level, std::string_view msg)
     {
-        std::string formatted = std::format("[{}] {}", toString(level), msg);
-        write(formatted);
+        write(std::format("[{}] {}", toString(level), msg));
     }
 
     namespace
@@ -82,6 +83,11 @@ namespace csyren::log
     void error(std::format_string<Args...> fmt, Args&&... args)
     {
         log(Level::Error, fmt, std::forward<Args>(args)...);
+    }
+
+    inline void error(std::string_view msg)
+    {
+        write(Level::Error, msg);
     }
 
 }

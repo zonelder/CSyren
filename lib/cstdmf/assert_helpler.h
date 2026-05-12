@@ -28,7 +28,7 @@ namespace csyren::cstdmf::details
     };
 
     // пользователь может переопределить
-    void handleAssert(const AssertInfo& info)
+    inline void handleAssert(const AssertInfo& info)
     {
         log::error("ASSERT FAILED\n"
             "Expr: {}\n"
@@ -40,7 +40,7 @@ namespace csyren::cstdmf::details
             info.line);
     }
 
-    [[noreturn]] void handleFatal(const AssertInfo& e)
+    [[noreturn]] inline void handleFatal(const AssertInfo& e)
     {
         auto msg = std::format("Fatal error:\n{}\n\nLocation:\n{} : {}\n", e.message, e.file, e.line);
         log::error(msg);

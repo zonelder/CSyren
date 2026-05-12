@@ -4,7 +4,7 @@
 
 namespace csyren::render
 {
-    bool DescriptorHeapManager::init(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE type, UINT descriptorsPerHeap, bool isShaderVisible)
+    bool DescriptorHeap::init(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE type, UINT descriptorsPerHeap, bool isShaderVisible)
     {
         _device = device;
         _heapType = type;
@@ -28,7 +28,7 @@ namespace csyren::render
     }
 
 
-    DescriptorHandles DescriptorHeapManager::allocate()
+    DescriptorHandles DescriptorHeap::allocate()
     {
         UINT index;
         if (!_freeList.empty())
@@ -40,7 +40,7 @@ namespace csyren::render
         {
             if (_nextFreeIndex >= _numDescriptorsInHeap)
             {
-                log::error("DescriptorHeapManager::allocate() : attempt to allocate descriptor but its full: heap type = {},size = {}", static_cast<int>(_heapType), _numDescriptorsInHeap);
+                log::error("DescriptorHeap::allocate() : attempt to allocate descriptor but its full: heap type = {},size = {}", static_cast<int>(_heapType), _numDescriptorsInHeap);
                 return { {0},{0} };
             }
             index = _nextFreeIndex++;
@@ -48,11 +48,11 @@ namespace csyren::render
         return getHandlesFromIndex(index);
     }
 
-    void DescriptorHeapManager::free(DescriptorHandles handles)
+    void DescriptorHeap::free(DescriptorHandles handles)
     {
         if (!handles.isValid())
         {
-            log::warning("DescriptorHeapManager::free() : attempt to free invalid handlers");
+            log::warning("DescriptorHeap::free() : attempt to free invalid handlers");
             return;
         }
 
@@ -62,11 +62,11 @@ namespace csyren::render
         _freeList.push_back(index);
     }
 
-    DescriptorHandles DescriptorHeapManager::getHandlesFromIndex(UINT index) const
+    DescriptorHandles DescriptorHeap::getHandlesFromIndex(UINT index) const
     {
         if (index >= _numDescriptorsInHeap)
         {
-            log::error("DescriptorHeapManager::getHandlesFromIndex() : index out of range.index = {},maxIndex = {}", index, _numDescriptorsInHeap);
+            log::error("DescriptorHeap::getHandlesFromIndex() : index out of range.index = {},maxIndex = {}", index, _numDescriptorsInHeap);
             return { {0}, {0} }; // Индекс за пределами кучи
         }
 
@@ -83,7 +83,7 @@ namespace csyren::render
         return { cpuHandle, gpuHandle };
     }
 
-    ID3D12DescriptorHeap* DescriptorHeapManager::getHeap() const
+    ID3D12DescriptorHeap* DescriptorHeap::getHeap() const
     {
         return _heap.Get();
     }

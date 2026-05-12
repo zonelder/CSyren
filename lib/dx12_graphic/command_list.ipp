@@ -86,21 +86,12 @@ namespace csyren::render
 		clearRenderTarget(rtv, col);
 	}
 
-	CS_FORCE_INLINE void CommandList::clearRenderTarget(uint8_t slot, const math::Color& color)
-	{
-		float col[4] = { color.r, color.g, color.b, color.a };
-		clearRenderTarget(slot, col);
-	}
+
 	CS_FORCE_INLINE void CommandList::clearRenderTarget(D3D12_CPU_DESCRIPTOR_HANDLE rtv, const float color[4])
 	{
 		pCmdList_->ClearRenderTargetView(rtv, color, 0, nullptr);
 	}
 
-	CS_FORCE_INLINE void CommandList::clearRenderTarget(D3D12_CPU_DESCRIPTOR_HANDLE rtv, const math::Color & color)
-	{
-		float col[4] = { color.r, color.g, color.b, color.a };
-		clearRenderTarget(rtv, col);
-	}
 
 	CS_FORCE_INLINE void CommandList::clearDepthStencil(float depth, uint8_t stencil)
 	{

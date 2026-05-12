@@ -44,13 +44,12 @@ namespace csyren
     class Serializer
     {
     public:
-        Serializer(core::Scene& scene, render::ResourceManager& rm);
+        Serializer(core::Scene& scene);
 
         bool loadScene(const std::string& filepath);
         bool saveScene(const std::string& filepath);
 
     private:
         core::Scene& _scene;
-        render::ResourceManager& _resourceManager;
     };
 }

@@ -2,6 +2,7 @@
 #include "core/system_base.h"
 #include "swap_chain.h"
 #include "render_queue.h"
+#include "base_resource.h"
 
 
 namespace csyren::render
@@ -10,9 +11,9 @@ namespace csyren::render
 	{
 		struct PresentResource
 		{
-			uint64_t fence{ 0 };
-			RenderTargetPtr resource;
-			CommandList cmdList;
+			uint64_t		fence{ 0 };
+			BaseResource	resource;
+			CommandList		cmdList;
 		};
 	public:
 		void init(core::ServiceContext& ctx) override;

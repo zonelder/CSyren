@@ -20,7 +20,7 @@ namespace csyren::render
     class SamplerManager
     {
     public:
-        void init(ID3D12Device* device, DescriptorHeapManager* samplerHeapManager)
+        void init(ID3D12Device* device, DescriptorHeap* samplerHeapManager)
         {
             assert(samplerHeapManager != nullptr);
 

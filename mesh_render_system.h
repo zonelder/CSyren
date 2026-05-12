@@ -27,7 +27,7 @@ namespace csyren
 
             auto render = ctx.get<render::Renderer>();
             auto scene = ctx.get<core::Scene>();
-            auto resources = ctx.get<render::ResourceManager>();
+            auto& resources = render::ResourceManager::instance();
 
             struct EntityData { Transform* tr; Entity::ID id; };
             using MeshGroups = std::unordered_map<render::MeshHandle,std::vector<EntityData>>;
@@ -43,19 +43,19 @@ namespace csyren
 
             for (auto& [matID, meshGroups] : batches)
             {
-                auto* mat = resources->getMaterial(matID);
+                auto* mat = resources.getMaterial(matID);
                 if (!mat) continue;
 
-                auto* shader = resources->getShader(mat->getShader());
+                auto* shader = resources.getShader(mat->getShader());
                 if (!shader) continue;
                 auto* cb = shader->getSemanticBuffer(render::details::CBufferUpdateType::Entity);
 
                 for (auto& [meshID, entities] : meshGroups)
                 {
-                    auto* mesh = resources->getMesh(meshID);
+                    auto* mesh = resources.getMesh(meshID);
                     if (!mesh) continue;
 
-                    if (!render->bindMaterial(*resources, matID,mesh->getLayout())) continue;
+                    if (!render->bindMaterial(resources, matID,mesh->getLayout())) continue;
 
                     mesh->bind(*render);
 

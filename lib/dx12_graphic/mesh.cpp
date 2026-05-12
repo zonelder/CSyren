@@ -180,7 +180,7 @@ namespace csyren::render
         cmd->IASetIndexBuffer(&_indexView);
     }
 
-    void Mesh::onFrame(Renderer& renderer)
+    void Mesh::draw(Renderer& renderer)
     {
         ID3D12GraphicsCommandList* cmd = renderer.commandList();
         cmd->DrawIndexedInstanced(_indexCount, 1, 0, 0, 0);

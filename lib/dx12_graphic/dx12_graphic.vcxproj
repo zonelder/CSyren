@@ -168,6 +168,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="base_resource.h" />
     <ClInclude Include="buffer_view.h" />
     <ClInclude Include="command_list.h" />
     <ClInclude Include="command_list.ipp" />
@@ -175,6 +176,7 @@
     <ClInclude Include="constant_buffer.h" />
     <ClInclude Include="constant_buffer_manager.h" />
     <ClInclude Include="descriptor_heap_manager.h" />
+    <ClInclude Include="descroptors.h" />
     <ClInclude Include="dx_log.h" />
     <ClInclude Include="dx_main.h" />
     <ClInclude Include="engine_semantics.h" />
@@ -192,6 +194,7 @@
     <ClInclude Include="primitives.h" />
     <ClInclude Include="renderer.h" />
     <ClInclude Include="render_queue.h" />
+    <ClInclude Include="singleton.h" />
     <ClInclude Include="resources.h" />
     <ClInclude Include="resource_handle.h" />
     <ClInclude Include="resource_manager.h" />
@@ -230,6 +233,7 @@
     <ClCompile Include="primitives.cpp" />
     <ClCompile Include="pso_factory.cpp" />
     <ClCompile Include="renderer.cpp" />
+    <ClCompile Include="render_queue.cpp" />
     <ClCompile Include="resource_upload_thread.cpp" />
     <ClCompile Include="shader.cpp" />
     <ClCompile Include="shader_base.cpp" />

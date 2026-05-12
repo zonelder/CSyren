@@ -42,7 +42,7 @@ namespace csyren::render
     private:
         details::TextureBase    _dxData;
         DescriptorHandles       _srvHandles{};
-        DescriptorHeapManager*  _heapManager{ nullptr };
+        DescriptorHeap*  _heapManager{ nullptr };
         LoadStatus              _loadStatus{ Loading };
     };
 }

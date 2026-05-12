@@ -3,12 +3,9 @@
 
 namespace csyren::render
 {
-	bool PresentationSystem::init(IDXGIFactory4* factory,
-		DX::Device* device,
-		HWND hwnd)
+	/*
+	void PresentationSystem::init(core::ServiceContext& ctx)
 	{
-
-
 		DXGI_SWAP_CHAIN_DESC1 desc;
 
 
@@ -45,7 +42,7 @@ namespace csyren::render
 		return true;
 	}
 
-	RenderTargetPtr PresentationSystem::currentWriteTarget()
+	BaseResource& PresentationSystem::currentWriteTarget()
 	{
 		size_t minFence = std::numeric_limits< size_t >::max();
 		for (size_t i = 0; i < _renderTargets.size(); ++i)
@@ -133,4 +130,5 @@ namespace csyren::render
 		}
 		return true;
 	}
+	*/
 } 

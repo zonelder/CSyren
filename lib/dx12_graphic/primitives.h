@@ -12,21 +12,21 @@ namespace csyren::render
     class Primitives
     {
     public:
-        static ShaderHandle getDefaultShader(ResourceManager& rm);
-        static MaterialHandle getDefaultMaterial(ResourceManager& rm);
-        static MeshHandle getLine(ResourceManager& rm);
-        static MeshHandle getTriangle(ResourceManager& rm);
-        static MeshHandle getQuad(ResourceManager& rm);
-        static MeshHandle getCube(ResourceManager& rm);
-        static MeshHandle getSphere(ResourceManager& rm);
-        static ShaderHandle getRainbowShader(ResourceManager& rm);
-        static MaterialHandle getRainbowMaterial(ResourceManager& rm);
+        static ShaderHandle getDefaultShader();
+        static MaterialHandle getDefaultMaterial();
+        static MeshHandle getLine();
+        static MeshHandle getTriangle();
+        static MeshHandle getQuad();
+        static MeshHandle getCube();
+        static MeshHandle getSphere();
+        static ShaderHandle getRainbowShader();
+        static MaterialHandle getRainbowMaterial();
 
 
-        static ShaderHandle getTextureShader(ResourceManager& rm);
-        static MaterialHandle getTextureMaterial(ResourceManager& rm);
+        static ShaderHandle getTextureShader();
+        static MaterialHandle getTextureMaterial();
 
-        static bool registerFabricsAll(ResourceManager&);
+        static bool registerFabricsAll();
     private:
 
     };

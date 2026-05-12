@@ -6,7 +6,6 @@ namespace csyren::render
 {
 	struct SerializationServices
 	{
-		render::ResourceManager* resourceManager{ nullptr };
 		nlohmann::json* rootJson = nullptr;
 
 		static SerializationServices& get()
@@ -14,14 +13,6 @@ namespace csyren::render
 			static SerializationServices inst;
 			return inst;
 		}
-
-		static render::ResourceManager& getResourceManager()
-		{
-			auto* rm = get().resourceManager;
-			assert(rm != nullptr && "ResourceManager service is not available.");
-			return *rm;
-		}
-
 		static nlohmann::json& getRootJson()
 		{
 			auto* rj = get().rootJson;
@@ -45,7 +36,7 @@ namespace nlohmann
 		static void to_json(json& j, const csyren::render::TextureHandle& value)
 		{
 
-			auto& rm = csyren::render::SerializationServices::getResourceManager();
+			auto& rm = csyren::render::ResourceManager::instance();
 			auto& root = csyren::render::SerializationServices::getRootJson();
 			std::string resourcePath = rm.getTextureName(value);
 
@@ -79,7 +70,7 @@ namespace nlohmann
 			j.get_to(resourceID);
 
 			auto& root = csyren::render::SerializationServices::getRootJson();
-			auto& rm = csyren::render::SerializationServices::getResourceManager();
+			auto& rm = csyren::render::ResourceManager::instance();
 			if (!root.contains("resources"))
 			{
 				csyren::log::error("Deserialize: Texture handler was saved but resources did not set up in file.");
@@ -117,7 +108,7 @@ namespace nlohmann
 		static void to_json(json& j, const csyren::render::MeshHandle& value)
 		{
 			auto& root = csyren::render::SerializationServices::getRootJson();
-			auto& rm = csyren::render::SerializationServices::getResourceManager();
+			auto& rm = csyren::render::ResourceManager::instance();
 
 			std::string resourcePath = rm.getMeshName(value);
 
@@ -151,7 +142,7 @@ namespace nlohmann
 			j.get_to(resourceID);
 
 			auto& root = csyren::render::SerializationServices::getRootJson();
-			auto& rm = csyren::render::SerializationServices::getResourceManager();
+			auto& rm = csyren::render::ResourceManager::instance();
 
 			if (!root.contains("resources"))
 			{
@@ -189,7 +180,7 @@ namespace nlohmann
 		{
 
 			auto& root = csyren::render::SerializationServices::getRootJson();
-			auto& rm = csyren::render::SerializationServices::getResourceManager();
+			auto& rm = csyren::render::ResourceManager::instance();
 			std::string resourcePath = rm.getMaterialName(value);
 
 			if (!root.contains("resources"))
@@ -222,7 +213,7 @@ namespace nlohmann
 			j.get_to(resourceID);
 
 			auto& root = csyren::render::SerializationServices::getRootJson();
-			auto& rm = csyren::render::SerializationServices::getResourceManager();
+			auto& rm = csyren::render::ResourceManager::instance();
 
 			if (!root.contains("resources"))
 			{

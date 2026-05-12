@@ -15,7 +15,6 @@
 #ifdef DX12_RENDER
 #include "dx12_graphic/forward_decl.h"
 #include "dx12_graphic/renderer.h"
-#include "dx12_graphic/resource_manager.h"
 #else
 static_assert(false && "none render pipeline was added.\n");
 #endif
@@ -44,7 +43,6 @@ namespace csyren
 		core::Window								_window;
 
 		render::Renderer							_render;
-		render::ResourceManager						_resource;
 
 		physics::PhysicsEngine						_physics;
 

@@ -13,13 +13,15 @@ namespace csyren::render
         D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle;
         D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle;
 
+        uint32_t slot;
+
         bool isValid() const { return cpuHandle.ptr != 0; }
     };
 
-    class DescriptorHeapManager
+    class DescriptorHeap
     {
     public:
-        DescriptorHeapManager() = default;
+        DescriptorHeap() = default;
 
         bool init(
             ID3D12Device* device,

@@ -129,8 +129,7 @@ namespace csyren::render
 		 */
 		void addCommands(CommandList* ptr)
 		{
-			log::assert(ptr->type() == type_,
-				"its forbidden to use different queue and command list type.pipeline failed\n");
+			CS_ASSERT(ptr->type() == type_);
 			frameContexts_.push_back(ptr);
 		}
 

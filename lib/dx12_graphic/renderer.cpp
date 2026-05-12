@@ -51,9 +51,17 @@ namespace csyren::render
     {
         D3D12_COMMAND_QUEUE_DESC desc = {};
         desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-
-        if (DX_FAILED(_device->CreateCommandQueue(&desc, IID_PPV_ARGS(&_commandQueue))))
+        if(!_mainQueue.init(_device.Get(), desc))
             throw std::runtime_error("Failed to create command queue");
+
+
+        for (auto& cmdList : _cmdLists)
+        {
+            if (!cmdList.init(_device.Get(), D3D12_COMMAND_LIST_TYPE_DIRECT))
+            {
+                throw std::runtime_error("Failed to create command list");
+            }
+        }
     }
 
     void Renderer::createSwapChain(HWND hwnd, UINT width, UINT height)
@@ -69,14 +77,13 @@ namespace csyren::render
 
         ComPtr<IDXGISwapChain1> sc1;
         if (FAILED(_factory->CreateSwapChainForHwnd(
-            _commandQueue.Get(), hwnd, &desc, nullptr, nullptr, &sc1)))
+            _mainQueue.raw(), hwnd, &desc, nullptr, nullptr, &sc1)))
         {
             throw std::runtime_error("Failed to create swapchain");
         }
 
         sc1.As(&_swapChain);
         _factory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER);
-        _frameIndex = _swapChain->GetCurrentBackBufferIndex();
     }
 
     Renderer::~Renderer()
@@ -84,11 +91,6 @@ namespace csyren::render
         if (_device)
         {
             waitForGpu();
-            if (_fenceEvent)
-            {
-                CloseHandle(_fenceEvent);
-                _fenceEvent = nullptr;
-            }
         }
     }
 
@@ -158,24 +160,7 @@ namespace csyren::render
 
         _device->CreateDepthStencilView(_depthStencil.Get(), &dsvDesc, _dsvHeap->GetCPUDescriptorHandleForHeapStart());
 
-        if (DX_FAILED(_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&_commandAllocator))))
-            return false;
-
-        if (DX_FAILED(_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, _commandAllocator.Get(), nullptr, IID_PPV_ARGS(&_commandList))))
-            return false;
-
-        if (DX_FAILED(_commandList->Close()))
-            return false;
-
-        if (DX_FAILED(_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_fence))))
-            return false;
-
-        _fenceValue = 1;
-        _fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-        if (!_fenceEvent)
-            return false;
-
-        _pSrvHeapManager = std::make_unique<DescriptorHeapManager>();
+        _pSrvHeapManager = std::make_unique<DescriptorHeap>();
         if (!_pSrvHeapManager->init(_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, true))
         {
             return false;
@@ -191,9 +176,8 @@ namespace csyren::render
         }
 
         _pPSOFactory = std::make_unique<details::PSOFactory>(_device.Get());
-
-        _viewport = { 0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f };
-        _scissor = { 0, 0, static_cast<LONG>(width), static_cast<LONG>(height) };
+        _width = width;
+        _height = height;
         details::EngineUpdateRegistry::instance().initialize();
         details::EngineSemanticRegistry::instance().initialize();
 
@@ -202,18 +186,22 @@ namespace csyren::render
 
     void Renderer::beginFrame()
     {
-        _commandAllocator->Reset();
-        _commandList->Reset(_commandAllocator.Get(), nullptr);
+        _frameIndex = (_frameIndex + 1 )% FrameCount;
+
+        CommandList& cmdList = _cmdLists[_frameIndex];
+        _mainQueue.syncAwaitComplete(cmdList.lastFenceValue());
+        cmdList.reset();
         _perEntityCB.beginFrame();
+        _lastBackBuffer = _swapChain->GetCurrentBackBufferIndex();
         // --- Barrier для swapchain ---
         D3D12_RESOURCE_BARRIER rtvBarrier = {};
         rtvBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
         rtvBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-        rtvBarrier.Transition.pResource = _renderTargets[_frameIndex].Get();
+        rtvBarrier.Transition.pResource = _renderTargets[_lastBackBuffer].Get();
         rtvBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
         rtvBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
         rtvBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-        _commandList->ResourceBarrier(1, &rtvBarrier);
+        cmdList.resourceBarrier(rtvBarrier);
 
         // --- Barrier для depth ---
         if (_depthStencilCurrentState != D3D12_RESOURCE_STATE_DEPTH_WRITE)
@@ -225,46 +213,49 @@ namespace csyren::render
             depthBarrier.Transition.StateBefore = _depthStencilCurrentState;
             depthBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_DEPTH_WRITE;
             depthBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-            _commandList->ResourceBarrier(1, &depthBarrier);
+            cmdList.resourceBarrier(depthBarrier);
             _depthStencilCurrentState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
         }
 
+
         // --- Bind render targets ---
         D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = _rtvHeap->GetCPUDescriptorHandleForHeapStart();
-        rtvHandle.ptr += _frameIndex * _rtvDescriptorSize;
+        rtvHandle.ptr += _lastBackBuffer * _rtvDescriptorSize;
 
         D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = _dsvHeap->GetCPUDescriptorHandleForHeapStart();
-        _commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 
-        // --- Clear depth buffer ---
-        _commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 0.0f, 0, 0, nullptr);
+        cmdList.setRenderTarget(0, rtvHandle);
+        cmdList.setDepthStencil(dsvHandle);
+        cmdList.submitRenderTargets();
 
-        // --- Viewport & scissor ---
-        _commandList->RSSetViewports(1, &_viewport);
-        _commandList->RSSetScissorRects(1, &_scissor);
+        cmdList.clearDepthStencil(0.0f,0);
+        cmdList.setViewport({ 0.0f, 0.0f, static_cast<float>(_width), static_cast<float>(_height), 0.0f, 1.0f });
+
+        cmdList.setScissorRect({ 0, 0, static_cast<LONG>(_width), static_cast<LONG>(_height) });
 
         // --- Descriptor heap ---
         auto heap = _pSrvHeapManager->getHeap();
-        _commandList->SetDescriptorHeaps(1u, &heap);
+        cmdList.setDescriptorHeap(heap);
     }
 
     void Renderer::clear(const FLOAT color[4])
     {
         D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = _rtvHeap->GetCPUDescriptorHandleForHeapStart();
-        rtvHandle.ptr += _frameIndex * _rtvDescriptorSize;
-        _commandList->ClearRenderTargetView(rtvHandle, color, 0, nullptr);
+        rtvHandle.ptr += _lastBackBuffer * _rtvDescriptorSize;
+        _cmdLists[_frameIndex].clearRenderTarget(0,color);
     }
 
     void Renderer::endFrame()
     {
+        CommandList& cmdList = _cmdLists[_frameIndex];
         D3D12_RESOURCE_BARRIER rtvBarrier = {};
         rtvBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
         rtvBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-        rtvBarrier.Transition.pResource = _renderTargets[_frameIndex].Get();
+        rtvBarrier.Transition.pResource = _renderTargets[_lastBackBuffer].Get();
         rtvBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
         rtvBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
         rtvBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-        _commandList->ResourceBarrier(1, &rtvBarrier);
+        cmdList.resourceBarrier(rtvBarrier);
 
         // --- Barrier для depth перед следующим кадром ---
         if (_depthStencilCurrentState != D3D12_RESOURCE_STATE_COMMON)
@@ -276,45 +267,27 @@ namespace csyren::render
             depthBarrier.Transition.StateBefore = _depthStencilCurrentState;
             depthBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COMMON;
             depthBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-            _commandList->ResourceBarrier(1, &depthBarrier);
+            cmdList.resourceBarrier(depthBarrier);
             _depthStencilCurrentState = D3D12_RESOURCE_STATE_COMMON;
         }
-
-        // --- Execute command list ---
-        _commandList->Close();
-        ID3D12CommandList* cmds[] = { _commandList.Get() };
-        _commandQueue->ExecuteCommandLists(1, cmds);
+        cmdList.close();
+        _mainQueue.addCommands(&cmdList);
+        _mainQueue.execute();
 
         // --- Present ---
         _swapChain->Present(static_cast<UINT>(_enableVSync), 0);
-
-        // --- GPU sync ---
-        const UINT64 fenceToWaitFor = _fenceValue;
-        _commandQueue->Signal(_fence.Get(), fenceToWaitFor);
-        _fenceValue++;
-
-        if (_fence->GetCompletedValue() < fenceToWaitFor)
-        {
-            _fence->SetEventOnCompletion(fenceToWaitFor, _fenceEvent);
-            WaitForSingleObject(_fenceEvent, INFINITE);
-        }
-
-        _frameIndex = _swapChain->GetCurrentBackBufferIndex();
     }
 
     void Renderer::waitForGpu()
     {
-        const UINT64 fenceToWaitFor = _fenceValue;
-        _commandQueue->Signal(_fence.Get(), fenceToWaitFor);
-        _fenceValue++;
-
-        _fence->SetEventOnCompletion(fenceToWaitFor, _fenceEvent);
-        WaitForSingleObject(_fenceEvent, INFINITE);
+        _mainQueue.signal();
+        _mainQueue.syncAwaitLastComplete();
     }
 
     //TODO CHANGE API
     bool Renderer::bindMaterial(ResourceManager& rm, MaterialHandle mathandle,const VertexLayout& vertexLayout)
     {
+        CommandList& cmdList = _cmdLists[_frameIndex];
         auto* material = rm.getMaterial(mathandle);
         if (!material)
             return false;
@@ -325,10 +298,10 @@ namespace csyren::render
             return false;
 
         auto pso = _pPSOFactory->get(shaderHandle, shader, material->getStates(), vertexLayout);
-        _commandList->SetPipelineState(pso);
-        _commandList->SetGraphicsRootSignature(shader->getRootSignature());
+        cmdList.setPipelineState(pso);
+        cmdList.setRootSignature(shader->getRootSignature());
 
-        if (!_parameterBinder.updateMaterialBuffer(_device.Get(), _commandList.Get(), &rm, _perEntityCB, mathandle))
+        if (!_parameterBinder.updateMaterialBuffer(_device.Get(), cmdList.raw(), &rm, _perEntityCB, mathandle))
         {
             return false;
         }
@@ -342,10 +315,10 @@ namespace csyren::render
             auto gpuHandle = tex->getGpuSrvHandle();
             // assume rootParameterIndex is known by shader reflection
             UINT rootIndex = shader->getRootParameterIndex(name);
-            _commandList->SetGraphicsRootDescriptorTable(rootIndex, gpuHandle);
+            cmdList.setGraphicsRootDescriptorTable(rootIndex, gpuHandle);
         }
 
-        if (!_parameterBinder.updateFrameBuffer(_commandList.Get(), _engineVariableBuffer, shader->getSemanticBuffer(details::CBufferUpdateType::Pass), _perEntityCB))
+        if (!_parameterBinder.updateFrameBuffer(cmdList.raw(), _engineVariableBuffer, shader->getSemanticBuffer(details::CBufferUpdateType::Pass), _perEntityCB))
         {
             return false;
         }
@@ -357,23 +330,24 @@ namespace csyren::render
 
     bool Renderer::bindEntity(const SemanticBufferLayout* layout)
     {
-        return _parameterBinder.updateEntityBuffer(_commandList.Get(), _entityVariableBuffer, layout, _perEntityCB);
+        CommandList& cmdList = _cmdLists[_frameIndex];
+        return _parameterBinder.updateEntityBuffer(cmdList.raw(), _entityVariableBuffer, layout, _perEntityCB);
     }
 
 
     void Renderer::beginResourceUpload()
     {
-        DX_LOG(_commandAllocator->Reset());
-        DX_LOG(_commandList->Reset(_commandAllocator.Get(), nullptr));
+        CommandList& cmdList = _cmdLists[_frameIndex];
+        cmdList.reset();
     }
 
 
     void Renderer::endResourceUpload()
     {
-        DX_LOG(_commandList->Close());
-
-        ID3D12CommandList* ppCommandLists[] = { _commandList.Get() };
-        _commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+        CommandList& cmdList = _cmdLists[_frameIndex];
+        cmdList.close();
+        _mainQueue.addCommands(&cmdList);
+        _mainQueue.execute();
         waitForGpu();
     }
 

@@ -63,9 +63,9 @@ namespace csyren::render
 		void beginResourceUpload();
 		void endResourceUpload();
 
-		DescriptorHeapManager* getDescriptorHeapManager() const noexcept { return _pSrvHeapManager.get(); }
+		DescriptorHeap* getDescriptorHeapManager() const noexcept { return _pSrvHeapManager.get(); }
 
-		ID3D12GraphicsCommandList* commandList() const noexcept { return _commandList.Get(); }
+		ID3D12GraphicsCommandList* commandList() const noexcept { return _cmdLists[_frameIndex].raw(); }
 		ID3D12Device* device() const noexcept { return _device.Get(); }
 
 		UploadRingBuffer* getUploadBuffer() noexcept { return &_perEntityCB; };
@@ -89,30 +89,32 @@ namespace csyren::render
 
 		details::ComPtr<ID3D12Device>			_device;
 		details::ComPtr<IDXGISwapChain3>		_swapChain;
-		details::ComPtr<ID3D12CommandQueue>		_commandQueue;
 		details::ComPtr<ID3D12DescriptorHeap>	_rtvHeap;
 		details::ComPtr<ID3D12DescriptorHeap>	_dsvHeap;
 		details::ComPtr<IDXGIFactory4>			_factory;
 		UINT _dsvDescriptorSize = 0;
 		UINT _rtvDescriptorSize{ 0 };
 
-		D3D12_VIEWPORT _viewport{};
-		D3D12_RECT		_scissor{};
 		details::ComPtr<ID3D12Resource> _renderTargets[FrameCount];
 		details::ComPtr<ID3D12Resource> _depthStencil;
 		D3D12_RESOURCE_STATES _depthStencilCurrentState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
-		details::ComPtr<ID3D12CommandAllocator> _commandAllocator;
-		details::ComPtr<ID3D12GraphicsCommandList> _commandList;
-		
-		RenderQueue _mainQueue;
 
-		UploadRingBuffer _perEntityCB;
+
+		CommandList								_cmdLists[FrameCount];
+		RenderQueue								_mainQueue;
+
+		UploadRingBuffer						_perEntityCB;
 		EngineVariableBuffer					_engineVariableBuffer;
 		EntityVariableBuffer					_entityVariableBuffer;
 		ShaderParameterBinder					_parameterBinder;
 
+		uint32_t								 _width;
+		uint32_t								 _height;
+		uint8_t									_frameIndex;
+		uint8_t									_lastBackBuffer;
+
 		std::unique_ptr<details::PSOFactory>	_pPSOFactory;
-		std::unique_ptr<DescriptorHeapManager>	_pSrvHeapManager;
+		std::unique_ptr<DescriptorHeap>			_pSrvHeapManager;
 		bool									_enableVSync{ false };
 	};
 }

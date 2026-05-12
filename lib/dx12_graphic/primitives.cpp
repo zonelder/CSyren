@@ -201,9 +201,10 @@ namespace csyren::render
         )";
     }
 
-
-    bool Primitives::registerFabricsAll(ResourceManager& rm)
+    bool Primitives::registerFabricsAll()
     {
+        auto& rm = ResourceManager::instance();
+
         ResourceManager::ProceduralResourceFactory<GraphicShader> defaultShaderFabric = [](ResourceManager& rm) { return rm.createShaderFromCode(DEFAULT_SHADER_NAME, std::string(g_primitiveShaderCode)); };
 
         ResourceManager::ProceduralResourceFactory<Material> defaultMaterialFabric = [](ResourceManager& rm)
@@ -225,7 +226,7 @@ namespace csyren::render
                 .addVertex({ 0,0,0 }).addColor({ 1,1,1,1 })
                 .addVertex({ 1,0,0 }).addColor({ 1,1,1,1 })
                 .addIndex(0).addIndex(1);
-            return rm.createMesh(LINE_MESH_NAME,builder);
+            return rm.createMesh(LINE_MESH_NAME, builder);
             };
 
         ResourceManager::ProceduralResourceFactory<GraphicShader> rainbowShaderFabric =
@@ -251,12 +252,12 @@ namespace csyren::render
                 .addVertex({ 1,0,0 }).addColor({ 1, 1, 1, 1 })
                 .addVertex({ 0,1,0 }).addColor({ 1, 1, 1, 1 })
                 .addTriangle(0, 1, 2);
-            return rm.createMesh(TRIANGLE_MESH_NAME,builder);
+            return rm.createMesh(TRIANGLE_MESH_NAME, builder);
             };
 
         ResourceManager::ProceduralResourceFactory<Mesh> quadMeshFabric = [](ResourceManager& rm) {
             MeshBuilder builder;
-            std::array<math::Vector3, 4> positions = 
+            std::array<math::Vector3, 4> positions =
             {
                 math::Vector3{-0.5f, 0.0f, -0.5f},
                 math::Vector3{-0.5f, 0.0f,  0.5f},
@@ -363,80 +364,91 @@ namespace csyren::render
                 }
             }
 
-                return rm.createMesh(SPHERE_MESH_NAME, builder);
+            return rm.createMesh(SPHERE_MESH_NAME, builder);
             };
 
-        // --- Регистрация всех фабрик ---
         rm.registerProcedural(TEXTURE_SHADER_NAME, textureShaderFabric);
         rm.registerProcedural(TEXTURE_MATERIAL_NAME, textureMaterialFabric);
 
         rm.registerProcedural(DEFAULT_SHADER_NAME, defaultShaderFabric);
         rm.registerProcedural(DEFAULT_MATERIAL_NAME, defaultMaterialFabric);
+
         rm.registerProcedural(LINE_MESH_NAME, lineMeshFabric);
         rm.registerProcedural(TRIANGLE_MESH_NAME, triangleMeshFabric);
         rm.registerProcedural(QUAD_MESH_NAME, quadMeshFabric);
         rm.registerProcedural(CUBE_MESH_NAME, cubeMeshFabric);
+
         rm.registerProcedural(RAINBOW_SHADER_NAME, rainbowShaderFabric);
         rm.registerProcedural(RAINBOW_MATERIAL_NAME, rainbowMaterialFabric);
-        rm.registerProcedural(SPHERE_MESH_NAME,sphereMeshFabric);
 
-        return true; // Возвращаем true в случае успеха
+        rm.registerProcedural(SPHERE_MESH_NAME, sphereMeshFabric);
+
+        return true;
     }
-    ShaderHandle Primitives::getTextureShader(ResourceManager& rm)
+
+    ShaderHandle Primitives::getTextureShader()
     {
-        return rm.get<GraphicShader>(TEXTURE_SHADER_NAME);
+        return ResourceManager::instance().get<GraphicShader>(
+            TEXTURE_SHADER_NAME);
     }
-    MaterialHandle Primitives::getTextureMaterial(ResourceManager& rm)
+
+    MaterialHandle Primitives::getTextureMaterial()
     {
-        return rm.get<Material>(TEXTURE_MATERIAL_NAME);
+        return ResourceManager::instance().get<Material>(
+            TEXTURE_MATERIAL_NAME);
     }
 
-    ShaderHandle Primitives::getDefaultShader(ResourceManager& rm)
+    ShaderHandle Primitives::getDefaultShader()
     {
-        return rm.get<GraphicShader>(DEFAULT_SHADER_NAME);
+        return ResourceManager::instance().get<GraphicShader>(
+            DEFAULT_SHADER_NAME);
     }
 
-    MaterialHandle Primitives::getDefaultMaterial(ResourceManager& rm)
+    MaterialHandle Primitives::getDefaultMaterial()
     {
-        return rm.get<Material>(DEFAULT_MATERIAL_NAME);
+        return ResourceManager::instance().get<Material>(
+            DEFAULT_MATERIAL_NAME);
     }
 
-    ShaderHandle Primitives::getRainbowShader(ResourceManager& rm)
+    ShaderHandle Primitives::getRainbowShader()
     {
-        return rm.get<GraphicShader>(RAINBOW_SHADER_NAME);
+        return ResourceManager::instance().get<GraphicShader>(
+            RAINBOW_SHADER_NAME);
     }
 
-    MaterialHandle Primitives::getRainbowMaterial(ResourceManager& rm)
+    MaterialHandle Primitives::getRainbowMaterial()
     {
-        return rm.get<Material>(RAINBOW_MATERIAL_NAME);
+        return ResourceManager::instance().get<Material>(
+            RAINBOW_MATERIAL_NAME);
     }
 
-    MeshHandle Primitives::getLine(ResourceManager& rm)
+    MeshHandle Primitives::getLine()
     {
-        return rm.get<Mesh>(LINE_MESH_NAME);
+        return ResourceManager::instance().get<Mesh>(
+            LINE_MESH_NAME);
     }
 
-    MeshHandle Primitives::getTriangle(ResourceManager& rm)
+    MeshHandle Primitives::getTriangle()
     {
-        return rm.get<Mesh>(TRIANGLE_MESH_NAME);
+        return ResourceManager::instance().get<Mesh>(
+            TRIANGLE_MESH_NAME);
     }
 
-
-
-    MeshHandle Primitives::getQuad(ResourceManager& rm)
+    MeshHandle Primitives::getQuad()
     {
-        return rm.get<Mesh>(QUAD_MESH_NAME);
+        return ResourceManager::instance().get<Mesh>(
+            QUAD_MESH_NAME);
     }
 
-    MeshHandle Primitives::getCube(ResourceManager& rm)
+    MeshHandle Primitives::getCube()
     {
-        return rm.get<Mesh>(CUBE_MESH_NAME);
+        return ResourceManager::instance().get<Mesh>(
+            CUBE_MESH_NAME);
     }
 
-    MeshHandle Primitives::getSphere(ResourceManager& rm)
+    MeshHandle Primitives::getSphere()
     {
-        return rm.get<Mesh>(SPHERE_MESH_NAME);
+        return ResourceManager::instance().get<Mesh>(
+            SPHERE_MESH_NAME);
     }
-
-
 }

@@ -14,6 +14,8 @@
 #include "cstdmf/page_view.h"
 #include "cstdmf/log.h"
 
+#include "singleton.h"
+
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -149,7 +151,7 @@ namespace csyren::render
     };
 
     // --- ResourceManager: The central facade ---
-    class ResourceManager
+    class ResourceManager : public Singleton<ResourceManager>
     {
     public:
         explicit ResourceManager(Renderer& renderer)
@@ -158,7 +160,9 @@ namespace csyren::render
             _textureStorage(*this),
             _materialStorage(*this),
             _shaderStorage(*this)
-        {}
+        {
+            init_thread();
+        }
 
         ~ResourceManager() = default;
         ResourceManager(const ResourceManager&) = delete;
