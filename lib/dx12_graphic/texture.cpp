@@ -14,15 +14,15 @@ namespace csyren::render
 
     Texture::~Texture()
     {
-        if (_heapManager && _srvHandles.isValid())
+        if (_heapManager && _srvHandles.valid())
         {
-            _heapManager->free(_srvHandles);
+            _heapManager->freeSRV(_srvHandles);
         }
     }
 
     Texture::Texture(Texture&& other) noexcept
         : _dxData(std::move(other._dxData)),
-        _srvHandles(other._srvHandles),
+        _srvHandles(std::move(other._srvHandles)),
         _heapManager(other._heapManager)
     {
         other._srvHandles = {};
@@ -33,10 +33,10 @@ namespace csyren::render
     {
         if (this != &other)
         {
-            if (_heapManager && _srvHandles.isValid()) { _heapManager->free(_srvHandles); }
+            if (_heapManager && _srvHandles.valid()) { _heapManager->freeSRV(_srvHandles); }
 
             _dxData = std::move(other._dxData);
-            _srvHandles = other._srvHandles;
+            _srvHandles = std::move(other._srvHandles);
             _heapManager = other._heapManager;
 
             other._srvHandles = {};
@@ -63,11 +63,11 @@ namespace csyren::render
 
     D3D12_CPU_DESCRIPTOR_HANDLE Texture::getCpuSrvHandle() const
     {
-        return _srvHandles.cpuHandle;
+        return _srvHandles.cpu;
     }
 
     D3D12_GPU_DESCRIPTOR_HANDLE Texture::getGpuSrvHandle() const
     {
-        return _srvHandles.gpuHandle;
+        return _srvHandles.gpu;
     }
 }

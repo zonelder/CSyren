@@ -15,7 +15,6 @@
 
 #include "dx_main.h"
 
-#include "descriptor_heap_manager.h"
 #include "sampler_manager.h"
 #include "constant_buffer.h"
 #include "upload_ring_buffer.h"
@@ -62,8 +61,6 @@ namespace csyren::render
 
 		void beginResourceUpload();
 		void endResourceUpload();
-
-		DescriptorHeap* getDescriptorHeapManager() const noexcept { return _pSrvHeapManager.get(); }
 
 		ID3D12GraphicsCommandList* commandList() const noexcept { return _cmdLists[_frameIndex].raw(); }
 		ID3D12Device* device() const noexcept { return _device.Get(); }
@@ -114,7 +111,6 @@ namespace csyren::render
 		uint8_t									_lastBackBuffer;
 
 		std::unique_ptr<details::PSOFactory>	_pPSOFactory;
-		std::unique_ptr<DescriptorHeap>			_pSrvHeapManager;
 		bool									_enableVSync{ false };
 	};
 }

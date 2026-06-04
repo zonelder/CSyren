@@ -9,7 +9,7 @@
 #include <DDSTextureLoader.h>
 #include <WICTextureLoader.h>
 
-
+#include "descriptors.h"
 
 namespace csyren::render
 {
@@ -77,24 +77,6 @@ namespace csyren::render
         Texture* texture = rm.getTexture(_handle);
         Renderer& renderer = rm.renderer();
 
-        auto heapManager = renderer.getDescriptorHeapManager();
-
-        if (!heapManager)
-        {
-            log::error("TextureUploadTask: cant get heap manager for sync texture.");
-            rm.unload(_handle);
-            return;
-        }
-
-        auto srvHandles = heapManager->allocate();
-
-        if (!srvHandles.isValid())
-        {
-            log::error("TextureUploadTask: failed to allocate desctiptor for texture.");
-            rm.unload(_handle);
-            return;
-        }
-
         D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
         srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
         srvDesc.Format = _dxData.desc.Format;
@@ -111,13 +93,13 @@ namespace csyren::render
         {
             srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
         }
-        // D3D12_CPU_DESCRIPTOR_HANDLE is only safe to use in the Main Thread
-        renderer.device()->CreateShaderResourceView(_dxData.buffer.Get(), &srvDesc, srvHandles.cpuHandle);
+
+        
 
 
-        texture->_heapManager = heapManager;
+        texture->_heapManager = DescriptorManager::instancePtr();
+        texture->_srvHandles = DescriptorManager::instance().createSRV(_dxData.buffer.Get(), &srvDesc);
         texture->_dxData = std::move(_dxData);
-        texture->_srvHandles = std::move(srvHandles);
         texture->_loadStatus = LoadStatus::Loaded;
 
         log::debug("texture loading is complete {}", _name);

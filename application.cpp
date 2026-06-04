@@ -37,6 +37,7 @@
 #include "dx12_graphic/texture.h"
 
 #include "dx12_graphic/resource_manager.h"
+#include "dx12_graphic/descriptors.h"
 
 namespace
 {
@@ -96,7 +97,10 @@ namespace csyren
 		}
 
 		render::details::SingletonRegistry::add<render::ResourceManager>(_render);
+		render::details::SingletonRegistry::add<render::DescriptorManager>();
+
 		_inputDispatcher.init(*_bus);
+		render::details::SingletonRegistry::initializeAll(_render.device());
 		log::info("-------------------------------------------------------------------------------------------");
 		return true;
 	}
@@ -147,6 +151,7 @@ namespace csyren
 					log::info("-------------------------------Shutdown------------------------------------------------------");
 					_systems.shutdown(ctx);
 					_inputDispatcher.shutdown(*_bus);
+					render::details::SingletonRegistry::shutdownAll();
 					log::shutdown();
 					return static_cast<int>(msg.wParam);
 				}
@@ -186,6 +191,8 @@ namespace csyren
 
 			render::ResourceManager::instance().update();
 			_render.beginFrame();
+			ID3D12DescriptorHeap* heaps[] = { render::DescriptorManager::instance().shaderHeap() };
+			_render.commandList()->SetDescriptorHeaps(1, heaps);
 			_render.clear(&(camera.background.x));
 
 			_systems.onFrame(ctx);

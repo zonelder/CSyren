@@ -160,12 +160,6 @@ namespace csyren::render
 
         _device->CreateDepthStencilView(_depthStencil.Get(), &dsvDesc, _dsvHeap->GetCPUDescriptorHandleForHeapStart());
 
-        _pSrvHeapManager = std::make_unique<DescriptorHeap>();
-        if (!_pSrvHeapManager->init(_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, true))
-        {
-            return false;
-        }
-
 
         constexpr size_t MB = 1024 * 1024;
         constexpr size_t perEntitySize = 2* MB; // Size for world matrix + other per-object data for whole scene render.
@@ -232,10 +226,6 @@ namespace csyren::render
         cmdList.setViewport({ 0.0f, 0.0f, static_cast<float>(_width), static_cast<float>(_height), 0.0f, 1.0f });
 
         cmdList.setScissorRect({ 0, 0, static_cast<LONG>(_width), static_cast<LONG>(_height) });
-
-        // --- Descriptor heap ---
-        auto heap = _pSrvHeapManager->getHeap();
-        cmdList.setDescriptorHeap(heap);
     }
 
     void Renderer::clear(const FLOAT color[4])

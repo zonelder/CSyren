@@ -42,7 +42,7 @@
     <ClInclude Include="texture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="descriptor_heap_manager.h">
+    <ClInclude Include="descriptor_heap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="resource_handle.h">
@@ -153,10 +153,13 @@
     <ClInclude Include="base_resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="descroptors.h">
+    <ClInclude Include="descriptors.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="singleton.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="descriptor_allocation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -175,8 +175,9 @@
     <ClInclude Include="compute_shader.h" />
     <ClInclude Include="constant_buffer.h" />
     <ClInclude Include="constant_buffer_manager.h" />
-    <ClInclude Include="descriptor_heap_manager.h" />
-    <ClInclude Include="descroptors.h" />
+    <ClInclude Include="descriptor_allocation.h" />
+    <ClInclude Include="descriptor_heap.h" />
+    <ClInclude Include="descriptors.h" />
     <ClInclude Include="dx_log.h" />
     <ClInclude Include="dx_main.h" />
     <ClInclude Include="engine_semantics.h" />

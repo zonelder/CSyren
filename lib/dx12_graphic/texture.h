@@ -3,7 +3,7 @@
 
 #include "forward_decl.h"
 #include "load_status.h"
-
+#include "descriptors.h"
 
 namespace csyren::render::details
 {
@@ -41,8 +41,8 @@ namespace csyren::render
         bool init(Renderer& renderer, const std::string& filePath);
     private:
         details::TextureBase    _dxData;
-        DescriptorHandles       _srvHandles{};
-        DescriptorHeap*  _heapManager{ nullptr };
+        DescriptorAllocation    _srvHandles{};
+        DescriptorManager*      _heapManager{ nullptr };
         LoadStatus              _loadStatus{ Loading };
     };
 }

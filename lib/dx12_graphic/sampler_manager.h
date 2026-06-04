@@ -1,6 +1,6 @@
 #pragma once
 #include <array>
-#include "descriptor_heap_manager.h"
+#include "descriptor_heap.h"
 #include <cassert>
 
 namespace csyren::render
@@ -17,6 +17,8 @@ namespace csyren::render
         _MAX,
 	};
 
+    //TODO dynamic sampler
+    /*
     class SamplerManager
     {
     public:
@@ -100,7 +102,8 @@ namespace csyren::render
             return _samplerHandles[static_cast<size_t>(type)].gpuHandle;
         }
     private:
-        std::array< DescriptorHandles, static_cast<size_t>(SamplerType::_MAX)> _samplerHandles;
+        std::array< DescriptorAllocation, static_cast<size_t>(SamplerType::_MAX)> _samplerHandles;
     };
+    */
 }
 

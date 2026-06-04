@@ -3,6 +3,7 @@
 #include <vector>
 #include <memory>
 
+#include "dx_main.h"
 #include "cstdmf/assert_helpler.h"
 
 namespace csyren::render::details
@@ -13,7 +14,7 @@ namespace csyren::render::details
 	public:
 		virtual ~ISingleton() = default;
 	protected:
-		virtual void init() {}
+		virtual void init(ID3D12Device* device) {}
 		virtual void shutdown() {}
 	};
 	class SingletonRegistry;
@@ -47,11 +48,11 @@ namespace csyren::render::details
 	class SingletonRegistry
 	{
 	public:
-		static void initializeAll()
+		static void initializeAll(ID3D12Device* device)
 		{
 			for (auto& s : singletons_)
 			{
-				s->init();
+				s->init(device);
 			}
 		}
 
