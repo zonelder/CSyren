@@ -135,8 +135,6 @@ namespace csyren::render
         {
             return false;
         }
-
-        _pPSOFactory = std::make_unique<details::PSOFactory>(_device.Get());
         _width = width;
         _height = height;
         details::EngineUpdateRegistry::instance().initialize();
@@ -264,7 +262,7 @@ namespace csyren::render
         if (!shader)
             return false;
 
-        auto pso = _pPSOFactory->get(shaderHandle, shader, material->getStates(), vertexLayout);
+        auto pso = details::PSOFactory::instancePtr()->get(shaderHandle, shader, material->getStates(), vertexLayout);
         cmdList.setPipelineState(pso);
         cmdList.setRootSignature(shader->getRootSignature());
 

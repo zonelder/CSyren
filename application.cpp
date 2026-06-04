@@ -38,6 +38,7 @@
 
 #include "dx12_graphic/resource_manager.h"
 #include "dx12_graphic/descriptors.h"
+#include "dx12_graphic/pso_factory.h"
 
 namespace
 {
@@ -74,8 +75,7 @@ namespace csyren
 		_window(1200, 786, L"csyren engine"),
 		_inputDispatcher(),
 		_bus(std::make_unique<csyren::core::events::EventBus2>()),
-		_scene(*_bus),
-		_serializer(_scene)
+		_scene(*_bus)
 	{
 	}
 
@@ -97,6 +97,9 @@ namespace csyren
 			return false;
 		}
 		render::details::SingletonRegistry::add<render::ResourceManager>();
+		render::details::SingletonRegistry::add<render::details::PSOFactory>();
+
+		render::details::SingletonRegistry::add<Serializer>();
 		_inputDispatcher.init(*_bus);
 		render::details::SingletonRegistry::initializeAll(render::Renderer::instance().device());
 		log::info("-------------------------------------------------------------------------------------------");
@@ -215,7 +218,7 @@ namespace csyren
 		//-----------------------------init systems---------------------------------------------------
 		//
 		//--------------------------------------------------------------------------------------------
-		auto sceneLoaderSystem				= std::make_shared<csyren::SceneLoaderSystem>(_serializer);
+		auto sceneLoaderSystem				= std::make_shared<csyren::SceneLoaderSystem>();
 		auto editorCameraControllerSystem	= std::make_shared<csyren::EditorCameraControllerSystem>();
 		auto debugRotatorSystem				= std::make_shared<csyren::DebugRotatorSystem>();
 		auto meshRenderSystem				= std::make_shared<csyren::MeshRenderSystem>();

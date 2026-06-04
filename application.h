@@ -43,7 +43,5 @@ namespace csyren
 		core::Window								_window;
 
 		physics::PhysicsEngine						_physics;
-
-		Serializer									_serializer;
 	};
 }

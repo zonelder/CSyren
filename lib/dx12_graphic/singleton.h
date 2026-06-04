@@ -41,6 +41,8 @@ namespace csyren::render
 		inline static T* instance_ = nullptr;
 	};
 }
+template<class T>
+using Singleton = csyren::render::Singleton<T>;
 
 #define CS_STATIC(Class) Class : public Singleton<Class>
 

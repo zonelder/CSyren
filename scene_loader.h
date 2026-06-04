@@ -10,8 +10,6 @@ namespace csyren
 	class SceneLoaderSystem : public core::System
 	{
 	public:
-		explicit SceneLoaderSystem(Serializer& s) : _serializer(s){}
-
         void init(ServiceContext& ctx) override
         {
             auto bus = ctx.get<events::EventBus2>();
@@ -68,18 +66,18 @@ namespace csyren
 
             for (const auto& path: saveRequests)
             {
-                handleSaveScene(events::SaveSceneRequest(path));
+                handleSaveScene(events::SaveSceneRequest(path,scene));
             }
 
             if (!loadRequests.empty())
             {
-                handleLoadScene(events::LoadSceneRequest(loadRequests.back()));
+                handleLoadScene(events::LoadSceneRequest(loadRequests.back(), scene));
                 needReload = false;//we load new scene. reload dont needed;
             }
 
             if (needReload)
             {
-                handleReloadScene(events::ReloadSceneRequest{});
+                handleReloadScene(events::ReloadSceneRequest{scene});
             }
         }
 
@@ -88,7 +86,7 @@ namespace csyren
         void handleLoadScene(const events::LoadSceneRequest& event)
         {
             log::info("Handling LoadSceneRequest for: {}", event.scenePath);
-            if (_serializer.loadScene(event.scenePath))
+            if (Serializer::instance().loadScene(event.scenePath,*event.scene))
             {
                 _loadedScenePath = event.scenePath;
             }
@@ -103,7 +101,7 @@ namespace csyren
             }
             log::info("Handling ReloadCurrentSceneRequest for: {}", _loadedScenePath);
             //todo clear scene.
-            _serializer.loadScene(_loadedScenePath);
+            Serializer::instance().loadScene(_loadedScenePath,*(event.scene));
 
         }
 
@@ -115,15 +113,13 @@ namespace csyren
                 return;
             }
 
-            if (_serializer.saveScene(event.filepath))
+            if (Serializer::instance().saveScene(event.filepath, *(event.scene)))
             {
                 log::info("Scene successfully saved to '{}'.", event.filepath);
                 _loadedScenePath = event.filepath;//now we work with that new scene.
             }
 
         }
-
-		Serializer& _serializer;
         std::string _loadedScenePath;
         std::vector<events::PublishToken>    _publishTokens;
         std::vector<events::SubscriberToken> _tokens;

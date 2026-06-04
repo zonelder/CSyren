@@ -8,19 +8,15 @@
 
 namespace csyren
 {
-    Serializer::Serializer(core::Scene& scene) :
-        _scene(scene)
-    {
-    }
-
-    bool Serializer::saveScene(const std::string& filepath)
+   
+    bool Serializer::saveScene(const std::string& filepath, core::Scene& scene)
     {
         json sceneJson;
         json entitiesArray = json::array();
 
         auto& serv = render::SerializationServices::get();
         serv.rootJson = &sceneJson;
-        for (auto entt : _scene.entities())
+        for (auto entt : scene.entities())
         {
             json entityJson;
             entityJson["id"] = entt.id;
@@ -29,10 +25,10 @@ namespace csyren
 
             for (const auto& [name, info] : core::reflection::ComponentRegistry::getAll())
             {
-                if (info.has(_scene, entt.id))
+                if (info.has(scene, entt.id))
                 {
                     json componentJson;
-                    info.serialize(info.get(_scene, entt.id), componentJson);
+                    info.serialize(info.get(scene, entt.id), componentJson);
                     componentsJson[name] = componentJson;
                 }
             }
@@ -58,7 +54,7 @@ namespace csyren
     }
 
 #pragma optimize("",off)
-    bool Serializer::loadScene(const std::string& filepath)
+    bool Serializer::loadScene(const std::string& filepath,core::Scene& scene)
     {
         std::ifstream f(filepath);
 
@@ -93,7 +89,7 @@ namespace csyren
 
         for (const auto& entityData : data["entities"])
         {
-            core::Entity::ID newEntity = _scene.createEntity();
+            core::Entity::ID newEntity = scene.createEntity();
 
             if (!entityData.contains("components")) continue;
 
@@ -107,7 +103,7 @@ namespace csyren
                     continue;
                 }
 
-                void* componentPtr = info->add(_scene, newEntity);
+                void* componentPtr = info->add(scene, newEntity);
                 info->deserialize(componentPtr, componentData);
             }
         }

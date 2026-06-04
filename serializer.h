@@ -1,19 +1,28 @@
 #pragma once
 #include <string>
 
+#include "dx12_graphic/singleton.h"
+
+namespace csyren::core
+{
+    class Scene;
+}
+
 namespace csyren::core::events
 {
     struct LoadSceneRequest
     {
         std::string scenePath;
+        Scene* scene;
     };
 
 
     struct SaveSceneRequest
     {
         std::string filepath;
+        Scene* scene;
     };
-    struct ReloadSceneRequest {};
+    struct ReloadSceneRequest { Scene* scene; };
 }
 
 namespace csyren::render
@@ -21,10 +30,7 @@ namespace csyren::render
     class ResourceManager;
 }
 
-namespace csyren::core
-{
-    class Scene;
-}
+
 
 namespace csyren
 {
@@ -41,15 +47,10 @@ namespace csyren
         std::string path;
     };
 
-    class Serializer
+    class CS_STATIC(Serializer)
     {
     public:
-        Serializer(core::Scene& scene);
-
-        bool loadScene(const std::string& filepath);
-        bool saveScene(const std::string& filepath);
-
-    private:
-        core::Scene& _scene;
+        bool loadScene(const std::string& filepath, core::Scene & scene);
+        bool saveScene(const std::string& filepath, core::Scene & scene);
     };
 }

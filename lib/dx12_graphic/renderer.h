@@ -90,8 +90,6 @@ namespace csyren::render
 
 		details::ComPtr<ID3D12Device>			_device;
 		details::ComPtr<IDXGISwapChain3>		_swapChain;
-		details::ComPtr<ID3D12DescriptorHeap>	_rtvHeap;
-		details::ComPtr<ID3D12DescriptorHeap>	_dsvHeap;
 		details::ComPtr<IDXGIFactory4>			_factory;
 
 		details::ComPtr<ID3D12Resource> _renderTargets[FrameCount];
@@ -115,7 +113,6 @@ namespace csyren::render
 		uint8_t									_frameIndex;
 		uint8_t									_lastBackBuffer;
 
-		std::unique_ptr<details::PSOFactory>	_pPSOFactory;
 		bool									_enableVSync{ false };
 	};
 }

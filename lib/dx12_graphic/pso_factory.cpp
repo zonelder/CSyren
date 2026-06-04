@@ -37,8 +37,6 @@ namespace csyren::render::details
         psoDesc.SampleMask = UINT_MAX;
         psoDesc.SampleDesc.Count = 1;
 
-
-
         Microsoft::WRL::ComPtr<ID3D12PipelineState> pso;
         HRESULT hr = _device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pso));
         if (DX_FAILED(hr))

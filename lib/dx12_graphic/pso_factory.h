@@ -2,9 +2,11 @@
 #include <d3d12.h>
 #include <wrl.h>
 #include <unordered_map>
+
 #include "material.h" // Äëÿ MaterialStateDesc
 #include "shader.h"
 #include "vertex_layout.h"
+#include "singleton.h"
 
 namespace
 {
@@ -32,10 +34,15 @@ namespace csyren::render::details
 	};
 
 
-	class PSOFactory
+	class CS_STATIC(PSOFactory)
 	{
 	public:
-		PSOFactory(ID3D12Device* device) noexcept : _device(device) {};
+		PSOFactory() noexcept = default;
+
+		void init(ID3D12Device* device) override
+		{
+			_device = device;
+		}
 
 		ID3D12PipelineState* try_get(GraphicShader* shader, const MaterialStateDesc& desc);
 		ID3D12PipelineState* get(ShaderHandle sh,GraphicShader* shader, const MaterialStateDesc& desc,const VertexLayout& vertexLayout);
