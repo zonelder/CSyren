@@ -42,6 +42,8 @@ namespace csyren::render
 	};
 }
 
+#define CS_STATIC(Class) Class : public Singleton<Class>
+
 namespace csyren::render::details
 {
 

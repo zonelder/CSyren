@@ -5,10 +5,6 @@
 
 namespace csyren::render
 {
-    class Renderer;
-    class Mesh;
-    class Material;
-
     class Primitives
     {
     public:

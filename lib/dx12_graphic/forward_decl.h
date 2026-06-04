@@ -4,6 +4,8 @@
 
 namespace csyren::render
 {
+	template<typename T> class Singleton;
+
 	//<resources>
 	class Texture;
 	class Mesh;

@@ -95,40 +95,13 @@ namespace csyren::render
     }
 
 
-    bool Renderer::init(HWND hwnd, UINT width, UINT height)
+    bool Renderer::earlyInit(HWND hwnd, UINT width, UINT height)
     {
         enableDebugLayer();
         createFactory();
         createDevice();
         createCommandQueue();
         createSwapChain(hwnd, width, height);
-
-        D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-        rtvHeapDesc.NumDescriptors = FrameCount;
-        rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-        rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-        if (DX_FAILED(_device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&_rtvHeap))))
-            return false;
-
-        _rtvDescriptorSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-        D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = _rtvHeap->GetCPUDescriptorHandleForHeapStart();
-        for (UINT i = 0; i < FrameCount; ++i)
-        {
-            if (DX_FAILED(_swapChain->GetBuffer(i, IID_PPV_ARGS(&_renderTargets[i]))))
-                return false;
-            _device->CreateRenderTargetView(_renderTargets[i].Get(), nullptr, rtvHandle);
-            rtvHandle.ptr += _rtvDescriptorSize;
-        }
-
-        D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
-        dsvHeapDesc.NumDescriptors = 1;
-        dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-        dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-
-        if (DX_FAILED(_device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&_dsvHeap))))
-            return false;
-
-        _dsvDescriptorSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
         D3D12_RESOURCE_DESC depthDesc = {};
         depthDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -154,12 +127,6 @@ namespace csyren::render
 
         _depthStencil->SetName(L"BackBufferDepthStencil");
 
-        D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
-        dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
-        dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-
-        _device->CreateDepthStencilView(_depthStencil.Get(), &dsvDesc, _dsvHeap->GetCPUDescriptorHandleForHeapStart());
-
 
         constexpr size_t MB = 1024 * 1024;
         constexpr size_t perEntitySize = 2* MB; // Size for world matrix + other per-object data for whole scene render.
@@ -176,6 +143,23 @@ namespace csyren::render
         details::EngineSemanticRegistry::instance().initialize();
 
         return true;
+    }
+
+    void Renderer::init(ID3D12Device* device)
+    {
+        auto& mgr = DescriptorManager::instance();
+        for (UINT i = 0; i < FrameCount; ++i)
+        {
+            if (DX_FAILED(_swapChain->GetBuffer(i, IID_PPV_ARGS(&_renderTargets[i]))))
+                return;
+            _rtv[i] = mgr.createRTV(_renderTargets[i].Get(), nullptr);
+        }
+
+        D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+        dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
+        dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+
+        _dsv = mgr.createDSV(_depthStencil.Get(), &dsvDesc);
     }
 
     void Renderer::beginFrame()
@@ -212,14 +196,8 @@ namespace csyren::render
         }
 
 
-        // --- Bind render targets ---
-        D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = _rtvHeap->GetCPUDescriptorHandleForHeapStart();
-        rtvHandle.ptr += _lastBackBuffer * _rtvDescriptorSize;
-
-        D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = _dsvHeap->GetCPUDescriptorHandleForHeapStart();
-
-        cmdList.setRenderTarget(0, rtvHandle);
-        cmdList.setDepthStencil(dsvHandle);
+        cmdList.setRenderTarget(0, _rtv[_lastBackBuffer].cpu);
+        cmdList.setDepthStencil( _dsv.cpu );
         cmdList.submitRenderTargets();
 
         cmdList.clearDepthStencil(0.0f,0);
@@ -228,10 +206,9 @@ namespace csyren::render
         cmdList.setScissorRect({ 0, 0, static_cast<LONG>(_width), static_cast<LONG>(_height) });
     }
 
+
     void Renderer::clear(const FLOAT color[4])
     {
-        D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = _rtvHeap->GetCPUDescriptorHandleForHeapStart();
-        rtvHandle.ptr += _lastBackBuffer * _rtvDescriptorSize;
         _cmdLists[_frameIndex].clearRenderTarget(0,color);
     }
 

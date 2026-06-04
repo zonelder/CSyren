@@ -12,10 +12,8 @@
 
 namespace csyren::render
 {
-	bool GraphicShader::finalizeInit(Renderer& renderer)
+	bool GraphicShader::finalizeInit(ID3D12Device* device)
 	{
-        auto device = renderer.device();
-
         std::vector<std::pair<D3D12_SHADER_VISIBILITY, ID3DBlob*>> blobs;
         blobs.reserve(6);
 
@@ -45,17 +43,17 @@ namespace csyren::render
 
 	}
 
-    bool GraphicShader::init(Renderer& renderer,from_source_code_t, const std::string& code)
+    bool GraphicShader::init(from_source_code_t, const std::string& code)
     {
-        return compileAndInit(renderer,code,"");
+        return compileAndInit(code,"");
     }
 
-    bool GraphicShader::init(Renderer& renderer,from_asset_path_t, const std::string& filepath)
+    bool GraphicShader::init(from_asset_path_t, const std::string& filepath)
     {
-        return init(renderer,filepath);
+        return init(filepath);
     }
 
-    bool GraphicShader::init(Renderer& renderer, const std::string& assetPath)
+    bool GraphicShader::init(const std::string& assetPath)
     {
         std::filesystem::path relativePath(assetPath);
 
@@ -68,14 +66,15 @@ namespace csyren::render
             log::error("GraphicShader::init: Source file not found in DEBUG mode: {}", assetPath);
             return false;
         }
-        return compileAndInit(renderer, shaderCode, relativePath);
+        return compileAndInit(shaderCode, relativePath);
 #else
-        return loadPrecompiledAndInit(renderer, relativePath);
+        return loadPrecompiledAndInit(relativePath);
 #endif
     }
 
-    bool GraphicShader::compileAndInit(Renderer& renderer, const std::string& shaderCode, const std::filesystem::path relativePath)
+    bool GraphicShader::compileAndInit(const std::string& shaderCode, const std::filesystem::path relativePath)
     {
+        Renderer& renderer = Renderer::instance();
         auto path = relativePath.string();
         log::info("GraphicShader {}: Compiling on the fly...", path);
         constexpr bool INGORE_MISSING_SHADER_STEP = true;
@@ -130,11 +129,12 @@ namespace csyren::render
             //TODO save opitional shader steps
             log::info("GraphicShader {}: Build shader saved.", path);
         }
-        return finalizeInit(renderer);
+        return finalizeInit(renderer.device());
     }
 
-    bool GraphicShader::loadPrecompiledAndInit(Renderer& renderer, const std::filesystem::path& relativePath)
+    bool GraphicShader::loadPrecompiledAndInit(const std::filesystem::path& relativePath)
     {
+        Renderer& renderer = Renderer::instance();
         log::info("GraphicShader {} : loading pre compiled data...", relativePath.string());
         std::filesystem::path buildPath = std::filesystem::path("build") / relativePath;
 
@@ -170,7 +170,7 @@ namespace csyren::render
         {
             return false;
         }
-        return finalizeInit(renderer);
+        return finalizeInit(renderer.device());
 
     }
 

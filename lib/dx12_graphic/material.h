@@ -29,8 +29,8 @@ namespace csyren::render
 		using ParametersMap = std::unordered_map<std::string, VariableContainer>;
 		using TextureMap = std::unordered_map<std::string, TextureHandle>;
 		Material() noexcept = default;
-		bool init(Renderer& renderer, const std::string& filepath);
-		bool init(Renderer& renderer, ShaderHandle shaderHandle, const MaterialStateDesc& states);
+		bool init(const std::string& filepath);
+		bool init(ShaderHandle shaderHandle, const MaterialStateDesc& states);
 		ShaderHandle getShader() const noexcept { return _shaderHandle;}
 		const MaterialStateDesc& getStates() const noexcept { return _states; }
 

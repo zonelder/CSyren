@@ -42,8 +42,6 @@ namespace csyren
 		core::SystemManager							_systems;
 		core::Window								_window;
 
-		render::Renderer							_render;
-
 		physics::PhysicsEngine						_physics;
 
 		Serializer									_serializer;

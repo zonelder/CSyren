@@ -33,9 +33,9 @@ namespace csyren::render
 		const VertexLayout& getLayout() const { return _layout; }
 	private:
 
-		bool init(Renderer& renderer,const std::string& filepath);
+		bool init(const std::string& filepath);
 		bool init(
-			Renderer& renderer, const MeshBuilder& builder,
+			const MeshBuilder& builder,
 			Usage usage = Usage::Static
 		);
 

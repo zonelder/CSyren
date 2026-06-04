@@ -75,7 +75,6 @@ namespace csyren
 		_inputDispatcher(),
 		_bus(std::make_unique<csyren::core::events::EventBus2>()),
 		_scene(*_bus),
-		_render(),
 		_serializer(_scene)
 	{
 	}
@@ -91,16 +90,15 @@ namespace csyren
 		if (!hWnd) { return false; }
 		_window.setInputDispatcher(&_inputDispatcher);
 
-		if (!_render.init(hWnd, _window.width(), _window.height()))
+		render::details::SingletonRegistry::add<render::DescriptorManager>();
+		render::details::SingletonRegistry::add<render::Renderer>();
+		if (!render::Renderer::instance().earlyInit(hWnd, _window.width(), _window.height()))
 		{
 			return false;
 		}
-
-		render::details::SingletonRegistry::add<render::ResourceManager>(_render);
-		render::details::SingletonRegistry::add<render::DescriptorManager>();
-
+		render::details::SingletonRegistry::add<render::ResourceManager>();
 		_inputDispatcher.init(*_bus);
-		render::details::SingletonRegistry::initializeAll(_render.device());
+		render::details::SingletonRegistry::initializeAll(render::Renderer::instance().device());
 		log::info("-------------------------------------------------------------------------------------------");
 		return true;
 	}
@@ -125,17 +123,16 @@ namespace csyren
 		ctx.registerService(&_scene);
 		ctx.registerService(_bus.get());
 		ctx.registerService(&time);
-		ctx.registerService(&_render);
 		ctx.registerService(&cameraServ);
 		ctx.registerService(&_physics);
 
 		log::info("-------------------------------Setup Start Up------------------------------------------------");
-		_render.beginResourceUpload();
+		render::Renderer::instance().beginResourceUpload();
 		render::Primitives::registerFabricsAll();
 		onSceneStart(ctx);
 		_systems.init(ctx);
 
-		_render.endResourceUpload();
+		render::Renderer::instance().endResourceUpload();
 		log::info("---------------------------------------------------------------------------------------------");
 		log::info("-------------------------------Run Game Loop-------------------------------------------------");
 		while (true)
@@ -161,10 +158,10 @@ namespace csyren
 
 			_inputDispatcher.update(*_bus);
 			_systems.update(ctx);
-
+			auto& renderer = render::Renderer::instance();
 			auto [mainCameraID,camera,cameraTransform] = *(_scene.view<Camera,Transform>().begin());//only first camera accepted
 			currentCameraEntt = mainCameraID;
-			auto engineVariables = _render.getEngineVariableBuffer();
+			auto engineVariables = renderer.getEngineVariableBuffer();
 			engineVariables->totalTime = time.totalTime();
 			DirectX::XMMATRIX invView = cameraTransform.world();
 			DirectX::XMStoreFloat4x4(&engineVariables->invViewMatrix, invView);
@@ -190,14 +187,14 @@ namespace csyren
 			DirectX::XMStoreFloat4(&engineVariables->lightDirection, rotatedDir);
 
 			render::ResourceManager::instance().update();
-			_render.beginFrame();
+			renderer.beginFrame();
 			ID3D12DescriptorHeap* heaps[] = { render::DescriptorManager::instance().shaderHeap() };
-			_render.commandList()->SetDescriptorHeaps(1, heaps);
-			_render.clear(&(camera.background.x));
+			renderer.commandList()->SetDescriptorHeaps(1, heaps);
+			renderer.clear(&(camera.background.x));
 
 			_systems.onFrame(ctx);
 
-			_render.endFrame();
+			renderer.endFrame();
 
 			_scene.flush();
 			_bus->commit_batch();

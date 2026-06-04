@@ -13,7 +13,6 @@ namespace
 
 namespace csyren::render::details
 {
-	class Renderer;
 	using VertexLayoutHash = size_t;
 	struct PSOKey
 	{

@@ -24,6 +24,9 @@
 #include "vertex_layout.h"
 
 #include "render_queue.h"
+#include "descriptor_allocation.h"
+
+#include "singleton.h"
 
 
 namespace csyren::render
@@ -44,7 +47,7 @@ namespace csyren::render
 	};
 	class Texture;
 
-	class Renderer
+	class CS_STATIC(Renderer)
 	{
 	public:
 		Renderer() noexcept = default;
@@ -53,7 +56,8 @@ namespace csyren::render
 		Renderer(const Renderer&) = delete;
 		Renderer& operator=(const Renderer&) = delete;
 
-		bool init(HWND hwnd, UINT width, UINT height);
+		bool earlyInit(HWND hwnd, UINT width, UINT height);
+		void init(ID3D12Device* device) override;
 		void beginFrame();
 		void clear(const FLOAT color[4]);
 		void endFrame();
@@ -89,11 +93,12 @@ namespace csyren::render
 		details::ComPtr<ID3D12DescriptorHeap>	_rtvHeap;
 		details::ComPtr<ID3D12DescriptorHeap>	_dsvHeap;
 		details::ComPtr<IDXGIFactory4>			_factory;
-		UINT _dsvDescriptorSize = 0;
-		UINT _rtvDescriptorSize{ 0 };
 
 		details::ComPtr<ID3D12Resource> _renderTargets[FrameCount];
+		DescriptorAllocation			_rtv[FrameCount];
 		details::ComPtr<ID3D12Resource> _depthStencil;
+		DescriptorAllocation			_dsv;
+
 		D3D12_RESOURCE_STATES _depthStencilCurrentState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
 
 

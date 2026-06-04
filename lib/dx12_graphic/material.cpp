@@ -61,13 +61,13 @@ namespace csyren::render
         dsvFormat = DXGI_FORMAT_D32_FLOAT;
     }
 
-    bool Material::init(Renderer& renderer, const std::string& filepath)
+    bool Material::init(const std::string& filepath)
     {
         log::error("Material: material loading from file not implemented. file = {}", filepath);
         return false;
     }
 
-    bool Material::init(Renderer& renderer, ShaderHandle shaderHandle, const MaterialStateDesc& states)
+    bool Material::init(ShaderHandle shaderHandle, const MaterialStateDesc& states)
     {
         if (!shaderHandle) {
             log::error("Material::init: Invalid shader handle provided.");

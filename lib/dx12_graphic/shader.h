@@ -57,9 +57,9 @@ namespace csyren::render
 		friend class ResourceStorage<GraphicShader>;
 	public:
 		GraphicShader() = default;
-		bool init(Renderer& renderer,from_source_code_t, const std::string& code);
-		bool init(Renderer& renderer,from_asset_path_t, const std::string& filepath);
-		bool init(Renderer& renderer,const std::string& filepath);
+		bool init(from_source_code_t, const std::string& code);
+		bool init(from_asset_path_t, const std::string& filepath);
+		bool init(const std::string& filepath);
 
 		const std::vector< D3D12_INPUT_ELEMENT_DESC>& getInputLayout() const noexcept { return _inputLayout; };
 
@@ -96,9 +96,9 @@ namespace csyren::render
 	private:
 		bool buildInputLayoutFromReflection();
 
-		bool compileAndInit(Renderer& renderer, const std::string& shaderCode, const std::filesystem::path relativePath);
-		bool finalizeInit(Renderer& renderer);
-		bool loadPrecompiledAndInit(Renderer& renderer, const std::filesystem::path& relativePath);
+		bool compileAndInit(const std::string& shaderCode, const std::filesystem::path relativePath);
+		bool finalizeInit(ID3D12Device* device);
+		bool loadPrecompiledAndInit(const std::filesystem::path& relativePath);
 		void linkSemantics();
 		void buildSemanticLayout();
 

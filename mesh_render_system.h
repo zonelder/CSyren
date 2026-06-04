@@ -25,7 +25,7 @@ namespace csyren
         void onFrame(core::ServiceContext& ctx) override
         {
 
-            auto render = ctx.get<render::Renderer>();
+            auto render = render::Renderer::instancePtr();
             auto scene = ctx.get<core::Scene>();
             auto& resources = render::ResourceManager::instance();
 

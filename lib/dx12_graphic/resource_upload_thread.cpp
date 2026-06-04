@@ -16,10 +16,10 @@ namespace csyren::render
      * @throws std::invalid_argument If the device is null.
      * @throws std::runtime_error If creating the command queue fails.
      */
-	ResourceUploadThread::ResourceUploadThread(Renderer* renderer)
-		: _context(renderer)
+	ResourceUploadThread::ResourceUploadThread()
+		: _context(Renderer::instancePtr())
 	{
-        auto device = renderer->device();
+        auto device = Renderer::instancePtr()->device();
 		if (!device) throw std::invalid_argument("device is null");
 		D3D12_COMMAND_QUEUE_DESC qdesc = {};
 		qdesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;

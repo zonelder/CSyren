@@ -11,7 +11,6 @@ namespace csyren::render
     public:
         UploadContext(Renderer* renderer);
         DirectX::ResourceUploadBatch& batcher() noexcept { return _batcher; }
-        Renderer* renderer() const noexcept { return _renderer; }
     private:
         Renderer* _renderer;
         DirectX::ResourceUploadBatch _batcher;

@@ -2,6 +2,7 @@
 #include "mesh.h"
 #include "material.h"
 #include "resource_manager.h"
+#include "renderer.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -41,13 +42,13 @@ namespace csyren::render
         return SUCCEEDED(hr);
     }
 
-    bool Mesh::init(Renderer& renderer,const std::string& filepath)
+    bool Mesh::init(const std::string& filepath)
     {
         log::error("Mesh: attempt to load mesh from file but its not implemented. file = {}", filepath);
         return false;
     }
 
-    bool Mesh::init(Renderer& renderer,const MeshBuilder& builder, Usage usage)
+    bool Mesh::init(const MeshBuilder& builder, Usage usage)
     {
 
         static_assert(sizeof(vertex_meta::index_type) == 2, "MeshIndex must be a 16-bit unsigned integer for DXGI_FORMAT_R16_UINT.");
@@ -59,8 +60,9 @@ namespace csyren::render
             log::error("Mesh::init failed: vertex or index data is empty.");
             return false;
         }
-        auto* device = renderer.device();
-        auto* cmdList = renderer.commandList();
+        auto& r = Renderer::instance();
+        auto* device =  r.device();
+        auto* cmdList = r.commandList();
 
         const size_t vertexDataSize = raw.vertexBuffer.size();
         const size_t indexDataSize = raw.indices.size() * sizeof(vertex_meta::index_type);
@@ -79,7 +81,7 @@ namespace csyren::render
             if (!createBuffer(device, D3D12_HEAP_TYPE_DEFAULT, vertexDataSize, D3D12_RESOURCE_STATE_COMMON, _vertexBuffer)) return false;
             if (!createBuffer(device, D3D12_HEAP_TYPE_DEFAULT, indexDataSize, D3D12_RESOURCE_STATE_COMMON, _indexBuffer)) return false;
 
-            auto uploadBuffer = renderer.getUploadBuffer();
+            auto uploadBuffer = r.getUploadBuffer();
             void* uploadVertexDataPtr;
             D3D12_GPU_VIRTUAL_ADDRESS uploadVertexDataGPUPtr;
             UINT uploadVertexOffset = uploadBuffer->allocate(vertexDataSize, &uploadVertexDataPtr, &uploadVertexDataGPUPtr);

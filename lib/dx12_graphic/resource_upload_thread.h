@@ -21,7 +21,7 @@ namespace csyren::render
 	class ResourceUploadThread
 	{
 	public:
-		ResourceUploadThread(Renderer* renderer);
+		ResourceUploadThread();
 		~ResourceUploadThread();
 
 		ResourceUploadThread(const ResourceUploadThread&) = delete;

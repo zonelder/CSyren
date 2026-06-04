@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="application.cpp" />
+    <ClCompile Include="lib\dx12_graphic\resource_manager.cpp" />
     <ClCompile Include="serializer.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>

@@ -1,20 +1,20 @@
 #pragma once
 
 #include "forward_decl.h"
-
+#include "singleton.h"
 #include "resource_handle.h"
-#include "renderer.h"
 #include "mesh.h"
 #include "texture.h"
 #include "material.h"
 #include "shader.h"
 #include "resource_upload_thread.h"
 #include "texture_upload_task.h"
+#include "renderer.h"
 
 #include "cstdmf/page_view.h"
 #include "cstdmf/log.h"
 
-#include "singleton.h"
+
 
 #include <string>
 #include <vector>
@@ -149,19 +149,17 @@ namespace csyren::render
         std::unordered_map<handle_type, std::string> _handleToNameMap; // For reverse lookup
         cstdmf::PageView<TResource> _storage;
     };
-
+    
     // --- ResourceManager: The central facade ---
-    class ResourceManager : public Singleton<ResourceManager>
+    class CS_STATIC(ResourceManager)
     {
     public:
-        explicit ResourceManager(Renderer& renderer)
-            : _renderer(renderer),
+        explicit ResourceManager() :
             _meshStorage(*this),
             _textureStorage(*this),
             _materialStorage(*this),
             _shaderStorage(*this)
         {
-            init_thread();
         }
 
         ~ResourceManager() = default;
@@ -212,7 +210,7 @@ namespace csyren::render
             else
             {
                 log::debug("sync load resource from file: {}", name);
-                return storage.load(name, _renderer, name);
+                return storage.load(name,name);
             }
 
         }
@@ -224,7 +222,7 @@ namespace csyren::render
         // Meshes
         MeshHandle createMesh(const std::string& name,const MeshBuilder& builder)
         {
-            return _meshStorage.load(name,_renderer,builder);
+            return _meshStorage.load(name,builder);
         }
 
         // Textures
@@ -235,21 +233,12 @@ namespace csyren::render
         // }
 
         // Shaders (from string code)
-        ShaderHandle createShader(const std::string& name, const std::string& filepath)
-        {
-            return _shaderStorage.load(name,_renderer,filepath);
-        }
+        ShaderHandle createShader(const std::string& name, const std::string& filepath);
 
-        ShaderHandle createShaderFromCode(const std::string& name, const std::string& code)
-        {
-            return _shaderStorage.load(name, _renderer,from_source_code,code);
-        }
+        ShaderHandle createShaderFromCode(const std::string& name, const std::string& code);
 
         // Materials
-        MaterialHandle createMaterial(const std::string& name, ShaderHandle shader, const MaterialStateDesc& states)
-        {
-            return _materialStorage.load(name, _renderer, shader, states);
-        }
+        MaterialHandle createMaterial(const std::string& name, ShaderHandle shader, const MaterialStateDesc& states);
 
         // --- Accessors for resource data (e.g., for rendering) ---
         Mesh* getMesh(MeshHandle handle) { return _meshStorage.get(handle); }
@@ -276,8 +265,15 @@ namespace csyren::render
             getStorage<TResource>().unload(handle);
         }
 
-        void unloadAll()
+        //main loop shoud call this method for handling optimizations;
+        void init(ID3D12Device*) override;
+
+        void shutdown() override
         {
+            _proceduralMeshFactories.clear();
+            _proceduralTextureFactories.clear();
+            _proceduralShaderFactories.clear();
+            _proceduralMaterialFactories.clear();
             _meshStorage.unloadAll();
             _textureStorage.unloadAll();
             _materialStorage.unloadAll();
@@ -285,20 +281,11 @@ namespace csyren::render
             log::debug("All resources unloaded.");
         }
 
-        Renderer& renderer() noexcept { return _renderer; }
-        //main loop shoud call this method for handling optimizations;
-        void init_thread()
-        {
-            if(!_pUploadThread)
-                _pUploadThread = std::make_unique<ResourceUploadThread>(&_renderer);
-        }
-
         void update()
         {
             _pUploadThread->sync(*this);
         }
     private:
-        Renderer& _renderer;
         std::unique_ptr< ResourceUploadThread> _pUploadThread;
 
         // Specialized ResourceStorage instances
