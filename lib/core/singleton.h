@@ -5,26 +5,26 @@
 
 #include "cstdmf/assert_helpler.h"
 
-namespace csyren::render::details
+
+#define CS_STATIC(Class) Class : public ::csyren::core::details::Singleton<Class>
+
+namespace csyren::core::details
 {
+	class SingletonRegistry;
 	class ISingleton
 	{
-		friend class SingletonRegistry;
+		friend SingletonRegistry;
 	public:
 		virtual ~ISingleton() = default;
 	protected:
 		virtual void init() {}
 		virtual void shutdown() {}
 	};
-	class SingletonRegistry;
-}
 
-namespace csyren::render
-{
 	template<class T>
-	class Singleton : public details::ISingleton
+	class Singleton : public ISingleton
 	{
-		friend details::SingletonRegistry;
+		friend SingletonRegistry;
 	public:
 		static T& instance()
 		{
@@ -39,14 +39,6 @@ namespace csyren::render
 	private:
 		inline static T* instance_ = nullptr;
 	};
-}
-template<class T>
-using Singleton = csyren::render::Singleton<T>;
-
-#define CS_STATIC(Class) Class : public Singleton<Class>
-
-namespace csyren::render::details
-{
 
 	class SingletonRegistry
 	{

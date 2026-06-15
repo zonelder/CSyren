@@ -90,18 +90,18 @@ namespace csyren
 		if (!hWnd) { return false; }
 		_window.setInputDispatcher(&_inputDispatcher);
 
-		render::details::SingletonRegistry::add<render::DescriptorManager>();
-		render::details::SingletonRegistry::add<render::Renderer>();
+		core::details::SingletonRegistry::add<render::DescriptorManager>();
+		core::details::SingletonRegistry::add<render::Renderer>();
 		if (!render::Renderer::instance().earlyInit(hWnd, _window.width(), _window.height()))
 		{
 			return false;
 		}
-		render::details::SingletonRegistry::add<render::ResourceManager>();
-		render::details::SingletonRegistry::add<render::details::PSOFactory>();
+		core::details::SingletonRegistry::add<render::ResourceManager>();
+		core::details::SingletonRegistry::add<render::details::PSOFactory>();
 
-		render::details::SingletonRegistry::add<Serializer>();
+		core::details::SingletonRegistry::add<Serializer>();
 		_inputDispatcher.init(*_bus);
-		render::details::SingletonRegistry::initializeAll();
+		core::details::SingletonRegistry::initializeAll();
 		log::info("-------------------------------------------------------------------------------------------");
 		return true;
 	}
@@ -151,7 +151,7 @@ namespace csyren
 					log::info("-------------------------------Shutdown------------------------------------------------------");
 					_systems.shutdown(ctx);
 					_inputDispatcher.shutdown(*_bus);
-					render::details::SingletonRegistry::shutdownAll();
+					core::details::SingletonRegistry::shutdownAll();
 					log::shutdown();
 					return static_cast<int>(msg.wParam);
 				}
