@@ -21,6 +21,7 @@
 #include "core/transform.h"
 
 #include "core/event_bus.h"
+#include "core/services.h"
 #include "math/math.h"
 
 #include "rigid_body.h"
@@ -152,10 +153,11 @@ namespace csyren::physics
         math::Vector3 gravity{ 0.0f,-9.98f,0.0f };
         bool isGravityDirty{ false };
 
-        void initialize(core::ServiceContext& ctx)
+        void initialize()
         {
-            scene = ctx.get<core::Scene>();
-            auto bus = ctx.get<core::events::EventBus2>();
+            using ctx = core::Services;
+            scene = ctx::get<core::Scene>();
+            auto bus = ctx::get<core::events::EventBus2>();
 
             JPH::RegisterDefaultAllocator();
             JPH::Factory::sInstance = new JPH::Factory();
@@ -423,9 +425,10 @@ namespace csyren::physics
                 }
             }
         }
-        void shutdown(core::ServiceContext& ctx) 
+        void shutdown()
         {
-            auto bus = ctx.get<core::events::EventBus2>();
+            using ctx = core::Services;
+            auto bus = ctx::get<core::events::EventBus2>();
             bus->unsubscribe(rbAddedToken);
             bus->unsubscribe(rbRemovedToken);
             bus->unsubscribe(boxAddedToken);
@@ -464,17 +467,18 @@ namespace csyren::physics
 
     //-----------------------------------------------------------------------------------------
 
-    void PhysicsSystem::init(core::ServiceContext& ctx)
+    void csyren::physics::PhysicsSystem::init()
     {
-        auto physic = ctx.get<PhysicsEngine>();
-        physic->_pImpl->initialize(ctx);
+        auto physic = core::Services::get<physics::PhysicsEngine>();
+        physic->_pImpl->initialize();
     }
 
-    void PhysicsSystem::update(core::ServiceContext& ctx)
+    void csyren::physics::PhysicsSystem::update()
     {
-        auto physic = ctx.get<PhysicsEngine>();
+        using ctx = core::Services;
+        auto physic = ctx::get<PhysicsEngine>();
         auto impl = physic->_pImpl;
-        auto time = ctx.get<core::Time>();
+        auto time = ctx::get<core::Time>();
         auto deltaTime = time->deltaTime();
 
         impl->pushTransform();
@@ -485,11 +489,8 @@ namespace csyren::physics
         impl->pullTransforms();
     }
 
-    void PhysicsSystem::shutdown(core::ServiceContext& ctx)
+    void csyren::physics::PhysicsSystem::shutdown()
     {
-        auto physic = ctx.get<PhysicsEngine>();
-        auto impl = physic->_pImpl;
-        impl->shutdown(ctx);
     }
 
 }

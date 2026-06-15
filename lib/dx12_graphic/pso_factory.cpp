@@ -10,7 +10,7 @@ namespace csyren::render::details
 {
     void PSOFactory::init()
     {
-        _device = Renderer::instance().device();
+        _device =  core::Services::get<Renderer>()->device();
     }
     ID3D12PipelineState* PSOFactory::get(ShaderHandle sh,GraphicShader* shader, const MaterialStateDesc& states,const VertexLayout& vertexLayout)
 	{

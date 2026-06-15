@@ -2,9 +2,9 @@
 #define __CSYREN_MESH_RENDER_SYSTEM__
 
 #include "core/event_bus.h"
-#include "core/context.h"
 #include "core/system_base.h"
 #include "core/scene.h"
+#include "core/services.h"
 
 #include "core/transform.h"
 #include "mesh_filter.h"
@@ -22,12 +22,12 @@ namespace csyren
     public:
         explicit MeshRenderSystem() = default;
 
-        void onFrame(core::ServiceContext& ctx) override
+        void onFrame() override
         {
-
-            auto render = render::Renderer::instancePtr();
-            auto scene = ctx.get<core::Scene>();
-            auto& resources = render::ResourceManager::instance();
+            using ctx = core::Services;
+            auto render = ctx::get<render::Renderer>();
+            auto scene = ctx::get<core::Scene>();
+            auto& resources = *ctx::get<render::ResourceManager>();
 
             struct EntityData { Transform* tr; Entity::ID id; };
             using MeshGroups = std::unordered_map<render::MeshHandle,std::vector<EntityData>>;

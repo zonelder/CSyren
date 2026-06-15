@@ -26,7 +26,7 @@ namespace csyren::render
 		HRESULT hr = S_OK;
 		std::wstring filePathW = cstdmf::to_wstring(_name);
 		std::wstring extension = filePathW.substr(filePathW.find_last_of(L".") + 1);
-        auto renderer = Renderer::instancePtr();
+        auto renderer = core::Services::get<Renderer>();
         auto device = renderer->device();
         if (_wcsicmp(extension.c_str(), L"dds") == 0)
         {
@@ -75,7 +75,7 @@ namespace csyren::render
             return;
         }
         Texture* texture = rm.getTexture(_handle);
-        Renderer& renderer = Renderer::instance();
+        Renderer& renderer = *core::Services::get<Renderer>();
 
         D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
         srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -97,8 +97,8 @@ namespace csyren::render
         
 
 
-        texture->_heapManager = DescriptorManager::instancePtr();
-        texture->_srvHandles = DescriptorManager::instance().createSRV(_dxData.buffer.Get(), &srvDesc);
+        texture->_heapManager = core::Services::get < DescriptorManager>();
+        texture->_srvHandles = texture->_heapManager->createSRV(_dxData.buffer.Get(), &srvDesc);
         texture->_dxData = std::move(_dxData);
         texture->_loadStatus = LoadStatus::Loaded;
 

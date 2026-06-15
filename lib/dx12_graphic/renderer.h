@@ -26,7 +26,7 @@
 #include "render_queue.h"
 #include "descriptor_allocation.h"
 
-#include "core/singleton.h"
+#include "core/services.h"
 
 
 namespace csyren::render
@@ -47,7 +47,7 @@ namespace csyren::render
 	};
 	class Texture;
 
-	class CS_STATIC(Renderer)
+	class Renderer
 	{
 	public:
 		Renderer() noexcept = default;
@@ -57,7 +57,7 @@ namespace csyren::render
 		Renderer& operator=(const Renderer&) = delete;
 
 		bool earlyInit(HWND hwnd, UINT width, UINT height);
-		void init() override;
+		void init();
 		void beginFrame();
 		void clear(const FLOAT color[4]);
 		void endFrame();

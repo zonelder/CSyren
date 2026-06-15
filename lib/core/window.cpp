@@ -24,7 +24,7 @@ HWND csyren::core::Window::init() noexcept
 	if (_hWnd)
 		return _hWnd;
 
-	WNDCLASSEX wcex;
+	WNDCLASSEX wcex{};
 	wcex.cbSize = sizeof(WNDCLASSEX);
 	wcex.style = CS_HREDRAW | CS_VREDRAW;
 	wcex.cbClsExtra = 0;
@@ -60,6 +60,11 @@ HWND csyren::core::Window::init() noexcept
 		CW_USEDEFAULT, CW_USEDEFAULT, wr.right - wr.left, wr.bottom - wr.top,
 		nullptr, nullptr, _hInst, this
 	);
+	if (!_hWnd) {
+		DWORD err = GetLastError();
+		log::error("failed to create main Window with error: {}\n", err);
+		// логируй err
+	}
 	return _hWnd;
 }
 

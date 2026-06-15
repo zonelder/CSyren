@@ -41,38 +41,38 @@ namespace csyren::core
 			_sorted = true;
 		}
 
-		void init(ServiceContext& ctx)
+		void init()
 		{
 			for (auto entry : _systems)
 			{
-				entry.system->init(ctx);
+				entry.system->init();
 			}
 			sort();
 		}
 
-		void shutdown(ServiceContext& ctx)
+		void shutdown()
 		{
 			for (auto entry : _systems)
 			{
-				entry.system->shutdown(ctx);
+				entry.system->shutdown();
 			}
 
 			_systems.clear();
 		}
 
-		void update(ServiceContext& ctx)
+		void update()
 		{
 			for (auto entry : _systems)
 			{
-				entry.system->update(ctx);
+				entry.system->update();
 			}
 		}
 
-		void onFrame(ServiceContext& ctx)
+		void onFrame()
 		{
 			for (auto entry : _systems)
 			{
-				entry.system->onFrame(ctx);
+				entry.system->onFrame();
 			}
 		}
 	private:

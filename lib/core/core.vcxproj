@@ -122,7 +122,6 @@
     <ClInclude Include="component_order.h" />
     <ClInclude Include="component_pool.h" />
     <ClInclude Include="component_registry.h" />
-    <ClInclude Include="context.h" />
     <ClInclude Include="entity.h" />
     <ClInclude Include="event_bus.h" />
     <ClInclude Include="family_generator.h" />
@@ -141,14 +140,17 @@
     <ClInclude Include="scene.h" />
     <ClInclude Include="serialize_base.h" />
     <ClInclude Include="serialize_common.h" />
-    <ClInclude Include="singleton.h" />
+    <ClInclude Include="services.h" />
+    <ClInclude Include="service_header.h" />
     <ClInclude Include="system_base.h" />
     <ClInclude Include="system_manager.h" />
+    <ClInclude Include="time.h" />
     <ClInclude Include="transform.h" />
     <ClInclude Include="window.h" />
     <ClInclude Include="win_exeption.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="input_dispatcher.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>

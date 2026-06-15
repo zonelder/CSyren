@@ -203,7 +203,7 @@ namespace csyren::render
 
     bool Primitives::registerFabricsAll()
     {
-        auto& rm = ResourceManager::instance();
+        auto& rm =  *core::Services::get<ResourceManager>();
 
         ResourceManager::ProceduralResourceFactory<GraphicShader> defaultShaderFabric = [](ResourceManager& rm) { return rm.createShaderFromCode(DEFAULT_SHADER_NAME, std::string(g_primitiveShaderCode)); };
 
@@ -388,67 +388,67 @@ namespace csyren::render
 
     ShaderHandle Primitives::getTextureShader()
     {
-        return ResourceManager::instance().get<GraphicShader>(
+        return core::Services::get<ResourceManager>()->get<GraphicShader>(
             TEXTURE_SHADER_NAME);
     }
 
     MaterialHandle Primitives::getTextureMaterial()
     {
-        return ResourceManager::instance().get<Material>(
+        return core::Services::get<ResourceManager>()->get<Material>(
             TEXTURE_MATERIAL_NAME);
     }
 
     ShaderHandle Primitives::getDefaultShader()
     {
-        return ResourceManager::instance().get<GraphicShader>(
+        return core::Services::get<ResourceManager>()->get<GraphicShader>(
             DEFAULT_SHADER_NAME);
     }
 
     MaterialHandle Primitives::getDefaultMaterial()
     {
-        return ResourceManager::instance().get<Material>(
+        return core::Services::get<ResourceManager>()->get<Material>(
             DEFAULT_MATERIAL_NAME);
     }
 
     ShaderHandle Primitives::getRainbowShader()
     {
-        return ResourceManager::instance().get<GraphicShader>(
+        return core::Services::get<ResourceManager>()->get<GraphicShader>(
             RAINBOW_SHADER_NAME);
     }
 
     MaterialHandle Primitives::getRainbowMaterial()
     {
-        return ResourceManager::instance().get<Material>(
+        return core::Services::get<ResourceManager>()->get<Material>(
             RAINBOW_MATERIAL_NAME);
     }
 
     MeshHandle Primitives::getLine()
     {
-        return ResourceManager::instance().get<Mesh>(
+        return core::Services::get<ResourceManager>()->get<Mesh>(
             LINE_MESH_NAME);
     }
 
     MeshHandle Primitives::getTriangle()
     {
-        return ResourceManager::instance().get<Mesh>(
+        return core::Services::get<ResourceManager>()->get<Mesh>(
             TRIANGLE_MESH_NAME);
     }
 
     MeshHandle Primitives::getQuad()
     {
-        return ResourceManager::instance().get<Mesh>(
+        return core::Services::get<ResourceManager>()->get<Mesh>(
             QUAD_MESH_NAME);
     }
 
     MeshHandle Primitives::getCube()
     {
-        return ResourceManager::instance().get<Mesh>(
+        return core::Services::get<ResourceManager>()->get<Mesh>(
             CUBE_MESH_NAME);
     }
 
     MeshHandle Primitives::getSphere()
     {
-        return ResourceManager::instance().get<Mesh>(
+        return core::Services::get<ResourceManager>()->get<Mesh>(
             SPHERE_MESH_NAME);
     }
 }

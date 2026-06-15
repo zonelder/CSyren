@@ -17,9 +17,9 @@ namespace csyren::render
      * @throws std::runtime_error If creating the command queue fails.
      */
 	ResourceUploadThread::ResourceUploadThread()
-		: _context(Renderer::instancePtr())
+		: _context(core::Services::get<Renderer>())
 	{
-        auto device = Renderer::instancePtr()->device();
+        auto device = core::Services::get<Renderer>()->device();
 		if (!device) throw std::invalid_argument("device is null");
 		D3D12_COMMAND_QUEUE_DESC qdesc = {};
 		qdesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;

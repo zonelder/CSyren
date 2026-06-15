@@ -5,7 +5,7 @@ namespace csyren::render
 {
 	void DescriptorManager::init()
 	{
-		auto device = Renderer::instance().device();
+		auto device = core::Services::get<Renderer>()->device();
 		CS_ASSERT(device != nullptr);
 		_device = device;
 		rtvHeap_.init(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 256, false);

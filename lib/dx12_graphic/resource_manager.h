@@ -1,7 +1,6 @@
 #pragma once
 
 #include "forward_decl.h"
-#include "core/singleton.h"
 #include "resource_handle.h"
 #include "mesh.h"
 #include "texture.h"
@@ -151,7 +150,7 @@ namespace csyren::render
     };
     
     // --- ResourceManager: The central facade ---
-    class CS_STATIC(ResourceManager)
+    class ResourceManager
     {
     public:
         explicit ResourceManager() :
@@ -266,20 +265,9 @@ namespace csyren::render
         }
 
         //main loop shoud call this method for handling optimizations;
-        void init() override;
+        void init();
 
-        void shutdown() override
-        {
-            _proceduralMeshFactories.clear();
-            _proceduralTextureFactories.clear();
-            _proceduralShaderFactories.clear();
-            _proceduralMaterialFactories.clear();
-            _meshStorage.unloadAll();
-            _textureStorage.unloadAll();
-            _materialStorage.unloadAll();
-            _shaderStorage.unloadAll();
-            log::debug("All resources unloaded.");
-        }
+        void shutdown();
 
         void update()
         {

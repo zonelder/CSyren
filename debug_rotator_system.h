@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/event_bus.h"
-#include "core/context.h"
+#include "core/services.h"
 #include "core/system_base.h"
 #include "core/scene.h"
 
@@ -21,10 +21,11 @@ namespace csyren
         explicit DebugRotatorSystem() = default;
 
 #pragma optimize("",off)
-        void update(ServiceContext& ctx) override
+        void update() override
         {
-            auto time = ctx.get<core::Time>();
-            auto scene = ctx.get<core::Scene>();
+            using ctx = core::Services;
+            auto time = ctx::get<core::Time>();
+            auto scene = ctx::get<core::Scene>();
             float dt = time->deltaTime();
             float totalTime = time->totalTime();
             constexpr float waveSpeed = 2.0f;

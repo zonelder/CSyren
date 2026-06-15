@@ -74,7 +74,7 @@ namespace csyren::render
 
     bool GraphicShader::compileAndInit(const std::string& shaderCode, const std::filesystem::path relativePath)
     {
-        Renderer& renderer = Renderer::instance();
+        Renderer& renderer = *core::Services::get<Renderer>();
         auto path = relativePath.string();
         log::info("GraphicShader {}: Compiling on the fly...", path);
         constexpr bool INGORE_MISSING_SHADER_STEP = true;
@@ -134,7 +134,7 @@ namespace csyren::render
 
     bool GraphicShader::loadPrecompiledAndInit(const std::filesystem::path& relativePath)
     {
-        Renderer& renderer = Renderer::instance();
+        Renderer& renderer = *core::Services::get<Renderer>();
         log::info("GraphicShader {} : loading pre compiled data...", relativePath.string());
         std::filesystem::path buildPath = std::filesystem::path("build") / relativePath;
 

@@ -1,6 +1,6 @@
 #pragma once
 #include "core/event_bus.h"
-#include "core/context.h"
+#include "core/services.h"
 #include "core/system_base.h"
 #include "core/scene.h"
 #include "serializer.h"
@@ -10,9 +10,10 @@ namespace csyren
 	class SceneLoaderSystem : public core::System
 	{
 	public:
-        void init(ServiceContext& ctx) override
+        void init() override
         {
-            auto bus = ctx.get<events::EventBus2>();
+            using ctx = core::Services;
+            auto bus = ctx::get<events::EventBus2>();
             _publishTokens.emplace_back() = bus->register_publisher<events::LoadSceneRequest>();
             _publishTokens.emplace_back() = bus->register_publisher<events::ReloadSceneRequest>();
             _publishTokens.emplace_back() = bus->register_publisher<events::SaveSceneRequest>();
@@ -22,9 +23,10 @@ namespace csyren
             _tokens.emplace_back() = bus->subscribe<events::SaveSceneRequest>([this](auto request) { this->handleSaveScene(request); });
         };
 
-        void shutdown(ServiceContext& ctx) override
+        void shutdown() override
         {
-            auto bus = ctx.get<events::EventBus2>();
+            using ctx = core::Services;
+            auto bus = ctx::get<events::EventBus2>();
             for (auto token : _tokens)
             {
                 bus->unsubscribe(token);
@@ -37,9 +39,10 @@ namespace csyren
         }
 
 
-        void update(ServiceContext& ctx) override
+        void update() override
         {
-            auto scene = ctx.get<core::Scene>();
+            using ctx = core::Services;
+            auto scene = ctx::get<core::Scene>();
 
             std::vector<std::string> saveRequests;
             std::vector<std::string> loadRequests;
@@ -85,8 +88,10 @@ namespace csyren
     private:
         void handleLoadScene(const events::LoadSceneRequest& event)
         {
+            using ctx = core::Services;
+            auto ser = ctx::get<Serializer>();
             log::info("Handling LoadSceneRequest for: {}", event.scenePath);
-            if (Serializer::instance().loadScene(event.scenePath,*event.scene))
+            if (ser->loadScene(event.scenePath,*event.scene))
             {
                 _loadedScenePath = event.scenePath;
             }
@@ -101,7 +106,9 @@ namespace csyren
             }
             log::info("Handling ReloadCurrentSceneRequest for: {}", _loadedScenePath);
             //todo clear scene.
-            Serializer::instance().loadScene(_loadedScenePath,*(event.scene));
+            using ctx = core::Services;
+            auto ser = ctx::get<Serializer>();
+            ser->loadScene(_loadedScenePath,*(event.scene));
 
         }
 
@@ -112,8 +119,9 @@ namespace csyren
                 log::error("Handling save of current scene but filepath are not set.");
                 return;
             }
-
-            if (Serializer::instance().saveScene(event.filepath, *(event.scene)))
+            using ctx = core::Services;
+            auto ser = ctx::get<Serializer>();
+            if (ser->saveScene(event.filepath, *(event.scene)))
             {
                 log::info("Scene successfully saved to '{}'.", event.filepath);
                 _loadedScenePath = event.filepath;//now we work with that new scene.

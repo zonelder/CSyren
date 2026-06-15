@@ -16,10 +16,10 @@ namespace csyren::render
 			CommandList		cmdList;
 		};
 	public:
-		void init(core::ServiceContext& ctx) override;
-		void startFrame(core::ServiceContext& ctx) override;
+		void init() override;
+		void startFrame() override;
 
-		void endFrame(core::ServiceContext& ctx) override;
+		void endFrame() override;
 
 	private:
 		bool present(RenderQueue& mainContext);

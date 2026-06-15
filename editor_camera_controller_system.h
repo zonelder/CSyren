@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/event_bus.h"
-#include "core/context.h"
+#include "core/services.h"
 #include "core/system_base.h"
 #include "core/scene.h"
 #include "core/camera.h"
@@ -24,11 +24,12 @@ namespace csyren
     public:
         explicit EditorCameraControllerSystem() = default;
 
-        void update(core::ServiceContext& ctx) override
+        void update() override
         {
-			auto devices = ctx.get<core::input::Devices>();
-			auto scene = ctx.get<core::Scene>();
-			auto time = ctx.get<core::Time>();
+			using ctx = core::Services;
+			auto devices = ctx::get<core::input::Devices>();
+			auto scene = ctx::get<core::Scene>();
+			auto time = ctx::get<core::Time>();
 
             auto& keyboard = devices->keyboard();
             auto& mouse = devices->mouse();

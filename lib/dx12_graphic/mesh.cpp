@@ -60,7 +60,7 @@ namespace csyren::render
             log::error("Mesh::init failed: vertex or index data is empty.");
             return false;
         }
-        auto& r = Renderer::instance();
+        auto& r = *core::Services::get<Renderer>();
         auto* device =  r.device();
         auto* cmdList = r.commandList();
 

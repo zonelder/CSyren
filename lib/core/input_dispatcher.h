@@ -42,39 +42,15 @@ namespace csyren::core::input
 			}
 		}
 
-		void update(events::EventBus2& bus)
-		{
-			InputAction action{ "","" };
-			_devices.preUpdate();
-			while (!_eventBuffer.empty())
-			{
-				auto event = _eventBuffer.pop();
+		void update(events::EventBus2& bus);
 
-				auto token_it = _tokens.find(static_cast<uint32_t>(event.type));
-				if (token_it == _tokens.end())
-				{
-					log::error("Unregister input event find. event type = {}", static_cast<uint32_t>(event.type));
-					continue;
-				}
-
-				if (auto currentContext = _contextManager.activeContext(event, action))
-				{
-					bus.publish(_actionToken, action);
-				}
-				bus.publish(token_it->second, event);
-				_devices.dispatchEvent(event);
-			}
-		}
 		void dispatch(const InputEvent& event)
 		{
 			_eventBuffer.push(event);
 		}
 		InputContextManager& contexts() const noexcept { return const_cast<InputContextManager&>(_contextManager); }
-
-		const Devices& devices() const noexcept { return _devices; }
 	private:
 		InputBuffer<InputEvent> _eventBuffer;
-		Devices _devices;
 		InputContextManager _contextManager;
 
 		events::PublishToken _actionToken;

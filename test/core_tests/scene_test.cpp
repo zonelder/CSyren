@@ -15,7 +15,7 @@ struct DummyComponent {};
 class SceneTest : public ::testing::Test {
 protected:
     events::EventBus2 bus;
-    Scene scene{ bus };
+    Scene scene{};
 
 
     Entity::ID createEntityWithTestComponent(Entity::ID parent = Entity::invalidID) {

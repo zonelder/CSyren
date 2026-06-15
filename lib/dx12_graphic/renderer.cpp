@@ -145,19 +145,19 @@ namespace csyren::render
 
     void Renderer::init()
     {
-        auto& mgr = DescriptorManager::instance();
+        auto mgr = core::Services::get<DescriptorManager>();
         for (UINT i = 0; i < FrameCount; ++i)
         {
             if (DX_FAILED(_swapChain->GetBuffer(i, IID_PPV_ARGS(&_renderTargets[i]))))
                 return;
-            _rtv[i] = mgr.createRTV(_renderTargets[i].Get(), nullptr);
+            _rtv[i] = mgr->createRTV(_renderTargets[i].Get(), nullptr);
         }
 
         D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
         dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
         dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 
-        _dsv = mgr.createDSV(_depthStencil.Get(), &dsvDesc);
+        _dsv = mgr->createDSV(_depthStencil.Get(), &dsvDesc);
     }
 
     void Renderer::beginFrame()
@@ -262,7 +262,7 @@ namespace csyren::render
         if (!shader)
             return false;
 
-        auto pso = details::PSOFactory::instancePtr()->get(shaderHandle, shader, material->getStates(), vertexLayout);
+        auto pso = core::Services::get < details::PSOFactory > ()->get(shaderHandle, shader, material->getStates(), vertexLayout);
         cmdList.setPipelineState(pso);
         cmdList.setRootSignature(shader->getRootSignature());
 

@@ -1,7 +1,7 @@
 #ifndef __DESCRIPTOR_MANAGER_HPP__
 #define __DESCRIPTOR_MANAGER_HPP__
 #include "dx_main.h"
-#include "core/singleton.h"
+#include "core/services.h"
 #include "descriptor_allocation.h"
 #include "descriptor_heap.h"
 
@@ -10,12 +10,12 @@
 namespace csyren::render
 {
 
-	class CS_STATIC(DescriptorManager)
+	class DescriptorManager
 	{
 	public:
 		
 
-		void init() override;
+		void init();
 
 		// --- RTV ------------------------------------------------
 

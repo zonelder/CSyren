@@ -1,6 +1,7 @@
 #pragma once
 #include "core/serialize_common.h"
 #include "resource_manager.h"
+#include "core/services.h"
 
 namespace csyren::render
 {
@@ -36,7 +37,7 @@ namespace nlohmann
 		static void to_json(json& j, const csyren::render::TextureHandle& value)
 		{
 
-			auto& rm = csyren::render::ResourceManager::instance();
+			auto& rm = *csyren::core::Services::get<csyren::render::ResourceManager>();
 			auto& root = csyren::render::SerializationServices::getRootJson();
 			std::string resourcePath = rm.getTextureName(value);
 
@@ -70,7 +71,7 @@ namespace nlohmann
 			j.get_to(resourceID);
 
 			auto& root = csyren::render::SerializationServices::getRootJson();
-			auto& rm = csyren::render::ResourceManager::instance();
+			auto& rm = *csyren::core::Services::get<csyren::render::ResourceManager>();
 			if (!root.contains("resources"))
 			{
 				csyren::log::error("Deserialize: Texture handler was saved but resources did not set up in file.");
@@ -108,7 +109,7 @@ namespace nlohmann
 		static void to_json(json& j, const csyren::render::MeshHandle& value)
 		{
 			auto& root = csyren::render::SerializationServices::getRootJson();
-			auto& rm = csyren::render::ResourceManager::instance();
+			auto& rm = *csyren::core::Services::get<csyren::render::ResourceManager>();
 
 			std::string resourcePath = rm.getMeshName(value);
 
@@ -142,7 +143,7 @@ namespace nlohmann
 			j.get_to(resourceID);
 
 			auto& root = csyren::render::SerializationServices::getRootJson();
-			auto& rm = csyren::render::ResourceManager::instance();
+			auto& rm = *csyren::core::Services::get<csyren::render::ResourceManager>();
 
 			if (!root.contains("resources"))
 			{
@@ -180,7 +181,7 @@ namespace nlohmann
 		{
 
 			auto& root = csyren::render::SerializationServices::getRootJson();
-			auto& rm = csyren::render::ResourceManager::instance();
+			auto& rm = *csyren::core::Services::get<csyren::render::ResourceManager>();
 			std::string resourcePath = rm.getMaterialName(value);
 
 			if (!root.contains("resources"))
@@ -213,7 +214,7 @@ namespace nlohmann
 			j.get_to(resourceID);
 
 			auto& root = csyren::render::SerializationServices::getRootJson();
-			auto& rm = csyren::render::ResourceManager::instance();
+			auto& rm = *csyren::core::Services::get<csyren::render::ResourceManager>();
 
 			if (!root.contains("resources"))
 			{

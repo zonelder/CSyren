@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <memory>
 
+#include "cstdmf/assert_helpler.h"
 #include "component_base.h"
 #include "component_pool.h"
 #include "component_order.h"
@@ -13,6 +14,7 @@
 
 #include "command_buffer.h"
 #include "event_bus.h"
+#include "services.h"
 
 class SceneTest;
 
@@ -43,14 +45,14 @@ namespace csyren::core
 		T& operator*() noexcept
 		{
 			T* ptr = get();
-			assert(ptr && "Dereferencing invalid ComponentRef!");
+			CS_ASSERT(ptr && "Dereferencing invalid ComponentRef!");
 			return *ptr;
 		}
 
 		const T& operator*() const noexcept
 		{
 			const T* ptr = get();
-			assert(ptr && "Dereferencing invalid ComponentRef!");
+			CS_ASSERT(ptr && "Dereferencing invalid ComponentRef!");
 			return *ptr;
 		}
 
@@ -146,11 +148,17 @@ namespace csyren::core
 			}
 		};
 	public:
-		explicit Scene(events::EventBus2& bus) :_bus(bus)
+		explicit Scene()
 		{
-			_entityCreateToken = _bus.register_publisher<events::EntityCreateEvent>();
-			_entityDestroyToken = _bus.register_publisher<events::EntityDestroyEvent>();
+
 		};
+
+		void init()
+		{
+			_bus = core::Services::get<events::EventBus2>();
+			_entityCreateToken = _bus->register_publisher<events::EntityCreateEvent>();
+			_entityDestroyToken = _bus->register_publisher<events::EntityDestroyEvent>();
+		}
 
 		[[nodiscard]] Entity::ID createEntity(Entity::ID parent = Entity::invalidID)
 		{
@@ -179,7 +187,7 @@ namespace csyren::core
 					p->childrens.push_back(id);
 				}
 			}
-			_bus.publish(_entityCreateToken, events::EntityCreateEvent{id});
+			_bus->publish(_entityCreateToken, events::EntityCreateEvent{id});
 			return id;
 		}
 
@@ -209,7 +217,7 @@ namespace csyren::core
 			if (ptr)
 			{
 				ent->components[family] = true;
-				_bus.publish(getAddToken<T>(),
+				_bus->publish(getAddToken<T>(),
 					events::ComponentCreateEvent<T>{compRef});
 			}
 			return compRef;
@@ -265,7 +273,7 @@ namespace csyren::core
 				auto it = _meta.find(e.family);
 				if (it == _meta.end())
 					continue;
-				it->second.removeFn(this, e, it->second.removeToken, _bus);
+				it->second.removeFn(this, e, it->second.removeToken, *_bus);
 			}
 
 			DestroyComponentCommand cm;
@@ -280,11 +288,11 @@ namespace csyren::core
 					{
 						cm.entt = e.id;
 						cm.family = family;
-						m.removeFn(this, cm, m.removeToken, _bus);
+						m.removeFn(this, cm, m.removeToken, *_bus);
 					}
 				}
 
-				_bus.publish(_entityDestroyToken, events::EntityDestroyEvent{ e.id });
+				_bus->publish(_entityDestroyToken, events::EntityDestroyEvent{ e.id });
 
 				if (ent->parent != Entity::invalidID)
 				{
@@ -345,8 +353,8 @@ namespace csyren::core
 		{
 			const size_t family = reflection::ComponentFamily::getID<T>();
 			ComponentMeta& m = _meta[family];
-			m.addToken = _bus.register_publisher<events::ComponentCreateEvent<T>>();
-			m.removeToken = _bus.register_publisher<events::ComponentDestroyEvent<T>>();
+			m.addToken = _bus->register_publisher<events::ComponentCreateEvent<T>>();
+			m.removeToken = _bus->register_publisher<events::ComponentDestroyEvent<T>>();
 			m.removeFn = &ComponentOps<T>::destroyThunk;
 		}
 		template<typename T>
@@ -377,7 +385,7 @@ namespace csyren::core
 		events::PublishToken _entityCreateToken;
 		events::PublishToken _entityDestroyToken;
 
-		events::EventBus2& _bus;
+		events::EventBus2* _bus;
 		//
 	};
 

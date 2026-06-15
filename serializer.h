@@ -1,6 +1,5 @@
 #pragma once
 #include <string>
-#include "core/singleton.h"
 
 namespace csyren::core
 {
@@ -46,7 +45,7 @@ namespace csyren
         std::string path;
     };
 
-    class CS_STATIC(Serializer)
+    class Serializer
     {
     public:
         bool loadScene(const std::string& filepath, core::Scene & scene);

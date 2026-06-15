@@ -1,5 +1,6 @@
 #ifndef __CSYREN_INPUT__
 #define __CSYREN_INPUT__
+
 #include "keyboard_device.h"
 #include "mouse_device.h"
 

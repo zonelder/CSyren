@@ -15,7 +15,6 @@
 #include "dx12_graphic/material.h"
 
 #include "core/event_bus.h"
-#include "core/context.h"
 #include "core/time.h"
 #include "core/camera.h"
 #include "core/transform.h"
@@ -73,9 +72,7 @@ namespace csyren
 {
 	Application::Application() :
 		_window(1200, 786, L"csyren engine"),
-		_inputDispatcher(),
-		_bus(std::make_unique<csyren::core::events::EventBus2>()),
-		_scene(*_bus)
+		_inputDispatcher()
 	{
 	}
 
@@ -84,63 +81,65 @@ namespace csyren
 
 	bool Application::init()
 	{
+		return true;
+	}
+
+	int Application::run()
+	{
 		log::init();
 		log::info("-------------------------------------Init Application-------------------------------------");
 		auto hWnd = _window.init();
 		if (!hWnd) { return false; }
 		_window.setInputDispatcher(&_inputDispatcher);
 
-		core::details::SingletonRegistry::add<render::DescriptorManager>();
-		core::details::SingletonRegistry::add<render::Renderer>();
-		if (!render::Renderer::instance().earlyInit(hWnd, _window.width(), _window.height()))
+		using namespace core::components;
+		core::details::TimeHandler timeHandler;
+
+		core::Entity::ID currentCameraEntt;
+
+		core::details::ServiceRegistry::create<core::Time>();
+		core::details::ServiceRegistry::create< core::CameraContextService>([&currentCameraEntt]() { return currentCameraEntt; });
+		core::details::ServiceRegistry::create<core::events::EventBus2>();
+		core::details::ServiceRegistry::create<core::Scene>();
+		core::details::ServiceRegistry::create<Serializer>();
+		core::details::ServiceRegistry::create<physics::PhysicsEngine>();
+		core::details::ServiceRegistry::create<core::input::Devices>();
+		core::details::ServiceRegistry::create<render::DescriptorManager>();
+		core::details::ServiceRegistry::create<render::Renderer>();
+		if (!core::Services::get<render::Renderer>()->earlyInit(hWnd, _window.width(), _window.height()))
 		{
 			return false;
 		}
-		core::details::SingletonRegistry::add<render::ResourceManager>();
-		core::details::SingletonRegistry::add<render::details::PSOFactory>();
 
-		core::details::SingletonRegistry::add<Serializer>();
-		_inputDispatcher.init(*_bus);
-		core::details::SingletonRegistry::initializeAll();
+		core::details::ServiceRegistry::create<render::ResourceManager>();
+		core::details::ServiceRegistry::create<render::details::PSOFactory>();
+
+		auto bus = core::Services::get<core::events::EventBus2>();
+		auto renderer = core::Services::get<render::Renderer>();
+		auto scene = core::Services::get<core::Scene>();
+		auto time = core::Services::get<core::Time>();
+
+		_inputDispatcher.init(*bus);
+		core::details::ServiceRegistry::initializeAll();
 		log::info("-------------------------------------------------------------------------------------------");
-		return true;
-	}
-
-	int Application::run()
-	{
-
 		_window.show();
 		MSG msg = { 0 };
 
 		const FLOAT clearColor[4] = { 0.1f, 0.1f, 0.3f, 1.0f };
 
-		core::Time time;
-		using namespace core::components;
-		core::details::TimeHandler timeHandler;
-
-		core::Entity::ID currentCameraEntt;
-		core::CameraContextService cameraServ([&currentCameraEntt]() { return currentCameraEntt; });
-		core::ServiceContext ctx;
-
-		ctx.registerService(&_inputDispatcher.devices());
-		ctx.registerService(&_scene);
-		ctx.registerService(_bus.get());
-		ctx.registerService(&time);
-		ctx.registerService(&cameraServ);
-		ctx.registerService(&_physics);
-
 		log::info("-------------------------------Setup Start Up------------------------------------------------");
-		render::Renderer::instance().beginResourceUpload();
-		render::Primitives::registerFabricsAll();
-		onSceneStart(ctx);
-		_systems.init(ctx);
 
-		render::Renderer::instance().endResourceUpload();
+		renderer->beginResourceUpload();
+		render::Primitives::registerFabricsAll();
+		onSceneStart();
+		_systems.init();
+
+		renderer->endResourceUpload();
 		log::info("---------------------------------------------------------------------------------------------");
 		log::info("-------------------------------Run Game Loop-------------------------------------------------");
 		while (true)
 		{
-			timeHandler.update(time);
+			timeHandler.update(*time);
 			_window.preMessagePump();
 			while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
 			{
@@ -149,9 +148,9 @@ namespace csyren
 					log::info("---------------------------------------------------------------------------------------------");
 
 					log::info("-------------------------------Shutdown------------------------------------------------------");
-					_systems.shutdown(ctx);
-					_inputDispatcher.shutdown(*_bus);
-					core::details::SingletonRegistry::shutdownAll();
+					_systems.shutdown();
+					_inputDispatcher.shutdown(*bus);
+					core::details::ServiceRegistry::shutdownAll();
 					log::shutdown();
 					return static_cast<int>(msg.wParam);
 				}
@@ -159,13 +158,12 @@ namespace csyren
 				DispatchMessage(&msg);
 			}
 
-			_inputDispatcher.update(*_bus);
-			_systems.update(ctx);
-			auto& renderer = render::Renderer::instance();
-			auto [mainCameraID,camera,cameraTransform] = *(_scene.view<Camera,Transform>().begin());//only first camera accepted
+			_inputDispatcher.update(*bus);
+			_systems.update();
+			auto [mainCameraID,camera,cameraTransform] = *(scene->view<Camera,Transform>().begin());//only first camera accepted
 			currentCameraEntt = mainCameraID;
-			auto engineVariables = renderer.getEngineVariableBuffer();
-			engineVariables->totalTime = time.totalTime();
+			auto engineVariables = renderer->getEngineVariableBuffer();
+			engineVariables->totalTime = time->totalTime();
 			DirectX::XMMATRIX invView = cameraTransform.world();
 			DirectX::XMStoreFloat4x4(&engineVariables->invViewMatrix, invView);
 
@@ -182,25 +180,25 @@ namespace csyren
 			DirectX::XMStoreFloat4x4(&engineVariables->viewProjectionMatrix, viewProj);
 
 			float rotationSpeed = DirectX::XM_2PI / 10.0f;
-			float angle = time.totalTime() * rotationSpeed;
+			float angle = time->totalTime() * rotationSpeed;
 			DirectX::XMVECTOR baseDir = DirectX::XMVectorSet(0.3f, -1.0f, 0.3f, 0.0f);
 			DirectX::XMMATRIX rot = DirectX::XMMatrixRotationZ(angle);
 			DirectX::XMVECTOR rotatedDir = DirectX::XMVector3TransformNormal(baseDir, rot);
 			rotatedDir = DirectX::XMVector3Normalize(rotatedDir);
 			DirectX::XMStoreFloat4(&engineVariables->lightDirection, rotatedDir);
 
-			render::ResourceManager::instance().update();
-			renderer.beginFrame();
-			ID3D12DescriptorHeap* heaps[] = { render::DescriptorManager::instance().shaderHeap() };
-			renderer.commandList()->SetDescriptorHeaps(1, heaps);
-			renderer.clear(&(camera.background.x));
+			core::Services::get<render::ResourceManager>()->update();
+			renderer->beginFrame();
+			ID3D12DescriptorHeap* heaps[] = { core::Services::get<render::DescriptorManager>()->shaderHeap()};
+			renderer->commandList()->SetDescriptorHeaps(1, heaps);
+			renderer->clear(&(camera.background.x));
 
-			_systems.onFrame(ctx);
+			_systems.onFrame();
 
-			renderer.endFrame();
+			renderer->endFrame();
 
-			_scene.flush();
-			_bus->commit_batch();
+			scene->flush();
+			bus->commit_batch();
 		}
 	}
 
@@ -208,13 +206,15 @@ namespace csyren
 	/**
 	 * @brief method where you can place you custom scene initialization.
 	 */
-	void Application::onSceneStart(core::ServiceContext& ctx)
+	void Application::onSceneStart()
 	{
 
 		srand(time(0));
 		using namespace core::components;
 		using namespace render::components;
-		auto& res = render::ResourceManager::instance();
+		auto res = core::Services::get<render::ResourceManager>();
+		auto scene = core::Services::get<core::Scene>();
+		auto bus = core::Services::get<core::events::EventBus2>();
 		//-----------------------------init systems---------------------------------------------------
 		//
 		//--------------------------------------------------------------------------------------------
@@ -239,16 +239,16 @@ namespace csyren
 
 		//------------------------------------LOAD SCENE------------------------------------------------
 
-		auto texture = res.get<render::Texture>("E:\\stalker_online_git\\res\\textures\\default\\red.dds");
+		auto texture = res->get<render::Texture>("E:\\stalker_online_git\\res\\textures\\default\\red.dds");
 
-		auto texture1 = res.get<render::Texture>("E:\\stalker_online_git\\res\\textures\\default\\white.dds");
+		auto texture1 = res->get<render::Texture>("E:\\stalker_online_git\\res\\textures\\default\\white.dds");
 
-		auto texture2 = res.get<render::Texture>("E:\\stalker_online_git\\res\\textures\\materials\\carpet\\carpet04.dds");
+		auto texture2 = res->get<render::Texture>("E:\\stalker_online_git\\res\\textures\\materials\\carpet\\carpet04.dds");
 		//------------------------------------Camera----------------------------------------------------
-		auto mainCameraEntt = _scene.createEntity();
-		auto mainCamera = _scene.addComponent<Camera>(mainCameraEntt);
-		auto cameraTransform = _scene.addComponent<Transform>(mainCameraEntt);
-		auto editorCameraController = _scene.addComponent<EditorCameraController>(mainCameraEntt);
+		auto mainCameraEntt = scene->createEntity();
+		auto mainCamera = scene->addComponent<Camera>(mainCameraEntt);
+		auto cameraTransform = scene->addComponent<Transform>(mainCameraEntt);
+		auto editorCameraController = scene->addComponent<EditorCameraController>(mainCameraEntt);
 		editorCameraController->movementSpeed = 1.0f;
 		mainCamera->aspectRatio = _window.width() / _window.height();
 		mainCamera->background = math::Vector4{ 1.f,0.0f,0.0f,1.0f };
@@ -258,8 +258,8 @@ namespace csyren
 		auto matDefault = render::Primitives::getDefaultMaterial();
 		//*
 		auto matRainbow = render::Primitives::getRainbowMaterial();
-		res.getMaterial(matDefault)->setVector("tint", DirectX::XMFLOAT4(1, 1, 1,1));
-		res.getMaterial(matRainbow)->setVector("tint", DirectX::XMFLOAT4(1, 1, 1, 1));
+		res->getMaterial(matDefault)->setVector("tint", DirectX::XMFLOAT4(1, 1, 1,1));
+		res->getMaterial(matRainbow)->setVector("tint", DirectX::XMFLOAT4(1, 1, 1, 1));
 		auto meshQuad = render::Primitives::getQuad();
 		auto meshCube = render::Primitives::getCube();
 		/*
@@ -294,8 +294,8 @@ namespace csyren
 
 
 		//---------------------------------------------------------------------------------------------
-		auto saveComponent = _scene.createEntity();
-		auto saveReq = _scene.addComponent<SceneLoaderRequest>(saveComponent);
+		auto saveComponent = scene->createEntity();
+		auto saveReq = scene->addComponent<SceneLoaderRequest>(saveComponent);
 		saveReq->type = SceneLoaderRequest::SAVE;
 		saveReq->path = "E:\\test_scene.scene";
 
@@ -304,15 +304,15 @@ namespace csyren
 		float containerHalfZ = 5.0f;
 		float wallThickness = 0.5f;
 		auto createInvisibleWall = [&](Vector3 position, Vector3 size) {
-			auto wall = _scene.createEntity();
-			auto tr = _scene.addComponent<core::components::Transform>(wall);
+			auto wall = scene->createEntity();
+			auto tr = scene->addComponent<core::components::Transform>(wall);
 			tr->position = position;
 			tr->scale = size;
 
-			auto collider = _scene.addComponent<physics::BoxCollider>(wall);
+			auto collider = scene->addComponent<physics::BoxCollider>(wall);
 			collider->size = size;
 
-			auto rb = _scene.addComponent<physics::RigidBody>(wall, physics::RigidBody{ physics::BodyType::Static });
+			auto rb = scene->addComponent<physics::RigidBody>(wall, physics::RigidBody{ physics::BodyType::Static });
 			};
 
 		createInvisibleWall(Vector3{ -containerHalfX - wallThickness / 2, containerHalfY / 2, 0 }, Vector3{ wallThickness, containerHalfY * 2, containerHalfZ * 2 });
@@ -322,34 +322,34 @@ namespace csyren
 		createInvisibleWall(Vector3{ 0, containerHalfY / 2, containerHalfZ + wallThickness / 2 }, Vector3{ containerHalfX * 2, containerHalfY * 2, wallThickness });
 
 
-		auto ground = _scene.createEntity();
-		auto box = _scene.createEntity();
+		auto ground = scene->createEntity();
+		auto box = scene->createEntity();
 
 		{
-			auto tr = _scene.addComponent<core::components::Transform>(ground);
+			auto tr = scene->addComponent<core::components::Transform>(ground);
 			tr->position = Vector3{ 0.0f, -1.0f, 0.0f };
 			tr->scale = Vector3(10, 1, 10);
-			auto collider = _scene.addComponent<physics::BoxCollider>(ground);
+			auto collider = scene->addComponent<physics::BoxCollider>(ground);
 			collider->size = Vector3{ 10.0f, 1.0f, 10.0f };
-			auto rb = _scene.addComponent<physics::RigidBody>(ground, physics::RigidBody{ physics::BodyType::Static });
-			auto cubeRenderer = _scene.addComponent<render::components::MeshRenderer>(ground);
+			auto rb = scene->addComponent<physics::RigidBody>(ground, physics::RigidBody{ physics::BodyType::Static });
+			auto cubeRenderer = scene->addComponent<render::components::MeshRenderer>(ground);
 			cubeRenderer->material = matDefault;
-			auto cubeMesh = _scene.addComponent<render::components::MeshFilter>(ground);
+			auto cubeMesh = scene->addComponent<render::components::MeshFilter>(ground);
 			cubeMesh->mesh = meshCube;
 		}
 
 		{
 			//*
-			auto textured = _scene.createEntity();
+			auto textured = scene->createEntity();
 
-			auto tr = _scene.addComponent<core::components::Transform>(textured);
+			auto tr = scene->addComponent<core::components::Transform>(textured);
 			tr->rotation = Quaternion::euler(-45, 0, 0);
 			tr->scale = Vector3(3, 1, 3);
-			auto renderer = _scene.addComponent<render::components::MeshRenderer>(textured);
+			auto renderer = scene->addComponent<render::components::MeshRenderer>(textured);
 			renderer->material = render::Primitives::getTextureMaterial();
-			auto mat = res.getMaterial(renderer->material);
+			auto mat = res->getMaterial(renderer->material);
 			mat->setTexture("diffuseTexture", texture2);
-			auto mesh = _scene.addComponent<render::components::MeshFilter>(textured);
+			auto mesh = scene->addComponent<render::components::MeshFilter>(textured);
 			mesh->mesh = render::Primitives::getQuad();
 			//*/
 		}
@@ -367,8 +367,8 @@ namespace csyren
 			for (int y = 0; y < numCubesY; ++y)
 				for (int z = 0; z < numCubesZ; ++z)
 				{
-					auto cube = _scene.createEntity();
-					auto tr = _scene.addComponent<core::components::Transform>(cube);
+					auto cube = scene->createEntity();
+					auto tr = scene->addComponent<core::components::Transform>(cube);
 					tr->position = Vector3{
 						(x - numCubesX / 2) * spacing,
 						1.0f + y * spacing,
@@ -384,17 +384,17 @@ namespace csyren
 					tr->rotation = math::Quaternion::euler(Vector3{ angleX, angleY, angleZ });
 
 
-					auto collider = _scene.addComponent<physics::BoxCollider>(cube);//should be a bug here as physic cant update this data.
+					auto collider = scene->addComponent<physics::BoxCollider>(cube);//should be a bug here as physic cant update this data.
 					collider->size = scale;
-					auto rb = _scene.addComponent<physics::RigidBody>(cube, templateRB);
-					auto meshRenderer = _scene.addComponent<render::components::MeshRenderer>(cube);
+					auto rb = scene->addComponent<physics::RigidBody>(cube, templateRB);
+					auto meshRenderer = scene->addComponent<render::components::MeshRenderer>(cube);
 					meshRenderer->material = matRainbow;
-					auto meshFilter = _scene.addComponent<render::components::MeshFilter>(cube);
+					auto meshFilter = scene->addComponent<render::components::MeshFilter>(cube);
 					meshFilter->mesh = meshCube;
 				}
 		//*/
 		//*
-		_bus->subscribe<core::input::InputEvent>(static_cast<uint32_t>(core::input::InputEvent::Type::KeyDown), [&](core::input::InputEvent& event)
+		bus->subscribe<core::input::InputEvent>(static_cast<uint32_t>(core::input::InputEvent::Type::KeyDown), [&](core::input::InputEvent& event)
 			{
 				using namespace core::components;
 				using namespace physics;
@@ -403,7 +403,7 @@ namespace csyren
 				{
 					return;
 				}
-				auto camServ = ctx.get<core::CameraContextService>();
+				auto camServ = core::Services::get<core::CameraContextService>();
 				auto cameraEntity = camServ->get();
 				if (cameraEntity == core::Entity::invalidID) 
 				{
@@ -411,7 +411,7 @@ namespace csyren
 					return;
 				}
 
-				auto camTr = _scene.getComponent<Transform>(cameraEntity);
+				auto camTr = scene->getComponent<Transform>(cameraEntity);
 				if (!camTr)
 				{
 					log::warning("Camera has no Transform!");
@@ -425,14 +425,14 @@ namespace csyren
 				Vector3 shootDir = world.forward();
 				Vector3 velocity = shootDir * 15.0f;
 				
-				auto cube = _scene.createEntity();
-				auto tr = _scene.addComponent<Transform>(cube);
+				auto cube = scene->createEntity();
+				auto tr = scene->addComponent<Transform>(cube);
 
 				tr->position = spawnPos;
 				tr->rotation = camTr->rotation;
 				tr->scale = Vector3(0.3f, 0.3f, 0.3f);
 
-				auto collider = _scene.addComponent<BoxCollider>(cube);
+				auto collider = scene->addComponent<BoxCollider>(cube);
 				collider->size = Vector3(0.3f, 0.3f, 0.3f);
 
 				RigidBody rb;
@@ -441,11 +441,11 @@ namespace csyren
 				rb.linearVelocity = velocity;
 				rb.useGravity = true;
 
-				_scene.addComponent<RigidBody>(cube,rb);
+				scene->addComponent<RigidBody>(cube,rb);
 
-				auto meshRenderer = _scene.addComponent<MeshRenderer>(cube);
+				auto meshRenderer = scene->addComponent<MeshRenderer>(cube);
 				meshRenderer->material = cubeMat;
-				auto meshFilter = _scene.addComponent<MeshFilter>(cube);
+				auto meshFilter = scene->addComponent<MeshFilter>(cube);
 				meshFilter->mesh = cubeMesh;
 
 				log::debug("Cube spawned at {}, {}, {}", spawnPos.x, spawnPos.y, spawnPos.z);

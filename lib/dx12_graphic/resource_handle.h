@@ -1,6 +1,8 @@
 #pragma once
 #include "forward_decl.h"
 #include <limits>
+#include <cstdint>
+#include <vector>//for hash
 
 namespace csyren::render
 {
@@ -23,7 +25,8 @@ namespace csyren::render
 
 }
 
-namespace std {
+namespace std 
+{
     template<typename T>
     struct hash<csyren::render::THandle<T>>
     {

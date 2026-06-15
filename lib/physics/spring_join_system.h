@@ -2,6 +2,7 @@
 #include "core/system_base.h"
 #include "core/scene.h"
 #include "core/transform.h"
+#include "core/services.h"
 
 #include "rigid_body.h"
 #include "spring_join.h"
@@ -12,10 +13,11 @@ namespace csyren::physics
 	class SpringJoinSystem : public core::System
 	{
 	public:
-		void update(core::ServiceContext& ctx) override
+		void update() override
 		{
-			auto physicEngine = ctx.get<PhysicsEngine>();
-			auto scene = ctx.get<core::Scene>();
+			using ctx = core::Services;
+			auto physicEngine = ctx::get<PhysicsEngine>();
+			auto scene = ctx::get<core::Scene>();
 			auto view = scene->view<core::components::Transform,RigidBody, SpringJoin>();
 			for (auto [ent,trA, rb, join] : view )
 			{

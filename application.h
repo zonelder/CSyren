@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/context.h"
+
 #include "core/window.h"
 #include "core/scene.h"
 #include "core/system_manager.h"
@@ -33,15 +33,12 @@ namespace csyren
 		bool init();
 		int	 run();
 
-		void onSceneStart(core::ServiceContext& ctx);
+		void onSceneStart();
 
 	private:
-		std::unique_ptr<core::events::EventBus2>	_bus;
 		core::input::InputDispatcher				_inputDispatcher;
-		core::Scene									_scene;
 		core::SystemManager							_systems;
 		core::Window								_window;
-
 		physics::PhysicsEngine						_physics;
 	};
 }

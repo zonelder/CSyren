@@ -1,6 +1,5 @@
 #pragma once
 
-#include "core/context.h"
 #include "core/entity.h"
 #include "core/system_base.h"
 
@@ -12,9 +11,9 @@ namespace csyren::physics
     {
     public:
         PhysicsSystem() = default;
-        void init(core::ServiceContext& ctx) override;
-        void update(core::ServiceContext& ctx) override;
-        void shutdown(core::ServiceContext& ctx) override;
+        void init() override;
+        void update() override;
+        void shutdown() override;
 
     };
     class PhysicsEngine

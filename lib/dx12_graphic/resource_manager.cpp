@@ -1,3 +1,5 @@
+#include "resource_manager.h"
+#include "resource_manager.h"
 #include "pch.h"
 #include "resource_manager.h"
 
@@ -24,6 +26,18 @@ namespace csyren::render
     MaterialHandle ResourceManager::createMaterial(const std::string& name, ShaderHandle shader, const MaterialStateDesc& states)
     {
         return _materialStorage.load(name, shader, states);
+    }
+    void csyren::render::ResourceManager::shutdown()
+    {
+        _proceduralMeshFactories.clear();
+        _proceduralTextureFactories.clear();
+        _proceduralShaderFactories.clear();
+        _proceduralMaterialFactories.clear();
+        _meshStorage.unloadAll();
+        _textureStorage.unloadAll();
+        _materialStorage.unloadAll();
+        _shaderStorage.unloadAll();
+        log::debug("All resources unloaded.");
     }
 }
 
