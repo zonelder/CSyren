@@ -6,7 +6,7 @@
 #include "material.h" // Äëÿ MaterialStateDesc
 #include "shader.h"
 #include "vertex_layout.h"
-#include "singleton.h"
+#include "core/singleton.h"
 
 namespace
 {
@@ -39,10 +39,7 @@ namespace csyren::render::details
 	public:
 		PSOFactory() noexcept = default;
 
-		void init(ID3D12Device* device) override
-		{
-			_device = device;
-		}
+		void init() override;
 
 		ID3D12PipelineState* try_get(GraphicShader* shader, const MaterialStateDesc& desc);
 		ID3D12PipelineState* get(ShaderHandle sh,GraphicShader* shader, const MaterialStateDesc& desc,const VertexLayout& vertexLayout);

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "forward_decl.h"
-#include "singleton.h"
+#include "core/singleton.h"
 #include "resource_handle.h"
 #include "mesh.h"
 #include "texture.h"
@@ -266,7 +266,7 @@ namespace csyren::render
         }
 
         //main loop shoud call this method for handling optimizations;
-        void init(ID3D12Device*) override;
+        void init() override;
 
         void shutdown() override
         {

@@ -195,7 +195,6 @@
     <ClInclude Include="primitives.h" />
     <ClInclude Include="renderer.h" />
     <ClInclude Include="render_queue.h" />
-    <ClInclude Include="singleton.h" />
     <ClInclude Include="resources.h" />
     <ClInclude Include="resource_handle.h" />
     <ClInclude Include="resource_manager.h" />
@@ -221,6 +220,7 @@
   <ItemGroup>
     <ClCompile Include="command_list.cpp" />
     <ClCompile Include="constant_buffer.cpp" />
+    <ClCompile Include="descriptors.cpp" />
     <ClCompile Include="descriptor_heap_manager.cpp" />
     <ClCompile Include="material.cpp" />
     <ClCompile Include="mesh.cpp" />

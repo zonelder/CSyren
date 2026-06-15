@@ -1,7 +1,6 @@
 #pragma once
 #include <string>
-
-#include "dx12_graphic/singleton.h"
+#include "core/singleton.h"
 
 namespace csyren::core
 {

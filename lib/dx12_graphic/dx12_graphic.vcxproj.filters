@@ -156,9 +156,6 @@
     <ClInclude Include="descriptors.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="singleton.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="descriptor_allocation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -231,6 +228,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="render_queue.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="descriptors.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -8,7 +8,11 @@ inline void hash_combine(std::size_t& seed, std::size_t hash)
 
 namespace csyren::render::details
 {
-	ID3D12PipelineState* PSOFactory::get(ShaderHandle sh,GraphicShader* shader, const MaterialStateDesc& states,const VertexLayout& vertexLayout)
+    void PSOFactory::init()
+    {
+        _device = Renderer::instance().device();
+    }
+    ID3D12PipelineState* PSOFactory::get(ShaderHandle sh,GraphicShader* shader, const MaterialStateDesc& states,const VertexLayout& vertexLayout)
 	{
         PSOKey key{ sh, states,vertexLayout.getHash()};
 

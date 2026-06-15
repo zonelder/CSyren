@@ -143,7 +143,7 @@ namespace csyren::render
         return true;
     }
 
-    void Renderer::init(ID3D12Device* device)
+    void Renderer::init()
     {
         auto& mgr = DescriptorManager::instance();
         for (UINT i = 0; i < FrameCount; ++i)

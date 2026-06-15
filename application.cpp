@@ -101,7 +101,7 @@ namespace csyren
 
 		render::details::SingletonRegistry::add<Serializer>();
 		_inputDispatcher.init(*_bus);
-		render::details::SingletonRegistry::initializeAll(render::Renderer::instance().device());
+		render::details::SingletonRegistry::initializeAll();
 		log::info("-------------------------------------------------------------------------------------------");
 		return true;
 	}

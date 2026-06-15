@@ -1,7 +1,7 @@
 #ifndef __DESCRIPTOR_MANAGER_HPP__
 #define __DESCRIPTOR_MANAGER_HPP__
 #include "dx_main.h"
-#include "singleton.h"
+#include "core/singleton.h"
 #include "descriptor_allocation.h"
 #include "descriptor_heap.h"
 
@@ -10,23 +10,12 @@
 namespace csyren::render
 {
 
-	class DescriptorManager : public Singleton<DescriptorManager>
+	class CS_STATIC(DescriptorManager)
 	{
 	public:
 		
 
-		void init(ID3D12Device* device) override
-		{
-			CS_ASSERT(device != nullptr);
-			_device = device;
-			rtvHeap_.init(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 256, false);
-
-			dsvHeap_.init(device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 64, false);
-
-			// One SRV (or UAV/CBV slot) per allocation; large worlds / ME stress tests can hold
-			// many live textures plus materials and buffers. 2048 overflowed bindless-style use.
-			srvHeap_.init(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, kShaderVisibleSrvUavHeapCapacity, true);
-		}
+		void init() override;
 
 		// --- RTV ------------------------------------------------
 

@@ -26,7 +26,7 @@
 #include "render_queue.h"
 #include "descriptor_allocation.h"
 
-#include "singleton.h"
+#include "core/singleton.h"
 
 
 namespace csyren::render
@@ -57,7 +57,7 @@ namespace csyren::render
 		Renderer& operator=(const Renderer&) = delete;
 
 		bool earlyInit(HWND hwnd, UINT width, UINT height);
-		void init(ID3D12Device* device) override;
+		void init() override;
 		void beginFrame();
 		void clear(const FLOAT color[4]);
 		void endFrame();

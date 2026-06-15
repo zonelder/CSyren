@@ -4,7 +4,7 @@
 namespace csyren::render
 {
 
-    void ResourceManager::init(ID3D12Device* device)
+    void ResourceManager::init()
     {
         if (!_pUploadThread)
             _pUploadThread = std::make_unique<ResourceUploadThread>();
