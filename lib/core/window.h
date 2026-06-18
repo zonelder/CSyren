@@ -1,12 +1,14 @@
 #ifndef __CSYREN_WINDOW__
 #define __CSYREN_WINDOW__
 #include <Windows.h>
-#include  "input_dispatcher.h"
+#include "dispatch_handle.h"
+
 
 namespace csyren::core
 {
 	class Window
 	{
+		friend details::DispatchHandle;
 	public:
 		Window(int width, int height, const wchar_t* name) noexcept;
 
@@ -51,6 +53,12 @@ namespace csyren::core
 		{
 			return !!_dispatcher;
 		}
+
+		void setDispatchHandle(details::DispatchHandle* d)
+		{
+			_dispatcher = d;
+		}
+
 	private:
 		static constexpr  const wchar_t* _wndCLassName = L"CSyrenWindowClass";
 		HINSTANCE _hInst;
@@ -58,7 +66,7 @@ namespace csyren::core
 		int _height;
 		const wchar_t* _title;
 		HWND _hWnd;
-		input::InputDispatcher* _dispatcher;
+		details::DispatchHandle* _dispatcher;
 		bool _shiftDown = false;
 		bool _ctrlDown = false;
 		bool _altDown = false;

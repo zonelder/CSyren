@@ -33,7 +33,7 @@ namespace csyren::core::input
 		bool isButtonDown(MouseButton button) const noexcept { return getState(button); }
 		bool isButtonUp(MouseButton button) const noexcept { return !getState(button); }
 
-		// For internal use by InputDispatcher to generate events
+		// For internal use by InputDispatchSystem to generate events
 		void setButtonState(MouseButton button, bool isDown)
 		{
 			_buttonStates[static_cast<size_t>(button)] = isDown;

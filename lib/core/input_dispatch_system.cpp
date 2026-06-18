@@ -1,13 +1,14 @@
 #include "pch.h"
-#include "input_dispatcher.h"
+#include "input_dispatch_system.h"
 #include "services.h"
 
-namespace csyren::core::input
+namespace csyren::core
 {
-	void InputDispatcher::init()
+	void InputDispatchSystem::init()
 	{
+		setToMainWindow();
 		auto bus = Services::get<events::EventBus2>();
-		_actionToken = bus->register_publisher<InputAction>();
+		_actionToken = bus->register_publisher<input::InputAction>();
 
 		using EventType = input::InputEvent::Type;
 		_tokens[static_cast<uint32_t>(EventType::KeyDown)] =			bus->register_publisher<input::InputEvent>(static_cast<uint32_t>(EventType::KeyDown));
@@ -18,10 +19,10 @@ namespace csyren::core::input
 		_tokens[static_cast<uint32_t>(EventType::MouseMove)] =			bus->register_publisher<input::InputEvent>(static_cast<uint32_t>(EventType::MouseMove));
 	}
 
-	void InputDispatcher::update()
+	void InputDispatchSystem::update()
 	{
-		InputAction action{ "","" };
-		auto devices = Services::get<Devices>();
+		input::InputAction action{ "","" };
+		auto devices = Services::get<input::Devices>();
 		auto bus = Services::get<events::EventBus2>();
 		devices->preUpdate();
 		while (!_eventBuffer.empty())
@@ -46,7 +47,7 @@ namespace csyren::core::input
 
 
 
-	void InputDispatcher::shutdown()
+	void InputDispatchSystem::shutdown()
 	{
 		auto bus = Services::get<events::EventBus2>();
 		bus->unregister_publisher(_actionToken);

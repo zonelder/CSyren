@@ -4,11 +4,16 @@
 #include "keyboard_device.h"
 #include "mouse_device.h"
 
+namespace csyren::core
+{
+	class InputDispatchSystem;
+}
+
 namespace csyren::core::input
 {
 	class Devices
 	{
-		friend class InputDispatcher;
+		friend InputDispatchSystem;
 	public:
 
 		const KeyboardDevice& keyboard() const noexcept { return _keyboard; }

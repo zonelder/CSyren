@@ -18,9 +18,9 @@
 #include "core/time.h"
 #include "core/camera.h"
 #include "core/transform.h"
-#include "core/input_dispatcher.h"
 #include "core/camera_service.h"
 
+#include "core/input_dispatch_system.h"
 #include "mesh_render_system.h"
 #include "editor_camera_controller_system.h"
 #include "debug_rotator_system.h"
@@ -93,7 +93,6 @@ namespace csyren
 		core::Entity::ID currentCameraEntt;
 
 		core::details::ServiceRegistry::create<core::Window>(1200, 786, L"csyren engine");
-		core::details::ServiceRegistry::create<core::input::InputDispatcher>();
 		core::details::ServiceRegistry::create<core::Time>();
 		core::details::ServiceRegistry::create<core::CameraContextService>([&currentCameraEntt]() { return currentCameraEntt; });
 		core::details::ServiceRegistry::create<core::events::EventBus2>();
@@ -111,7 +110,6 @@ namespace csyren
 		auto scene = core::Services::get<core::Scene>();
 		auto time = core::Services::get<core::Time>();
 		auto window = core::Services::get<core::Window>();
-		auto inputDispatcher = core::Services::get<core::input::InputDispatcher>();
 		core::details::ServiceRegistry::initializeAll();
 		log::info("-------------------------------------------------------------------------------------------");
 		log::info("-------------------------------Setup Start Up------------------------------------------------");
@@ -140,7 +138,6 @@ namespace csyren
 
 					log::info("-------------------------------Shutdown------------------------------------------------------");
 					_systems.shutdown();
-					inputDispatcher->shutdown();
 					core::details::ServiceRegistry::shutdownAll();
 					log::shutdown();
 					return static_cast<int>(msg.wParam);
@@ -149,7 +146,6 @@ namespace csyren
 				DispatchMessage(&msg);
 			}
 
-			inputDispatcher->update();
 			_systems.update();
 			auto [mainCameraID,camera,cameraTransform] = *(scene->view<Camera,Transform>().begin());//only first camera accepted
 			currentCameraEntt = mainCameraID;
@@ -216,8 +212,10 @@ namespace csyren
 		auto meshRenderSystem				= std::make_shared<csyren::MeshRenderSystem>();
 		auto physicSystem					= std::make_shared<csyren::physics::PhysicsSystem>();
 		auto springJoinSystem				= std::make_shared<csyren::physics::SpringJoinSystem>();
+		auto idSystem						= std::make_shared<csyren::core::InputDispatchSystem>();
 
 		//----------------------------technical systems block-----------------------------------------
+		_systems.addSystem(idSystem, -200);
 		_systems.addSystem(sceneLoaderSystem, -100);
 		//--------------------------------------------------------------------------------------------
 		//----------------------------physical systems block------------------------------------------

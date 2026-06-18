@@ -72,7 +72,6 @@ namespace csyren::core
 
 	void Window::init()
 	{
-		_dispatcher = core::Services::get<input::InputDispatcher>();
 	}
 
 	// Static message handler (called by OS)

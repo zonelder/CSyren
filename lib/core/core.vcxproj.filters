@@ -45,7 +45,7 @@
     <ClInclude Include="keyboard_device.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="input_dispatcher.h">
+    <ClInclude Include="input_dispatch_system.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="input_enums.h">
@@ -114,6 +114,9 @@
     <ClInclude Include="time.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="dispatch_handle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -122,8 +125,11 @@
     <ClCompile Include="window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="input_dispatcher.cpp">
+    <ClCompile Include="input_dispatch_system.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dispatch_handle.cpp">
+      <Filter>Header Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
