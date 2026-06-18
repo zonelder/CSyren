@@ -29,6 +29,7 @@
     <ClInclude Include="mesh_filter.h" />
     <ClInclude Include="scene_loader.h" />
     <ClInclude Include="serializer.h" />
+    <ClInclude Include="system_registrator.h" />
     <ClInclude Include="todo.h" />
   </ItemGroup>
   <ItemGroup>

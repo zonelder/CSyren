@@ -3,6 +3,7 @@
 
 namespace csyren::core
 {
+    class SystemManager;
     class Scene;
 }
 
@@ -48,6 +49,9 @@ namespace csyren
     class Serializer
     {
     public:
+
+        bool loadSystems(const std::string& path, core::SystemManager& systems);
+        bool saveSystems(const std::string& path,const core::SystemManager& systems);
         bool loadScene(const std::string& filepath, core::Scene & scene);
         bool saveScene(const std::string& filepath, core::Scene & scene);
     };

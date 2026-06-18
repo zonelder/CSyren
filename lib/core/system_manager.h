@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <memory>
+#include <string_view>
 
 namespace csyren::core
 {
@@ -12,19 +13,27 @@ namespace csyren::core
 		struct SystemEntry
 		{
 			std::shared_ptr<System> system;
+			//TODO it may be string_view 
+			std::string name;
 			int priority;
 		};
 	public:
 
-		void addSystem(std::shared_ptr<System> system, int priority = 0) 
+		void addSystem(const std::string& name, int priority = 0)
 		{
-			_systems.push_back({ std::move(system), priority });
+			auto system = details::SystemRegistry::instance().create(name);
+			if (!system)
+			{
+				log::error("SystemManager::failed to create system with name {}. Skip.\n", name);
+				return;
+			}
+			_systems.emplace_back(SystemEntry{ std::move(system),name, priority });
 			_sorted = false;
 		}
 
-		void removeSystem(std::shared_ptr<System> system)
+		void removeSystem(const std::string& name)
 		{
-			auto it = std::find_if(_systems.begin(), _systems.end(), [system](const SystemEntry& entry) {return system == entry.system;});
+			auto it = std::find_if(_systems.begin(), _systems.end(), [name](const SystemEntry& entry) {return name == entry.name;});
 			if (it == _systems.end())
 				return;
 
@@ -32,7 +41,13 @@ namespace csyren::core
 			_sorted = false;
 		}
 
-		void sort() {
+		const auto& list() const noexcept
+		{
+			return _systems;
+		}
+
+		void sort() 
+		{
 			if (_sorted) return;
 			std::sort(_systems.begin(), _systems.end(),
 				[](const auto& a, const auto& b) {
@@ -41,13 +56,14 @@ namespace csyren::core
 			_sorted = true;
 		}
 
+
 		void init()
 		{
+			sort();
 			for (auto entry : _systems)
 			{
 				entry.system->init();
 			}
-			sort();
 		}
 
 		void shutdown()

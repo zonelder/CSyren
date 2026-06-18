@@ -1,6 +1,7 @@
 #include "serializer.h"
 
 #include "core/scene.h"
+#include "core/system_manager.h"
 #include "core/serialize_base.h"
 #include "dx12_graphic/serialize_common.h"
 
@@ -40,7 +41,8 @@ namespace csyren
 
         try
         {
-            std::ofstream o(filepath);
+            std::string sourcePath = (std::filesystem::path("assets") / filepath).string();
+            std::ofstream o(sourcePath);
             o << sceneJson.dump(4);
             o.close();
             return o.good();
@@ -53,10 +55,84 @@ namespace csyren
 
     }
 
-#pragma optimize("",off)
+    bool Serializer::loadSystems(const std::string& filepath, core::SystemManager& systems)
+    {
+        std::string sourcePath = (std::filesystem::path("assets") / filepath).string();
+        std::ifstream f(sourcePath);
+
+        if (!f.is_open())
+        {
+            log::error("Serializer::loadSystems : Failed to open system file {}", filepath);
+            return false;
+        }
+
+        json data;
+
+        try
+        {
+            data = json::parse(f, nullptr, false);
+        }
+        catch (const std::exception& e)
+        {
+            log::error("Serializer::loadSystems : Failed to parse systems file '{}': {}", filepath, e.what());
+            return false;
+        }
+
+        if (data.is_discarded())
+        {
+            log::error("Serializer::loadSystems : Systems file '{}' is malformed.", filepath);
+            return false;
+        }
+        if (!data.contains("systems")) return false;
+
+        systems.shutdown();
+
+        for (const auto& system : data["systems"])
+        {
+            std::string name;
+            int priority;
+            system["class"].get_to(name);
+            system["priority"].get_to(priority);
+            systems.addSystem(name,priority );
+        }
+        systems.init();
+
+        return true;
+    }
+
+    bool Serializer::saveSystems(const std::string& filepath,const core::SystemManager& systems)
+    {
+        json configJson;
+        json entitiesArray = json::array();
+
+        for (const auto& sys : systems.list())
+        {
+            json sysJson;
+            sysJson["class"] = sys.name;
+            sysJson["priority"] = sys.priority;
+            entitiesArray.push_back(sysJson);
+
+        }
+        configJson["systems"] = entitiesArray;
+
+        try
+        {
+            std::string sourcePath = (std::filesystem::path("assets") / filepath).string();
+            std::ofstream o(sourcePath);
+            o << configJson.dump(4);
+            o.close();
+            return o.good();
+        }
+        catch (const std::exception& e)
+        {
+            log::error("Failed to save systems to '{}': {}", filepath, e.what());
+            return false;
+        }
+    }
     bool Serializer::loadScene(const std::string& filepath,core::Scene& scene)
     {
-        std::ifstream f(filepath);
+        std::string sourcePath = (std::filesystem::path("assets") / filepath).string();
+        std::ifstream f(sourcePath);
 
         if (!f.is_open())
         {

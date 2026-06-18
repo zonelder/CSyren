@@ -68,5 +68,8 @@
     <ClInclude Include="serializer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="system_registrator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

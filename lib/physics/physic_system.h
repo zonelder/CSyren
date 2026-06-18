@@ -31,5 +31,7 @@ namespace csyren::physics
         Impl* _pImpl;
     };
 
+    REGISTER_SYSTEM(PhysicsSystem);
+
 }
 

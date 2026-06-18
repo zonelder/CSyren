@@ -49,4 +49,6 @@ namespace csyren::physics
 			}
 		}
 	};
+
+	REGISTER_SYSTEM(SpringJoinSystem)
 }

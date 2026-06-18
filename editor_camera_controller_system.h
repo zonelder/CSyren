@@ -97,4 +97,6 @@ namespace csyren
         }
 
     };
+
+	REGISTER_SYSTEM(EditorCameraControllerSystem);
 }

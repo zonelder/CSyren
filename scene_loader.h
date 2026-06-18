@@ -132,4 +132,6 @@ namespace csyren
         std::vector<events::PublishToken>    _publishTokens;
         std::vector<events::SubscriberToken> _tokens;
 	};
+
+    REGISTER_SYSTEM(SceneLoaderSystem)
 }

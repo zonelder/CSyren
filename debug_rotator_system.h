@@ -41,5 +41,7 @@ namespace csyren
                 });
         }
     };
+
+    REGISTER_SYSTEM(DebugRotatorSystem);
 }
 

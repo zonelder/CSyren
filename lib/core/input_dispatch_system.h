@@ -29,6 +29,8 @@ namespace csyren::core
 		std::unordered_map<uint32_t, events::PublishToken> _tokens;
 
 	};
+
+	REGISTER_SYSTEM(InputDispatchSystem)
 }
 
 

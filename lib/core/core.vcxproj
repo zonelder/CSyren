@@ -142,7 +142,6 @@
     <ClInclude Include="serialize_base.h" />
     <ClInclude Include="serialize_common.h" />
     <ClInclude Include="services.h" />
-    <ClInclude Include="service_header.h" />
     <ClInclude Include="system_base.h" />
     <ClInclude Include="system_manager.h" />
     <ClInclude Include="time.h" />

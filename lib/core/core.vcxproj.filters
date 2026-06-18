@@ -108,9 +108,6 @@
     <ClInclude Include="services.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="service_header.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="time.h">
       <Filter>Header Files</Filter>
     </ClInclude>

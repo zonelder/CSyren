@@ -39,6 +39,9 @@
 #include "dx12_graphic/descriptors.h"
 #include "dx12_graphic/pso_factory.h"
 
+
+#include "system_registrator.h"
+
 namespace
 {
 
@@ -203,29 +206,9 @@ namespace csyren
 		auto scene = core::Services::get<core::Scene>();
 		auto bus = core::Services::get<core::events::EventBus2>();
 		auto window = core::Services::get<core::Window>();
-		//-----------------------------init systems---------------------------------------------------
-		//
-		//--------------------------------------------------------------------------------------------
-		auto sceneLoaderSystem				= std::make_shared<csyren::SceneLoaderSystem>();
-		auto editorCameraControllerSystem	= std::make_shared<csyren::EditorCameraControllerSystem>();
-		auto debugRotatorSystem				= std::make_shared<csyren::DebugRotatorSystem>();
-		auto meshRenderSystem				= std::make_shared<csyren::MeshRenderSystem>();
-		auto physicSystem					= std::make_shared<csyren::physics::PhysicsSystem>();
-		auto springJoinSystem				= std::make_shared<csyren::physics::SpringJoinSystem>();
-		auto idSystem						= std::make_shared<csyren::core::InputDispatchSystem>();
+		auto ser = core::Services::get<Serializer>();
 
-		//----------------------------technical systems block-----------------------------------------
-		_systems.addSystem(idSystem, -200);
-		_systems.addSystem(sceneLoaderSystem, -100);
-		//--------------------------------------------------------------------------------------------
-		//----------------------------physical systems block------------------------------------------
-		_systems.addSystem(physicSystem,-4);
-		_systems.addSystem(springJoinSystem, -3);
-		//--------------------------------------------------------------------------------------------
-		//----------------------------main systems----------------------------------------------------
-		_systems.addSystem(debugRotatorSystem, -2);
-		_systems.addSystem(editorCameraControllerSystem, -1);
-		_systems.addSystem(meshRenderSystem, 0);
+		ser->loadSystems("system.config", _systems);
 
 		//------------------------------------LOAD SCENE------------------------------------------------
 
@@ -287,7 +270,7 @@ namespace csyren
 		auto saveComponent = scene->createEntity();
 		auto saveReq = scene->addComponent<SceneLoaderRequest>(saveComponent);
 		saveReq->type = SceneLoaderRequest::SAVE;
-		saveReq->path = "E:\\test_scene.scene";
+		saveReq->path = "test_scene.scene";
 
 		float containerHalfX = 5.0f;
 		float containerHalfY = 3.0f; // высота ящика

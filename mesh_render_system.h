@@ -72,6 +72,8 @@ namespace csyren
         }
 
     };
+
+    REGISTER_SYSTEM(MeshRenderSystem)
 }
 
 #endif
