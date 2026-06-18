@@ -38,7 +38,6 @@ namespace csyren
 	private:
 		core::input::InputDispatcher				_inputDispatcher;
 		core::SystemManager							_systems;
-		core::Window								_window;
 		physics::PhysicsEngine						_physics;
 	};
 }

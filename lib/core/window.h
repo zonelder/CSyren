@@ -15,7 +15,7 @@ namespace csyren::core
 		Window& operator=(const Window&) = delete;
 
 
-		HWND init() noexcept;
+		HWND earlyInit() noexcept;
 
 		void show()
 		{
@@ -30,6 +30,11 @@ namespace csyren::core
 
 		int width() const noexcept { return _width; }
 		int height() const noexcept { return _height; }
+
+		HWND hwnd() const noexcept
+		{
+			return _hWnd;
+		}
 
 		void preMessagePump()
 		{

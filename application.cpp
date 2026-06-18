@@ -71,7 +71,6 @@ namespace
 namespace csyren
 {
 	Application::Application() :
-		_window(1200, 786, L"csyren engine"),
 		_inputDispatcher()
 	{
 	}
@@ -88,17 +87,15 @@ namespace csyren
 	{
 		log::init();
 		log::info("-------------------------------------Init Application-------------------------------------");
-		auto hWnd = _window.init();
-		if (!hWnd) { return false; }
-		_window.setInputDispatcher(&_inputDispatcher);
 
 		using namespace core::components;
 		core::details::TimeHandler timeHandler;
 
 		core::Entity::ID currentCameraEntt;
 
+		core::details::ServiceRegistry::create<core::Window>(1200, 786, L"csyren engine");
 		core::details::ServiceRegistry::create<core::Time>();
-		core::details::ServiceRegistry::create< core::CameraContextService>([&currentCameraEntt]() { return currentCameraEntt; });
+		core::details::ServiceRegistry::create<core::CameraContextService>([&currentCameraEntt]() { return currentCameraEntt; });
 		core::details::ServiceRegistry::create<core::events::EventBus2>();
 		core::details::ServiceRegistry::create<core::Scene>();
 		core::details::ServiceRegistry::create<Serializer>();
@@ -106,11 +103,6 @@ namespace csyren
 		core::details::ServiceRegistry::create<core::input::Devices>();
 		core::details::ServiceRegistry::create<render::DescriptorManager>();
 		core::details::ServiceRegistry::create<render::Renderer>();
-		if (!core::Services::get<render::Renderer>()->earlyInit(hWnd, _window.width(), _window.height()))
-		{
-			return false;
-		}
-
 		core::details::ServiceRegistry::create<render::ResourceManager>();
 		core::details::ServiceRegistry::create<render::details::PSOFactory>();
 
@@ -118,18 +110,20 @@ namespace csyren
 		auto renderer = core::Services::get<render::Renderer>();
 		auto scene = core::Services::get<core::Scene>();
 		auto time = core::Services::get<core::Time>();
+		auto window = core::Services::get<core::Window>();
 
-		_inputDispatcher.init(*bus);
+		_inputDispatcher.init();
 		core::details::ServiceRegistry::initializeAll();
 		log::info("-------------------------------------------------------------------------------------------");
-		_window.show();
-		MSG msg = { 0 };
 
-		const FLOAT clearColor[4] = { 0.1f, 0.1f, 0.3f, 1.0f };
+
+		window->setInputDispatcher(&_inputDispatcher);
+		window->show();
+
 
 		log::info("-------------------------------Setup Start Up------------------------------------------------");
-
 		renderer->beginResourceUpload();
+
 		render::Primitives::registerFabricsAll();
 		onSceneStart();
 		_systems.init();
@@ -137,10 +131,13 @@ namespace csyren
 		renderer->endResourceUpload();
 		log::info("---------------------------------------------------------------------------------------------");
 		log::info("-------------------------------Run Game Loop-------------------------------------------------");
+		const FLOAT clearColor[4] = { 0.1f, 0.1f, 0.3f, 1.0f };
+		MSG msg = { 0 };
+
 		while (true)
 		{
 			timeHandler.update(*time);
-			_window.preMessagePump();
+			window->preMessagePump();
 			while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
 			{
 				if (msg.message == WM_QUIT) 
@@ -149,7 +146,7 @@ namespace csyren
 
 					log::info("-------------------------------Shutdown------------------------------------------------------");
 					_systems.shutdown();
-					_inputDispatcher.shutdown(*bus);
+					_inputDispatcher.shutdown();
 					core::details::ServiceRegistry::shutdownAll();
 					log::shutdown();
 					return static_cast<int>(msg.wParam);
@@ -158,7 +155,7 @@ namespace csyren
 				DispatchMessage(&msg);
 			}
 
-			_inputDispatcher.update(*bus);
+			_inputDispatcher.update();
 			_systems.update();
 			auto [mainCameraID,camera,cameraTransform] = *(scene->view<Camera,Transform>().begin());//only first camera accepted
 			currentCameraEntt = mainCameraID;
@@ -215,6 +212,7 @@ namespace csyren
 		auto res = core::Services::get<render::ResourceManager>();
 		auto scene = core::Services::get<core::Scene>();
 		auto bus = core::Services::get<core::events::EventBus2>();
+		auto window = core::Services::get<core::Window>();
 		//-----------------------------init systems---------------------------------------------------
 		//
 		//--------------------------------------------------------------------------------------------
@@ -250,7 +248,7 @@ namespace csyren
 		auto cameraTransform = scene->addComponent<Transform>(mainCameraEntt);
 		auto editorCameraController = scene->addComponent<EditorCameraController>(mainCameraEntt);
 		editorCameraController->movementSpeed = 1.0f;
-		mainCamera->aspectRatio = _window.width() / _window.height();
+		mainCamera->aspectRatio = window->width() / window->height();
 		mainCamera->background = math::Vector4{ 1.f,0.0f,0.0f,1.0f };
 		cameraTransform->position = math::Vector3::back * 4 + math::Vector3::up*2;
 

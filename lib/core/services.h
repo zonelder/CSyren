@@ -72,6 +72,9 @@ namespace csyren::core
         concept HasInit = requires(T & t) { t.init(); };
 
         template<typename T>
+        concept HasEarlyInit = requires(T & t) { t.earlyInit(); };
+
+        template<typename T>
         concept HasShutdown = requires(T & t) { t.shutdown(); };
     }
 
@@ -84,6 +87,7 @@ namespace csyren::core
         {
         public:
             virtual ~IServiceWrapper() = default;
+            virtual void earlyInit() = 0;
             virtual void init() = 0;
             virtual void shutdown() = 0;
             size_t getTypeID() const noexcept
@@ -105,7 +109,13 @@ namespace csyren::core
             {
                 _typeID = reflection::ServiceFamily::getID<T>();
             }
-
+            void earlyInit() override
+            {
+                if constexpr (concepts::HasEarlyInit<T>)
+                {
+                    get().earlyInit();
+                }
+            }
             void init() override
             {
                 if constexpr (concepts::HasInit<T>)
@@ -163,6 +173,7 @@ namespace csyren::core
                 T& ref = wrapper->get();
 
                 Services::add(&ref);
+                wrapper->earlyInit();
                 wrappers_.push_back(std::move(wrapper));
                 return ref;
             }

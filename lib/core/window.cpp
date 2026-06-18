@@ -1,8 +1,7 @@
 #include "pch.h"
 #include "window.h"
 #include "input_enums.h"
-
-#include <assert.h>
+#include "cstdmf/assert_helpler.h"
 
 
 csyren::core::Window::Window(int width, int height, const wchar_t* name) noexcept :
@@ -19,7 +18,7 @@ csyren::core::Window::~Window() noexcept
 	UnregisterClass(_wndCLassName, hInstance());
 }
 
-HWND csyren::core::Window::init() noexcept
+HWND csyren::core::Window::earlyInit() noexcept
 {
 	if (_hWnd)
 		return _hWnd;
@@ -63,7 +62,6 @@ HWND csyren::core::Window::init() noexcept
 	if (!_hWnd) {
 		DWORD err = GetLastError();
 		log::error("failed to create main Window with error: {}\n", err);
-		// логируй err
 	}
 	return _hWnd;
 }
@@ -93,7 +91,7 @@ LRESULT CALLBACK csyren::core::Window::handleMsg(HWND hWnd, UINT msg, WPARAM wPa
 
 LRESULT csyren::core::Window::handleMsgImpl(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	assert(_dispatcher != nullptr && "dispatcher should be ready in main game loop.");
+	CS_ASSERT(_dispatcher != nullptr && "dispatcher should be ready in main game loop.");
 	using InputEvent = input::InputEvent;
 	using EventType = InputEvent::Type;
 	using MouseButton = input::MouseButton;

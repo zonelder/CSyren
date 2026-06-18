@@ -3,7 +3,7 @@
 #include "texture.h"
 #include "renderer.h"
 #include <d3dx12.h>
-
+#include "core/window.h"
 
 using Microsoft::WRL::ComPtr;
 #define DEBUG_RENDER = defined(_DEBUG) && (_WIN32_WINNT >= 0x0603);
@@ -95,8 +95,14 @@ namespace csyren::render
     }
 
 
-    bool Renderer::earlyInit(HWND hwnd, UINT width, UINT height)
+    bool Renderer::earlyInit()
     {
+        auto window = core::Services::get<core::Window>();
+
+        auto hwnd = window->hwnd();
+        auto width = window->width();
+        auto height = window->height();
+
         enableDebugLayer();
         createFactory();
         createDevice();
