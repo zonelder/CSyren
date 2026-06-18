@@ -94,6 +94,7 @@ namespace csyren
 		core::Entity::ID currentCameraEntt;
 
 		core::details::ServiceRegistry::create<core::Window>(1200, 786, L"csyren engine");
+		core::details::ServiceRegistry::create<core::input::InputDispatcher>();
 		core::details::ServiceRegistry::create<core::Time>();
 		core::details::ServiceRegistry::create<core::CameraContextService>([&currentCameraEntt]() { return currentCameraEntt; });
 		core::details::ServiceRegistry::create<core::events::EventBus2>();
@@ -111,19 +112,13 @@ namespace csyren
 		auto scene = core::Services::get<core::Scene>();
 		auto time = core::Services::get<core::Time>();
 		auto window = core::Services::get<core::Window>();
-
-		_inputDispatcher.init();
+		auto inputDispatcher = core::Services::get<core::input::InputDispatcher>();
 		core::details::ServiceRegistry::initializeAll();
 		log::info("-------------------------------------------------------------------------------------------");
-
-
-		window->setInputDispatcher(&_inputDispatcher);
+		log::info("-------------------------------Setup Start Up------------------------------------------------");
 		window->show();
 
-
-		log::info("-------------------------------Setup Start Up------------------------------------------------");
 		renderer->beginResourceUpload();
-
 		render::Primitives::registerFabricsAll();
 		onSceneStart();
 		_systems.init();
@@ -146,7 +141,7 @@ namespace csyren
 
 					log::info("-------------------------------Shutdown------------------------------------------------------");
 					_systems.shutdown();
-					_inputDispatcher.shutdown();
+					inputDispatcher->shutdown();
 					core::details::ServiceRegistry::shutdownAll();
 					log::shutdown();
 					return static_cast<int>(msg.wParam);
@@ -155,7 +150,7 @@ namespace csyren
 				DispatchMessage(&msg);
 			}
 
-			_inputDispatcher.update();
+			inputDispatcher->update();
 			_systems.update();
 			auto [mainCameraID,camera,cameraTransform] = *(scene->view<Camera,Transform>().begin());//only first camera accepted
 			currentCameraEntt = mainCameraID;

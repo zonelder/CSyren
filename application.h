@@ -36,8 +36,6 @@ namespace csyren
 		void onSceneStart();
 
 	private:
-		core::input::InputDispatcher				_inputDispatcher;
 		core::SystemManager							_systems;
-		physics::PhysicsEngine						_physics;
 	};
 }

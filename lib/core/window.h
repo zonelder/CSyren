@@ -17,6 +17,8 @@ namespace csyren::core
 
 		HWND earlyInit() noexcept;
 
+		void init();
+
 		void show()
 		{
 			if(_hWnd)
@@ -24,7 +26,7 @@ namespace csyren::core
 				ShowWindow(_hWnd, SW_SHOW);
 			}
 		}
-		void setInputDispatcher(input::InputDispatcher* dispatcher) { _dispatcher = dispatcher; }
+
 		const wchar_t* title() const noexcept { return _title; }
 		HINSTANCE hInstance() const noexcept { return _hInst; }
 
