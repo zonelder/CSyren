@@ -70,8 +70,7 @@ namespace
 
 namespace csyren
 {
-	Application::Application() :
-		_inputDispatcher()
+	Application::Application()
 	{
 	}
 
