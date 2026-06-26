@@ -17,6 +17,11 @@
 
 class SceneTest;
 
+namespace csyren::core::details
+{
+
+}
+
 namespace csyren::core
 {
 	template<typename T>
@@ -146,20 +151,55 @@ namespace csyren::core
 				return false;
 			}
 		};
-	public:
-		explicit Scene()
-		{
+		static constexpr std::string_view DEFAULT_NAME{ "new Entity" };
+		static constexpr Entity::ID ROOT_PARENT = 0;
 
-		};
+	public:
+		explicit Scene() {};
 
 		void init()
 		{
 			_bus = core::Services::get<events::EventBus2>();
 			_entityCreateToken = _bus->register_publisher<events::EntityCreateEvent>();
 			_entityDestroyToken = _bus->register_publisher<events::EntityDestroyEvent>();
+			_entities.emplace(ROOT_PARENT, Entity{});
+			Entity* ent = _entities.try_get(ROOT_PARENT);
+			ent->id = ROOT_PARENT;
+			ent->parent = Entity::invalidID;
+			ent->name = "scene root";
+			
 		}
 
-		[[nodiscard]] Entity::ID createEntity(Entity::ID parent = Entity::invalidID)
+		bool setName(Entity::ID id, std::string_view newName)
+		{
+			Entity* entity = _entities.try_get(id);
+			if (!entity)
+			{
+				log::error("Scene::setName: entity {} does not exist", id);
+				return false;
+			}
+
+			// Запрет переименования root
+			if (id == ROOT_PARENT)
+			{
+				log::error("Scene::setName: cannot rename ROOT_PARENT");
+				return false;
+			}
+
+			// Генерируем уникальное имя среди siblings, исключая сам entity
+			std::string uniqueName = generateUniqueName(newName, entity->parent, id);
+
+			// Обновляем имя
+			entity->name = uniqueName;
+
+			return true;
+		}
+		[[nodiscard]] Entity::ID createEntity(Entity::ID parent = ROOT_PARENT)
+		{
+			return createEntity(DEFAULT_NAME, parent);
+		}
+
+		[[nodiscard]] Entity::ID createEntity(std::string_view name = DEFAULT_NAME, Entity::ID parent = ROOT_PARENT)
 		{
 			Entity::ID id;
 			if (!_freeIDs.empty())
@@ -175,17 +215,25 @@ namespace csyren::core
 				}
 				id = _nextId++;
 			}
+			if (!canBeParent(parent, id))
+			{
+				log::error("Scene::createEntity: cycle detected. parent={} child={}. Falling back to scene root", parent, id);
+				parent = ROOT_PARENT;
+			}
+
 			_entities.emplace(id, Entity{});
 			Entity* ent = _entities.try_get(id);
 			ent->id = id;
 			ent->parent = parent;
-			if (parent != Entity::invalidID)
+			ent->name = generateUniqueName(name, parent);
+
+			Entity* p = _entities.try_get(parent);
+			if (!p)
 			{
-				if (Entity* p = _entities.try_get(parent))
-				{
-					p->childrens.push_back(id);
-				}
+				log::error("Scene::creatEntity: attempt to create child entity with name = {} but parent is not exist.parent id = {}.add to scene root instead\n", ent->name, ent->id);
+				p = _entities.try_get(ROOT_PARENT);
 			}
+			p->children.push_back(id);
 			_bus->publish(_entityCreateToken, events::EntityCreateEvent{id});
 			return id;
 		}
@@ -194,8 +242,7 @@ namespace csyren::core
 		{
 			Entity* ent = _entities.try_get(id);
 			if (!ent) return;
-
-			for (Entity::ID child : ent->childrens)
+			for (Entity::ID child : ent->children)
 				destroyEntity(child);
 
 			_deferred.pushDestroyEntity(id);
@@ -297,12 +344,12 @@ namespace csyren::core
 				{
 					if (Entity* p = _entities.try_get(ent->parent))
 					{
-						auto& vec = p->childrens;
+						auto& vec = p->children;
 						vec.erase(std::remove(vec.begin(), vec.end(), e.id), vec.end());
 					}
 				}
 
-				for (auto& child : ent->childrens)
+				for (auto& child : ent->children)
 				{
 					Entity* pChild = _entities.try_get(child);
 					if (!pChild)
@@ -327,6 +374,75 @@ namespace csyren::core
 		}
 
 	private:
+
+		bool canBeParent(Entity::ID parent, Entity::ID child) const
+		{
+			// Root всегда валиден как parent
+			if (parent == ROOT_PARENT)
+				return true;
+
+			// Entity не может быть родителем самому себе
+			if (parent == child)
+				return false;
+
+			// Parent не должен быть потомком child (иначе замкнётся цикл)
+			return !isAncestor(child, parent);
+		}
+		bool isAncestor(Entity::ID ancestor, Entity::ID descendant) const
+		{
+			Entity::ID current = descendant;
+			while (current != Entity::invalidID)
+			{
+				if (current == ancestor)
+					return true;
+
+				const Entity* entity = _entities.try_get(current);
+				if (!entity)
+					return false;
+
+				current = entity->parent;
+			}
+			return false;
+		}
+		std::string generateUniqueName(std::string_view baseName, Entity::ID parent, Entity::ID excludeId = Entity::invalidID)
+		{
+			std::string name(baseName);
+
+			Entity* parentEntity = _entities.try_get(parent);
+			if (!parentEntity)
+			{
+				parentEntity = _entities.try_get(ROOT_PARENT);
+			}
+
+			const auto& siblings = parentEntity->children;
+
+			int counter = 1;
+			std::string testName = name;
+
+			while (isNameTaken(testName, siblings, excludeId))
+			{
+				testName = name + "(" + std::to_string(counter++) + ")";
+			}
+
+			return testName;
+		}
+
+		bool isNameTaken(const std::string& name, const std::vector<Entity::ID>& siblings, Entity::ID excludeId = Entity::invalidID)
+		{
+			for (Entity::ID siblingId : siblings)
+			{
+				if (siblingId == excludeId)
+					continue;
+
+				if (auto* sibling = _entities.try_get(siblingId))
+				{
+					if (sibling->name == name)
+						return true;
+				}
+			}
+			return false;
+		}
+
 		template<typename T>
 		std::shared_ptr<ComponentPool<T>> getPool()
 		{
@@ -376,7 +492,7 @@ namespace csyren::core
 	private:
 		cstdmf::SparseSet<Entity>	_entities;
 		std::vector<Entity::ID>		_freeIDs;
-		Entity::ID              _nextId = 0;
+		Entity::ID              _nextId = 1;//root exist already
 		ComponentsMeta				_meta;
 
 		DeferredCommands _deferred;

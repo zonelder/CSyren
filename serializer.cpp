@@ -34,6 +34,7 @@ namespace csyren
                 }
             }
             entityJson["components"] = componentsJson;
+            entityJson["name"] = entt.name;
             entitiesArray.push_back(entityJson);
 
         }
@@ -165,7 +166,9 @@ namespace csyren
 
         for (const auto& entityData : data["entities"])
         {
-            core::Entity::ID newEntity = scene.createEntity();
+            std::string name;
+            entityData["name"].get_to(name);
+            core::Entity::ID newEntity = scene.createEntity(name);
 
             if (!entityData.contains("components")) continue;
 

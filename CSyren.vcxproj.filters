@@ -71,5 +71,11 @@
     <ClInclude Include="system_registrator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="scene_hierarchy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="base_editor_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -80,7 +80,7 @@ TEST_F(SceneTest, EntityHierarchy) {
 
     auto* parentEnt = scene.entities().try_get(parent);
     ASSERT_NE(parentEnt, nullptr);
-    EXPECT_EQ(parentEnt->childrens.size(), 2);
+    EXPECT_EQ(parentEnt->children.size(), 2);
 
     auto* childEnt = scene.entities().try_get(child1);
     ASSERT_NE(childEnt, nullptr);
@@ -92,8 +92,8 @@ TEST_F(SceneTest, EntityHierarchy) {
 
     parentEnt = scene.entities().try_get(parent);
     ASSERT_NE(parentEnt, nullptr);
-    EXPECT_EQ(parentEnt->childrens.size(), 1);
-    EXPECT_EQ(parentEnt->childrens[0], child2);
+    EXPECT_EQ(parentEnt->children.size(), 1);
+    EXPECT_EQ(parentEnt->children[0], child2);
 
     scene.destroyEntity(parent);
     flush();

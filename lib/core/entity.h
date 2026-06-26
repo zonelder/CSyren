@@ -3,6 +3,7 @@
 #include <limits>
 #include <vector>
 #include <bitset>
+#include <string>
 
 #include "component_base.h"
 
@@ -15,7 +16,8 @@ namespace csyren::core
 
 		ID id{ 0 };
 		Entity::ID parent = Entity::invalidID;
-		std::vector<ID> childrens;
+		std::vector<ID> children;
 		std::bitset<reflection::MAX_COMPONENT_TYPES> components;
+		std::string name;
 	};
 }

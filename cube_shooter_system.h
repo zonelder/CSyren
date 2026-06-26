@@ -56,7 +56,7 @@ namespace csyren
 					Vector3 shootDir = world.forward();
 					Vector3 velocity = shootDir * 15.0f;
 
-					auto cube = scene->createEntity();
+					auto cube = scene->createEntity("cube projectile");
 					auto tr = scene->addComponent<Transform>(cube);
 
 					tr->position = spawnPos;

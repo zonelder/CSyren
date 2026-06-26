@@ -18,11 +18,14 @@
 #include "imGui/backends/imgui_impl_dx12.h"
 #include "imGui/backends/imgui_impl_win32.h"
 
+#include "base_editor_window.h"
+#include "scene_hierarchy.h"
+
 
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-namespace csyren::render
+namespace csyren::editor
 {
 	class EditorSystem : public core::System
 	{
@@ -57,7 +60,7 @@ namespace csyren::render
 			init_info.SrvDescriptorHeap = shaderHeap;
 			init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* gpu_handle) {
 				auto* descriptorManager = core::Services::get<render::DescriptorManager>();
-				DescriptorAllocation alloc = descriptorManager->allocateRawSRV();
+				render::DescriptorAllocation alloc = descriptorManager->allocateRawSRV();
 				*cpu_handle = alloc.cpu;
 				*gpu_handle = alloc.gpu;
 				s_imguiAllocations.emplace_back(std::move(alloc));
@@ -99,6 +102,9 @@ namespace csyren::render
 					return false;
 				});
 
+
+			_windows.push_back(std::make_unique<SceneHierarchyWindow>());
+
 			ImGui_ImplDX12_Init(&init_info);
 		}
 		void onFrame() override
@@ -106,6 +112,24 @@ namespace csyren::render
 			ImGui_ImplDX12_NewFrame();
 			ImGui_ImplWin32_NewFrame();
 			ImGui::NewFrame();
+
+			if (ImGui::BeginMainMenuBar()) {
+				if (ImGui::BeginMenu("View")) {
+					for (auto& window : _windows) {
+						bool isOpen = window->isOpen();
+						if (ImGui::MenuItem(window->title().data(), nullptr, &isOpen)) {
+							window->setOpen(isOpen);
+						}
+					}
+					ImGui::EndMenu();
+				}
+				ImGui::EndMainMenuBar();
+			}
+
+			// Рендерим все окна
+			for (auto& window : _windows) {
+				window->render();
+			}
 
 			ImGui::ShowDemoWindow();
 
@@ -131,10 +155,11 @@ namespace csyren::render
 			ImGui::DestroyContext();
 		}
 	private:
-		static std::vector<DescriptorAllocation> s_imguiAllocations;
+		std::vector<std::unique_ptr<BaseEditorWindow>> _windows;
+		static std::vector<render::DescriptorAllocation> s_imguiAllocations;
 	};
 
-	std::vector<DescriptorAllocation> EditorSystem::s_imguiAllocations{};
+	std::vector<render::DescriptorAllocation> EditorSystem::s_imguiAllocations{};
 	REGISTER_SYSTEM(EditorSystem)
 }
 

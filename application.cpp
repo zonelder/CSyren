@@ -218,7 +218,7 @@ namespace csyren
 
 		auto texture2 = res->get<render::Texture>("E:\\stalker_online_git\\res\\textures\\materials\\carpet\\carpet04.dds");
 		//------------------------------------Camera----------------------------------------------------
-		auto mainCameraEntt = scene->createEntity();
+		auto mainCameraEntt = scene->createEntity("main camera");
 		auto mainCamera = scene->addComponent<Camera>(mainCameraEntt);
 		auto cameraTransform = scene->addComponent<Transform>(mainCameraEntt);
 		auto editorCameraController = scene->addComponent<EditorCameraController>(mainCameraEntt);
@@ -237,7 +237,7 @@ namespace csyren
 		auto meshCube = render::Primitives::getCube();
 
 		//---------------------------------------------------------------------------------------------
-		auto saveComponent = scene->createEntity();
+		auto saveComponent = scene->createEntity("Save");
 		auto saveReq = scene->addComponent<SceneLoaderRequest>(saveComponent);
 		saveReq->type = SceneLoaderRequest::SAVE;
 		saveReq->path = "test_scene.scene";
@@ -247,7 +247,7 @@ namespace csyren
 		float containerHalfZ = 5.0f;
 		float wallThickness = 0.5f;
 		auto createInvisibleWall = [&](Vector3 position, Vector3 size) {
-			auto wall = scene->createEntity();
+			auto wall = scene->createEntity("Wall");
 			auto tr = scene->addComponent<core::components::Transform>(wall);
 			tr->position = position;
 			tr->scale = size;
@@ -265,8 +265,8 @@ namespace csyren
 		createInvisibleWall(Vector3{ 0, containerHalfY / 2, containerHalfZ + wallThickness / 2 }, Vector3{ containerHalfX * 2, containerHalfY * 2, wallThickness });
 
 
-		auto ground = scene->createEntity();
-		auto box = scene->createEntity();
+		auto ground = scene->createEntity("ground");
+		auto box = scene->createEntity("box");
 
 		{
 			auto tr = scene->addComponent<core::components::Transform>(ground);
@@ -283,7 +283,7 @@ namespace csyren
 
 		{
 			//*
-			auto textured = scene->createEntity();
+			auto textured = scene->createEntity("textured");
 
 			auto tr = scene->addComponent<core::components::Transform>(textured);
 			tr->rotation = Quaternion::euler(-45, 0, 0);
@@ -310,7 +310,7 @@ namespace csyren
 			for (int y = 0; y < numCubesY; ++y)
 				for (int z = 0; z < numCubesZ; ++z)
 				{
-					auto cube = scene->createEntity();
+					auto cube = scene->createEntity("dynamic cube");
 					auto tr = scene->addComponent<core::components::Transform>(cube);
 					tr->position = Vector3{
 						(x - numCubesX / 2) * spacing,

@@ -21,12 +21,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application.h" />
+    <ClInclude Include="base_editor_window.h" />
     <ClInclude Include="debug_rotator.h" />
     <ClInclude Include="debug_rotator_system.h" />
     <ClInclude Include="editor_camera_controller.h" />
     <ClInclude Include="editor_camera_controller_system.h" />
     <ClInclude Include="mesh_render_system.h" />
     <ClInclude Include="mesh_filter.h" />
+    <ClInclude Include="scene_hierarchy.h" />
     <ClInclude Include="scene_loader.h" />
     <ClInclude Include="serializer.h" />
     <ClInclude Include="system_registrator.h" />
