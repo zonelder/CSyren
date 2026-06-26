@@ -24,6 +24,17 @@ namespace csyren::core
 		UnregisterClass(_wndCLassName, hInstance());
 	}
 
+	void Window::preMessagePump()
+	{
+		_shiftDown = GetKeyState(VK_SHIFT) & 0x8000;
+		_ctrlDown = GetKeyState(VK_CONTROL) & 0x8000;
+		_altDown = GetKeyState(VK_MENU) & 0x8000;
+		for (const auto& c : preMessageCallbacks_)
+		{
+			c();
+		}
+	}
+
 	HWND Window::earlyInit() noexcept
 	{
 		if (_hWnd)

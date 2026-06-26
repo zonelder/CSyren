@@ -36,18 +36,13 @@ namespace csyren::render
 			ImGuiIO& io = ImGui::GetIO();
 			io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 			ImGui::StyleColorsDark();
-
-			HWND hwnd = core::Services::get<Window>()->hwnd();
+			auto window = core::Services::get<Window>();
+			HWND hwnd = window->hwnd();
 			ImGui_ImplWin32_Init(hwnd);
 
 			auto* renderer = core::Services::get<render::Renderer>();
+			auto* shaderHeap = core::Services::get<render::DescriptorManager>()->shaderHeap();
 			ID3D12Device* device = renderer->device();
-
-			D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-			heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-			heapDesc.NumDescriptors = 1;
-			heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-			device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&s_fontSrvHeap));
 			auto numFrames = 2;
 			// Новый API для ImGui 1.90+
 			ImGui_ImplDX12_InitInfo init_info = {};
@@ -56,24 +51,46 @@ namespace csyren::render
 			init_info.NumFramesInFlight = numFrames;
 			init_info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 			init_info.DSVFormat = DXGI_FORMAT_UNKNOWN;
-			init_info.SrvDescriptorHeap = s_fontSrvHeap;
+			init_info.SrvDescriptorHeap = shaderHeap;
 			init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* gpu_handle) {
-				*cpu_handle = s_fontSrvHeap->GetCPUDescriptorHandleForHeapStart();
-				*gpu_handle = s_fontSrvHeap->GetGPUDescriptorHandleForHeapStart();
+				auto* descriptorManager = core::Services::get<render::DescriptorManager>();
+				DescriptorAllocation alloc = descriptorManager->allocateRawSRV();
+				*cpu_handle = alloc.cpu;
+				*gpu_handle = alloc.gpu;
+				s_imguiAllocations.emplace_back(std::move(alloc));
+				};
+			
+			init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu, D3D12_GPU_DESCRIPTOR_HANDLE gpu) {
+				auto* descriptorManager = core::Services::get<render::DescriptorManager>();
+
+				//TODO fast search
+				for (auto it = s_imguiAllocations.begin(); it != s_imguiAllocations.end(); ++it) {
+					if (it->cpu.ptr == cpu.ptr) {
+						descriptorManager->freeRawSRV(*it);
+						s_imguiAllocations.erase(it);
+						break;
+					}
+				}
 				};
 
-			init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE) {};
+			window->addPreMessageCallback([]()
+				{
+					if (ImGui::GetCurrentContext())
+					{
+						const ImGuiIO& io = ImGui::GetIO();
+						auto* inputSystem = core::Services::get<input::Devices>();
+						inputSystem->setInputBlocked(io.WantCaptureMouse || io.WantCaptureKeyboard);
+					}
+				});
 
 			ImGui_ImplDX12_Init(&init_info);
 		}
 		void onFrame() override
 		{
-			// 1. Начинаем новый кадр
 			ImGui_ImplDX12_NewFrame();
 			ImGui_ImplWin32_NewFrame();
 			ImGui::NewFrame();
 
-			// 2. Рисуем UI (Тестовое окно + Демо)
 			ImGui::ShowDemoWindow();
 
 			ImGui::Begin("CSyren Editor Test");
@@ -86,9 +103,6 @@ namespace csyren::render
 			auto* renderer = core::Services::get<render::Renderer>();
 			ID3D12GraphicsCommandList* cmdList = renderer->commandList();
 
-			ID3D12DescriptorHeap* heaps[] = { s_fontSrvHeap };
-			cmdList->SetDescriptorHeaps(1, heaps);
-			// 3. Завершаем кадр и рендерим в CommandList
 			ImGui::Render();
 
 			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), cmdList);
@@ -99,18 +113,12 @@ namespace csyren::render
 			ImGui_ImplDX12_Shutdown();
 			ImGui_ImplWin32_Shutdown();
 			ImGui::DestroyContext();
-
-			// Освобождаем хип
-			if (s_fontSrvHeap) {
-				s_fontSrvHeap->Release();
-				s_fontSrvHeap = nullptr;
-			}
 		}
 	private:
-		static ID3D12DescriptorHeap* s_fontSrvHeap;
+		static std::vector<DescriptorAllocation> s_imguiAllocations;
 	};
 
-	ID3D12DescriptorHeap* EditorSystem::s_fontSrvHeap = nullptr;
+	std::vector<DescriptorAllocation> EditorSystem::s_imguiAllocations{};
 	REGISTER_SYSTEM(EditorSystem)
 }
 

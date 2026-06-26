@@ -18,14 +18,22 @@ namespace csyren::core::input
 
 		const KeyboardDevice& keyboard() const noexcept { return _keyboard; }
 		const MouseDevice& mouse() const noexcept { return _mouse; }
+
+		void setInputBlocked(bool blocked) { _inputBlocked = blocked; }
+		bool isInputBlocked() const { return _inputBlocked; }
 	private:
 		void preUpdate()
 		{
 			_keyboard.update();
 			_mouse.update();
 		}
+
+
+
 		void dispatchEvent(const InputEvent& event)
 		{
+			if (_inputBlocked) return;
+
 			switch (event.type)
 			{
 			case InputEvent::Type::KeyDown:
@@ -55,6 +63,7 @@ namespace csyren::core::input
 		}
 		KeyboardDevice _keyboard;
 		MouseDevice _mouse;
+		bool _inputBlocked{ false };
 	};
 }
 

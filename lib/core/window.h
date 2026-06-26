@@ -2,7 +2,7 @@
 #define __CSYREN_WINDOW__
 #include <Windows.h>
 #include "dispatch_handle.h"
-
+#include <functional>
 
 namespace csyren::core
 {
@@ -10,13 +10,18 @@ namespace csyren::core
 	{
 		friend details::DispatchHandle;
 	public:
+
+		using PreMessageCallback = std::function<void()>;
 		Window(int width, int height, const wchar_t* name) noexcept;
 
 		~Window() noexcept;
 		Window(const Window&) = delete;
 		Window& operator=(const Window&) = delete;
 
-
+		void addPreMessageCallback(PreMessageCallback&& func)
+		{
+			preMessageCallbacks_.emplace_back(std::move(func));
+		}
 		HWND earlyInit() noexcept;
 
 		void init();
@@ -40,12 +45,7 @@ namespace csyren::core
 			return _hWnd;
 		}
 
-		void preMessagePump()
-		{
-			_shiftDown = GetKeyState(VK_SHIFT) & 0x8000;
-			_ctrlDown = GetKeyState(VK_CONTROL) & 0x8000;
-			_altDown = GetKeyState(VK_MENU) & 0x8000;
-		}
+		void preMessagePump();
 	private:
 		static LRESULT handleMsg(HWND nWnd, UINT smg, WPARAM wParam, LPARAM lParam);
 		LRESULT handleMsgImpl(HWND nWnd, UINT smg, WPARAM wParam, LPARAM lParam);
@@ -70,6 +70,7 @@ namespace csyren::core
 		bool _shiftDown = false;
 		bool _ctrlDown = false;
 		bool _altDown = false;
+		std::vector <std::function<void()>> preMessageCallbacks_;
 	};
 }
 

@@ -27,6 +27,11 @@ namespace csyren::core
 		input::InputAction action{ "","" };
 		auto devices = Services::get<input::Devices>();
 		auto bus = Services::get<events::EventBus2>();
+		if (devices->isInputBlocked())
+		{
+			_eventBuffer.clear();
+			return;
+		}
 		devices->preUpdate();
 		while (!_eventBuffer.empty())
 		{

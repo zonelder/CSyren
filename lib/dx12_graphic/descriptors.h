@@ -140,6 +140,21 @@ namespace csyren::render
 			}
 		}
 
+		DescriptorAllocation allocateRawSRV()
+		{
+			uint32_t idx = srvHeap_.allocate();
+			return { srvHeap_.cpu(idx), srvHeap_.gpu(idx), idx };
+		}
+
+		void freeRawSRV(DescriptorAllocation& allocation)
+		{
+			if (allocation.valid())
+			{
+				srvHeap_.free(allocation.handle_);
+				allocation.invalidate();
+			}
+		}
+
 		// --- Heap access ----------------------------------------
 
 		ID3D12DescriptorHeap* shaderHeap() const
