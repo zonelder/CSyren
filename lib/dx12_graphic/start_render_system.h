@@ -19,6 +19,9 @@
 #include "imGui/backends/imgui_impl_win32.h"
 
 
+
+extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 namespace csyren::render
 {
 	class EditorSystem : public core::System
@@ -73,14 +76,27 @@ namespace csyren::render
 				}
 				};
 
-			window->addPreMessageCallback([]()
+			window->addPreMessageCallback([](HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				{
+					if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
+						return true;
+
 					if (ImGui::GetCurrentContext())
 					{
 						const ImGuiIO& io = ImGui::GetIO();
-						auto* inputSystem = core::Services::get<input::Devices>();
-						inputSystem->setInputBlocked(io.WantCaptureMouse || io.WantCaptureKeyboard);
+					
+						bool isMouseMessage = (msg >= WM_MOUSEMOVE && msg <= WM_MOUSEWHEEL) ||
+							(msg >= WM_LBUTTONDOWN && msg <= WM_MBUTTONDBLCLK);
+						bool isKeyboardMessage = (msg >= WM_KEYDOWN && msg <= WM_DEADCHAR) ||
+							(msg >= WM_SYSKEYDOWN && msg <= WM_SYSDEADCHAR);
+
+						// Если ImGui хочет этот тип инпута — блокируем
+						if (isMouseMessage && io.WantCaptureMouse)
+							return true;
+						if (isKeyboardMessage && io.WantCaptureKeyboard)
+							return true;
 					}
+					return false;
 				});
 
 			ImGui_ImplDX12_Init(&init_info);

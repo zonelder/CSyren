@@ -4,8 +4,6 @@
 #include "cstdmf/assert_helpler.h"
 #include "services.h"
 
-extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
 namespace csyren::core
 {
 
@@ -29,10 +27,6 @@ namespace csyren::core
 		_shiftDown = GetKeyState(VK_SHIFT) & 0x8000;
 		_ctrlDown = GetKeyState(VK_CONTROL) & 0x8000;
 		_altDown = GetKeyState(VK_MENU) & 0x8000;
-		for (const auto& c : preMessageCallbacks_)
-		{
-			c();
-		}
 	}
 
 	HWND Window::earlyInit() noexcept
@@ -112,8 +106,11 @@ namespace csyren::core
 
 	LRESULT Window::handleMsgImpl(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
-		if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
-			return true;
+
+		for (const auto& c : preMessageCallbacks_)
+		{
+			if (c(hWnd, msg, wParam, lParam)) return S_OK;
+		}
 
 		CS_ASSERT(_dispatcher != nullptr && "dispatcher should be ready in main game loop.");
 		using InputEvent = input::InputEvent;

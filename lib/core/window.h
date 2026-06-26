@@ -11,7 +11,7 @@ namespace csyren::core
 		friend details::DispatchHandle;
 	public:
 
-		using PreMessageCallback = std::function<void()>;
+		using PreMessageCallback = std::function<bool(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)>;
 		Window(int width, int height, const wchar_t* name) noexcept;
 
 		~Window() noexcept;
@@ -70,7 +70,7 @@ namespace csyren::core
 		bool _shiftDown = false;
 		bool _ctrlDown = false;
 		bool _altDown = false;
-		std::vector <std::function<void()>> preMessageCallbacks_;
+		std::vector <PreMessageCallback> preMessageCallbacks_;
 	};
 }
 
