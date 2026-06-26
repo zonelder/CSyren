@@ -180,6 +180,7 @@
     <ClInclude Include="descriptors.h" />
     <ClInclude Include="dx_log.h" />
     <ClInclude Include="dx_main.h" />
+    <ClInclude Include="start_render_system.h" />
     <ClInclude Include="engine_semantics.h" />
     <ClInclude Include="fence.h" />
     <ClInclude Include="forward_decl.h" />

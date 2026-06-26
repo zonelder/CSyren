@@ -159,6 +159,9 @@
     <ClInclude Include="descriptor_allocation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="start_render_system.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

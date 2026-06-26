@@ -8,5 +8,7 @@
 #include "editor_camera_controller_system.h"
 #include "physics/physic_system.h"
 #include "physics/spring_join_system.h"
+#include "cube_shooter_system.h"
 #include "mesh_render_system.h"
 #include "scene_loader.h"
+#include "dx12_graphic/start_render_system.h"

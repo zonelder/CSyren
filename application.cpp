@@ -209,7 +209,6 @@ namespace csyren
 		auto ser = core::Services::get<Serializer>();
 
 		ser->loadSystems("system.config", _systems);
-
 		//------------------------------------LOAD SCENE------------------------------------------------
 
 		auto texture = res->get<render::Texture>("E:\\stalker_online_git\\res\\textures\\default\\red.dds");
@@ -235,36 +234,6 @@ namespace csyren
 		res->getMaterial(matRainbow)->setVector("tint", DirectX::XMFLOAT4(1, 1, 1, 1));
 		auto meshQuad = render::Primitives::getQuad();
 		auto meshCube = render::Primitives::getCube();
-		/*
-		const int gridX = 100;
-		const int gridY = 20;
-		const float spacing = 1.5f;
-		int counter = 0;
-
-		for (int y = 0; y < gridY; ++y)
-		{
-			for (int x = 0; x < gridX; ++x)
-			{
-				auto ent = _scene.createEntity();
-				auto tr = _scene.addComponent<Transform>(ent);
-				auto mf = _scene.addComponent<MeshFilter>(ent);
-				auto mr = _scene.addComponent<MeshRenderer>(ent);
-
-				float fx = (x - gridX / 2.0f) * spacing;
-				float fz = (y - gridY / 2.0f) * spacing;
-				tr->position = Vector3{ fx, sinf(y * 0.3f) * 0.5f, fz };
-				tr->scale = Vector3{ 0.5f, 0.5f, 0.5f };
-
-				bool even = ((x + y) % 2) == 0;
-				mf->mesh = even ? meshCube : meshQuad;
-				mr->material = even ? matDefault : matRainbow;
-
-				auto rotEnt = _scene.addComponent<DebugRotator>(ent);
-				rotEnt->speed = DirectX::XMFLOAT3(0, 0.5f + 0.3f * (x % 5), 0);
-			}
-		}
-		*/
-
 
 		//---------------------------------------------------------------------------------------------
 		auto saveComponent = scene->createEntity();
@@ -366,63 +335,5 @@ namespace csyren
 					meshFilter->mesh = meshCube;
 				}
 		//*/
-		//*
-		bus->subscribe<core::input::InputEvent>(static_cast<uint32_t>(core::input::InputEvent::Type::KeyDown), [&](core::input::InputEvent& event)
-			{
-				using namespace core::components;
-				using namespace physics;
-				using namespace render::components;
-				if (event.code != static_cast<int>(core::input::KeyCode::Space))
-				{
-					return;
-				}
-				auto camServ = core::Services::get<core::CameraContextService>();
-				auto cameraEntity = camServ->get();
-				if (cameraEntity == core::Entity::invalidID) 
-				{
-					log::warning("No main camera in scene!");
-					return;
-				}
-
-				auto camTr = scene->getComponent<Transform>(cameraEntity);
-				if (!camTr)
-				{
-					log::warning("Camera has no Transform!");
-					return;
-				}
-				auto cubeMat = render::Primitives::getDefaultMaterial();
-				auto cubeMesh = render::Primitives::getCube();
-				auto world = camTr->world();
-				Vector3 spawnOffset = world.forward() * 1.0f;
-				Vector3 spawnPos = camTr->position + spawnOffset;
-				Vector3 shootDir = world.forward();
-				Vector3 velocity = shootDir * 15.0f;
-				
-				auto cube = scene->createEntity();
-				auto tr = scene->addComponent<Transform>(cube);
-
-				tr->position = spawnPos;
-				tr->rotation = camTr->rotation;
-				tr->scale = Vector3(0.3f, 0.3f, 0.3f);
-
-				auto collider = scene->addComponent<BoxCollider>(cube);
-				collider->size = Vector3(0.3f, 0.3f, 0.3f);
-
-				RigidBody rb;
-				rb.type = BodyType::Dynamic;
-				rb.mass = 1.0f;
-				rb.linearVelocity = velocity;
-				rb.useGravity = true;
-
-				scene->addComponent<RigidBody>(cube,rb);
-
-				auto meshRenderer = scene->addComponent<MeshRenderer>(cube);
-				meshRenderer->material = cubeMat;
-				auto meshFilter = scene->addComponent<MeshFilter>(cube);
-				meshFilter->mesh = cubeMesh;
-
-				log::debug("Cube spawned at {}, {}, {}", spawnPos.x, spawnPos.y, spawnPos.z);
-
-			});
 	}
 }
