@@ -47,6 +47,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "physics", "lib\physics\phys
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Jolt", "lib\JoltSolution\Jolt.vcxproj", "{CFBCD1BA-4E17-3EDE-8668-BE636B2AB2C2}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "imGui", "lib\imGui\imGui.vcxproj", "{98210AD8-65F1-42DB-825C-E4CAC78084D0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -89,6 +91,10 @@ Global
 		{CFBCD1BA-4E17-3EDE-8668-BE636B2AB2C2}.Debug|x64.Build.0 = Debug|x64
 		{CFBCD1BA-4E17-3EDE-8668-BE636B2AB2C2}.Release|x64.ActiveCfg = Release|x64
 		{CFBCD1BA-4E17-3EDE-8668-BE636B2AB2C2}.Release|x64.Build.0 = Release|x64
+		{98210AD8-65F1-42DB-825C-E4CAC78084D0}.Debug|x64.ActiveCfg = Debug|x64
+		{98210AD8-65F1-42DB-825C-E4CAC78084D0}.Debug|x64.Build.0 = Debug|x64
+		{98210AD8-65F1-42DB-825C-E4CAC78084D0}.Release|x64.ActiveCfg = Release|x64
+		{98210AD8-65F1-42DB-825C-E4CAC78084D0}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

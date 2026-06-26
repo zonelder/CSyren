@@ -77,6 +77,11 @@ namespace csyren::render
 		bool bindMaterial(ResourceManager& rm, MaterialHandle material,const VertexLayout& vertexLayout);
 
 		bool bindEntity(const SemanticBufferLayout* layout);
+
+		RenderQueue& queue() noexcept
+		{
+			return _mainQueue;
+		}
 	private:
 		void waitForGpu();
 		void resizeSwapChain(uint32_t width, uint32_t height);

@@ -13,74 +13,104 @@
 #include "core/camera.h"
 #include "renderer.h"
 #include "math/matrix4x4.h"
-/*
 
-DirectX::XMMATRIX createProjection(csyren::core::components::Camera& camera)
-{
+#include "imGui/imgui.h"
+#include "imGui/backends/imgui_impl_dx12.h"
+#include "imGui/backends/imgui_impl_win32.h"
 
-	using namespace DirectX;
-	using namespace csyren::core::components;
 
-	if (camera.projection == ProjectionType::Perspective)
-	{
-		return csyren::math::Matrix4x4::perspective(camera.fov, camera.aspectRatio, camera.near, camera.far);
-	}
-	else // Orthographic
-	{
-		// Interpret FOV as vertical height of view volume
-		float viewHeight = camera.fov;
-		float viewWidth = viewHeight * camera.aspectRatio;
-		return DirectX::XMMatrixOrthographicLH(viewWidth, viewHeight, camera.near, camera.far);
-	}
-}
-*/
 namespace csyren::render
 {
-	class StartRenderSystem : public core::System
+	class EditorSystem : public core::System
 	{
 	public:
-		void update() override
+
+		void init() override
 		{
-			using namespace csyren::core::components;
-			auto renderer = core::Services::get<render::Renderer>();
-			/*
-			auto cameraEntt = core::Services::get<core::CameraContextService>()->get();
-			auto time = core::Services::get<core::Time>();
-			auto scene = core::Services::get<core::Scene>();
-			auto camera = scene->getComponent<Camera>(cameraEntt);
-			auto cameraTransform = scene->getComponent<Transform>(cameraEntt);
-			auto engineVariables = renderer->getEngineVariableBuffer();
-			engineVariables->totalTime = time->totalTime();
-			DirectX::XMMATRIX invView = cameraTransform->world();
-			DirectX::XMStoreFloat4x4(&engineVariables->invViewMatrix, invView);
+			IMGUI_CHECKVERSION();
 
-			// viewMatrix = inverse(invViewMatrix)
-			DirectX::XMMATRIX view = DirectX::XMMatrixInverse(nullptr, invView);
-			DirectX::XMStoreFloat4x4(&engineVariables->viewMatrix, view);
+			if (!ImGui::GetCurrentContext()) {
+				ImGui::CreateContext();
+			}
 
-			// projectionMatrix = projection
-			DirectX::XMMATRIX proj = createProjection(*camera);
-			DirectX::XMStoreFloat4x4(&engineVariables->projectionMatrix, proj);
+			ImGuiIO& io = ImGui::GetIO();
+			io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+			ImGui::StyleColorsDark();
 
-			// viewProjectionMatrix = view * projection
-			DirectX::XMMATRIX viewProj = DirectX::XMMatrixMultiply(view, proj);
-			DirectX::XMStoreFloat4x4(&engineVariables->viewProjectionMatrix, viewProj);
-			*/
+			HWND hwnd = core::Services::get<Window>()->hwnd();
+			ImGui_ImplWin32_Init(hwnd);
+
+			auto* renderer = core::Services::get<render::Renderer>();
+			ID3D12Device* device = renderer->device();
+
+			D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+			heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+			heapDesc.NumDescriptors = 1;
+			heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+			device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&s_fontSrvHeap));
+			auto numFrames = 2;
+			// Новый API для ImGui 1.90+
+			ImGui_ImplDX12_InitInfo init_info = {};
+			init_info.Device = device;
+			init_info.CommandQueue = renderer->queue().raw(); 			
+			init_info.NumFramesInFlight = numFrames;
+			init_info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+			init_info.DSVFormat = DXGI_FORMAT_UNKNOWN;
+			init_info.SrvDescriptorHeap = s_fontSrvHeap;
+			init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* gpu_handle) {
+				*cpu_handle = s_fontSrvHeap->GetCPUDescriptorHandleForHeapStart();
+				*gpu_handle = s_fontSrvHeap->GetGPUDescriptorHandleForHeapStart();
+				};
+
+			init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE) {};
+
+			ImGui_ImplDX12_Init(&init_info);
 		}
+		void onFrame() override
+		{
+			// 1. Начинаем новый кадр
+			ImGui_ImplDX12_NewFrame();
+			ImGui_ImplWin32_NewFrame();
+			ImGui::NewFrame();
+
+			// 2. Рисуем UI (Тестовое окно + Демо)
+			ImGui::ShowDemoWindow();
+
+			ImGui::Begin("CSyren Editor Test");
+			ImGui::Text("Hello from ECS EditorSystem!");
+			if (ImGui::Button("Test Button")) 
+			{
+				log::info("Button clicked!");
+			}
+			ImGui::End();
+			auto* renderer = core::Services::get<render::Renderer>();
+			ID3D12GraphicsCommandList* cmdList = renderer->commandList();
+
+			ID3D12DescriptorHeap* heaps[] = { s_fontSrvHeap };
+			cmdList->SetDescriptorHeaps(1, heaps);
+			// 3. Завершаем кадр и рендерим в CommandList
+			ImGui::Render();
+
+			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), cmdList);
+		}
+
+		void shutdown() override
+		{
+			ImGui_ImplDX12_Shutdown();
+			ImGui_ImplWin32_Shutdown();
+			ImGui::DestroyContext();
+
+			// Освобождаем хип
+			if (s_fontSrvHeap) {
+				s_fontSrvHeap->Release();
+				s_fontSrvHeap = nullptr;
+			}
+		}
+	private:
+		static ID3D12DescriptorHeap* s_fontSrvHeap;
 	};
 
-	REGISTER_SYSTEM(StartRenderSystem);
-
-	class EndRenderSystem : public core::System
-	{
-	public:
-		void update() override
-		{
-			using namespace csyren::core::components;
-			auto renderer = core::Services::get<render::Renderer>();
-		}
-	};
-
-	REGISTER_SYSTEM(EndRenderSystem);
+	ID3D12DescriptorHeap* EditorSystem::s_fontSrvHeap = nullptr;
+	REGISTER_SYSTEM(EditorSystem)
 }
 

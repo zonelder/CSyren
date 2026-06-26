@@ -4,6 +4,8 @@
 #include "cstdmf/assert_helpler.h"
 #include "services.h"
 
+extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 namespace csyren::core
 {
 
@@ -99,6 +101,9 @@ namespace csyren::core
 
 	LRESULT Window::handleMsgImpl(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
+		if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
+			return true;
+
 		CS_ASSERT(_dispatcher != nullptr && "dispatcher should be ready in main game loop.");
 		using InputEvent = input::InputEvent;
 		using EventType = InputEvent::Type;

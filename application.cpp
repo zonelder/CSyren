@@ -121,7 +121,8 @@ namespace csyren
 		renderer->beginResourceUpload();
 		render::Primitives::registerFabricsAll();
 		onSceneStart();
-		_systems.init();
+		//TODO(dx12) а как работать с динамическими системами?
+		//_systems.init();
 
 		renderer->endResourceUpload();
 		log::info("---------------------------------------------------------------------------------------------");
