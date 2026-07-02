@@ -145,7 +145,7 @@ namespace csyren::core
 					pool->erase(c.entt);
 					if (Entity* ent = self->_entities.try_get(c.entt))
 					{
-						ent->components.set(reflection::ComponentFamily::getID<T>(), false);
+						ent->remove(reflection::ComponentFamily::getID<T>());
 					}
 				}
 				return false;
@@ -255,14 +255,14 @@ namespace csyren::core
 			if (!ent) return ComponentRef<T>();
 
 			const size_t family = reflection::ComponentFamily::getID<T>();
-			if (ent->components.test(family)) throw std::runtime_error("Component Already presented)");
+			if (ent->has(family)) throw std::runtime_error("Component Already presented)");
 
 			auto pool = getOrCreatePool<T>(family);
 			T* ptr = pool->emplace(id, std::forward<Args>(args)...);
 			ComponentRef<T> compRef(id, pool);
 			if (ptr)
 			{
-				ent->components[family] = true;
+				ent->add(family);
 				_bus->publish(getAddToken<T>(),
 					events::ComponentCreateEvent<T>{compRef});
 			}
@@ -276,7 +276,7 @@ namespace csyren::core
 			if (!ent) return false;
 
 			const size_t family = reflection::ComponentFamily::getID<T>();
-			return ent->components.test(family);
+			return ent->has(family);
 
 		}
 
@@ -287,7 +287,7 @@ namespace csyren::core
 			if (!ent) return;
 
 			const size_t family = reflection::ComponentFamily::getID<T>();
-			if (!ent->components.test(family)) return;
+			if (!ent->has(family)) return;
 			_deferred.pushDestroyComponent(id, family);
 		}
 
@@ -295,7 +295,7 @@ namespace csyren::core
 		{
 			Entity* ent = _entities.try_get(id);
 			if (!ent) return;
-			if (!ent->components.test(family)) return;
+			if (!ent->has(family)) return;
 			_deferred.pushDestroyComponent(id, family);
 		}
 
@@ -330,7 +330,7 @@ namespace csyren::core
 				if (!ent) continue;
 				for (const auto& [family, m] : _meta)
 				{
-					if (ent->components.test(family))
+					if (ent->has(family))
 					{
 						cm.entt = e.id;
 						cm.family = family;

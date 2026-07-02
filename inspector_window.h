@@ -14,6 +14,11 @@ namespace csyren::editor
     public:
         InspectorWindow() : BaseEditorWindow("inspector") {}
 
+        void onInit() override
+        {
+
+        }
+
         void onFrame() override
         {
             auto* scene = core::Services::get<core::Scene>();
@@ -37,9 +42,18 @@ namespace csyren::editor
             ImGui::Text("%s", entt->name.c_str());
             ImGui::PopStyleColor();
 
+
+
             ImGui::Spacing();
-            ImGui::Separator();
-            ImGui::Spacing();
+
+            
+            for (auto i : entt->componentView())
+            {
+                ImGui::Separator();
+                ImGui::Spacing();
+                ImGui::Text("comp %d", i);
+                ImGui::Spacing();
+            }
         }
     };
 }

@@ -22,11 +22,13 @@
   <ItemGroup>
     <ClInclude Include="application.h" />
     <ClInclude Include="base_editor_window.h" />
+    <ClInclude Include="component_editor.h" />
     <ClInclude Include="debug_rotator.h" />
     <ClInclude Include="debug_rotator_system.h" />
     <ClInclude Include="editor_camera_controller.h" />
     <ClInclude Include="editor_camera_controller_system.h" />
     <ClInclude Include="editor_selection.h" />
+    <ClInclude Include="empty_editor.h" />
     <ClInclude Include="inspector_window.h" />
     <ClInclude Include="mesh_render_system.h" />
     <ClInclude Include="mesh_filter.h" />
@@ -35,6 +37,7 @@
     <ClInclude Include="serializer.h" />
     <ClInclude Include="system_registrator.h" />
     <ClInclude Include="todo.h" />
+    <ClInclude Include="transform_editor.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="lib\core\core.vcxproj">

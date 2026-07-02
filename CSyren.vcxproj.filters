@@ -83,5 +83,14 @@
     <ClInclude Include="editor_selection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="component_editor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="transform_editor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="empty_editor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

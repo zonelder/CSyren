@@ -132,19 +132,10 @@ namespace csyren::editor
 			}
 
 			// Рендерим все окна
-			for (auto& window : _windows) {
+			for (auto& window : _windows) 
+			{
 				window->render();
 			}
-
-			ImGui::ShowDemoWindow();
-
-			ImGui::Begin("CSyren Editor Test");
-			ImGui::Text("Hello from ECS EditorSystem!");
-			if (ImGui::Button("Test Button")) 
-			{
-				log::info("Button clicked!");
-			}
-			ImGui::End();
 			auto* renderer = core::Services::get<render::Renderer>();
 			ID3D12GraphicsCommandList* cmdList = renderer->commandList();
 
