@@ -26,6 +26,8 @@
     <ClInclude Include="debug_rotator_system.h" />
     <ClInclude Include="editor_camera_controller.h" />
     <ClInclude Include="editor_camera_controller_system.h" />
+    <ClInclude Include="editor_selection.h" />
+    <ClInclude Include="inspector_window.h" />
     <ClInclude Include="mesh_render_system.h" />
     <ClInclude Include="mesh_filter.h" />
     <ClInclude Include="scene_hierarchy.h" />

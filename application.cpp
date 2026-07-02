@@ -107,6 +107,7 @@ namespace csyren
 		core::details::ServiceRegistry::create<render::Renderer>();
 		core::details::ServiceRegistry::create<render::ResourceManager>();
 		core::details::ServiceRegistry::create<render::details::PSOFactory>();
+		core::details::ServiceRegistry::create<editor::EditorSelection>();
 
 		auto bus = core::Services::get<core::events::EventBus2>();
 		auto renderer = core::Services::get<render::Renderer>();

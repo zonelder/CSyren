@@ -20,6 +20,7 @@
 
 #include "base_editor_window.h"
 #include "scene_hierarchy.h"
+#include "inspector_window.h"
 
 
 
@@ -105,7 +106,7 @@ namespace csyren::editor
 
 
 			_windows.push_back(std::make_unique<SceneHierarchyWindow>());
-
+			_windows.push_back(std::make_unique<InspectorWindow>());
 			ImGui_ImplDX12_Init(&init_info);
 		}
 		void onFrame() override

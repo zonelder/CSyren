@@ -77,5 +77,11 @@
     <ClInclude Include="base_editor_window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="inspector_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="editor_selection.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
