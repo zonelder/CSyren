@@ -41,6 +41,7 @@ namespace csyren::editor
 
 			ImGuiIO& io = ImGui::GetIO();
 			io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+			io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 			ImGui::StyleColorsDark();
 			auto window = core::Services::get<Window>();
 			HWND hwnd = window->hwnd();
@@ -50,7 +51,7 @@ namespace csyren::editor
 			auto* shaderHeap = core::Services::get<render::DescriptorManager>()->shaderHeap();
 			ID3D12Device* device = renderer->device();
 			auto numFrames = 2;
-			// Новый API для ImGui 1.90+
+
 			ImGui_ImplDX12_InitInfo init_info = {};
 			init_info.Device = device;
 			init_info.CommandQueue = renderer->queue().raw(); 			
@@ -113,9 +114,12 @@ namespace csyren::editor
 			ImGui_ImplWin32_NewFrame();
 			ImGui::NewFrame();
 
-			if (ImGui::BeginMainMenuBar()) {
-				if (ImGui::BeginMenu("View")) {
-					for (auto& window : _windows) {
+			if (ImGui::BeginMainMenuBar()) 
+			{
+				if (ImGui::BeginMenu("View")) 
+				{
+					for (auto& window : _windows) 
+					{
 						bool isOpen = window->isOpen();
 						if (ImGui::MenuItem(window->title().data(), nullptr, &isOpen)) {
 							window->setOpen(isOpen);
@@ -146,6 +150,12 @@ namespace csyren::editor
 			ImGui::Render();
 
 			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), cmdList);
+			const ImGuiIO& io = ImGui::GetIO();
+			if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+			{
+				ImGui::UpdatePlatformWindows();
+				ImGui::RenderPlatformWindowsDefault(nullptr, (void*)cmdList);
+			}
 		}
 
 		void shutdown() override
