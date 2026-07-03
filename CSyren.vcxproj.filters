@@ -92,5 +92,8 @@
     <ClInclude Include="empty_editor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="system_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

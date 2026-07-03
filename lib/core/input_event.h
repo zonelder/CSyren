@@ -8,7 +8,7 @@
 #include <memory>
 #include <algorithm>
 
-namespace csyren::core::input
+namespace csyren::core
 {
 	/**
 	 * 

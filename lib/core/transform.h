@@ -3,7 +3,7 @@
 #include "core/serialize_base.h"
 #include "math/math.h"
 
-namespace csyren::core::components
+namespace csyren::core
 {
     struct Transform
     {

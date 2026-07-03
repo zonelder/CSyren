@@ -4,7 +4,7 @@
 #include "core/renderer.h"
 #include "dx12_graphic/serialize_base.h"
 
-namespace csyren::render::components
+namespace csyren::render
 {
     struct MeshFilter
     {
@@ -15,7 +15,7 @@ namespace csyren::render::components
 
     struct MeshRenderer
     {
-        csyren::render::MaterialHandle material;
+        MaterialHandle material;
     private:
         SERIALIZABLE(MeshRenderer, material);
     };

@@ -2,7 +2,7 @@
 #define __CSYREN_KEYCODE__
 #include <Windows.h>
 
-namespace csyren::core::input
+namespace csyren::core
 {
 	enum class KeyCode : int
 	{

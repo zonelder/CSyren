@@ -2,7 +2,7 @@
 
 #include <DirectXMath.h>
 
-namespace csyren::components
+namespace csyren
 {
 	struct DebugRotator
 	{

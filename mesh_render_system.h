@@ -12,8 +12,8 @@
 
 using namespace csyren::core;
 using namespace csyren::math;
-using namespace csyren::render::components;
-using namespace csyren::core::components;
+using namespace csyren::render;
+using namespace csyren::core;
 
 namespace csyren
 {

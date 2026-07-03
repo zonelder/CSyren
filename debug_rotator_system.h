@@ -10,8 +10,8 @@
 #include "math/math.h"
 #include "core/time.h"
 
-using namespace csyren::core::components;
-using namespace csyren::components;
+using namespace csyren::core;
+using namespace csyren;
 
 namespace csyren
 {

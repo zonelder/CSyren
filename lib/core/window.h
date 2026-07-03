@@ -66,7 +66,7 @@ namespace csyren::core
 		int _height;
 		const wchar_t* _title;
 		HWND _hWnd;
-		details::DispatchHandle* _dispatcher;
+		details::DispatchHandle* _dispatcher{ nullptr };
 		bool _shiftDown = false;
 		bool _ctrlDown = false;
 		bool _altDown = false;

@@ -10,23 +10,23 @@ namespace csyren::core
 	void InputDispatchSystem::init()
 	{
 		setToMainWindow();
-		auto bus = Services::get<events::EventBus2>();
-		_actionToken = bus->register_publisher<input::InputAction>();
+		auto bus = Services::get<EventBus2>();
+		_actionToken = bus->register_publisher<InputAction>();
 
-		using EventType = input::InputEvent::Type;
-		_tokens[static_cast<uint32_t>(EventType::KeyDown)] =			bus->register_publisher<input::InputEvent>(static_cast<uint32_t>(EventType::KeyDown));
-		_tokens[static_cast<uint32_t>(EventType::KeyUp)] =				bus->register_publisher<input::InputEvent>(static_cast<uint32_t>(EventType::KeyUp));
-		_tokens[static_cast<uint32_t>(EventType::Keyhold)] =			bus->register_publisher<input::InputEvent>(static_cast<uint32_t>(EventType::Keyhold));
-		_tokens[static_cast<uint32_t>(EventType::MouseButtonDown)] =	bus->register_publisher<input::InputEvent>(static_cast<uint32_t>(EventType::MouseButtonDown));
-		_tokens[static_cast<uint32_t>(EventType::MouseButtonUp)] =		bus->register_publisher<input::InputEvent>(static_cast<uint32_t>(EventType::MouseButtonUp));
-		_tokens[static_cast<uint32_t>(EventType::MouseMove)] =			bus->register_publisher<input::InputEvent>(static_cast<uint32_t>(EventType::MouseMove));
+		using EventType = InputEvent::Type;
+		_tokens[static_cast<uint32_t>(EventType::KeyDown)] =			bus->register_publisher<InputEvent>(static_cast<uint32_t>(EventType::KeyDown));
+		_tokens[static_cast<uint32_t>(EventType::KeyUp)] =				bus->register_publisher<InputEvent>(static_cast<uint32_t>(EventType::KeyUp));
+		_tokens[static_cast<uint32_t>(EventType::Keyhold)] =			bus->register_publisher<InputEvent>(static_cast<uint32_t>(EventType::Keyhold));
+		_tokens[static_cast<uint32_t>(EventType::MouseButtonDown)] =	bus->register_publisher<InputEvent>(static_cast<uint32_t>(EventType::MouseButtonDown));
+		_tokens[static_cast<uint32_t>(EventType::MouseButtonUp)] =		bus->register_publisher<InputEvent>(static_cast<uint32_t>(EventType::MouseButtonUp));
+		_tokens[static_cast<uint32_t>(EventType::MouseMove)] =			bus->register_publisher<InputEvent>(static_cast<uint32_t>(EventType::MouseMove));
 	}
 
 	void InputDispatchSystem::update()
 	{
-		input::InputAction action{ "","" };
-		auto devices = Services::get<input::Devices>();
-		auto bus = Services::get<events::EventBus2>();
+		InputAction action{ "","" };
+		auto devices = Services::get<Devices>();
+		auto bus = Services::get<EventBus2>();
 
 		devices->preUpdate();
 		while (!_eventBuffer.empty())
@@ -53,7 +53,7 @@ namespace csyren::core
 
 	void InputDispatchSystem::shutdown()
 	{
-		auto bus = Services::get<events::EventBus2>();
+		auto bus = Services::get<EventBus2>();
 		bus->unregister_publisher(_actionToken);
 
 		for (auto [_, token] : _tokens)

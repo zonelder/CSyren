@@ -15,11 +15,12 @@ namespace csyren::core
 			std::shared_ptr<System> system;
 			//TODO it may be string_view 
 			std::string name;
-			int priority;
 		};
-	public:
+		static constexpr size_t BACK_POS = std::numeric_limits<size_t>::max();
+		using movePair = std::pair<size_t, size_t>;
 
-		void addSystem(const std::string& name, int priority = 0)
+	public:
+		void add(const std::string& name, size_t pos = BACK_POS )
 		{
 			auto system = details::SystemRegistry::instance().create(name);
 			if (!system)
@@ -27,18 +28,29 @@ namespace csyren::core
 				log::error("SystemManager::failed to create system with name {}. Skip.\n", name);
 				return;
 			}
-			_systems.emplace_back(SystemEntry{ std::move(system),name, priority });
-			_sorted = false;
+
+			if (pos >= _systems.size())
+			{
+				_systems.emplace_back(SystemEntry{ std::move(system), name });
+			}
+			else
+			{
+				_systems.insert(_systems.begin() + pos, SystemEntry{ std::move(system), name });
+			}
 		}
 
-		void removeSystem(const std::string& name)
+		void remove(const std::string& name)
 		{
 			auto it = std::find_if(_systems.begin(), _systems.end(), [name](const SystemEntry& entry) {return name == entry.name;});
 			if (it == _systems.end())
 				return;
 
 			_systems.erase(it);
-			_sorted = false;
+		}
+
+		void reserve(size_t capacity)
+		{
+			_systems.reserve(capacity);
 		}
 
 		const auto& list() const noexcept
@@ -46,20 +58,15 @@ namespace csyren::core
 			return _systems;
 		}
 
-		void sort() 
+		void move(size_t src, size_t dst)
 		{
-			if (_sorted) return;
-			std::sort(_systems.begin(), _systems.end(),
-				[](const auto& a, const auto& b) {
-					return a.priority > b.priority;
-				});
-			_sorted = true;
+			_deferredMove = { src, dst };
 		}
+
 
 
 		void init()
 		{
-			sort();
 			for (auto entry : _systems)
 			{
 				entry.system->init();
@@ -78,6 +85,7 @@ namespace csyren::core
 
 		void update()
 		{
+			processMove();
 			for (auto entry : _systems)
 			{
 				entry.system->update();
@@ -92,9 +100,26 @@ namespace csyren::core
 			}
 		}
 	private:
+		void processMove()
+		{
+			auto [src, dst] = _deferredMove;
+			if (src >= _systems.size() || dst >= _systems.size() || src == dst)
+				return;
+
+			if (src < dst)
+			{
+				std::rotate(_systems.begin() + src, _systems.begin() + src + 1, _systems.begin() + dst + 1);
+			}
+			else
+			{
+				std::rotate(_systems.begin() + dst, _systems.begin() + src, _systems.begin() + src + 1);
+			}
+
+			_deferredMove = { SIZE_MAX, SIZE_MAX };
+		}
+		movePair _deferredMove;
 
 		std::vector<SystemEntry> _systems;
-		bool _sorted{ true };
 	};
 }
 

@@ -24,7 +24,7 @@ namespace csyren::core::reflection
 }
 
 
-namespace csyren::core::events
+namespace csyren::core
 {
 	using EventMarker = uint32_t;
 

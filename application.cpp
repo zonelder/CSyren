@@ -45,11 +45,11 @@
 namespace
 {
 
-	DirectX::XMMATRIX createProjection(csyren::core::components::Camera& camera)
+	DirectX::XMMATRIX createProjection(csyren::core::Camera& camera)
 	{
 
 		using namespace DirectX;
-		using namespace csyren::core::components;
+		using namespace csyren::core;
 
 		if (camera.projection == ProjectionType::Perspective)
 		{
@@ -90,7 +90,7 @@ namespace csyren
 		log::init();
 		log::info("-------------------------------------Init Application-------------------------------------");
 
-		using namespace core::components;
+		using namespace core;
 		core::details::TimeHandler timeHandler;
 
 		core::Entity::ID currentCameraEntt;
@@ -98,22 +98,25 @@ namespace csyren
 		core::details::ServiceRegistry::create<core::Window>(1200, 786, L"csyren engine");
 		core::details::ServiceRegistry::create<core::Time>();
 		core::details::ServiceRegistry::create<core::CameraContextService>([&currentCameraEntt]() { return currentCameraEntt; });
-		core::details::ServiceRegistry::create<core::events::EventBus2>();
+		core::details::ServiceRegistry::create<core::EventBus2>();
 		core::details::ServiceRegistry::create<core::Scene>();
 		core::details::ServiceRegistry::create<Serializer>();
 		core::details::ServiceRegistry::create<physics::PhysicsEngine>();
-		core::details::ServiceRegistry::create<core::input::Devices>();
+		core::details::ServiceRegistry::create<core::Devices>();
+		core::details::ServiceRegistry::create<core::SystemManager>();
 		core::details::ServiceRegistry::create<render::DescriptorManager>();
 		core::details::ServiceRegistry::create<render::Renderer>();
 		core::details::ServiceRegistry::create<render::ResourceManager>();
 		core::details::ServiceRegistry::create<render::details::PSOFactory>();
 		core::details::ServiceRegistry::create<editor::EditorSelection>();
 
-		auto bus = core::Services::get<core::events::EventBus2>();
+
+		auto bus = core::Services::get<core::EventBus2>();
 		auto renderer = core::Services::get<render::Renderer>();
 		auto scene = core::Services::get<core::Scene>();
 		auto time = core::Services::get<core::Time>();
 		auto window = core::Services::get<core::Window>();
+		auto systems = core::Services::get<core::SystemManager>();
 		core::details::ServiceRegistry::initializeAll();
 		log::info("-------------------------------------------------------------------------------------------");
 		log::info("-------------------------------Setup Start Up------------------------------------------------");
@@ -142,7 +145,7 @@ namespace csyren
 					log::info("---------------------------------------------------------------------------------------------");
 
 					log::info("-------------------------------Shutdown------------------------------------------------------");
-					_systems.shutdown();
+					systems->shutdown();
 					core::details::ServiceRegistry::shutdownAll();
 					log::shutdown();
 					return static_cast<int>(msg.wParam);
@@ -151,7 +154,7 @@ namespace csyren
 				DispatchMessage(&msg);
 			}
 
-			_systems.update();
+			systems->update();
 			auto [mainCameraID,camera,cameraTransform] = *(scene->view<Camera,Transform>().begin());//only first camera accepted
 			currentCameraEntt = mainCameraID;
 			auto engineVariables = renderer->getEngineVariableBuffer();
@@ -185,7 +188,7 @@ namespace csyren
 			renderer->commandList()->SetDescriptorHeaps(1, heaps);
 			renderer->clear(&(camera.background.x));
 
-			_systems.onFrame();
+			systems->onFrame();
 
 			renderer->endFrame();
 
@@ -202,15 +205,16 @@ namespace csyren
 	{
 
 		srand(time(0));
-		using namespace core::components;
-		using namespace render::components;
+		using namespace core;
+		using namespace render;
 		auto res = core::Services::get<render::ResourceManager>();
 		auto scene = core::Services::get<core::Scene>();
-		auto bus = core::Services::get<core::events::EventBus2>();
+		auto bus = core::Services::get<core::EventBus2>();
 		auto window = core::Services::get<core::Window>();
 		auto ser = core::Services::get<Serializer>();
+		auto systems = core::Services::get<core::SystemManager>();
 
-		ser->loadSystems("system.config", _systems);
+		ser->loadSystems("system.config", *systems);
 		//------------------------------------LOAD SCENE------------------------------------------------
 
 		auto texture = res->get<render::Texture>("E:\\stalker_online_git\\res\\textures\\default\\red.dds");
@@ -249,7 +253,7 @@ namespace csyren
 		float wallThickness = 0.5f;
 		auto createInvisibleWall = [&](Vector3 position, Vector3 size) {
 			auto wall = scene->createEntity("Wall");
-			auto tr = scene->addComponent<core::components::Transform>(wall);
+			auto tr = scene->addComponent<core::Transform>(wall);
 			tr->position = position;
 			tr->scale = size;
 
@@ -270,15 +274,15 @@ namespace csyren
 		auto box = scene->createEntity("box");
 
 		{
-			auto tr = scene->addComponent<core::components::Transform>(ground);
+			auto tr = scene->addComponent<core::Transform>(ground);
 			tr->position = Vector3{ 0.0f, -1.0f, 0.0f };
 			tr->scale = Vector3(10, 1, 10);
 			auto collider = scene->addComponent<physics::BoxCollider>(ground);
 			collider->size = Vector3{ 10.0f, 1.0f, 10.0f };
 			auto rb = scene->addComponent<physics::RigidBody>(ground, physics::RigidBody{ physics::BodyType::Static });
-			auto cubeRenderer = scene->addComponent<render::components::MeshRenderer>(ground);
+			auto cubeRenderer = scene->addComponent<render::MeshRenderer>(ground);
 			cubeRenderer->material = matDefault;
-			auto cubeMesh = scene->addComponent<render::components::MeshFilter>(ground);
+			auto cubeMesh = scene->addComponent<render::MeshFilter>(ground);
 			cubeMesh->mesh = meshCube;
 		}
 
@@ -286,14 +290,14 @@ namespace csyren
 			//*
 			auto textured = scene->createEntity("textured");
 
-			auto tr = scene->addComponent<core::components::Transform>(textured);
+			auto tr = scene->addComponent<core::Transform>(textured);
 			tr->rotation = Quaternion::euler(-45, 0, 0);
 			tr->scale = Vector3(3, 1, 3);
-			auto renderer = scene->addComponent<render::components::MeshRenderer>(textured);
+			auto renderer = scene->addComponent<render::MeshRenderer>(textured);
 			renderer->material = render::Primitives::getTextureMaterial();
 			auto mat = res->getMaterial(renderer->material);
 			mat->setTexture("diffuseTexture", texture2);
-			auto mesh = scene->addComponent<render::components::MeshFilter>(textured);
+			auto mesh = scene->addComponent<render::MeshFilter>(textured);
 			mesh->mesh = render::Primitives::getQuad();
 			//*/
 		}
@@ -312,7 +316,7 @@ namespace csyren
 				for (int z = 0; z < numCubesZ; ++z)
 				{
 					auto cube = scene->createEntity("dynamic cube");
-					auto tr = scene->addComponent<core::components::Transform>(cube);
+					auto tr = scene->addComponent<core::Transform>(cube);
 					tr->position = Vector3{
 						(x - numCubesX / 2) * spacing,
 						1.0f + y * spacing,
@@ -331,9 +335,9 @@ namespace csyren
 					auto collider = scene->addComponent<physics::BoxCollider>(cube);//should be a bug here as physic cant update this data.
 					collider->size = scale;
 					auto rb = scene->addComponent<physics::RigidBody>(cube, templateRB);
-					auto meshRenderer = scene->addComponent<render::components::MeshRenderer>(cube);
+					auto meshRenderer = scene->addComponent<render::MeshRenderer>(cube);
 					meshRenderer->material = matRainbow;
-					auto meshFilter = scene->addComponent<render::components::MeshFilter>(cube);
+					auto meshFilter = scene->addComponent<render::MeshFilter>(cube);
 					meshFilter->mesh = meshCube;
 				}
 		//*/

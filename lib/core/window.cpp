@@ -113,9 +113,9 @@ namespace csyren::core
 		}
 
 		CS_ASSERT(_dispatcher != nullptr && "dispatcher should be ready in main game loop.");
-		using InputEvent = input::InputEvent;
+		using InputEvent = InputEvent;
 		using EventType = InputEvent::Type;
-		using MouseButton = input::MouseButton;
+		using MouseButton = MouseButton;
 		InputEvent event;
 		switch (msg)
 		{

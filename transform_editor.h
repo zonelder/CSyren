@@ -5,20 +5,13 @@
 
 namespace csyren::editor
 {
-    class TransformEditor : public ComponentEditor
+    class TransformEditor : public ComponentEditor<core::Transform>
     {
-        using comp_type = core::_components::Transform;
     public:
         const char* name() const override { return "Transform"; }
 
-        void render(core::Entity* entity, core::Scene* scene) override
+        void onInspect(comp_type& transform, core::Entity::ID entity, core::Scene* scene) override
         {
-            auto id = entity->id;
-            if (!scene->hasComponent<comp_type>(id)) return;
-
-            auto transform = scene->getComponent<comp_type>(id);
-            if (!transform) return;
-
             bool changed = false;
 
             // Position

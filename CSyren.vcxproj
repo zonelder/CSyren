@@ -36,6 +36,7 @@
     <ClInclude Include="scene_loader.h" />
     <ClInclude Include="serializer.h" />
     <ClInclude Include="system_registrator.h" />
+    <ClInclude Include="system_window.h" />
     <ClInclude Include="todo.h" />
     <ClInclude Include="transform_editor.h" />
   </ItemGroup>

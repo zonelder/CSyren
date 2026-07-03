@@ -23,10 +23,10 @@ namespace csyren::core
 		void update() override;
 
 	private:
-		input::InputContextManager _contextManager;
+		InputContextManager _contextManager;
 
-		events::PublishToken _actionToken;
-		std::unordered_map<uint32_t, events::PublishToken> _tokens;
+		PublishToken _actionToken;
+		std::unordered_map<uint32_t, PublishToken> _tokens;
 
 	};
 

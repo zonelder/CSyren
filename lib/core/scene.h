@@ -86,7 +86,7 @@ namespace csyren::core
 
 }
 
-namespace csyren::core::events
+namespace csyren::core
 {
 	struct EntityCreateEvent { Entity::ID id; };
 	struct EntityDestroyEvent { Entity::ID id; };
@@ -121,12 +121,12 @@ namespace csyren::core
 		friend SceneTest;
 		template<typename...> friend class SceneView;
 
-		using DestructFn = bool(Scene*,const DestroyComponentCommand&,events::PublishToken,events::EventBus2&);
+		using DestructFn = bool(Scene*,const DestroyComponentCommand&,PublishToken,EventBus2&);
 		struct ComponentMeta
 		{
 			std::shared_ptr<PoolBase> pool;
-			events::PublishToken      addToken;
-			events::PublishToken      removeToken;
+			PublishToken      addToken;
+			PublishToken      removeToken;
 			DestructFn* removeFn = nullptr;
 		};
 		using ComponentsMeta = std::unordered_map<size_t, ComponentMeta>;
@@ -135,13 +135,13 @@ namespace csyren::core
 		struct ComponentOps
 		{
 			
-			static bool destroyThunk(Scene* self,const DestroyComponentCommand& c,events::PublishToken token,events::EventBus2& bus)
+			static bool destroyThunk(Scene* self,const DestroyComponentCommand& c,PublishToken token,EventBus2& bus)
 			{
 				auto pool = self->getPool<T>();
 				T* ptr = pool ? pool->try_get(c.entt) : nullptr;
 				if (ptr)
 				{
-					bus.publish(token, events::ComponentDestroyEvent<T>{ComponentRef<T>(c.entt,pool)});
+					bus.publish(token, ComponentDestroyEvent<T>{ComponentRef<T>(c.entt,pool)});
 					pool->erase(c.entt);
 					if (Entity* ent = self->_entities.try_get(c.entt))
 					{
@@ -159,9 +159,9 @@ namespace csyren::core
 
 		void init()
 		{
-			_bus = core::Services::get<events::EventBus2>();
-			_entityCreateToken = _bus->register_publisher<events::EntityCreateEvent>();
-			_entityDestroyToken = _bus->register_publisher<events::EntityDestroyEvent>();
+			_bus = core::Services::get<EventBus2>();
+			_entityCreateToken = _bus->register_publisher<EntityCreateEvent>();
+			_entityDestroyToken = _bus->register_publisher<EntityDestroyEvent>();
 			_entities.emplace(ROOT_PARENT, Entity{});
 			Entity* ent = _entities.try_get(ROOT_PARENT);
 			ent->id = ROOT_PARENT;
@@ -234,7 +234,7 @@ namespace csyren::core
 				p = _entities.try_get(ROOT_PARENT);
 			}
 			p->children.push_back(id);
-			_bus->publish(_entityCreateToken, events::EntityCreateEvent{id});
+			_bus->publish(_entityCreateToken, EntityCreateEvent{id});
 			return id;
 		}
 
@@ -264,7 +264,7 @@ namespace csyren::core
 			{
 				ent->add(family);
 				_bus->publish(getAddToken<T>(),
-					events::ComponentCreateEvent<T>{compRef});
+					ComponentCreateEvent<T>{compRef});
 			}
 			return compRef;
 		}
@@ -338,7 +338,7 @@ namespace csyren::core
 					}
 				}
 
-				_bus->publish(_entityDestroyToken, events::EntityDestroyEvent{ e.id });
+				_bus->publish(_entityDestroyToken, EntityDestroyEvent{ e.id });
 
 				if (ent->parent != Entity::invalidID)
 				{
@@ -468,12 +468,12 @@ namespace csyren::core
 		{
 			const size_t family = reflection::ComponentFamily::getID<T>();
 			ComponentMeta& m = _meta[family];
-			m.addToken = _bus->register_publisher<events::ComponentCreateEvent<T>>();
-			m.removeToken = _bus->register_publisher<events::ComponentDestroyEvent<T>>();
+			m.addToken = _bus->register_publisher<ComponentCreateEvent<T>>();
+			m.removeToken = _bus->register_publisher<ComponentDestroyEvent<T>>();
 			m.removeFn = &ComponentOps<T>::destroyThunk;
 		}
 		template<typename T>
-		events::PublishToken& getAddToken()
+		PublishToken& getAddToken()
 		{
 			size_t family = reflection::ComponentFamily::getID<T>();
 			if (!_meta.contains(family)) getOrCreatePool<T>(family);
@@ -481,7 +481,7 @@ namespace csyren::core
 		}
 
 		template<typename T>
-		events::PublishToken& getRemoveToken()
+		PublishToken& getRemoveToken()
 		{
 			size_t family = reflection::ComponentFamily::getID<T>();
 			if (!_meta.contains(family)) getOrCreatePool<T>(family);
@@ -497,10 +497,10 @@ namespace csyren::core
 
 		DeferredCommands _deferred;
 
-		events::PublishToken _entityCreateToken;
-		events::PublishToken _entityDestroyToken;
+		PublishToken _entityCreateToken;
+		PublishToken _entityDestroyToken;
 
-		events::EventBus2* _bus;
+		EventBus2* _bus;
 		//
 	};
 

@@ -36,6 +36,5 @@ namespace csyren
 		void onSceneStart();
 
 	private:
-		core::SystemManager							_systems;
 	};
 }

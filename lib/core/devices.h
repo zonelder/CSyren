@@ -9,7 +9,7 @@ namespace csyren::core
 	class InputDispatchSystem;
 }
 
-namespace csyren::core::input
+namespace csyren::core
 {
 	class Devices
 	{

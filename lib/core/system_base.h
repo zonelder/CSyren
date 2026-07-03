@@ -38,7 +38,8 @@ namespace csyren::core
 				return reg;
 			}
 
-			void registerSystem(std::string_view name, SystemCreator creator) {
+			void registerSystem(std::string_view name, SystemCreator creator) 
+			{
 				_creators[name] = creator;
 			}
 

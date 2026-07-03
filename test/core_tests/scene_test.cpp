@@ -14,7 +14,7 @@ struct DummyComponent {};
 
 class SceneTest : public ::testing::Test {
 protected:
-    events::EventBus2 bus;
+    EventBus2 bus;
     Scene scene{};
 
 
@@ -116,10 +116,10 @@ TEST_F(SceneTest, EventDelivery) {
     int createCount = 0;
     int destroyCount = 0;
 
-    auto createToken = bus.subscribe<events::EntityCreateEvent>(
+    auto createToken = bus.subscribe<EntityCreateEvent>(
         [&](const auto&) { createCount++; });
 
-    auto destroyToken = bus.subscribe<events::EntityDestroyEvent>(
+    auto destroyToken = bus.subscribe<EntityDestroyEvent>(
         [&](const auto&) { destroyCount++; });
 
 

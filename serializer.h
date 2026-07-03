@@ -7,7 +7,7 @@ namespace csyren::core
     class Scene;
 }
 
-namespace csyren::core::events
+namespace csyren::core
 {
     struct LoadSceneRequest
     {

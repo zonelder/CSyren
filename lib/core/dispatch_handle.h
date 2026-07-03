@@ -8,13 +8,13 @@ namespace csyren::core::details
 	class DispatchHandle
 	{
 	public:
-		void dispatch(const input::InputEvent& event)
+		void dispatch(const InputEvent& event)
 		{
 			_eventBuffer.push(event);
 		}
 	protected:
 
 		void setToMainWindow();
-		InputBuffer<input::InputEvent> _eventBuffer;
+		InputBuffer<InputEvent> _eventBuffer;
 	};
 }

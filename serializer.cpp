@@ -87,14 +87,13 @@ namespace csyren
         if (!data.contains("systems")) return false;
 
         systems.shutdown();
-
-        for (const auto& system : data["systems"])
+        const auto& sysJsons = data["systems"];
+        systems.reserve(sysJsons.size());
+        for (const auto& system : sysJsons)
         {
             std::string name;
-            int priority;
             system["class"].get_to(name);
-            system["priority"].get_to(priority);
-            systems.addSystem(name,priority );
+            systems.add(name);
         }
         systems.init();
 
@@ -110,7 +109,6 @@ namespace csyren
         {
             json sysJson;
             sysJson["class"] = sys.name;
-            sysJson["priority"] = sys.priority;
             entitiesArray.push_back(sysJson);
 
         }

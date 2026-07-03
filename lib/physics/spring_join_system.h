@@ -18,10 +18,10 @@ namespace csyren::physics
 			using ctx = core::Services;
 			auto physicEngine = ctx::get<PhysicsEngine>();
 			auto scene = ctx::get<core::Scene>();
-			auto view = scene->view<core::components::Transform,RigidBody, SpringJoin>();
+			auto view = scene->view<core::Transform,RigidBody, SpringJoin>();
 			for (auto [ent,trA, rb, join] : view )
 			{
-				auto pTrB = scene->getComponent< core::components::Transform>(join.connectedEntity);
+				auto pTrB = scene->getComponent< core::Transform>(join.connectedEntity);
 				if (!pTrB) continue;
 				auto& trB = *pTrB;
 				auto posA = trA.position + join.anchor;

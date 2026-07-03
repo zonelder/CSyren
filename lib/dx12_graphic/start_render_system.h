@@ -21,7 +21,7 @@
 #include "base_editor_window.h"
 #include "scene_hierarchy.h"
 #include "inspector_window.h"
-
+#include "system_window.h"
 
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -107,6 +107,7 @@ namespace csyren::editor
 
 			_windows.push_back(std::make_unique<SceneHierarchyWindow>());
 			_windows.push_back(std::make_unique<InspectorWindow>());
+			_windows.push_back(std::make_unique<SystemWindow>());
 			ImGui_ImplDX12_Init(&init_info);
 		}
 		void onFrame() override

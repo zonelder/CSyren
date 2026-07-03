@@ -6,7 +6,7 @@
 #include <bitset>
 
 
-namespace csyren::core::input
+namespace csyren::core
 {
 	class MouseDevice final: public InputDevice
 	{

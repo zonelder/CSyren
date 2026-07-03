@@ -6,7 +6,7 @@
 #undef far
 #undef near
 
-namespace csyren::core::components
+namespace csyren::core
 {
 	enum ProjectionType
 	{

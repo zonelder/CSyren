@@ -12,10 +12,8 @@
 #include "editor_camera_controller.h"
 
 
-using namespace csyren::core::components;
-using namespace csyren::core::input;
+using namespace csyren::core;
 using namespace csyren::math;
-using namespace csyren::core::events;
 
 namespace csyren
 {
@@ -27,7 +25,7 @@ namespace csyren
         void update() override
         {
 			using ctx = core::Services;
-			auto devices = ctx::get<core::input::Devices>();
+			auto devices = ctx::get<core::Devices>();
 			auto scene = ctx::get<core::Scene>();
 			auto time = ctx::get<core::Time>();
 

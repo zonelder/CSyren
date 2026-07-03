@@ -10,8 +10,8 @@
 #include "math/math.h"
 #include "core/time.h"
 
-using namespace csyren::core::components;
-using namespace csyren::components;
+using namespace csyren::core;
+using namespace csyren;
 
 namespace csyren
 {
@@ -22,15 +22,15 @@ namespace csyren
 
         void init() override
         {
-			auto bus = core::Services::get<core::events::EventBus2>();
+			auto bus = core::Services::get<core::EventBus2>();
 			auto scene = core::Services::get<core::Scene>();
 
-			bus->subscribe<core::input::InputEvent>(static_cast<uint32_t>(core::input::InputEvent::Type::KeyDown), [scene](core::input::InputEvent& event)
+			bus->subscribe<core::InputEvent>(static_cast<uint32_t>(core::InputEvent::Type::KeyDown), [scene](core::InputEvent& event)
 				{
-					using namespace core::components;
+					using namespace core;
 					using namespace physics;
-					using namespace render::components;
-					if (event.code != static_cast<int>(core::input::KeyCode::Space))
+					using namespace render;
+					if (event.code != static_cast<int>(core::KeyCode::Space))
 					{
 						return;
 					}
@@ -84,7 +84,7 @@ namespace csyren
 				});
         }
     private:
-        core::events::SubscriberToken sub_;
+        core::SubscriberToken sub_;
     };
 
     REGISTER_SYSTEM(CubeShooterSystem);

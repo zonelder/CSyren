@@ -5,7 +5,7 @@
 #include <atomic>
 #include <string>
 
-using namespace csyren::core::events;
+using namespace csyren::core;
 
 struct TestEvent { int value; };
 struct AnotherEvent { float data; };

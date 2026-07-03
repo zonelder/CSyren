@@ -9,7 +9,7 @@
 #include <functional>
 #include <format>
 
-namespace csyren::core::input
+namespace csyren::core
 {
 
 	/**

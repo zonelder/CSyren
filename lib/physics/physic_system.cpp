@@ -135,14 +135,14 @@ namespace csyren::physics
         std::unique_ptr<ObjectLayerPairFilterImpl> m_objectLayerPairFilter;
 
         // Подписки на события ECS
-        core::events::SubscriberToken rbAddedToken;
-        core::events::SubscriberToken rbRemovedToken;
-        core::events::SubscriberToken boxAddedToken;
-        core::events::SubscriberToken boxRemovedToken;
-        core::events::SubscriberToken sphereAddedToken;
-        core::events::SubscriberToken sphereRemovedToken;
-        core::events::SubscriberToken capsuleAddedToken;
-        core::events::SubscriberToken capsuleRemovedToken;
+        core::SubscriberToken rbAddedToken;
+        core::SubscriberToken rbRemovedToken;
+        core::SubscriberToken boxAddedToken;
+        core::SubscriberToken boxRemovedToken;
+        core::SubscriberToken sphereAddedToken;
+        core::SubscriberToken sphereRemovedToken;
+        core::SubscriberToken capsuleAddedToken;
+        core::SubscriberToken capsuleRemovedToken;
 
         // Entity -> BodyID
         std::unordered_map<core::Entity::ID, JPH::BodyID> entityToBody;
@@ -157,7 +157,7 @@ namespace csyren::physics
         {
             using ctx = core::Services;
             scene = ctx::get<core::Scene>();
-            auto bus = ctx::get<core::events::EventBus2>();
+            auto bus = ctx::get<core::EventBus2>();
 
             JPH::RegisterDefaultAllocator();
             JPH::Factory::sInstance = new JPH::Factory();
@@ -180,28 +180,28 @@ namespace csyren::physics
             );
 
             // Подписка на RigidBody
-            rbAddedToken = bus->subscribe<csyren::core::events::ComponentCreateEvent<RigidBody>>(
+            rbAddedToken = bus->subscribe<csyren::core::ComponentCreateEvent<RigidBody>>(
                 [this](const auto& event) { this->onRigidBodyAdded(event.comp.id()); });
 
-            rbRemovedToken = bus->subscribe<csyren::core::events::ComponentDestroyEvent<RigidBody>>(
+            rbRemovedToken = bus->subscribe<csyren::core::ComponentDestroyEvent<RigidBody>>(
                 [this](const auto& event) { this->onRigidBodyRemoved(event.comp.id()); });
 
             // Подписка на BoxCollider
-            boxAddedToken = bus->subscribe<csyren::core::events::ComponentCreateEvent<BoxCollider>>(
+            boxAddedToken = bus->subscribe<csyren::core::ComponentCreateEvent<BoxCollider>>(
                 [this](const auto& event) { this->onColliderAdded(event.comp.id()); });
-            boxRemovedToken = bus->subscribe<csyren::core::events::ComponentDestroyEvent<BoxCollider>>(
+            boxRemovedToken = bus->subscribe<csyren::core::ComponentDestroyEvent<BoxCollider>>(
                 [this](const auto& event) { this->onColliderRemoved(event.comp.id()); });
 
             // Подписка на SphereCollider
-            sphereAddedToken = bus->subscribe<csyren::core::events::ComponentCreateEvent<SphereCollider>>(
+            sphereAddedToken = bus->subscribe<csyren::core::ComponentCreateEvent<SphereCollider>>(
                 [this](const auto& event) { this->onColliderAdded(event.comp.id()); });
-            sphereRemovedToken = bus->subscribe<csyren::core::events::ComponentDestroyEvent<SphereCollider>>(
+            sphereRemovedToken = bus->subscribe<csyren::core::ComponentDestroyEvent<SphereCollider>>(
                 [this](const auto& event) { this->onColliderRemoved(event.comp.id()); });
 
             // Подписка на CapsuleCollider
-            capsuleAddedToken = bus->subscribe<csyren::core::events::ComponentCreateEvent<CapsuleCollider>>(
+            capsuleAddedToken = bus->subscribe<csyren::core::ComponentCreateEvent<CapsuleCollider>>(
                 [this](const auto& event) { this->onColliderAdded(event.comp.id()); });
-            capsuleRemovedToken = bus->subscribe<csyren::core::events::ComponentDestroyEvent<CapsuleCollider>>(
+            capsuleRemovedToken = bus->subscribe<csyren::core::ComponentDestroyEvent<CapsuleCollider>>(
                 [this](const auto& event) { this->onColliderRemoved(event.comp.id()); });
 
             m_physicsSystem->SetGravity(details::to_jolt(gravity));
@@ -291,7 +291,7 @@ namespace csyren::physics
                 }
             }
 
-            auto transform = scene->getComponent<core::components::Transform>(ent);
+            auto transform = scene->getComponent<core::Transform>(ent);
 
             if (!transform) return;
 
@@ -379,7 +379,7 @@ namespace csyren::physics
         void pushTransform()
         {
             auto& bodyInterface = m_physicsSystem->GetBodyInterface();
-            auto view = scene->view<RigidBody, core::components::Transform>();
+            auto view = scene->view<RigidBody, core::Transform>();
             for (auto [ent,rb,tr] : view)
             {
                 //body is not created yet;
@@ -401,7 +401,7 @@ namespace csyren::physics
         void pullTransforms()
         {
 
-            auto view = scene->view<RigidBody, core::components::Transform>();
+            auto view = scene->view<RigidBody, core::Transform>();
             for (auto [ent,rb,tr] : view)
             {
                 if (entityToBody.find(ent) == entityToBody.end())
@@ -428,7 +428,7 @@ namespace csyren::physics
         void shutdown()
         {
             using ctx = core::Services;
-            auto bus = ctx::get<core::events::EventBus2>();
+            auto bus = ctx::get<core::EventBus2>();
             bus->unsubscribe(rbAddedToken);
             bus->unsubscribe(rbRemovedToken);
             bus->unsubscribe(boxAddedToken);
