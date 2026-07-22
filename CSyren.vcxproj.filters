@@ -95,5 +95,11 @@
     <ClInclude Include="system_window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="statistic_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="statistic_monitor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

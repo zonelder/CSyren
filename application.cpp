@@ -41,6 +41,7 @@
 
 
 #include "system_registrator.h"
+#include "statistic_monitor.h"
 
 namespace
 {
@@ -109,6 +110,7 @@ namespace csyren
 		core::details::ServiceRegistry::create<render::ResourceManager>();
 		core::details::ServiceRegistry::create<render::details::PSOFactory>();
 		core::details::ServiceRegistry::create<editor::EditorSelection>();
+		core::details::ServiceRegistry::create<StatisticMonitor>();
 
 
 		auto bus = core::Services::get<core::EventBus2>();
@@ -117,6 +119,7 @@ namespace csyren
 		auto time = core::Services::get<core::Time>();
 		auto window = core::Services::get<core::Window>();
 		auto systems = core::Services::get<core::SystemManager>();
+		auto stats = core::Services::get<StatisticMonitor>();
 		core::details::ServiceRegistry::initializeAll();
 		log::info("-------------------------------------------------------------------------------------------");
 		log::info("-------------------------------Setup Start Up------------------------------------------------");
@@ -137,6 +140,7 @@ namespace csyren
 		while (true)
 		{
 			timeHandler.update(*time);
+			stats->update(*time);
 			window->preMessagePump();
 			while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
 			{
