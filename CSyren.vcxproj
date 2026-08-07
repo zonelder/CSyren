@@ -13,6 +13,7 @@
   <ItemGroup>
     <ClCompile Include="application.cpp" />
     <ClCompile Include="lib\dx12_graphic\resource_manager.cpp" />
+    <ClCompile Include="meta_common.cpp" />
     <ClCompile Include="serializer.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
@@ -41,6 +42,7 @@
     <ClInclude Include="system_window.h" />
     <ClInclude Include="todo.h" />
     <ClInclude Include="transform_editor.h" />
+    <ClInclude Include="meta_common.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="lib\core\core.vcxproj">

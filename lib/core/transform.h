@@ -3,6 +3,7 @@
 #include "core/serialize_base.h"
 #include "math/math.h"
 
+
 namespace csyren::core
 {
     struct Transform
@@ -14,7 +15,12 @@ namespace csyren::core
         {
             return math::Matrix4x4::TRS(position, rotation, scale);
         }
+
+        static void describe();
+
     private:
         SERIALIZABLE(Transform, position, rotation, scale);
     };
+
+
 }

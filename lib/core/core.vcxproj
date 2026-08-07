@@ -134,6 +134,8 @@
     <ClInclude Include="input_device.h" />
     <ClInclude Include="input_event.h" />
     <ClInclude Include="input_enums.h" />
+    <ClInclude Include="meta.h" />
+    <ClInclude Include="meta_any.h" />
     <ClInclude Include="mouse_device.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="keyboard_device.h" />
@@ -152,10 +154,12 @@
   <ItemGroup>
     <ClCompile Include="dispatch_handle.cpp" />
     <ClCompile Include="input_dispatch_system.cpp" />
+    <ClCompile Include="meta.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="transform.cpp" />
     <ClCompile Include="window.cpp" />
   </ItemGroup>
   <ItemGroup>

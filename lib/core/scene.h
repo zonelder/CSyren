@@ -110,11 +110,6 @@ namespace csyren::core
 	class SceneView;
 
 	//class Application;
-
-
-
-
-
 	class Scene
 	{
 		friend class Application;
@@ -122,19 +117,27 @@ namespace csyren::core
 		template<typename...> friend class SceneView;
 
 		using DestructFn = bool(Scene*,const DestroyComponentCommand&,PublishToken,EventBus2&);
+		using GetRawFn = void* (Scene*, Entity::ID);
 		struct ComponentMeta
 		{
 			std::shared_ptr<PoolBase> pool;
 			PublishToken      addToken;
 			PublishToken      removeToken;
+			GetRawFn* getRawFn = nullptr;
 			DestructFn* removeFn = nullptr;
+
 		};
 		using ComponentsMeta = std::unordered_map<size_t, ComponentMeta>;
 
 		template<typename T>
 		struct ComponentOps
 		{
-			
+			static void* getRawThunk(Scene* self, Entity::ID id)
+			{
+				auto pool = self->getPool<T>();
+				return pool ? pool->try_get(id) : nullptr;
+			}
+
 			static bool destroyThunk(Scene* self,const DestroyComponentCommand& c,PublishToken token,EventBus2& bus)
 			{
 				auto pool = self->getPool<T>();
@@ -306,6 +309,13 @@ namespace csyren::core
 			return ComponentRef<T>(id, getPool<T>());
 		}
 
+		void* getComponentRaw(Entity::ID id, size_t family)
+		{
+			auto it = _meta.find(family);
+			if (it == _meta.end() || !it->second.getRawFn) return nullptr;
+			return it->second.getRawFn(this, id);
+		}
+
 		template<typename... Cs>
 		SceneView<Cs...> view(){ return SceneView<Cs...>(this); }
 
@@ -471,6 +481,7 @@ namespace csyren::core
 			m.addToken = _bus->register_publisher<ComponentCreateEvent<T>>();
 			m.removeToken = _bus->register_publisher<ComponentDestroyEvent<T>>();
 			m.removeFn = &ComponentOps<T>::destroyThunk;
+			m.getRawFn = &ComponentOps<T>::getRawThunk;
 		}
 		template<typename T>
 		PublishToken& getAddToken()

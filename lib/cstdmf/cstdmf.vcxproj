@@ -170,6 +170,7 @@
     <ClInclude Include="assert_helpler.h" />
     <ClInclude Include="fixed_sparse_set.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="hash_literal.h" />
     <ClInclude Include="inline_helper.h" />
     <ClInclude Include="log.h" />
     <ClInclude Include="rectangle.h" />

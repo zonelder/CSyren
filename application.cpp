@@ -7,6 +7,8 @@
 #include "cstdmf/log.h"
 #include "math/math.h"
 
+#include "meta_common.h"
+
 #include "core/serialize_common.h"
 #include "dx12_graphic/serialize_common.h"
 
@@ -92,6 +94,7 @@ namespace csyren
 		log::info("-------------------------------------Init Application-------------------------------------");
 
 		using namespace core;
+		core::reflection::MetaRegistry::init_all();
 		core::details::TimeHandler timeHandler;
 
 		core::Entity::ID currentCameraEntt;

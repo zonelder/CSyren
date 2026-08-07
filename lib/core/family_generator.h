@@ -7,16 +7,17 @@ namespace csyren::core::reflection
 	class Family
 	{
 	public:
+		using typeID = uint64_t;
 		template<class T>
-		static uint64_t getID()
+		static typeID getID()
 		{
-			static uint64_t i = next();
+			static typeID i = next();
 			return i;
 		}
 	private:
-		static uint64_t next()
+		static typeID next()
 		{
-			static std::atomic<uint64_t> s_nextID = 0;
+			static std::atomic<typeID> s_nextID = 0;
 			return s_nextID++;
 		}
 	};
