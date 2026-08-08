@@ -152,6 +152,7 @@
     <ClInclude Include="win_exeption.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="camera.cpp" />
     <ClCompile Include="dispatch_handle.cpp" />
     <ClCompile Include="input_dispatch_system.cpp" />
     <ClCompile Include="meta.cpp" />

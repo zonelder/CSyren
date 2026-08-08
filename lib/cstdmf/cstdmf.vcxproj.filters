@@ -48,6 +48,9 @@
     <ClInclude Include="hash_literal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="static_vector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

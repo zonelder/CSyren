@@ -10,6 +10,8 @@ namespace csyren::physics
 		math::Vector3 offset{ 0,0,0 };
 		math::Quaternion rotation = math::Quaternion::identity;
 		bool isTrigger{ false };
+
+		static void describe();
 	};
 
 	struct SphereCollider
@@ -17,8 +19,9 @@ namespace csyren::physics
 		float radius{ 0.5f };
 		math::Vector3 center{ 0,0,0 };
 		bool isTrigger{ false };
-	};
 
+		static void describe();
+	};
 
 	struct CapsuleCollider
 	{
@@ -27,5 +30,7 @@ namespace csyren::physics
 		math::Vector3 offset{ 0,0,0 };
 		math::Quaternion rotation = math::Quaternion::identity;
 		bool isTrigger{ false };
+
+		static void describe();
 	};
 }

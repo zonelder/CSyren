@@ -53,5 +53,11 @@
     <ClCompile Include="physic_system.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="rigid_body.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="colliders.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

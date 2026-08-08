@@ -9,6 +9,7 @@ namespace csyren::render
     struct MeshFilter
     {
         render::MeshHandle mesh;
+        static void describe();
     private:
         SERIALIZABLE(MeshFilter, mesh);
     };
@@ -16,6 +17,7 @@ namespace csyren::render
     struct MeshRenderer
     {
         MaterialHandle material;
+        static void describe();
     private:
         SERIALIZABLE(MeshRenderer, material);
     };

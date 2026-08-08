@@ -33,6 +33,8 @@ namespace csyren::core
 		ProjectionType projection = Perspective;
 		math::Vector4 background{ 0.1f, 0.1f, 0.1f, 1.0f };
 		ViewportRect viewportRect;//unused
+
+		static void describe();
 	private:
 		SERIALIZABLE(Camera, far, near, aspectRatio, fov,priority, projection,background);
 

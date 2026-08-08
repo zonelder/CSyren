@@ -13,9 +13,11 @@
   <ItemGroup>
     <ClCompile Include="application.cpp" />
     <ClCompile Include="editor_base.cpp" />
+    <ClCompile Include="editor_camera_controller.cpp" />
     <ClCompile Include="inspector_window.cpp" />
     <ClCompile Include="lib\dx12_graphic\resource_manager.cpp" />
     <ClCompile Include="math_editor.cpp" />
+    <ClCompile Include="mesh_filter.cpp" />
     <ClCompile Include="meta_common.cpp" />
     <ClCompile Include="serializer.cpp" />
     <ClCompile Include="WinMain.cpp" />
@@ -26,6 +28,7 @@
   <ItemGroup>
     <ClInclude Include="application.h" />
     <ClInclude Include="base_editor_window.h" />
+    <ClInclude Include="common_editor.h" />
     <ClInclude Include="component_editor.h" />
     <ClInclude Include="debug_rotator.h" />
     <ClInclude Include="debug_rotator_system.h" />

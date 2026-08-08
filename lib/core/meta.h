@@ -1,7 +1,7 @@
 #pragma once
 #include "component_base.h"
 #include "cstdmf/hash_literal.h"
-#include "cstdmf/assert_helpler.h"
+#include "cstdmf/static_vector.h"
 
 #include <unordered_map>
 
@@ -22,9 +22,10 @@ namespace csyren::core::reflection
 
 	struct MetaType
 	{
+		static constexpr size_t MAX_FIELD_COUNT = 32;
 		LiteralID id{ 0 };
 		size_t size{ 0 };
-		std::unordered_map<LiteralID, MetaData, cstdmf::LiteralIDHash> data;
+		cstdmf::StaticVector< MetaData, MAX_FIELD_COUNT> data;
 	};
 
 }
@@ -154,7 +155,7 @@ namespace csyren::core::reflection
 			md.size = sizeof(MemberType);
 			md.type = details::MetaLink<MemberType>::type;
 
-			_pType->data[id] = md;
+			_pType->data.emplace_back(std::move(md));
 			return *this;
 		}
 

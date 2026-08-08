@@ -21,5 +21,8 @@ namespace csyren::physics
 		float restitution = 1.0f;
 		math::Vector3 linearVelocity = math::Vector3::zero;
 		math::Vector3 angularVelocity = math::Vector3::zero;
+
+		static void describe();
+
 	};
 }

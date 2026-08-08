@@ -4,6 +4,44 @@
 
 namespace csyren::editor
 {
+	class FloatEditor : public IEditor
+	{
+	public:
+		void draw(core::reflection::MetaAny& any, const char* label) override
+		{
+			auto& value = any.get<float>();
+			if (ImGui::DragFloat(label, &value, 0.1f))
+			{
+
+			}
+		}
+	};
+
+	class IntEditor : public IEditor
+	{
+	public:
+		void draw(core::reflection::MetaAny& any, const char* label) override
+		{
+			auto& value = any.get<int>();
+			if (ImGui::DragInt(label, &value))
+			{
+			}
+
+		}
+	};
+
+	class BoolEditor : public IEditor
+	{
+		void draw(core::reflection::MetaAny& any,const char* label) override
+		{
+			auto& value = any.get<bool>();
+			if (ImGui::Checkbox(label, &value))
+			{
+
+			}
+		}
+	};
+
 	class Vector2Editor : public IEditor
 	{
 	public:

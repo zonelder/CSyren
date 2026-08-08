@@ -3,6 +3,22 @@
 #include "meta.h"
 #include <type_traits>
 
+namespace
+{
+	using namespace csyren::core::reflection;
+
+	inline const MetaData* findField(const MetaType* type, LiteralID id) noexcept
+	{
+		if (!type) return nullptr;
+
+		for (const auto& field : type->data)
+			if (field.id.id == id.id)
+				return &field;
+
+		return nullptr;
+	}
+}
+
 namespace csyren::core::reflection
 {
 	class MetaAny
@@ -84,27 +100,27 @@ namespace csyren::core::reflection
 		{
 			if (!_type || !_instance) return MetaAny(nullptr, nullptr);
 
-			auto it = _type->data.find(id);
-			if (it == _type->data.end()) return MetaAny(nullptr, nullptr);
+			auto fieldMeta = findField(_type, id);
+			if (!fieldMeta) return MetaAny(nullptr, nullptr);
 
-			void* field_ptr = static_cast<char*>(_instance) + it->second.offset;
-			MetaType* field_type = it->second.type;
+			void* field_ptr = static_cast<char*>(_instance) + fieldMeta->offset;
+			MetaType* field_type = fieldMeta->type;
 
 			return MetaAny(field_ptr, field_type);
 		}
 		template<class Fn>
 		void forEachField(Fn&& fn)
 		{
-			for (auto [literal, data] : _type->data)
+			for (auto& data : _type->data)
 			{
 				void* field_ptr = static_cast<char*>(_instance) + data.offset;
-				fn(literal, MetaAny(field_ptr, data.type));
+				fn(data.id, MetaAny(field_ptr, data.type));
 			}
 		}
 
 		bool hasField(LiteralID id) const
 		{
-			return _type && _type->data.find(id) != _type->data.end();
+			return _type && findField(_type,id);
 		}
 
 	private:
