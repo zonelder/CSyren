@@ -1,6 +1,7 @@
 #pragma once
 
 #include "meta.h"
+#include <type_traits>
 
 namespace csyren::core::reflection
 {
@@ -65,16 +66,18 @@ namespace csyren::core::reflection
 		template<typename T>
 		T& get() const
 		{
-			CS_ASSERT_MSG(_type && _type->id == resolve<T>()->id,
-				"MetaAny::get<T>(): type mismatch\n");
+			using CleanType = std::remove_cvref_t<T>;
+			CS_ASSERT_MSG(_type && _type->id == resolve<CleanType>()->id,
+				"MetaAny::get<T>(): type mismatch");
 			return *static_cast<T*>(_instance);
 		}
 
 		template<typename T>
 		void set(const T& value)
 		{
-			CS_ASSERT_MSG(_type && _type->id == resolve<T>()->id,
-				"MetaAny::set<T>(): type mismatch\n");
+			using CleanType = std::remove_cvref_t<T>;
+			CS_ASSERT_MSG(_type && _type->id == resolve<CleanType>()->id,
+				"MetaAny::get<T>(): type mismatch");
 			*static_cast<T*>(_instance) = value;
 		}
 		MetaAny field(LiteralID id) const
@@ -89,6 +92,16 @@ namespace csyren::core::reflection
 
 			return MetaAny(field_ptr, field_type);
 		}
+		template<class Fn>
+		void forEachField(Fn&& fn)
+		{
+			for (auto [literal, data] : _type->data)
+			{
+				void* field_ptr = static_cast<char*>(_instance) + data.offset;
+				fn(literal, MetaAny(field_ptr, data.type));
+			}
+		}
+
 		bool hasField(LiteralID id) const
 		{
 			return _type && _type->data.find(id) != _type->data.end();

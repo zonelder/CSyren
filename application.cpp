@@ -45,6 +45,8 @@
 #include "system_registrator.h"
 #include "statistic_monitor.h"
 
+#include "math_editor.h"
+
 namespace
 {
 
@@ -95,6 +97,7 @@ namespace csyren
 
 		using namespace core;
 		core::reflection::MetaRegistry::init_all();
+		editor::EditorRegistry::resolveAll();
 		core::details::TimeHandler timeHandler;
 
 		core::Entity::ID currentCameraEntt;

@@ -1,9 +1,7 @@
 #pragma once
 #include <string>
+#include "editor_base.h"
 
-#include "imGui/imgui.h"
-#include "imGui/backends/imgui_impl_dx12.h"
-#include "imGui/backends/imgui_impl_win32.h"
 
 
 namespace csyren::editor

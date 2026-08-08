@@ -18,3 +18,5 @@ void MetaCommonDescriber::describe()
     meta::MetaFactory<Color>{}.type("Color"_hs);
     meta::MetaFactory<Quaternion>{}.type("Quaternion"_hs);
 }
+
+REFLECT(MetaCommonDescriber);

@@ -3,9 +3,7 @@
 #include "cstdmf/hash_literal.h"
 #include "cstdmf/assert_helpler.h"
 
-#include <vector>
 #include <unordered_map>
-#include <memory>
 
 using namespace literal;
 
@@ -68,7 +66,7 @@ namespace csyren::core::reflection::details
 			raw->size = size;
 			_types[id] = raw;
 			_typesByCompID[compID] = raw;
-			_storage.push_back(raw);
+			//_storage.push_back(raw);
 			return raw;
 		}
 		MetaType* insert(cstdmf::LiteralID id, size_t size, MetaType* raw)
@@ -78,7 +76,7 @@ namespace csyren::core::reflection::details
 			raw->id = id;
 			raw->size = size;
 			_types[id] = raw;
-			_storage.push_back(raw);
+			//_storage.push_back(raw);
 			return raw;
 		}
 
@@ -108,8 +106,6 @@ namespace csyren::core::reflection::details
 	private:
 		std::unordered_map<cstdmf::LiteralID, MetaType*, cstdmf::LiteralIDHash> _types;
 		MetaMap _typesByCompID;
-		std::vector<MetaType*> _storage;
-
 	};
 
 	template<typename T, typename M>
@@ -178,7 +174,7 @@ namespace csyren::core::reflection
 	template<class Type>
 	inline MetaType* resolve() noexcept
 	{
-		return details::MetaLink<Type>::type;
+		return details::MetaLink<std::remove_cvref_t<Type>>::type;
 	}
 	inline auto resolveAll()
 	{
