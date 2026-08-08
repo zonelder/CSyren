@@ -19,7 +19,7 @@ namespace csyren::physics
         core::reflection::MetaFactory<SphereCollider>{}.type("SphereCollider"_hs)
             .data<&SphereCollider::radius>("radius"_hs)
             .data<&SphereCollider::center>("center"_hs)
-            .data<&SphereCollider::isTrigger>("isTrigger"_hs);
+            .data<&SphereCollider::isTrigger>("isTrigger"_hs); 
     }
 
     void CapsuleCollider::describe()

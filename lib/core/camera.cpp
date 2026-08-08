@@ -16,6 +16,7 @@ namespace csyren::core
 		reflection::MetaFactory<Camera>{}.type("Camera"_hs)
 			.data<&Camera::far>("far"_hs)
 			.data<&Camera::near>("near"_hs)
+			.data<&Camera::fov>("fov"_hs)
 			.data<&Camera::aspectRatio>("aspectRatio"_hs)
 			.data<&Camera::priority>("priority"_hs)
 			.data<&Camera::background>("background"_hs)
