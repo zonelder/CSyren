@@ -5,6 +5,29 @@
 #include "editor_selection.h"
 #include "core/meta_any.h"
 
+namespace csyren::editor
+{
+    class EntityInspectorWidget
+    {
+    public:
+
+        static void draw(core::Scene& scene, const core::Entity* entt)
+        {
+            if (!entt) return;
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.9f, 1.0f, 1.0f));
+            ImGui::Text("Entity ID: %u", entt->id);
+            ImGui::Text("Name: %s", entt->name.c_str());
+
+            auto newParent = entt->parent;
+            auto pEntt = scene.entities().try_get(newParent);
+            auto preview = pEntt != nullptr ? pEntt->name.c_str() : "(None)";
+            ImGui::Text("Parent: %s", preview);
+            ImGui::PopStyleColor();
+        }
+    };
+}
+
+
 void csyren::editor::InspectorWindow::onFrame()
 {
     auto* scene = core::Services::get<core::Scene>();
@@ -24,9 +47,7 @@ void csyren::editor::InspectorWindow::onFrame()
         return;
     }
 
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.9f, 1.0f, 1.0f));
-    ImGui::Text("%s", entt->name.c_str());
-    ImGui::PopStyleColor();
+    EntityInspectorWidget::draw(*scene, entt);
 
 
 
