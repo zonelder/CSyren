@@ -106,7 +106,8 @@ namespace csyren
 		core::details::ServiceRegistry::create<core::Time>();
 		core::details::ServiceRegistry::create<core::CameraContextService>([&currentCameraEntt]() { return currentCameraEntt; });
 		core::details::ServiceRegistry::create<core::EventBus2>();
-		core::details::ServiceRegistry::create<core::Scene>();
+		auto bus = core::Services::get<core::EventBus2>();
+		core::details::ServiceRegistry::create<core::Scene>(bus);
 		core::details::ServiceRegistry::create<Serializer>();
 		core::details::ServiceRegistry::create<physics::PhysicsEngine>();
 		core::details::ServiceRegistry::create<core::Devices>();
@@ -119,7 +120,7 @@ namespace csyren
 		core::details::ServiceRegistry::create<StatisticMonitor>();
 
 
-		auto bus = core::Services::get<core::EventBus2>();
+
 		auto renderer = core::Services::get<render::Renderer>();
 		auto scene = core::Services::get<core::Scene>();
 		auto time = core::Services::get<core::Time>();

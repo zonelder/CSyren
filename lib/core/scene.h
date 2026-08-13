@@ -11,6 +11,8 @@
 #include "component_pool.h"
 #include "component_order.h"
 
+#include "entity_manager.h"
+
 #include "command_buffer.h"
 #include "event_bus.h"
 #include "services.h"
@@ -146,7 +148,7 @@ namespace csyren::core
 				{
 					bus.publish(token, ComponentDestroyEvent<T>{ComponentRef<T>(c.entt,pool)});
 					pool->erase(c.entt);
-					if (Entity* ent = self->_entities.try_get(c.entt))
+					if (Entity* ent = self->_em.tryGet(c.entt))
 					{
 						ent->remove(reflection::ComponentFamily::getID<T>());
 					}
@@ -158,103 +160,41 @@ namespace csyren::core
 		static constexpr Entity::ID ROOT_PARENT = 0;
 
 	public:
-		explicit Scene() {};
+		explicit Scene(EventBus2* bus) : _bus(bus) {}
 
 		void init()
 		{
-			_bus = core::Services::get<EventBus2>();
+			if (!_bus)
+			{
+				log::error("Scene::init: EventBus not provided");
+				return;
+			}
 			_entityCreateToken = _bus->register_publisher<EntityCreateEvent>();
 			_entityDestroyToken = _bus->register_publisher<EntityDestroyEvent>();
-			_entities.emplace(ROOT_PARENT, Entity{});
-			Entity* ent = _entities.try_get(ROOT_PARENT);
-			ent->id = ROOT_PARENT;
-			ent->parent = Entity::invalidID;
-			ent->name = "scene root";
-			
+			_em.init();			
 		}
 
-		bool setName(Entity::ID id, std::string_view newName)
+		bool setName(Entity::ID id, std::string_view newName) { return _em.setName(id, newName); }
+
+		[[nodiscard]] Entity::ID createEntity(Entity::ID parent = EntityManager::ROOT_PARENT)
 		{
-			Entity* entity = _entities.try_get(id);
-			if (!entity)
-			{
-				log::error("Scene::setName: entity {} does not exist", id);
-				return false;
-			}
-
-			// Запрет переименования root
-			if (id == ROOT_PARENT)
-			{
-				log::error("Scene::setName: cannot rename ROOT_PARENT");
-				return false;
-			}
-
-			// Генерируем уникальное имя среди siblings, исключая сам entity
-			std::string uniqueName = generateUniqueName(newName, entity->parent, id);
-
-			// Обновляем имя
-			entity->name = uniqueName;
-
-			return true;
-		}
-		[[nodiscard]] Entity::ID createEntity(Entity::ID parent = ROOT_PARENT)
-		{
-			return createEntity(DEFAULT_NAME, parent);
+			return createEntity(EntityManager::DEFAULT_NAME, parent);
 		}
 
-		[[nodiscard]] Entity::ID createEntity(std::string_view name = DEFAULT_NAME, Entity::ID parent = ROOT_PARENT)
+		[[nodiscard]] Entity::ID createEntity(std::string_view name,
+			Entity::ID parent = EntityManager::ROOT_PARENT)
 		{
-			Entity::ID id;
-			if (!_freeIDs.empty())
-			{
-				id = _freeIDs.back();
-				_freeIDs.pop_back();
-			}
-			else
-			{
-				if (_nextId == Entity::invalidID)
-				{
-					throw std::runtime_error("Scene: out of Entity IDs");
-				}
-				id = _nextId++;
-			}
-			if (!canBeParent(parent, id))
-			{
-				log::error("Scene::createEntity: cycle detected. parent={} child={}. Falling back to scene root", parent, id);
-				parent = ROOT_PARENT;
-			}
-
-			_entities.emplace(id, Entity{});
-			Entity* ent = _entities.try_get(id);
-			ent->id = id;
-			ent->parent = parent;
-			ent->name = generateUniqueName(name, parent);
-
-			Entity* p = _entities.try_get(parent);
-			if (!p)
-			{
-				log::error("Scene::creatEntity: attempt to create child entity with name = {} but parent is not exist.parent id = {}.add to scene root instead\n", ent->name, ent->id);
-				p = _entities.try_get(ROOT_PARENT);
-			}
-			p->children.push_back(id);
-			_bus->publish(_entityCreateToken, EntityCreateEvent{id});
+			Entity::ID id = _em.createEntity(name, parent);
+			_bus->publish(_entityCreateToken, EntityCreateEvent{ id });
 			return id;
 		}
 
-		void destroyEntity(Entity::ID id)
-		{
-			Entity* ent = _entities.try_get(id);
-			if (!ent) return;
-			for (Entity::ID child : ent->children)
-				destroyEntity(child);
-
-			_deferred.pushDestroyEntity(id);
-		}
+		void destroyEntity(Entity::ID id) { _em.queueDestroy(id); }
 
 		template<typename T, typename... Args>
 		ComponentRef<T> addComponent(Entity::ID id, Args&&... args)
 		{
-			Entity* ent = _entities.try_get(id);
+			Entity* ent = _em.tryGet(id);
 			if (!ent) return ComponentRef<T>();
 
 			const size_t family = reflection::ComponentFamily::getID<T>();
@@ -272,41 +212,18 @@ namespace csyren::core
 			return compRef;
 		}
 
-		template<typename T>
-		bool hasComponent(Entity::ID id)
+
+		template<typename T> bool          hasComponent(Entity::ID id) { return _em.contains(id) && _em.tryGet(id)->has(reflection::ComponentFamily::getID<T>()); }
+		template<typename T> void          removeComponent(Entity::ID id) { removeComponent(id, reflection::ComponentFamily::getID<T>()); }
+		void                               removeComponent(Entity::ID id, size_t family)
 		{
-			Entity* ent = _entities.try_get(id);
-			if (!ent) return false;
-
-			const size_t family = reflection::ComponentFamily::getID<T>();
-			return ent->has(family);
-
+			if (Entity* ent = _em.tryGet(id); ent && ent->has(family))
+				_deferred.pushDestroyComponent(id, family);
 		}
 
-		template<typename T>
-		void removeComponent(Entity::ID id)
+		template<typename T> ComponentRef<T> getComponent(Entity::ID id)
 		{
-			Entity* ent = _entities.try_get(id);
-			if (!ent) return;
-
-			const size_t family = reflection::ComponentFamily::getID<T>();
-			if (!ent->has(family)) return;
-			_deferred.pushDestroyComponent(id, family);
-		}
-
-		void removeComponent(Entity::ID id, size_t family)
-		{
-			Entity* ent = _entities.try_get(id);
-			if (!ent) return;
-			if (!ent->has(family)) return;
-			_deferred.pushDestroyComponent(id, family);
-		}
-
-		template<typename T>
-		ComponentRef<T> getComponent(Entity::ID id)
-		{
-			if (!_entities.contains(id)) return ComponentRef<T>();
-			return ComponentRef<T>(id, getPool<T>());
+			return _em.contains(id) ? ComponentRef<T>(id, getPool<T>()) : ComponentRef<T>();
 		}
 
 		void* getComponentRaw(Entity::ID id, size_t family)
@@ -319,7 +236,7 @@ namespace csyren::core
 		template<typename... Cs>
 		SceneView<Cs...> view(){ return SceneView<Cs...>(this); }
 
-		const cstdmf::SparseSet<Entity>& entities() const { return _entities; }
+		const cstdmf::SparseSet<Entity>& entities() const { return _em.all(); }
 
 
 		void flush()
@@ -332,126 +249,33 @@ namespace csyren::core
 				it->second.removeFn(this, e, it->second.removeToken, *_bus);
 			}
 
-			DestroyComponentCommand cm;
-			for (const auto& e : _deferred.destroyEntityBuf())
-			{
+			auto destroyList = _em.collectDestroyList();
 
-				Entity* ent = _entities.try_get(e.id);
+			DestroyComponentCommand cm;
+			for (Entity::ID id : destroyList)
+			{
+				Entity* ent = _em.tryGet(id);
 				if (!ent) continue;
+
 				for (const auto& [family, m] : _meta)
 				{
 					if (ent->has(family))
 					{
-						cm.entt = e.id;
+						cm.entt = id;
 						cm.family = family;
 						m.removeFn(this, cm, m.removeToken, *_bus);
 					}
 				}
 
-				_bus->publish(_entityDestroyToken, EntityDestroyEvent{ e.id });
-
-				if (ent->parent != Entity::invalidID)
-				{
-					if (Entity* p = _entities.try_get(ent->parent))
-					{
-						auto& vec = p->children;
-						vec.erase(std::remove(vec.begin(), vec.end(), e.id), vec.end());
-					}
-				}
-
-				for (auto& child : ent->children)
-				{
-					Entity* pChild = _entities.try_get(child);
-					if (!pChild)
-					{
-						log::error("destroyEntity: child dont exist but entity keep reference to it.");
-						continue;
-					}
-					pChild->parent = Entity::invalidID;
-				}
-				_entities.erase(e.id);
-				if (e.id + 1 == _nextId)
-				{
-					--_nextId;
-				}
-				else
-				{
-					_freeIDs.push_back(e.id);
-				}
+				_bus->publish(_entityDestroyToken, EntityDestroyEvent{ id });
+				_em.finalizeDestroy(id);
 			}
 
+			_em.clearPending();
 			_deferred.clear();
 		}
 
 	private:
-
-		bool canBeParent(Entity::ID parent, Entity::ID child) const
-		{
-			// Root всегда валиден как parent
-			if (parent == ROOT_PARENT)
-				return true;
-
-			// Entity не может быть родителем самому себе
-			if (parent == child)
-				return false;
-
-			// Parent не должен быть потомком child (иначе замкнётся цикл)
-			return !isAncestor(child, parent);
-		}
-		bool isAncestor(Entity::ID ancestor, Entity::ID descendant) const
-		{
-			Entity::ID current = descendant;
-			while (current != Entity::invalidID)
-			{
-				if (current == ancestor)
-					return true;
-
-				const Entity* entity = _entities.try_get(current);
-				if (!entity)
-					return false;
-
-				current = entity->parent;
-			}
-			return false;
-		}
-		std::string generateUniqueName(std::string_view baseName, Entity::ID parent, Entity::ID excludeId = Entity::invalidID)
-		{
-			std::string name(baseName);
-
-			Entity* parentEntity = _entities.try_get(parent);
-			if (!parentEntity)
-			{
-				parentEntity = _entities.try_get(ROOT_PARENT);
-			}
-
-			const auto& siblings = parentEntity->children;
-
-			int counter = 1;
-			std::string testName = name;
-
-			while (isNameTaken(testName, siblings, excludeId))
-			{
-				testName = name + "(" + std::to_string(counter++) + ")";
-			}
-
-			return testName;
-		}
-
-		bool isNameTaken(const std::string& name, const std::vector<Entity::ID>& siblings, Entity::ID excludeId = Entity::invalidID)
-		{
-			for (Entity::ID siblingId : siblings)
-			{
-				if (siblingId == excludeId)
-					continue;
-
-				if (auto* sibling = _entities.try_get(siblingId))
-				{
-					if (sibling->name == name)
-						return true;
-				}
-			}
-			return false;
-		}
 
 		template<typename T>
 		std::shared_ptr<ComponentPool<T>> getPool()
@@ -501,9 +325,7 @@ namespace csyren::core
 
 
 	private:
-		cstdmf::SparseSet<Entity>	_entities;
-		std::vector<Entity::ID>		_freeIDs;
-		Entity::ID              _nextId = 1;//root exist already
+		EntityManager				_em;
 		ComponentsMeta				_meta;
 
 		DeferredCommands _deferred;

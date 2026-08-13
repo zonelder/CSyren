@@ -2,7 +2,7 @@
 #include "core/input_context.h"
 
 
-using namespace csyren::core::input;
+using namespace csyren::core;
 
 // mock input device for testing
 class MockInputDevice : public InputDevice {

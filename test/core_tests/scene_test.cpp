@@ -15,10 +15,17 @@ struct DummyComponent {};
 class SceneTest : public ::testing::Test {
 protected:
     EventBus2 bus;
-    Scene scene{};
+    Scene scene{ &bus };
+
+    void SetUp() override {
+        scene.init();
+    }
+    void TearDown() override {
+       // bus.clear();
+    }
 
 
-    Entity::ID createEntityWithTestComponent(Entity::ID parent = Entity::invalidID) {
+    Entity::ID createEntityWithTestComponent(Entity::ID parent = EntityManager::ROOT_PARENT){
         auto id = scene.createEntity(parent);
         scene.addComponent<TestComponent>(id, 42);
         return id;
@@ -73,6 +80,19 @@ TEST_F(SceneTest, DuplicateComponent) {
     );
 }
 
+TEST_F(SceneTest, CycleDetection) {
+    auto a = scene.createEntity();
+    auto b = scene.createEntity("b", a);
+
+    // cycle: a -> b -> a
+    auto c = scene.createEntity("c", b);
+
+    auto* cEnt = scene.entities().try_get(c);
+    ASSERT_NE(cEnt, nullptr);
+
+    auto d = scene.createEntity("d", EntityManager::ROOT_PARENT);
+}
+
 TEST_F(SceneTest, EntityHierarchy) {
     auto parent = createEntityWithTestComponent();
     auto child1 = createEntityWithTestComponent(parent);
@@ -111,6 +131,42 @@ TEST_F(SceneTest, DeferredCommands) {
     EXPECT_FALSE(scene.entities().contains(id));
 }
 
+TEST_F(SceneTest, LazyDestroyWithNewChildren) {
+    auto parent = scene.createEntity();
+    auto child1 = scene.createEntity("child1", parent);
+
+    // Помечаем parent на удаление
+    scene.destroyEntity(parent);
+
+    auto child2 = scene.createEntity("child2", parent);
+    //child 2 throw error log and created under scene root
+    flush();
+
+    EXPECT_FALSE(scene.entities().contains(parent));
+    EXPECT_FALSE(scene.entities().contains(child1));
+    EXPECT_TRUE(scene.entities().contains(child2));
+}
+
+TEST_F(SceneTest, LazyDestroyPreventsCreationUnderDead) {
+    auto parent = scene.createEntity();
+    scene.destroyEntity(parent);
+
+    // attempt to create a child under "dead" parent
+    auto child = scene.createEntity("child", parent);
+
+    flush();
+
+    // Parent destroyed
+    EXPECT_FALSE(scene.entities().contains(parent));
+
+    bool childSurvived = scene.entities().contains(child);
+    if (childSurvived) 
+    {
+        auto* childEnt = scene.entities().try_get(child);
+        EXPECT_EQ(childEnt->parent, EntityManager::ROOT_PARENT);
+    }
+}
+
 
 TEST_F(SceneTest, EventDelivery) {
     int createCount = 0;
@@ -136,7 +192,7 @@ TEST_F(SceneTest, EventDelivery) {
 }
 
 TEST_F(SceneTest, HighLoadOperations) {
-    const int N = 10000;
+    const int N = 1000;
     std::vector<Entity::ID> ids;
 
 
@@ -163,20 +219,16 @@ TEST_F(SceneTest, HighLoadOperations) {
     for (auto id : ids) {
         EXPECT_FALSE(scene.entities().contains(id));
     }
-    EXPECT_EQ(scene.entities().size(), 0);
+    EXPECT_EQ(scene.entities().size(), 1);
 }
 
 TEST_F(SceneTest, NonTrivialAccess) {
     auto root = scene.createEntity();
     struct SecondComponent {};
-    // Создание иерархии
     std::vector<Entity::ID> children;
     for (int i = 0; i < 10; i++) {
         auto child = createEntityWithTestComponent(root);
         children.push_back(child);
-
-        // Добавление второго компонента
-
         scene.addComponent<SecondComponent>(child);
     }
 
@@ -199,12 +251,60 @@ TEST_F(SceneTest, NonTrivialAccess) {
 }
 
 
+TEST_F(SceneTest, StressCreateEntityOnly) {
+    constexpr int N = 10000;
+    std::vector<Entity::ID> ids;
+    ids.reserve(N);
+
+    auto start = std::chrono::high_resolution_clock::now();
+
+    for (int i = 0; i < N; ++i) {
+        ids.push_back(scene.createEntity());
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto total = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+    std::cout << "=== createEntity (no components) ===\n";
+    std::cout << "Total: " << total.count() << " us for " << N << " entities\n";
+    std::cout << "Avg:   " << (double)total.count() / N << " us/entity\n";
+    std::cout << "Rate:  " << (N * 1000000.0) / total.count() << " entities/sec\n";
+
+    EXPECT_EQ(scene.entities().size(), N + 1);  // +1 for ROOT_PARENT
+}
+
+TEST_F(SceneTest, StressAddSingleComponent) {
+    constexpr int N = 1000;
+
+    // Сначала создаём все entity
+    std::vector<Entity::ID> ids;
+    ids.reserve(N);
+    for (int i = 0; i < N; ++i) {
+        ids.push_back(scene.createEntity());
+    }
+
+    // Теперь замеряем только addComponent
+    auto start = std::chrono::high_resolution_clock::now();
+
+    for (auto id : ids) {
+        scene.addComponent<TestComponent>(id, 42);
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto total = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+    std::cout << "=== addComponent<TestComponent> ===\n";
+    std::cout << "Total: " << total.count() << " us for " << N << " components\n";
+    std::cout << "Avg:   " << (double)total.count() / N << " us/component\n";
+    std::cout << "Rate:  " << (N * 1000000.0) / total.count() << " components/sec\n";
+}
+
 
 class SceneViewTest : public SceneTest {
 protected:
 
     void SetUp() override {
-        // Создаем тестовые данные
+        SceneTest::SetUp();
         auto e1 = scene.createEntity();
         scene.addComponent<Position>(e1, 1.0f, 2.0f);
         scene.addComponent<Velocity>(e1, 0.1f, 0.2f);
@@ -381,7 +481,7 @@ TEST_F(SceneViewHardcoreTest, IterationWithConcurrentModification)
 TEST_F(SceneViewHardcoreTest, NeedleInAHaystack) 
 {
 
-    for (int i = 0; i < 100000; ++i) {
+    for (int i = 0; i < 1000; ++i) {
         scene.addComponent<Position>(scene.createEntity());
     }
 

@@ -11,6 +11,7 @@ namespace csyren::editor
 
         [[nodiscard]] bool hasSelection() const noexcept { return _selectedEntity != core::Entity::invalidID; }
         void clearSelection() noexcept { _selectedEntity = core::Entity::invalidID; }
+        [[nodiscard]] bool isSelected(core::Entity::ID id) const noexcept { return _selectedEntity == id; }
 
     private:
         core::Entity::ID _selectedEntity = core::Entity::invalidID;

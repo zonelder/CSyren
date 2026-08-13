@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "core/input_event.h"
 
-using namespace csyren::core::input;
+using namespace csyren::core;
 
 class MockInputDevice : public InputDevice
 {
