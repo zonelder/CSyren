@@ -159,8 +159,6 @@ namespace csyren::core
 				return false;
 			}
 		};
-		static constexpr std::string_view DEFAULT_NAME{ "new Entity" };
-		static constexpr Entity::ID ROOT_PARENT = 0;
 
 	public:
 		explicit Scene(EventBus2* bus) : _bus(bus) {}
@@ -253,7 +251,6 @@ namespace csyren::core
 
 			auto destroyList = _em.collectDestroyList();
 
-			DestroyComponentCommand cm;
 			for (Entity::ID id : destroyList)
 			{
 				Entity* ent = _em.tryGet(id);
@@ -346,14 +343,6 @@ namespace csyren::core
 		using DenseContainer = std::vector<Entity::ID>;
 		using DenseIt = DenseContainer::const_iterator;
 
-		template <typename F, typename Tuple, typename = void>
-		struct is_apply_invocable : std::false_type {};
-
-		template <typename F, typename Tuple>
-		struct is_apply_invocable<F, Tuple,
-			std::void_t<decltype(std::apply(std::declval<F>(), std::declval<Tuple>()))>
-		> : std::true_type {
-		};
 	public:
 		SceneView(Scene* scene) : _scene(scene),_empty(true){}
 		class iterator
@@ -432,11 +421,8 @@ namespace csyren::core
 		[[nodiscard]] const_iterator end()   const { return const_iterator(this, _last); }
 
 		template<class Fn>
-		void each(Fn&& fn)
-		{
-			using element_type = std::decay_t<decltype(*std::declval<decltype(begin())>())>;
-			static_assert(is_apply_invocable<Fn&&, element_type>::value,
-				"function object must be callable via SceneView");
+		void each(Fn&& fn) requires std::invocable<Fn&&, Entity::ID, Cs&...>
+		{ 
 			for (auto it = begin(); it != end(); ++it)
 				std::apply(fn, *it);
 		}
