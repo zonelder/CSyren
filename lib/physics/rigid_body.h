@@ -11,7 +11,6 @@ namespace csyren::physics
 		Dynamic,
 	};
 
-
 	struct RigidBody
 	{
 		BodyType type = BodyType::Static;
@@ -23,6 +22,5 @@ namespace csyren::physics
 		math::Vector3 angularVelocity = math::Vector3::zero;
 
 		static void describe();
-
 	};
 }

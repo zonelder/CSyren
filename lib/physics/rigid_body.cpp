@@ -17,5 +17,4 @@ namespace csyren::physics
             .data<&RigidBody::angularVelocity>("angularVelocity"_hs);
 	}
 
-	REFLECT(RigidBody);
 }

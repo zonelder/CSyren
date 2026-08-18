@@ -133,7 +133,7 @@ namespace csyren::core::reflection
 		MetaFactory() : _pType(nullptr) {}
 
 		MetaFactory& type(cstdmf::LiteralID id) {
-			_pType = details::MetaContext::instance().insert(id,ComponentFamily::getID<Type>(), sizeof(Type), details::MetaLink<Type>::type);
+			_pType = details::MetaContext::instance().insert(id, ComponentFamily::getID<Type>(), sizeof(Type), details::MetaLink<Type>::type);
 			return *this;
 		}
 
@@ -145,7 +145,7 @@ namespace csyren::core::reflection
 		}
 
 		template<auto Member>
-		MetaFactory& data(cstdmf::LiteralID id) 
+		MetaFactory& data(cstdmf::LiteralID id)
 		{
 			using MemberType = details::MemberType_t<decltype(Member)>;
 
@@ -186,33 +186,16 @@ namespace csyren::core::reflection
 
 }
 
-namespace csyren::core::reflection
+namespace
 {
-	class MetaRegistry
+	template<class Type>
+	void tryDescribe()
 	{
-		static constexpr size_t MAX_ENTRIES = 256;
-		static inline void (*s_entries[MAX_ENTRIES])() = {};
-		static inline size_t s_count = 0;
-
-	public:
-		static void add(void(*fn)())
+		if constexpr (requires { Type::describe(); }) 
 		{
-			if (s_count < MAX_ENTRIES)
-				s_entries[s_count++] = fn;
+				Type::describe();
 		}
-
-		static void init_all()
-		{
-			for (size_t i = 0; i < s_count; ++i)
-				s_entries[i]();
-		}
-	};
+	}
 }
-
-#define REFLECT(Type)                                                       \
-    static void _meta_init_##Type() { Type::describe(); }                   \
-    static struct _MetaRegistrar_##Type {                                   \
-        _MetaRegistrar_##Type() {                                           \
-            csyren::core::reflection::MetaRegistry::add(&_meta_init_##Type);\
-        }                                                                   \
-    } _meta_registrar_##Type##_instance;
+#define REFLECT(Type) tryDescribe<Type>();
+																

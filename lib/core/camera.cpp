@@ -22,5 +22,4 @@ namespace csyren::core
 			.data<&Camera::background>("background"_hs)
 			.data<&Camera::viewportRect>("viewportRect"_hs);
 	}
-	REFLECT(Camera);
 }

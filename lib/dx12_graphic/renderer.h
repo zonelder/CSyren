@@ -1,7 +1,8 @@
 #ifndef __CSYREN_DX12_RENDERER__
 #define __CSYREN_DX12_RENDERER__
 
-#include <Windows.h>
+#include "cstdmf/window_clean.h"
+
 #include <wrl.h>
 #include <dxgi1_4.h>
 #include <d3d12.h>

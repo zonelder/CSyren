@@ -12,6 +12,4 @@ namespace csyren::render
         core::reflection::MetaFactory<MeshRenderer>{}.type("MeshRenderer"_hs);
     }
 
-    REFLECT(MeshFilter);
-    REFLECT(MeshRenderer);
 }

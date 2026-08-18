@@ -11,6 +11,17 @@ struct Position { float x, y; };
 struct Velocity { float dx, dy; };
 struct Health { int value; };
 struct DummyComponent {};
+struct SecondComponent {};
+
+inline void registerTestComponents()
+{
+    REGISTER_COMPONENT(TestComponent);
+    REGISTER_COMPONENT(Position);
+    REGISTER_COMPONENT(Velocity);
+    REGISTER_COMPONENT(Health);
+    REGISTER_COMPONENT(DummyComponent);
+    REGISTER_COMPONENT(SecondComponent);
+}
 
 class SceneTest : public ::testing::Test {
 protected:
@@ -18,6 +29,7 @@ protected:
     Scene scene{ &bus };
 
     void SetUp() override {
+        registerTestComponents();
         scene.init();
     }
     void TearDown() override {
@@ -55,8 +67,6 @@ TEST_F(SceneTest, EntityDestruction) {
 
 TEST_F(SceneTest, ComponentOperations) {
     auto id = scene.createEntity();
-
-
     auto comp = scene.addComponent<TestComponent>(id, 42);
     ASSERT_NE(comp, nullptr);
     EXPECT_EQ(comp->value, 42);
@@ -224,7 +234,6 @@ TEST_F(SceneTest, HighLoadOperations) {
 
 TEST_F(SceneTest, NonTrivialAccess) {
     auto root = scene.createEntity();
-    struct SecondComponent {};
     std::vector<Entity::ID> children;
     for (int i = 0; i < 10; i++) {
         auto child = createEntityWithTestComponent(root);
@@ -253,13 +262,10 @@ TEST_F(SceneTest, NonTrivialAccess) {
 
 TEST_F(SceneTest, StressCreateEntityOnly) {
     constexpr int N = 10000;
-    std::vector<Entity::ID> ids;
-    ids.reserve(N);
-
     auto start = std::chrono::high_resolution_clock::now();
 
     for (int i = 0; i < N; ++i) {
-        ids.push_back(scene.createEntity());
+        scene.createEntity();
     }
 
     auto end = std::chrono::high_resolution_clock::now();

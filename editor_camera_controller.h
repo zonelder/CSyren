@@ -10,7 +10,6 @@ namespace csyren
 		float movementSpeed = 0.1f;
 
 		static void describe();
-	private:
 		SERIALIZABLE(EditorCameraController, speed, movementSpeed);
 	};
 }

@@ -60,16 +60,12 @@
 
 
 #define SERIALIZABLE(Type, ...) \
-    friend class csyren::core::reflection::ComponentRegistrar<Type>; \
-    \
-    inline static const csyren::core::reflection::ComponentRegistrar<Type> CSYREN_PASTE(registrar_, __COUNTER__){#Type}; \
-    \
-    void serialize(json& j) const \
+    void serialize(::nlohmann::json& j) const \
     { \
         FOR_EACH(SERIALIZE_FIELD_ACTION, __VA_ARGS__) \
     } \
     \
-    void deserialize(const json& j) \
+    void deserialize(const ::nlohmann::json& j) \
     { \
         FOR_EACH(DESERIALIZE_FIELD_ACTION, __VA_ARGS__) \
     }

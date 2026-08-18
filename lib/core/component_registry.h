@@ -1,112 +1,130 @@
 #pragma once
-#include <string>
-#include <functional>
+#include <string_view>
+#include <unordered_map>
 
 #include "core/entity.h"
-#include "core/scene.h"
+#include "cstdmf/log.h"
+#include "meta.h"
 
 #include "third_party/json/json.hpp"
 
 using json = nlohmann::json;
 
+namespace csyren::core
+{
+    class Scene;
+}
+
 
 namespace csyren::core::reflection
 {
 
-	/**
-	 * @struct ComponentMeta
-	 * @brief Contain reflection data of components that allow serializer work with component in polymorphic way.
-	 */
-	struct ComponentMeta
-	{
-		std::function<void* (Scene&, Entity::ID)> add;
-		std::function<bool(Scene&, Entity::ID)> has;
+    /**
+     * @struct ComponentMeta
+     * @brief Contain reflection data of components that allow serializer work with component in polymorphic way.
+     */
+    struct ComponentMeta
+    {
+        using AddFn = void* (*)(Scene*, Entity::ID);
+        using HasFn = bool  (*)(Scene*, Entity::ID);
+        using GetRawFn = void* (*)(Scene*, Entity::ID);
+        using RemoveFn = void  (*)(Scene*, Entity::ID);
+        using DestroyFn = bool(*)(Scene*, Entity::ID);
+        using SerializeFn = void  (*)(const void*, json&);
+        using DeserializeFn = void  (*)(void*, const json&);
 
-		std::function<void* (Scene&, Entity::ID)> get;
+        AddFn           add = nullptr;
+        HasFn           has = nullptr;
+        GetRawFn        getRaw = nullptr;
+        RemoveFn        remove = nullptr;
+        DestroyFn       destroy = nullptr;
+        SerializeFn     serialize = nullptr;
+        DeserializeFn   deserialize = nullptr;
 
-		std::function<void(const void*, json&)> serialize;
+        std::string_view name; // Полезно для дебага и логов
+    };
 
-		std::function<void(void*, const json&)> deserialize;
-	};
+    template<class T> class ComponentRegistrar;
+    /**
+     * @class ComponentRegistry
+     * @brief global, stateless registry of operations with components.
+     *        do not save scene data.
+     */
+    class ComponentRegistry
+    {
+        template<typename T>
+        friend class ComponentRegistrar;
 
-	/**
-	 * @class ComponentRegistry
-	 */
-	class ComponentRegistry
-	{
-		template<typename T>
-		friend class ComponentRegistrar;
+    public:
+        using Registries = std::unordered_map<ComponentFamily::typeID, ComponentMeta>;
 
-	public:
-		using Registries = std::unordered_map<std::string, ComponentMeta>;
-		/**
-		 * @brief Getting information about component by its registered name;
-		 * @param name - registered component name;
-		 * @return pointer to ComponentMeta of component;
-		 */
-		static const ComponentMeta* get(const std::string& name)
-		{
-			auto it = getRegistry().find(name);
-			return (it != getRegistry().end()) ? &it->second : nullptr;
-		}
+        [[nodiscard]] static const ComponentMeta* get(ComponentFamily::typeID family)
+        {
+            const auto& registry = getRegistry();
+            auto it = registry.find(family);
+            return (it != registry.end()) ? &it->second : nullptr;
+        }
 
-		static const Registries& getAll()
-		{
-			return getRegistry();
-		}
+        [[nodiscard]] static const ComponentMeta* get(std::string_view name)
+        {
+            const auto& registry = getRegistry();
+            for (const auto& [_, meta] : registry)
+            {
+                if (meta.name == name)
+                {
+                    return &meta;
+                }
+            }
+            return nullptr;
+        }
 
-	private:
-		template<typename T>
-		static void registerComponentImpl(const std::string& name)
-		{
-			auto& registry = getRegistry();
-			if (registry.find(name) != registry.end())
-			{
-				log::error("ComponentRegistry: receive  attempt to register component of type {},but its already registered.", name);
-				return;
-			}
+        [[nodiscard]] static const Registries& getAll()
+        {
+            return getRegistry();
+        }
 
-			getRegistry()[name] = {
-				// add
-				[](Scene& scene, Entity::ID entity) -> void* { return scene.addComponent<T>(entity).get(); },
-				// has
-				[](Scene& scene, Entity::ID entity) { return scene.hasComponent<T>(entity); },
-				// get
-				[](Scene& scene, Entity::ID entity) -> void* { return scene.getComponent<T>(entity).get(); },
-				& ComponentRegistrar<T>::serialize_impl,
-				& ComponentRegistrar<T>::deserialize_impl
-			};
-			log::debug("ComponentRegistry: {} registered automatically.", name);
-		}
-		static Registries& getRegistry()
-		{
-			static Registries s_componentInfo;
-			return s_componentInfo;
-		}
+    private:
+        template<typename T>
+        static void registerComponentImpl(std::string_view name);
 
-	};
-
-
-	template<class T>
-	class ComponentRegistrar
-	{
-	public:
-		ComponentRegistrar(const std::string& name)
-		{
-			ComponentRegistry::registerComponentImpl<T>(name);
-		}
-
-		static void serialize_impl(const void* comp, json& j)
-		{
-			static_cast<const T*>(comp)->serialize(j);
-		}
-
-		static void deserialize_impl(void* comp, const json& j)
-		{
-			static_cast<T*>(comp)->deserialize(j);
-		}
-	};
+        [[nodiscard]] static Registries& getRegistry()
+        {
+            static Registries s_componentInfo;
+            return s_componentInfo;
+        }
+    };
 
 
+    /**
+     * @class ComponentRegistrar
+     * @brief Хелпер для извлечения логики сериализации конкретного типа T.
+     */
+    template<class T>
+    class ComponentRegistrar
+    {
+    public:
+        explicit ComponentRegistrar(std::string_view name)
+        {
+            ComponentRegistry::registerComponentImpl<T>(name);
+        }
 
+        static void serialize_impl(const void* comp, json& j)
+        {
+            if (comp) {
+                static_cast<const T*>(comp)->serialize(j);
+            }
+        }
+
+        static void deserialize_impl(void* comp, const json& j)
+        {
+            if (comp) 
+            {
+                static_cast<T*>(comp)->deserialize(j);
+            }
+        }
+    };
 }
+
+#define REGISTER_COMPONENT(Type) \
+        REFLECT(Type)            \
+        static const ::csyren::core::reflection::ComponentRegistrar<Type> _##Type##_registrar( #Type );

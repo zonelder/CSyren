@@ -13,6 +13,7 @@
 
 #include "entity_manager.h"
 
+#include "component_registry.h"
 #include "command_buffer.h"
 #include "event_bus.h"
 #include "services.h"
@@ -115,50 +116,22 @@ namespace csyren::core
 	class Scene
 	{
 		friend class Application;
+		friend reflection::ComponentRegistry;
 		friend SceneTest;
 		template<typename...> friend class SceneView;
 
 		using DestructFn = bool(Scene*, Entity::ID);
 		using GetRawFn = void* (Scene*, Entity::ID);
-		struct ComponentMeta
+		struct ComponentState
 		{
 			std::shared_ptr<PoolBase> pool;
 			PublishToken      addToken;
 			PublishToken      removeToken;
-			GetRawFn* getRawFn = nullptr;
-			DestructFn* removeFn = nullptr;
+			const reflection::ComponentMeta* meta;
 
 		};
-		using ComponentsMeta = std::unordered_map<size_t, ComponentMeta>;
+		using ComponentStates = std::unordered_map<size_t, ComponentState>;
 
-		template<typename T>
-		struct ComponentOps
-		{
-			static void* getRawThunk(Scene* self, Entity::ID id)
-			{
-				auto pool = self->getPool<T>();
-				return pool ? pool->try_get(id) : nullptr;
-			}
-
-			static bool destroyThunk(Scene* self,const Entity::ID id)
-			{
-				auto pool = self->getPool<T>();
-				T* ptr = pool ? pool->try_get(id) : nullptr;
-				if (ptr)
-				{
-					auto family = reflection::ComponentFamily::getID<T>();
-					const auto& meta = self->_meta[family];
-					self->_bus->publish(meta.removeToken, ComponentDestroyEvent<T>{ComponentRef<T>(id,pool)});
-					pool->erase(id);
-					if (Entity* ent = self->_em.tryGet(id))
-					{
-						ent->remove(family);
-					}
-					return true;
-				}
-				return false;
-			}
-		};
 
 	public:
 		explicit Scene(EventBus2* bus) : _bus(bus) {}
@@ -228,9 +201,9 @@ namespace csyren::core
 
 		void* getComponentRaw(Entity::ID id, size_t family)
 		{
-			auto it = _meta.find(family);
-			if (it == _meta.end() || !it->second.getRawFn) return nullptr;
-			return it->second.getRawFn(this, id);
+			auto it = _cStates.find(family);
+			if (it == _cStates.end()) return nullptr;
+			return it->second.meta->getRaw(this, id);
 		}
 
 		template<typename... Cs>
@@ -243,10 +216,10 @@ namespace csyren::core
 		{
 			for (const auto& e : _deferred)
 			{
-				auto it = _meta.find(e.family);
-				if (it == _meta.end())
+				auto it = _cStates.find(e.family);
+				if (it == _cStates.end())
 					continue;
-				it->second.removeFn(this, e.entt);
+				it->second.meta->destroy(this, e.entt);
 			}
 
 			auto destroyList = _em.collectDestroyList();
@@ -257,10 +230,10 @@ namespace csyren::core
 				if (!ent) continue;
 				for (const auto& family : ent->componentView())
 				{
-					auto it = _meta.find(family);
-					if (it == _meta.end()) continue;
+					auto it = _cStates.find(family);
+					if (it == _cStates.end()) continue;
 
-					it->second.removeFn(this, id);
+					it->second.meta->destroy(this, id);
 				}
 
 				_bus->publish(_entityDestroyToken, EntityDestroyEvent{ id });
@@ -273,12 +246,31 @@ namespace csyren::core
 
 	private:
 
+		template<class T>
+		bool destroy(Entity::ID id)
+		{
+			auto pool = getPool<T>();
+			T* ptr = pool ? pool->try_get(id) : nullptr;
+			if (ptr)
+			{
+				auto family = reflection::ComponentFamily::getID<T>();
+				_bus->publish(_cStates[family].removeToken, ComponentDestroyEvent<T>{ComponentRef<T>(id, pool)});
+				pool->erase(id);
+				if (Entity* ent = _em.tryGet(id))
+				{
+					ent->remove(family);
+				}
+				return true;
+			}
+			return false;
+		}
+
 		template<typename T>
 		std::shared_ptr<ComponentPool<T>> getPool()
 		{
 			size_t family = reflection::ComponentFamily::getID<T>();
-			auto it = _meta.find(family);
-			if (it != _meta.end())
+			auto it = _cStates.find(family);
+			if (it != _cStates.end())
 				return std::static_pointer_cast<ComponentPool<T>>(it->second.pool);
 			return nullptr;
 		}
@@ -288,41 +280,47 @@ namespace csyren::core
 			if (auto pool = getPool<T>()) return pool;
 
 			auto newPool = std::make_shared<ComponentPool<T>>();
-			_meta[family].pool = newPool;
-			registerOps<T>();
+			_cStates[family].pool = newPool;
+			CS_ASSERT(registerOps<T>() == true);
 			return newPool;
 		}
 
 		template<typename T>
-		void registerOps()
+		bool registerOps()
 		{
 			const size_t family = reflection::ComponentFamily::getID<T>();
-			ComponentMeta& m = _meta[family];
+			auto meta = reflection::ComponentRegistry::get(family);
+			if (!meta)
+			{
+				log::error("Attempt to add unregistered component to the scene. register it first\n");
+				return false;
+			}
+			auto& m = _cStates[family];
 			m.addToken = _bus->register_publisher<ComponentCreateEvent<T>>();
 			m.removeToken = _bus->register_publisher<ComponentDestroyEvent<T>>();
-			m.removeFn = &ComponentOps<T>::destroyThunk;
-			m.getRawFn = &ComponentOps<T>::getRawThunk;
+			m.meta = meta;
+			return true;
 		}
 		template<typename T>
 		PublishToken& getAddToken()
 		{
 			size_t family = reflection::ComponentFamily::getID<T>();
-			if (!_meta.contains(family)) getOrCreatePool<T>(family);
-			return _meta[family].addToken;
+			if (!_cStates.contains(family)) getOrCreatePool<T>(family);
+			return _cStates[family].addToken;
 		}
 
 		template<typename T>
 		PublishToken& getRemoveToken()
 		{
 			size_t family = reflection::ComponentFamily::getID<T>();
-			if (!_meta.contains(family)) getOrCreatePool<T>(family);
-			return _meta[family].removeToken;
+			if (!_cStates.contains(family)) getOrCreatePool<T>(family);
+			return _cStates[family].removeToken;
 		}
 
 
 	private:
 		EntityManager				_em;
-		ComponentsMeta				_meta;
+		ComponentStates				_cStates;
 
 		std::vector<DestroyComponentCommand> _deferred;
 
@@ -505,5 +503,7 @@ namespace csyren::core
 	};
 
 }
+
+#include "component_registry.inl"
 
 #endif;

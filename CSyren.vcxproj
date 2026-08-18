@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="application.cpp" />
+    <ClCompile Include="component_registrator.cpp" />
     <ClCompile Include="editor_base.cpp" />
     <ClCompile Include="editor_camera_controller.cpp" />
     <ClCompile Include="inspector_window.cpp" />
@@ -30,6 +31,7 @@
     <ClInclude Include="base_editor_window.h" />
     <ClInclude Include="common_editor.h" />
     <ClInclude Include="component_editor.h" />
+    <ClInclude Include="component_registrator.h" />
     <ClInclude Include="debug_rotator.h" />
     <ClInclude Include="debug_rotator_system.h" />
     <ClInclude Include="editor_base.h" />

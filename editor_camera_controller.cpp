@@ -9,6 +9,4 @@ namespace csyren
 			.data< &EditorCameraController::movementSpeed>("move speed"_hs)
 			.data<&EditorCameraController::speed>("speed"_hs);
 	}
-
-	REFLECT(EditorCameraController)
 }

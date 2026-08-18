@@ -12,6 +12,4 @@ namespace csyren::core
             .data<&csyren::core::Transform::rotation>("rotation"_hs)
             .data<&csyren::core::Transform::scale>("scale"_hs);
     }
-
-    REFLECT(Transform);
 }

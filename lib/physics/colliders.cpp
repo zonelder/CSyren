@@ -2,7 +2,6 @@
 #include "colliders.h"
 #include "core/meta.h"
 
-
 namespace csyren::physics
 {
     void BoxCollider::describe()
@@ -31,8 +30,4 @@ namespace csyren::physics
             .data<&CapsuleCollider::rotation>("rotation"_hs)
             .data<&CapsuleCollider::isTrigger>("isTrigger"_hs);
     }
-
-    REFLECT(BoxCollider);
-    REFLECT(SphereCollider);
-    REFLECT(CapsuleCollider);
 }

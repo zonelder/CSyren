@@ -47,6 +47,8 @@
 
 #include "math_editor.h"
 
+#include "component_registrator.h"
+
 namespace
 {
 
@@ -96,7 +98,8 @@ namespace csyren
 		log::info("-------------------------------------Init Application-------------------------------------");
 
 		using namespace core;
-		core::reflection::MetaRegistry::init_all();
+		
+		registerAllComponents();
 		editor::EditorRegistry::resolveAll();
 		core::details::TimeHandler timeHandler;
 

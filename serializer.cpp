@@ -24,13 +24,14 @@ namespace csyren
 
             json componentsJson;
 
-            for (const auto& [name, info] : core::reflection::ComponentRegistry::getAll())
+            for (const auto& [family, info] : core::reflection::ComponentRegistry::getAll())
             {
-                if (info.has(scene, entt.id))
+                if (info.has(&scene, entt.id))
                 {
                     json componentJson;
-                    info.serialize(info.get(scene, entt.id), componentJson);
-                    componentsJson[name] = componentJson;
+                    if(info.serialize)
+                        info.serialize(info.getRaw(&scene, entt.id), componentJson);
+                    componentsJson[info.name] = componentJson;
                 }
             }
             entityJson["components"] = componentsJson;
@@ -180,8 +181,9 @@ namespace csyren
                     continue;
                 }
 
-                void* componentPtr = info->add(scene, newEntity);
-                info->deserialize(componentPtr, componentData);
+                void* componentPtr = info->add(&scene, newEntity);
+                if(info->deserialize)
+                    info->deserialize(componentPtr, componentData);
             }
         }
 

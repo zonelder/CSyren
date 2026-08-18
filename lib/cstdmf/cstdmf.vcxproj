@@ -179,6 +179,7 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="static_vector.h" />
     <ClInclude Include="string_utils.h" />
+    <ClInclude Include="window_clean.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

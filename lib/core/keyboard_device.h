@@ -4,9 +4,10 @@
 #include "input_device.h"
 #include "input_buffer.h"
 #include "input_event.h"
+#include "cstdmf/window_clean.h"
 
 #include <bitset>
-#include <Windows.h>
+
 
 namespace csyren::core
 {

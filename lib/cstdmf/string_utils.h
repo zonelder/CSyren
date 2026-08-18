@@ -1,9 +1,7 @@
 #pragma once
 #include <string>
 
-#define WIN32_LEAN_AND_MEAN
-//#define NOMINMAX
-#include <Windows.h>
+#include "window_clean.h"
 #include "log.h"
 
 namespace csyren::cstdmf

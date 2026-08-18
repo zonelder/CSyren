@@ -10,7 +10,6 @@ namespace csyren::render
     {
         render::MeshHandle mesh;
         static void describe();
-    private:
         SERIALIZABLE(MeshFilter, mesh);
     };
 
@@ -18,7 +17,6 @@ namespace csyren::render
     {
         MaterialHandle material;
         static void describe();
-    private:
         SERIALIZABLE(MeshRenderer, material);
     };
 }

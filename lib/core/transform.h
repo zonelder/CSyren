@@ -17,8 +17,6 @@ namespace csyren::core
         }
 
         static void describe();
-
-    private:
         SERIALIZABLE(Transform, position, rotation, scale);
     };
 

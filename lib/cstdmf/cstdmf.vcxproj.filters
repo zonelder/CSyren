@@ -51,6 +51,9 @@
     <ClInclude Include="static_vector.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="window_clean.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

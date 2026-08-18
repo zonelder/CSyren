@@ -44,7 +44,7 @@ namespace csyren::physics::details
 		{
 			for (size_t y = 0; y < 4; ++y)
 			{
-				out.m[x][y] = m(x, y);
+				out.m[x][y] = m(static_cast<JPH::uint>(x), static_cast<JPH::uint>(y));
 			}
 		}
 		return out;

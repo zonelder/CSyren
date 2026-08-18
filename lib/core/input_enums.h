@@ -1,6 +1,7 @@
 #ifndef __CSYREN_KEYCODE__
 #define __CSYREN_KEYCODE__
-#include <Windows.h>
+
+#include "cstdmf/window_clean.h"
 
 namespace csyren::core
 {

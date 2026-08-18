@@ -1,6 +1,6 @@
 #ifndef __CSYREN_WINDOW__
 #define __CSYREN_WINDOW__
-#include <Windows.h>
+#include "cstdmf/window_clean.h"
 #include "dispatch_handle.h"
 #include <functional>
 
