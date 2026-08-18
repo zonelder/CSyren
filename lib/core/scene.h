@@ -118,7 +118,7 @@ namespace csyren::core
 		friend SceneTest;
 		template<typename...> friend class SceneView;
 
-		using DestructFn = bool(Scene*,const DestroyComponentCommand&,PublishToken,EventBus2&);
+		using DestructFn = bool(Scene*, Entity::ID);
 		using GetRawFn = void* (Scene*, Entity::ID);
 		struct ComponentMeta
 		{
@@ -140,18 +140,21 @@ namespace csyren::core
 				return pool ? pool->try_get(id) : nullptr;
 			}
 
-			static bool destroyThunk(Scene* self,const DestroyComponentCommand& c,PublishToken token,EventBus2& bus)
+			static bool destroyThunk(Scene* self,const Entity::ID id)
 			{
 				auto pool = self->getPool<T>();
-				T* ptr = pool ? pool->try_get(c.entt) : nullptr;
+				T* ptr = pool ? pool->try_get(id) : nullptr;
 				if (ptr)
 				{
-					bus.publish(token, ComponentDestroyEvent<T>{ComponentRef<T>(c.entt,pool)});
-					pool->erase(c.entt);
-					if (Entity* ent = self->_em.tryGet(c.entt))
+					auto family = reflection::ComponentFamily::getID<T>();
+					const auto& meta = self->_meta[family];
+					self->_bus->publish(meta.removeToken, ComponentDestroyEvent<T>{ComponentRef<T>(id,pool)});
+					pool->erase(id);
+					if (Entity* ent = self->_em.tryGet(id))
 					{
-						ent->remove(reflection::ComponentFamily::getID<T>());
+						ent->remove(family);
 					}
+					return true;
 				}
 				return false;
 			}
@@ -212,13 +215,12 @@ namespace csyren::core
 			return compRef;
 		}
 
-
 		template<typename T> bool          hasComponent(Entity::ID id) { return _em.contains(id) && _em.tryGet(id)->has(reflection::ComponentFamily::getID<T>()); }
 		template<typename T> void          removeComponent(Entity::ID id) { removeComponent(id, reflection::ComponentFamily::getID<T>()); }
 		void                               removeComponent(Entity::ID id, size_t family)
 		{
 			if (Entity* ent = _em.tryGet(id); ent && ent->has(family))
-				_deferred.pushDestroyComponent(id, family);
+				_deferred.emplace_back(DestroyComponentCommand{ id, family });
 		}
 
 		template<typename T> ComponentRef<T> getComponent(Entity::ID id)
@@ -241,12 +243,12 @@ namespace csyren::core
 
 		void flush()
 		{
-			for (const auto& e : _deferred.destroyComponentBuf())
+			for (const auto& e : _deferred)
 			{
 				auto it = _meta.find(e.family);
 				if (it == _meta.end())
 					continue;
-				it->second.removeFn(this, e, it->second.removeToken, *_bus);
+				it->second.removeFn(this, e.entt);
 			}
 
 			auto destroyList = _em.collectDestroyList();
@@ -256,15 +258,12 @@ namespace csyren::core
 			{
 				Entity* ent = _em.tryGet(id);
 				if (!ent) continue;
-
-				for (const auto& [family, m] : _meta)
+				for (const auto& family : ent->componentView())
 				{
-					if (ent->has(family))
-					{
-						cm.entt = id;
-						cm.family = family;
-						m.removeFn(this, cm, m.removeToken, *_bus);
-					}
+					auto it = _meta.find(family);
+					if (it == _meta.end()) continue;
+
+					it->second.removeFn(this, id);
 				}
 
 				_bus->publish(_entityDestroyToken, EntityDestroyEvent{ id });
@@ -328,7 +327,7 @@ namespace csyren::core
 		EntityManager				_em;
 		ComponentsMeta				_meta;
 
-		DeferredCommands _deferred;
+		std::vector<DestroyComponentCommand> _deferred;
 
 		PublishToken _entityCreateToken;
 		PublishToken _entityDestroyToken;
