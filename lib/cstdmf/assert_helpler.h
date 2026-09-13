@@ -27,10 +27,10 @@ namespace csyren::cstdmf::details
         int         line;
     };
 
-    // пользователь может переопределить
-    inline void handleAssert(const AssertInfo& info)
+    [[noreturn]] inline void failAssert(const AssertInfo& info)
     {
-        log::error("ASSERT FAILED\n"
+        log::error(
+            "ASSERT FAILED\n"
             "Expr: {}\n"
             "Msg : {}\n"
             "File: {}:{}\n",
@@ -38,6 +38,12 @@ namespace csyren::cstdmf::details
             info.message ? info.message : "<none>",
             info.file,
             info.line);
+
+#if CS_ENABLE_ASSERTS
+        CS_DEBUG_BREAK();
+#endif
+
+        std::abort();
     }
 
     [[noreturn]] inline void handleFatal(const AssertInfo& e)
@@ -58,24 +64,47 @@ namespace csyren::cstdmf::details
 #define CS_FATAL(code, msg) \
     csyren::cstdmf::details::handleFatal({ code, msg, __FILE__, __LINE__ })
 
-#if CS_ENABLE_ASSERTS
+//@brief failuer means that we can not continue execution, application must be terminated,most times it should
+// be used in case of unrecoverable errors, like memory allocation failure, critical resource missing, etc
 #define CS_ASSERT(expr) \
         do { \
             if (!(expr)) { \
-                csyren::cstdmf::details::handleAssert({ #expr, nullptr, __FILE__, __LINE__ }); \
-                CS_DEBUG_BREAK(); \
+                csyren::cstdmf::details::failAssert({ #expr, nullptr, __FILE__, __LINE__ }); \
             } \
         } while (0)
 
+//@brief failuer means that we can not continue execution, application must be terminated,most times it should
+// be used in case of unrecoverable errors, like memory allocation failure, critical resource missing, etc
 #define CS_ASSERT_MSG(expr, msg) \
         do { \
             if (!(expr)) { \
-                csyren::cstdmf::details::handleAssert({ #expr, msg, __FILE__, __LINE__ }); \
-                CS_DEBUG_BREAK(); \
+                csyren::cstdmf::details::failAssert({ #expr, msg, __FILE__, __LINE__ }); \
             } \
         } while (0)
 
+
+#if CS_ENABLE_ASSERTS
+
+//@brief failer means that some contract is broken, 
+// this check is only active in debug builds, and erased in release builds, so it should be used for checking preconditions, postconditions, invariants, etc
+#define CS_DEBUG_ASSERT(expr) \
+    CS_ASSERT(expr)
+
+//@brief failer means that some contract is broken, 
+// this check is only active in debug builds, and erased in release builds, so it should be used for checking preconditions, postconditions, invariants, etc
+#define CS_DEBUG_ASSERT_MSG(expr, msg) \
+    CS_ASSERT_MSG(expr, msg)
+
 #else
-    #define BW_ASSERT(expr)        ((void)0)
-    #define BW_ASSERT_MSG(expr, m) ((void)0)
+
+//@brief failer means that some contract is broken, 
+// this check is only active in debug builds, and erased in release builds, so it should be used for checking preconditions, postconditions, invariants, etc
+#define CS_DEBUG_ASSERT(expr) \
+    ((void)0)
+
+//@brief failer means that some contract is broken, 
+// this check is only active in debug builds, and erased in release builds, so it should be used for checking preconditions, postconditions, invariants, etc
+#define CS_DEBUG_ASSERT_MSG(expr, msg) \
+    ((void)0)
+
 #endif

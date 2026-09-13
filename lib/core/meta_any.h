@@ -81,21 +81,61 @@ namespace csyren::core::reflection
 		void* raw() const { return _instance; }
 
 		template<typename T>
-		T& get() const
+		T* tryGet() noexcept
 		{
 			using CleanType = std::remove_cvref_t<T>;
-			CS_ASSERT_MSG(_type && _type->id == resolve<CleanType>()->id,
-				"MetaAny::get<T>(): type mismatch");
-			return *static_cast<T*>(_instance);
+
+			if (!_type || _type->id != resolve<CleanType>()->id)
+				return nullptr;
+
+			return static_cast<T*>(_instance);
 		}
 
 		template<typename T>
-		void set(const T& value)
+		const T* tryGet() const noexcept
 		{
 			using CleanType = std::remove_cvref_t<T>;
-			CS_ASSERT_MSG(_type && _type->id == resolve<CleanType>()->id,
-				"MetaAny::get<T>(): type mismatch");
-			*static_cast<T*>(_instance) = value;
+
+			if (!_type || _type->id != resolve<CleanType>()->id)
+				return nullptr;
+
+			return static_cast<const T*>(_instance);
+		}
+
+		template<typename T>
+		const T& get() const
+		{
+			auto* value = tryGet<T>();
+			if (!value)
+			{
+				throw std::runtime_error("MetaAny::get<T>(): type mismatch");
+			}
+			return *value;
+		}
+		template<typename T>
+		T& get()
+		{
+			auto* value = tryGet<T>();
+			if (!value)
+			{
+				throw std::runtime_error("MetaAny::get<T>(): type mismatch");
+			}
+			return *value;
+		}
+
+		template<typename T>
+		bool set(const T& value)
+		{
+			using CleanType = std::remove_cvref_t<T>;
+			if (auto* dst = tryGet<T>())
+			{
+				*dst = value;
+				return true;
+			}
+			log::error(
+				"MetaAny::set<T>(): type mismatch. Actual type: {}",
+				_type ? _type->id.str : "<null>");
+			return false;
 		}
 		MetaAny field(LiteralID id) const
 		{
