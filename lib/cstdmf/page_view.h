@@ -271,5 +271,3 @@ namespace csyren::cstdmf
 		std::set<uint32_t> _nonFullPages;
 	};
 }
-
-#endif
