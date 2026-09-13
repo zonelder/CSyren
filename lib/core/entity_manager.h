@@ -45,17 +45,17 @@ namespace csyren::core
 
             _entities.emplace(id, Entity{});
             Entity* ent = _entities.try_get(id);
-            ent->id = id;
-            ent->parent = parent;
-            ent->name = generateUniqueName(name, parent);
-
             Entity* p = _entities.try_get(parent);
             if (!p)
             {
                 log::error("EntityManager::createEntity: parent id={} not found, "
-                    "adding '{}' to scene root", parent, ent->name);
+                    "adding '{}' to scene root", parent, name);
                 p = _entities.try_get(ROOT_PARENT);
             }
+
+            ent->id = id;
+            ent->parent = p->id;
+            ent->name = name;
             p->children.push_back(id);
             return id;
         }
@@ -189,39 +189,6 @@ namespace csyren::core
                 const Entity* e = _entities.try_get(current);
                 if (!e) return false;
                 current = e->parent;
-            }
-            return false;
-        }
-
-        std::string generateUniqueName(std::string_view baseName,
-            Entity::ID parent,
-            Entity::ID excludeId = Entity::invalidID)
-        {
-            std::string name(baseName);
-            return name;//TODO dont allow dupls. but current code is bad optimized
-            /*
-            Entity* parentEntity = _entities.try_get(parent);
-            if (!parentEntity) parentEntity = _entities.try_get(ROOT_PARENT);
-
-            const auto& siblings = parentEntity->children;
-            int counter = 1;
-            std::string testName = name;
-
-            while (isNameTaken(testName, siblings, excludeId))
-                testName = name + "(" + std::to_string(counter++) + ")";
-            return testName;
-            */
-        }
-
-        bool isNameTaken(const std::string& name,
-            const std::vector<Entity::ID>& siblings,
-            Entity::ID excludeId) const
-        {
-            for (Entity::ID siblingId : siblings)
-            {
-                if (siblingId == excludeId) continue;
-                if (auto* sibling = _entities.try_get(siblingId))
-                    if (sibling->name == name) return true;
             }
             return false;
         }

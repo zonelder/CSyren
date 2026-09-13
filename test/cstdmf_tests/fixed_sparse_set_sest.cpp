@@ -6,6 +6,8 @@ struct TrackedObj {
     static int count;
     int value;
     explicit TrackedObj(int v = 0) : value(v) { ++count; }
+    TrackedObj(const TrackedObj& other) noexcept : value(other.value) { ++count; }
+    TrackedObj(TrackedObj&& other) noexcept : value(other.value) { ++count; }
     ~TrackedObj() { --count; }
 };
 int TrackedObj::count = 0;

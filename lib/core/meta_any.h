@@ -1,6 +1,7 @@
 #pragma once
 
 #include "meta.h"
+#include "cstdmf/assert_helpler.h"
 #include <type_traits>
 
 namespace

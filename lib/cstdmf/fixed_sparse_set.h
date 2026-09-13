@@ -1,141 +1,127 @@
-#ifndef __CSYREN_FIXED_SPARSE_SET__
-#define __CSYREN_FIXED_SPARSE_SET__
+#pragma once
 
-#include <queue>
+#include "static_vector.h"
+#include <array>
+#include <cstdint>
 #include <limits>
-#include <stdexcept>
+#include <type_traits>
 
 namespace csyren::cstdmf
 {
-	template<typename T,size_t Capacity,typename ID = size_t>
-	class FixedSparseSet
-	{
-		static_assert(std::is_integral_v<ID>,"FixedSparseSet:: ID is not integer type");
-		static_assert(Capacity < std::numeric_limits<ID>::max(), "FixedSparseSet:: capacity is bigger that ID type can handle. reduñe Capacity or change ID type.");
-	public:
-		using size_type = ID;
-		using iterator = T*;
-		using const_iterator = const T*;
-		static constexpr ID invalidID = std::numeric_limits<ID>::max();
+    // Dense, inline pool. ID slots are reused (IDs are NOT generation handles).
+    // Insertion does not move existing T. Erase moves the last T into the hole.
+    // No allocations in construction, insertion, erase or clear (excluding T).
+    template<typename T, std::size_t Capacity, typename ID = std::size_t>
+    class FixedSparseSet
+    {
+        static_assert(std::is_integral_v<ID> && std::is_unsigned_v<ID> && !std::is_same_v<ID, bool>);
+        static_assert(Capacity > 0 && Capacity < std::numeric_limits<ID>::max());
+        static constexpr bool relocatable = std::is_nothrow_move_constructible_v<T> || std::is_nothrow_copy_constructible_v<T>;
 
-		FixedSparseSet() noexcept :
-			_size(0)
-		{
-			_freeList.reserve(Capacity);
-			for (size_t i = 0; i < Capacity; ++i)
-			{
-				_freeList.push_back(static_cast<ID>(Capacity - 1 - i)); // Reverse order
-				_sparse[i] = invalidID;
-			}
-		}
+    public:
+        using size_type = ID;
+        using iterator = T*;
+        using const_iterator = const T*;
+        static constexpr ID invalidID = std::numeric_limits<ID>::max();
 
-		~FixedSparseSet()
-		{
-			clear();
-		}
+        FixedSparseSet() noexcept
+        {
+            for (std::size_t i = 0; i + 1 < Capacity; ++i) _sparse[i] = static_cast<ID>(i + 1);
+            _sparse[Capacity - 1] = invalidID;
+        }
+        // Bytewise copy/move of a pool is unsafe. PageView moves owning pointers.
+        FixedSparseSet(const FixedSparseSet&) = delete;
+        FixedSparseSet& operator=(const FixedSparseSet&) = delete;
+        FixedSparseSet(FixedSparseSet&&) = delete;
+        FixedSparseSet& operator=(FixedSparseSet&&) = delete;
 
-		template<typename... Args>
-		ID emplace(Args&&... args)
-		{
-			
-			if (_size >= Capacity || _freeList.empty()) return invalidID;
+        template<typename... Args>
+        ID emplace(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
+        {
+            if (_freeHead == invalidID) return invalidID;
+            const ID id = _freeHead;
+            const ID next = _sparse[id];
+            const auto index = _items.size();
+            _items.try_emplace_back(std::forward<Args>(args)...);
+            // Commit only after successful construction.
+            _sparse[id] = static_cast<ID>(index);
+            _dense[index] = id;
+            _freeHead = next;
+            return id;
+        }
 
-			ID id = _freeList.back();
-			_freeList.pop_back();
-			T* data = data_ptr();
-			_sparse[id] = _size;
-			_dense[_size] = id;
-			new (&data[_size]) T(std::forward<Args>(args)...);
-			++_size;
-			return id;
-		}
+        // Throwing assignment keeps the mapping valid (basic guarantee), while
+        // nothrow relocation avoids both assignment and exception recovery.
+        bool erase(ID id) noexcept(relocatable || std::is_nothrow_move_assignable_v<T>)
+            requires (relocatable || std::is_move_assignable_v<T>)
+        {
+            if (!contains(id)) return false;
+            const auto index = _sparse[id];
+            const auto last = _items.size() - 1;
+            if (index != last)
+            {
+                T* data = _items.data();
+                if constexpr (relocatable)
+                {
+                    std::destroy_at(data + index);
+                    std::construct_at(data + index, std::move_if_noexcept(data[last]));
+                }
+                else data[index] = std::move(data[last]);
+                const ID moved = _dense[last];
+                _dense[index] = moved;
+                _sparse[moved] = index;
+            }
+            _items.pop_back(); // Also destroys the moved-from last element.
+            _sparse[id] = _freeHead;
+            _freeHead = id;
+            return true;
+        }
 
-		bool erase(ID id)
-		{
-			if (!contains(id)) return false;
+        void clear() noexcept
+        {
+            for (std::size_t i = 0; i < _items.size(); ++i)
+            {
+                const auto id = _dense[i];
+                _sparse[id] = _freeHead;
+                _freeHead = id;
+            }
+            _items.clear();
+        }
 
-			T* data = data_ptr();
-			ID index = _sparse[id];
-			ID last = _size - 1;
+        bool contains(ID id) const noexcept
+        {
+            // Free cells store links; the reverse mapping distinguishes them
+            // from live dense indices without a separate allocation/bitset.
+            return id < Capacity && _sparse[id] < _items.size() && _dense[_sparse[id]] == id;
+        }
+        std::size_t size() const noexcept { return _items.size(); }
+        bool empty() const noexcept { return _items.empty(); }
+        static constexpr std::size_t capacity() noexcept { return Capacity; }
 
-			data[index].~T();
-			if (index != last)
-			{
-				const ID last_id = _dense[last];
-				new(&data[index]) T(std::move(data[last]));
-				_dense[index] = last_id;
-				_sparse[last_id] = index;
-			}
-			_sparse[id] = invalidID;
-			--_size;
-			_freeList.push_back(id);
-			return true;
-		}
+        iterator begin() noexcept { return _items.begin(); }
+        iterator end() noexcept { return _items.end(); }
+        const_iterator begin() const noexcept { return _items.begin(); }
+        const_iterator end() const noexcept { return _items.end(); }
+        const_iterator cbegin() const noexcept { return begin(); }
+        const_iterator cend() const noexcept { return end(); }
 
-		void clear()
-		{
-			T* data = data_ptr();
-			for (size_t i = 0; i < _size; ++i)
-			{
-				data[i].~T();
-				_sparse[_dense[i]] = invalidID;
-				//compact clean up. it may occure to be faster just iterate over all _sparce and clean instead of random access;
-			}
-			_size = 0;
-		}
+        T* get(ID id) noexcept { return contains(id) ? _items.data() + _sparse[id] : nullptr; }
+        const T* get(ID id) const noexcept { return contains(id) ? _items.data() + _sparse[id] : nullptr; }
+        T& operator[](ID id)
+        {
+            if (auto p = get(id)) return *p;
+            throw std::out_of_range("FixedSparseSet invalid ID");
+        }
+        const T& operator[](ID id) const
+        {
+            if (auto p = get(id)) return *p;
+            throw std::out_of_range("FixedSparseSet invalid ID");
+        }
 
-		bool contains(ID id) const noexcept
-		{
-			return id < Capacity && _sparse[id] != invalidID;
-		}
-
-		size_t size() const noexcept { return _size; }
-
-		iterator begin()	noexcept { return data_ptr(); }
-		iterator end()		noexcept { return data_ptr() + _size; }
-
-		const_iterator begin()	const noexcept { return data_ptr(); }
-		const_iterator end()	const { return data_ptr() + _size; }
-
-		T* get(ID id) const noexcept
-		{
-			return contains(id) ? data_ptr() + _sparse[id] : nullptr;
-		}
-
-		T* get(ID id) noexcept
-		{
-			return contains(id) ?data_ptr() + _sparse[id] : nullptr;
-		}
-
-		T& operator[](ID id)
-		{
-			if (!contains(id))
-				throw std::out_of_range("FixedSparseSet::operator[] out of range");
-			return data_ptr()[_sparse[id]];
-		}
-		const T& operator[](ID id) const
-		{
-			if (!contains(id))
-				throw std::out_of_range("FixedSparseSet::operator[] out of range");
-			return data_ptr()[_sparse[id]];
-		}
-
-	private:
-		T* data_ptr() noexcept {
-			return std::launder(reinterpret_cast<T*>(_data));
-		}
-
-		const T* data_ptr() const noexcept {
-			return std::launder(reinterpret_cast<const T*>(_data));
-		}
-
-		ID _sparse[Capacity];
-		ID _dense[Capacity];
-		alignas(alignof(T)) std::byte _data[Capacity * sizeof(T)]{};
-		std::vector<ID>  _freeList;
-		size_type _size{ 0 };
-	};
+    private:
+        std::array<ID, Capacity> _sparse;
+        std::array<ID, Capacity> _dense;
+        StaticVector<T, Capacity> _items;
+        ID _freeHead = 0;
+    };
 }
-
-
-#endif

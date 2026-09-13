@@ -140,6 +140,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="sparse_set_test.cpp" />
+    <ClCompile Include="container_safety_test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
