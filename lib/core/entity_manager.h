@@ -117,7 +117,7 @@ namespace csyren::core
                 log::error("EntityManager::setName: cannot rename ROOT_PARENT");
                 return false;
             }
-            entity->name = generateUniqueName(newName, entity->parent, id);
+            entity->name = newName;
             return true;
         }
 
