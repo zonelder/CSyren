@@ -25,9 +25,6 @@ namespace csyren::render
 	{
 	public:
 		RenderQueue() = default;
-#ifndef _DEBUG
-		using Statistic = CommandList::Statistic;
-#endif
 		bool init(ID3D12Device* device, const D3D12_COMMAND_QUEUE_DESC& desc)
 		{
 			if (DX_FAILED(device->CreateCommandQueue(&desc, IID_PPV_ARGS(&_pQueue))))
@@ -156,17 +153,8 @@ namespace csyren::render
 		{
 			return type_;
 		}
-#ifndef _DEBUG
-		const Statistic& getStatistic() const noexcept
-		{
-			return statistic_;
-		};
-#endif
 
 	private:
-#ifndef _DEBUG
-		Statistic							statistic_;
-#endif
 		static constexpr UINT64 EMPTY_CMD_QUEUE = 0u;
 
 		details::ComPtr< ID3D12CommandQueue >	_pQueue;

@@ -131,6 +131,7 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="fixed_hash_map_test.cpp" />
     <ClCompile Include="fixed_sparse_set_sest.cpp" />
     <ClCompile Include="page_view_test.cpp" />
     <ClCompile Include="pch.cpp">

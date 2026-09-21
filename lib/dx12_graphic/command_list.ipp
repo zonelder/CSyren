@@ -10,10 +10,6 @@ namespace csyren::render
 
 		state_ = {};
 		fenceValue_ = 0;
-#ifndef CONSUMER_CLIENT
-
-		statistic_.reset();
-#endif
 
 	}
 	CS_FORCE_INLINE void CommandList::close()

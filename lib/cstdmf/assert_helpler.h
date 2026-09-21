@@ -76,6 +76,6 @@ namespace csyren::cstdmf::details
         } while (0)
 
 #else
-    #define BW_ASSERT(expr)        ((void)0)
-    #define BW_ASSERT_MSG(expr, m) ((void)0)
+    #define CS_ASSERT(expr)        ((void)0)
+    #define CS_ASSERT_MSG(expr, m) ((void)0)
 #endif
