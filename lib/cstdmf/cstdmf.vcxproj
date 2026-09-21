@@ -168,18 +168,22 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="assert_helpler.h" />
+    <ClInclude Include="fixed_hash_map.h" />
     <ClInclude Include="fixed_sparse_set.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="hash_literal.h" />
     <ClInclude Include="inline_helper.h" />
     <ClInclude Include="log.h" />
     <ClInclude Include="rectangle.h" />
+    <ClInclude Include="runtime_shader_params.h" />
     <ClInclude Include="sparse_set.h" />
     <ClInclude Include="page_view.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="static_vector.h" />
     <ClInclude Include="string_utils.h" />
+    <ClInclude Include="tag_string.h" />
     <ClInclude Include="window_clean.h" />
+    <ClInclude Include="xxhash.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
