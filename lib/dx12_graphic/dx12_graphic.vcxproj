@@ -198,6 +198,7 @@
     <ClInclude Include="render_queue.h" />
     <ClInclude Include="resources.h" />
     <ClInclude Include="resource_handle.h" />
+    <ClInclude Include="resource_handle_meta.h" />
     <ClInclude Include="resource_manager.h" />
     <ClInclude Include="resource_upload_thread.h" />
     <ClInclude Include="sampler_manager.h" />
@@ -237,6 +238,7 @@
     <ClCompile Include="renderer.cpp" />
     <ClCompile Include="render_queue.cpp" />
     <ClCompile Include="resource_upload_thread.cpp" />
+    <ClCompile Include="resource_handle_meta.cpp" />
     <ClCompile Include="shader.cpp" />
     <ClCompile Include="shader_base.cpp" />
     <ClCompile Include="shader_meta.cpp" />

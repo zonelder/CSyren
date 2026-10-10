@@ -5,6 +5,7 @@
 #include <vector>
 #include <unordered_map>
 #include <memory>
+#include <stdexcept>
 
 #include "cstdmf/assert_helpler.h"
 #include "component_base.h"
@@ -14,6 +15,7 @@
 #include "entity_manager.h"
 
 #include "component_registry.h"
+#include "entity_batch.h"
 #include "command_buffer.h"
 #include "event_bus.h"
 #include "services.h"
@@ -118,6 +120,7 @@ namespace csyren::core
 		friend class Application;
 		friend reflection::ComponentRegistry;
 		friend SceneTest;
+        friend class EntityBatch;
 		template<typename...> friend class SceneView;
 
 		using DestructFn = bool(Scene*, Entity::ID);
@@ -134,6 +137,14 @@ namespace csyren::core
 
 
 	public:
+
+        EntityBatch stageEntities(size_t count) const { return EntityBatch(_em.planAppend(count)); }
+
+        // The batch is consumed only on success. No scene data changes before
+        // preparation completes; the commit performs only prepared, no-throw moves.
+        // Scene mutation and EventBus dispatch must not run concurrently with append.
+        bool append(EntityBatch&& data);
+
 		explicit Scene(EventBus2* bus) : _bus(bus) {}
 
 		void init()
@@ -149,6 +160,7 @@ namespace csyren::core
 		}
 
 		bool setName(Entity::ID id, std::string_view newName) { return _em.setName(id, newName); }
+        bool setParent(Entity::ID id, Entity::ID parent) { return _em.setParent(id, parent); }
 
 		[[nodiscard]] Entity::ID createEntity(Entity::ID parent = EntityManager::ROOT_PARENT)
 		{
@@ -159,7 +171,7 @@ namespace csyren::core
 			Entity::ID parent = EntityManager::ROOT_PARENT)
 		{
 			Entity::ID id = _em.createEntity(name, parent);
-			_bus->publish(_entityCreateToken, EntityCreateEvent{ id });
+            _bus->publish(_entityCreateToken, EntityCreateEvent{ id });
 			return id;
 		}
 
@@ -180,7 +192,7 @@ namespace csyren::core
 			if (ptr)
 			{
 				ent->add(family);
-				_bus->publish(getAddToken<T>(),
+                _bus->publish(getAddToken<T>(),
 					ComponentCreateEvent<T>{compRef});
 			}
 			return compRef;
@@ -254,7 +266,7 @@ namespace csyren::core
 			if (ptr)
 			{
 				auto family = reflection::ComponentFamily::getID<T>();
-				_bus->publish(_cStates[family].removeToken, ComponentDestroyEvent<T>{ComponentRef<T>(id, pool)});
+                _bus->publish(_cStates[family].removeToken, ComponentDestroyEvent<T>{ComponentRef<T>(id, pool)});
 				pool->erase(id);
 				if (Entity* ent = _em.tryGet(id))
 				{
@@ -505,5 +517,6 @@ namespace csyren::core
 }
 
 #include "component_registry.inl"
+#include "entity_batch.inl"
 
 #endif;

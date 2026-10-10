@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "rigid_body.h"
 #include "core/meta.h"
+#include "core/meta_archive.h"
 
 
 namespace csyren::physics
@@ -8,13 +9,15 @@ namespace csyren::physics
 	void RigidBody::describe()
 	{
         core::reflection::MetaFactory<RigidBody>{}.type("RigidBody"_hs)
-            //.data<&RigidBody::type>("type"_hs)
+            .data<&RigidBody::type>("type"_hs)
             .data<&RigidBody::mass>("mass"_hs)
             .data<&RigidBody::useGravity>("useGravity"_hs)
             .data<&RigidBody::friction>("friction"_hs)
             .data<&RigidBody::restitution>("restitution"_hs)
             .data<&RigidBody::linearVelocity>("linearVelocity"_hs)
-            .data<&RigidBody::angularVelocity>("angularVelocity"_hs);
+			.data<&RigidBody::angularVelocity>("angularVelocity"_hs);
+
+        core::reflection::MetaFactory<BodyType>{}.primitiveType("BodyType"_hs).archive(core::reflection::scalarArchive<BodyType>());
 	}
 
 }

@@ -12,6 +12,7 @@
 #include "physics/rigid_body.h"
 
 #include "mesh_filter.h"
+#include "dx12_graphic/resource_handle_meta.h"
 #include "editor_camera_controller.h"
 
 #include "meta_common.h"
@@ -26,6 +27,7 @@ namespace csyren
 			using namespace csyren;
 
 			REFLECT(MetaCommonDescriber);
+			render::describeResourceHandleMeta();
 			REGISTER_COMPONENT(DebugRotator);
 			REGISTER_COMPONENT(EditorCameraController);
 			REGISTER_COMPONENT(SceneLoaderRequest);

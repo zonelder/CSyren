@@ -21,6 +21,7 @@
     <ClCompile Include="mesh_filter.cpp" />
     <ClCompile Include="meta_common.cpp" />
     <ClCompile Include="serializer.cpp" />
+    <ClCompile Include="serializer_scene.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>

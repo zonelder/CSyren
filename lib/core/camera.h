@@ -1,7 +1,6 @@
 #pragma once
 
 #include "math/vector4.h"
-#include "core/serialize_base.h"
 
 namespace csyren::core
 {
@@ -32,7 +31,6 @@ namespace csyren::core
 		ViewportRect viewportRect;//unused
 
 		static void describe();
-		SERIALIZABLE(Camera, far, near, aspectRatio, fov,priority, projection,background);
 	};
 
 }

@@ -70,7 +70,7 @@ namespace csyren::core::reflection
 			return *this;
 		}
 
-		// Проверка валидности
+		// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 		explicit operator bool() const
 		{
 			return _instance != nullptr && _type != nullptr;
@@ -144,7 +144,7 @@ namespace csyren::core::reflection
 			auto fieldMeta = findField(_type, id);
 			if (!fieldMeta) return MetaAny(nullptr, nullptr);
 
-			void* field_ptr = static_cast<char*>(_instance) + fieldMeta->offset;
+			void* field_ptr = fieldMeta->get ? fieldMeta->get(_instance) : nullptr;
 			MetaType* field_type = fieldMeta->type;
 
 			return MetaAny(field_ptr, field_type);
@@ -154,7 +154,7 @@ namespace csyren::core::reflection
 		{
 			for (auto& data : _type->data)
 			{
-				void* field_ptr = static_cast<char*>(_instance) + data.offset;
+				void* field_ptr = data.get ? data.get(_instance) : nullptr;
 				fn(data.id, MetaAny(field_ptr, data.type));
 			}
 		}

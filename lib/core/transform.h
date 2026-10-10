@@ -1,6 +1,5 @@
 #pragma once
 
-#include "core/serialize_base.h"
 #include "math/math.h"
 
 
@@ -17,7 +16,6 @@ namespace csyren::core
         }
 
         static void describe();
-        SERIALIZABLE(Transform, position, rotation, scale);
     };
 
 

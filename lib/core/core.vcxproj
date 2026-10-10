@@ -136,6 +136,13 @@
     <ClInclude Include="input_event.h" />
     <ClInclude Include="input_enums.h" />
     <ClInclude Include="meta.h" />
+    <ClInclude Include="archive.h" />
+    <ClInclude Include="meta_archive.h" />
+    <ClInclude Include="meta_json.h" />
+    <ClInclude Include="serialization_context.h" />
+    <ClInclude Include="scene_serialization_context.h" />
+    <ClInclude Include="entity_batch.h" />
+    <ClInclude Include="entity_batch.inl" />
     <ClInclude Include="meta_any.h" />
     <ClInclude Include="mouse_device.h" />
     <ClInclude Include="pch.h" />

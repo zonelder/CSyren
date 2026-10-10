@@ -48,6 +48,9 @@
     <ClInclude Include="resource_handle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="resource_handle_meta.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="constant_buffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -207,6 +210,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="resource_upload_thread.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="resource_handle_meta.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="texture_upload_task.cpp">

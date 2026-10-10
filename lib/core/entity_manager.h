@@ -12,6 +12,7 @@ namespace csyren::core
 {
     class EntityManager
     {
+        friend class EntityBatch;
     public:
         static constexpr std::string_view DEFAULT_NAME{ "new Entity" };
         static constexpr Entity::ID ROOT_PARENT = 0;
@@ -124,6 +125,24 @@ namespace csyren::core
         [[nodiscard]] Entity* tryGet(Entity::ID id) { return _entities.try_get(id); }
         [[nodiscard]] const Entity* tryGet(Entity::ID id) const { return _entities.try_get(id); }
         [[nodiscard]] bool contains(Entity::ID id) const { return _entities.contains(id); }
+        // Read-only planning; no freelist copy and no ID reservation in the live scene.
+        std::vector<Entity::ID> planAppend(size_t count) const
+        {
+            std::vector<Entity::ID> ids; ids.reserve(count);
+            for (size_t i = 0; i < count; ++i) ids.push_back(plannedId(i));
+            return ids;
+        }
+        bool setParent(Entity::ID id, Entity::ID parent)
+        {
+            if (id == ROOT_PARENT || !_entities.contains(parent) || !canBeParent(parent, id)) return false;
+            auto* entity = _entities.try_get(id);
+            if (!entity) return false;
+            if (entity->parent == parent) return true;
+            _entities.try_get(parent)->children.push_back(id);
+            if (auto* old = _entities.try_get(entity->parent)) std::erase(old->children, id);
+            entity->parent = parent;
+            return true;
+        }
         [[nodiscard]] const cstdmf::SparseSet<Entity>& all() const { return _entities; }
 
         void finalizeDestroy(Entity::ID id)
@@ -160,6 +179,13 @@ namespace csyren::core
         void clearPending() { _pendingDestroy.clear(); }
 
     private:
+        Entity::ID plannedId(size_t index) const
+        {
+            if (index < _freeIDs.size()) return _freeIDs[_freeIDs.size() - index - 1];
+            const auto offset = index - _freeIDs.size();
+            if (offset >= uint64_t(Entity::invalidID) - _nextId) throw std::runtime_error("EntityManager: out of Entity IDs");
+            return _nextId + static_cast<Entity::ID>(offset);
+        }
         Entity::ID allocateId()
         {
             if (!_freeIDs.empty())

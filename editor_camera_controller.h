@@ -1,5 +1,4 @@
 #pragma once
-#include "core/serialize_base.h"
 
 
 namespace csyren
@@ -10,6 +9,5 @@ namespace csyren
 		float movementSpeed = 0.1f;
 
 		static void describe();
-		SERIALIZABLE(EditorCameraController, speed, movementSpeed);
 	};
 }

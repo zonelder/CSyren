@@ -1,18 +1,17 @@
 #pragma once
 #include <string_view>
 #include <unordered_map>
+#include <memory>
 
 #include "core/entity.h"
 #include "cstdmf/log.h"
 #include "meta.h"
 
-#include "third_party/json/json.hpp"
-
-using json = nlohmann::json;
 
 namespace csyren::core
 {
     class Scene;
+    struct PoolBase;
 }
 
 
@@ -25,23 +24,23 @@ namespace csyren::core::reflection
      */
     struct ComponentMeta
     {
+        ComponentFamily::typeID family{};
         using AddFn = void* (*)(Scene*, Entity::ID);
         using HasFn = bool  (*)(Scene*, Entity::ID);
         using GetRawFn = void* (*)(Scene*, Entity::ID);
         using RemoveFn = void  (*)(Scene*, Entity::ID);
         using DestroyFn = bool(*)(Scene*, Entity::ID);
-        using SerializeFn = void  (*)(const void*, json&);
-        using DeserializeFn = void  (*)(void*, const json&);
 
         AddFn           add = nullptr;
         HasFn           has = nullptr;
         GetRawFn        getRaw = nullptr;
         RemoveFn        remove = nullptr;
         DestroyFn       destroy = nullptr;
-        SerializeFn     serialize = nullptr;
-        DeserializeFn   deserialize = nullptr;
-
-        std::string_view name; // Полезно для дебага и логов
+        std::shared_ptr<PoolBase> (*createPool)() = nullptr;
+        void (*ensurePool)(Scene*) = nullptr;
+        void (*publishAdded)(Scene*, Entity::ID) = nullptr;
+        MetaType* metaType = nullptr;
+        std::string_view name;
     };
 
     template<class T> class ComponentRegistrar;
@@ -97,7 +96,7 @@ namespace csyren::core::reflection
 
     /**
      * @class ComponentRegistrar
-     * @brief Хелпер для извлечения логики сериализации конкретного типа T.
+     * @brief пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ T.
      */
     template<class T>
     class ComponentRegistrar
@@ -108,20 +107,6 @@ namespace csyren::core::reflection
             ComponentRegistry::registerComponentImpl<T>(name);
         }
 
-        static void serialize_impl(const void* comp, json& j)
-        {
-            if (comp) {
-                static_cast<const T*>(comp)->serialize(j);
-            }
-        }
-
-        static void deserialize_impl(void* comp, const json& j)
-        {
-            if (comp) 
-            {
-                static_cast<T*>(comp)->deserialize(j);
-            }
-        }
     };
 }
 

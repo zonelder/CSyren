@@ -11,7 +11,9 @@ namespace csyren::core::reflection
         CS_DEBUG_ASSERT_MSG(registry.find(family) == registry.end(), "ComponentRegistry: This component already registered\n");
 
         ComponentMeta meta;
+        meta.family = family;
         meta.name = name;
+        meta.metaType = resolve<T>();
 
         meta.add = [](Scene* scene, Entity::ID id) -> void*
             {
@@ -38,15 +40,12 @@ namespace csyren::core::reflection
             {
                return scene->template destroy<T>(id);
             };
+        meta.createPool = []() -> std::shared_ptr<PoolBase> { return std::make_shared<ComponentPool<T>>(); };
+        meta.ensurePool = [](Scene* scene) { (void)scene->getOrCreatePool<T>(ComponentFamily::getID<T>()); };
+        meta.publishAdded = [](Scene* scene, Entity::ID id) {
+            scene->_bus->publish(scene->getAddToken<T>(), ComponentCreateEvent<T>{ scene->getComponent<T>(id) });
+        };
 
-        if constexpr (requires(T & t, json & j2) { t.serialize(j2); })
-        {
-            meta.serialize = &ComponentRegistrar<T>::serialize_impl;
-        }
-        if constexpr (requires(T & t, json & j2) { t.deserialize(j2); })
-        {
-            meta.deserialize = &ComponentRegistrar<T>::deserialize_impl;
-        }
         registry[family] = std::move(meta);
         log::debug("ComponentRegistry: '{}' registered successfully.family = {}", name, family);
     }

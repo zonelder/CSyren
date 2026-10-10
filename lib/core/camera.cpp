@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "camera.h"
 #include "meta.h"
+#include "meta_archive.h"
 
 
 namespace csyren::core
@@ -19,7 +20,10 @@ namespace csyren::core
 			.data<&Camera::fov>("fov"_hs)
 			.data<&Camera::aspectRatio>("aspectRatio"_hs)
 			.data<&Camera::priority>("priority"_hs)
+			.data<&Camera::projection>("projection"_hs)
 			.data<&Camera::background>("background"_hs)
 			.data<&Camera::viewportRect>("viewportRect"_hs);
+
+		reflection::MetaFactory<ProjectionType>{}.primitiveType("ProjectionType"_hs).archive(reflection::scalarArchive<ProjectionType>());
 	}
 }

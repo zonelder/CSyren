@@ -10,7 +10,7 @@ namespace csyren::render
     struct THandle
     {
         static constexpr uint64_t INVALID = { std::numeric_limits< uint64_t>::max() };
-        uint64_t id;
+        uint64_t id{ INVALID };
 
         bool operator<(const THandle<T>& other) const { return id < other.id; }
         bool operator==(const THandle<T>& other) const { return id == other.id; }

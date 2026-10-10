@@ -2,7 +2,7 @@
 #define __CSYREN_MESH_FILTER__
 #include <DirectXMath.h>
 #include "core/renderer.h"
-#include "dx12_graphic/serialize_base.h"
+#include "dx12_graphic/resource_handle.h"
 
 namespace csyren::render
 {
@@ -10,14 +10,12 @@ namespace csyren::render
     {
         render::MeshHandle mesh;
         static void describe();
-        SERIALIZABLE(MeshFilter, mesh);
     };
 
     struct MeshRenderer
     {
         MaterialHandle material;
         static void describe();
-        SERIALIZABLE(MeshRenderer, material);
     };
 }
 

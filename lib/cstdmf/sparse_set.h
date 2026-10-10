@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <span>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -135,6 +136,13 @@ namespace csyren::cstdmf
             _items.reserve(capacity);
         }
         T* data() noexcept { return _items.data(); }
+        // Preflight a batch before no-throw construction into the prepared slots.
+        void prepareInsert(std::span<const EntityID> keys) requires safe_growth
+        {
+            reserve(size() + keys.size());
+            for (auto key : keys)
+                if (sparseRef(key) != kInvalidIndex) throw std::runtime_error("SparseSet duplicate key");
+        }
         const T* data() const noexcept { return _items.data(); }
         const EntityID* key_data() noexcept { return _dense.data(); }
         const EntityID* key_data() const noexcept { return _dense.data(); }

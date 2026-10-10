@@ -68,16 +68,17 @@ namespace csyren::core
 		template<class Event_t>
 		using Callback_t = std::function<void(std::decay_t<Event_t>&)>;
 		
-		// Легковесная запись о паблишере
+		// Р›РµРіРєРѕРІРµСЃРЅР°СЏ Р·Р°РїРёСЃСЊ Рѕ РїР°Р±Р»РёС€РµСЂРµ
 		struct PublisherRecord {
 			uint64_t type_id;
 			std::optional<EventMarker> marker;
 			uint32_t generation;
 		};
 
-		// --- Структуры для безопасного стирания типов ---
+		// --- РЎС‚СЂСѓРєС‚СѓСЂС‹ РґР»СЏ Р±РµР·РѕРїР°СЃРЅРѕРіРѕ СЃС‚РёСЂР°РЅРёСЏ С‚РёРїРѕРІ ---
 		struct EventDataWrapper {
 			virtual ~EventDataWrapper() = default;
+			virtual void reserve(size_t additional) = 0;
 			virtual void publish(void* event, std::optional<EventMarker> marker) = 0;
 			virtual void commit() = 0;
 			virtual void unsubscribe(uint64_t sub_id) = 0;
@@ -104,8 +105,12 @@ namespace csyren::core
 			std::vector<EventInstance> pending_events_;
 			std::mutex events_mutex_;
 
-			// --- Реализация интерфейса ---
+			// --- Р РµР°Р»РёР·Р°С†РёСЏ РёРЅС‚РµСЂС„РµР№СЃР° ---
 
+            void reserve(size_t additional) override {
+                std::lock_guard lock(events_mutex_);
+                pending_events_.reserve(pending_events_.size() + additional);
+            }
 			void publish(void* event, std::optional<EventMarker> marker) override {
 				std::lock_guard lock(events_mutex_);
 				pending_events_.push_back({ *static_cast<Event_t*>(event), marker });
@@ -178,8 +183,18 @@ namespace csyren::core
 		}
 
 	public:
-		// --- ПУБЛИЧНОЕ API (теперь работает корректно) ---
+		// --- РџРЈР‘Р›РР§РќРћР• API (С‚РµРїРµСЂСЊ СЂР°Р±РѕС‚Р°РµС‚ РєРѕСЂСЂРµРєС‚РЅРѕ) ---
 
+        // Generic queue capacity API, independent of scene/import operations.
+        // The caller must prevent interleaved publication/dispatch when relying
+        // on the reserved capacity for a no-allocation batch.
+        bool reservePending(PublishToken token, size_t additional) {
+            if (!token.valid() || token._data == 0 || token._data >= next_publisher_id_.load()) return false;
+            const auto& record = publishers_[token._data];
+            if (record.generation != token._generation || !event_data_[record.type_id]) return false;
+            event_data_[record.type_id]->reserve(additional);
+            return true;
+        }
 		template<typename Event_t>
 		PublishToken register_publisher() {
 			return register_publisher_impl<Event_t>(std::nullopt);
@@ -283,6 +298,7 @@ namespace csyren::core
 				log::error("EventBus: too many publishers been created.");
 				return PublishToken(INVALID_TOKEN);
 			}
+            (void)get_typed_data<Clean_t>();
 			publishers_[pub_id] = { reflection::EventFamily::getID<Clean_t>(), marker };
 			return PublishToken(pub_id);
 		}

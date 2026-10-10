@@ -117,6 +117,13 @@
     <ClInclude Include="meta.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="archive.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="meta_archive.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="meta_json.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="serialization_context.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="scene_serialization_context.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="entity_batch.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="entity_batch.inl"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="meta_any.h">
       <Filter>Header Files</Filter>
     </ClInclude>

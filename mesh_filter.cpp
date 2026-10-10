@@ -5,11 +5,13 @@ namespace csyren::render
 {
     void MeshFilter::describe()
     {
-        core::reflection::MetaFactory<MeshFilter>{}.type("MeshFilter"_hs);
+        core::reflection::MetaFactory<MeshFilter>{}.type("MeshFilter"_hs)
+            .data<&MeshFilter::mesh>("mesh"_hs);
     }
     void MeshRenderer::describe()
     {
-        core::reflection::MetaFactory<MeshRenderer>{}.type("MeshRenderer"_hs);
+        core::reflection::MetaFactory<MeshRenderer>{}.type("MeshRenderer"_hs)
+            .data<&MeshRenderer::material>("material"_hs);
     }
 
 }
