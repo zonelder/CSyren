@@ -68,8 +68,7 @@ namespace csyren::editor
             auto* session = core::Services::get<SceneSession>();
             auto* scene = &session->editorScene();
             auto* selection = core::Services::get<EditorSelection>();
-            if (_instance != session->editorContext().instance)
-            { selection->clearSelection(); _instance = session->editorContext().instance; }
+            selection->synchronize(session->editorContext().instance);
             const auto created = session->takeCreatedEntity();
             if (created != core::Entity::invalidID) selection->select(created);
             ImGui::BeginDisabled(session->playing());
@@ -78,7 +77,5 @@ namespace csyren::editor
             ImGui::EndDisabled();
             drawEntityTree(scene, selection, core::EntityManager::ROOT_PARENT);
         }
-    private:
-        core::SceneInstanceId _instance{};
     };
 }

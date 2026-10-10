@@ -1,6 +1,7 @@
 #pragma once
 #include "vertex_layout.h"
 #include "math/math.h"
+#include "math/mesh_bounds.h"
 #include "vertex_formats.h"
 #include "cstdmf/log.h"
 
@@ -19,6 +20,8 @@ namespace csyren::render
 			std::vector<vertex_meta::index_type> indices;
 			VertexLayout layout;
 			uint32_t vertexCount{ 0 };
+			math::MeshBounds bounds;
+			std::vector<math::Vector3> positions;
 			//here we place everything we should know about mesh to create a gpu mesh
 		};
 
@@ -135,10 +138,12 @@ namespace csyren::render
 		MeshRawData build() const
 		{
 			MeshRawData raw{};
+			raw.positions = _positions;
 			raw.layout = buildLayout();
 			auto stride = raw.layout.getStride();
 			const size_t vertexCount = _positions.size();
 			raw.vertexCount = static_cast<uint32_t>(vertexCount);
+			for (const auto& position : _positions) raw.bounds.include(position);
 
 			if (vertexCount == 0)
 				return raw;

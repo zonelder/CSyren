@@ -128,15 +128,16 @@ namespace csyren::editor
         return _history.execute(std::move(command), context);
     }
 
-    bool SceneSession::create()
+    bool SceneSession::create(const math::Vector3& position)
     {
         const auto key = ++_nextKey;
         auto command = std::make_unique<FunctionCommand>("Create entity",
-            [this, key](EditContext& context)
+            [this, key, position](EditContext& context)
             {
                 auto batch = context.scene.stageEntities(1);
                 auto entity = batch.createEntity("New object");
                 if (!batch.addComponent<core::Transform>(entity)) return false;
+                batch.getComponent<core::Transform>(entity)->position = position;
                 context.entities.reserve(context.entities.size() + 1);
                 auto [it, inserted] = context.entities.emplace(key, entity);
                 if (!inserted) return false;
@@ -201,7 +202,7 @@ namespace csyren::editor
         case SceneOperation::Save: return save(_path);
         case SceneOperation::SaveAs: return save(request.path);
         case SceneOperation::Play: return play();
-        case SceneOperation::CreateEntity: return create();
+        case SceneOperation::CreateEntity: return create(request.position);
         case SceneOperation::Undo: { auto context = editContext(); return _history.undo(context); }
         case SceneOperation::Redo: { auto context = editContext(); return _history.redo(context); }
         default: return false;

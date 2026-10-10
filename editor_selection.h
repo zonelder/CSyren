@@ -1,11 +1,14 @@
 #pragma once
 #include "core/entity.h"
+#include <cstdint>
 
 namespace csyren::editor
 {
     class EditorSelection
     {
     public:
+        void synchronize(uint64_t instance)
+        { if (_instance != instance) { clearSelection(); _instance = instance; } }
         void select(core::Entity::ID id) { _selectedEntity = id; }
         [[nodiscard]] core::Entity::ID selected() const noexcept { return _selectedEntity; }
 
@@ -15,6 +18,7 @@ namespace csyren::editor
 
     private:
         core::Entity::ID _selectedEntity = core::Entity::invalidID;
+        uint64_t _instance = 0;
 
     };
 }

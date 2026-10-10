@@ -67,6 +67,9 @@ namespace csyren::render
         const size_t vertexDataSize = raw.vertexBuffer.size();
         const size_t indexDataSize = raw.indices.size() * sizeof(vertex_meta::index_type);
         _usage = usage;
+        _bounds = raw.bounds;
+        _positions = raw.positions;
+        _indices = raw.indices;
         _indexCount = static_cast<UINT>(raw.indices.size());
         _layout = std::move(raw.layout);
 
@@ -166,6 +169,9 @@ namespace csyren::render
         }
         else return false;
 
+        _bounds = raw.bounds;
+        _positions = raw.positions;
+        _indices = raw.indices;
         _indexCount = static_cast<UINT>(raw.indices.size());
         _vertexView.SizeInBytes = static_cast<UINT>(raw.vertexBuffer.size());
         _indexView.SizeInBytes = static_cast<UINT>(raw.indices.size()*sizeof(vertex_meta::index_type));

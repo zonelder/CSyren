@@ -31,6 +31,9 @@ namespace csyren::render
 		void draw(Renderer& renderer);
 
 		const VertexLayout& getLayout() const { return _layout; }
+		const math::MeshBounds& bounds() const noexcept { return _bounds; }
+		const std::vector<math::Vector3>& positions() const noexcept { return _positions; }
+		const std::vector<vertex_meta::index_type>& indices() const noexcept { return _indices; }
 	private:
 
 		bool init(const std::string& filepath);
@@ -56,6 +59,9 @@ namespace csyren::render
 		UINT _indexCount{ 0 };
 		Usage _usage = Usage::Static;
 		VertexLayout	_layout;
+		math::MeshBounds _bounds;
+		std::vector<math::Vector3> _positions;
+		std::vector<vertex_meta::index_type> _indices;
 	};
 }
 

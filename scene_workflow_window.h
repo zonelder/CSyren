@@ -20,6 +20,8 @@ namespace csyren::editor
             auto& session = *core::Services::get<SceneSession>();
             const auto& io = ImGui::GetIO();
             if (session.playing() || busy() || !io.KeyCtrl || io.WantTextInput) return;
+            if (io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_N, false))
+            { session.finishEdit(); session.enqueue(SceneOperation::CreateEntity); }
             if (ImGui::IsKeyPressed(ImGuiKey_S, false)) save(session);
             if (ImGui::IsKeyPressed(ImGuiKey_Z, false) && (io.KeyShift ? session.canRedo() : session.canUndo()))
                 session.enqueue(io.KeyShift ? SceneOperation::Redo : SceneOperation::Undo);
@@ -43,6 +45,9 @@ namespace csyren::editor
             {
                 if (ImGui::MenuItem("Undo", "Ctrl+Z", false, editable && session.canUndo())) session.enqueue(SceneOperation::Undo);
                 if (ImGui::MenuItem("Redo", "Ctrl+Y / Ctrl+Shift+Z", false, editable && session.canRedo())) session.enqueue(SceneOperation::Redo);
+                ImGui::Separator();
+                if (ImGui::MenuItem("Create empty object", "Ctrl+Shift+N", false, editable))
+                { session.finishEdit(); session.enqueue(SceneOperation::CreateEntity); }
                 ImGui::EndMenu();
             }
         }

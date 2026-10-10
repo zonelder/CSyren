@@ -24,6 +24,7 @@
 #include "system_window.h"
 #include "statistic_window.h"
 #include "scene_workflow_window.h"
+#include "scene_viewport.h"
 
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -119,6 +120,7 @@ namespace csyren::editor
 			ImGui_ImplDX12_NewFrame();
 			ImGui_ImplWin32_NewFrame();
 			ImGui::NewFrame();
+            synchronizeSelection();
             _workflow->shortcuts();
 
 			if (ImGui::BeginMainMenuBar()) 
@@ -144,6 +146,7 @@ namespace csyren::editor
 			{
 				window->render();
 			}
+            _viewport.render();
             if (!ImGui::IsAnyItemActive()) core::Services::get<SceneSession>()->finishEdit();
 			auto* renderer = core::Services::get<render::Renderer>();
 			ID3D12GraphicsCommandList* cmdList = renderer->commandList();
@@ -167,6 +170,7 @@ namespace csyren::editor
             _windows.clear(); _workflow = nullptr;
 		}
 	private:
+        SceneViewport _viewport;
         std::unique_ptr<SceneWorkflowWindow> _workflow;
 		std::vector<std::unique_ptr<BaseEditorWindow>> _windows;
 		static std::vector<render::DescriptorAllocation> s_imguiAllocations;

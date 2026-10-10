@@ -17,6 +17,7 @@
 #include "project_settings.h"
 #include "startup_options.h"
 #include "render_environment_system.h"
+#include "scene_picking.h"
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -691,6 +692,111 @@ void reverseDepthProjection()
     CHECK(std::abs(DirectX::XMVectorGetZ(point) - 1.0f) < 1e-5f);
 }
 
+static void viewportPicking()
+{
+    using namespace DirectX;
+    const auto fallbackDown = creationPosition({ { 0, 2, 0 }, { 0, -.6f, .8f }, 100 });
+    CHECK(std::abs(fallbackDown.y + 1) < 1e-5f && std::abs(fallbackDown.z - 4) < 1e-5f);
+    render::MeshBuilder triangle;
+    triangle.addVertex({ 0, 0, 0 }).addVertex({ 2, 0, 0 }).addVertex({ 0, 2, 0 }).addTriangle(0, 1, 2);
+    const auto geometry = triangle.build();
+    float surfaceDistance;
+    CHECK(intersectMesh({ { .5f, .5f, 0 }, { 0, 0, 1 }, 100 }, geometry.bounds,
+        geometry.positions, geometry.indices, XMMatrixTranslation(0, 0, 12), surfaceDistance));
+    CHECK(std::abs(surfaceDistance - 12) < 1e-5f);
+    CHECK(intersectMesh({ { -.5f, 1.f, 0 }, { 0, 0, 1 }, 100 }, geometry.bounds,
+        geometry.positions, geometry.indices, XMMatrixScaling(-2, 3, .5f) * XMMatrixTranslation(0, 0, 7), surfaceDistance));
+    CHECK(std::abs(surfaceDistance - 7) < 1e-5f);
+    // Nearest surface wins in either entity iteration order, even when local
+    // distances differ dramatically because of scaling.
+    for (bool nearFirst : { false, true })
+    {
+        float nearest = 100;
+        int selected = -1;
+        for (int index : { nearFirst ? 0 : 1, nearFirst ? 1 : 0 })
+        {
+            const auto world = index == 0 ?
+                XMMatrixScaling(1, 1, .01f) * XMMatrixTranslation(0, 0, 4) :
+                XMMatrixScaling(1, 1, 100.f) * XMMatrixTranslation(0, 0, 12);
+            float candidate;
+            if (intersectMesh({ { .5f, .5f, 0 }, { 0, 0, 1 }, 100 }, geometry.bounds,
+                geometry.positions, geometry.indices, world, candidate) && candidate < nearest)
+            { nearest = candidate; selected = index; }
+        }
+        CHECK(selected == 0 && std::abs(nearest - 4) < 1e-5f);
+    }
+    CHECK(!intersectMesh({ { 1.5f, 1.5f, 0 }, { 0, 0, 1 }, 100 }, geometry.bounds,
+        geometry.positions, geometry.indices, XMMatrixTranslation(0, 0, 12), surfaceDistance));
+    CHECK(!intersectMesh({ { .5f, .5f, 0 }, { 0, 0, 1 }, 10 }, geometry.bounds,
+        geometry.positions, geometry.indices, XMMatrixTranslation(0, 0, 12), surfaceDistance));
+    render::MeshBuilder cube;
+    for (int i = 0; i < 8; ++i)
+        cube.addVertex({ (i&1) ? .5f : -.5f, (i&2) ? .5f : -.5f, (i&4) ? .5f : -.5f });
+    for (const auto face : { std::array<uint16_t, 4>{ 0, 1, 3, 2 }, { 4, 6, 7, 5 },
+        { 0, 2, 6, 4 }, { 1, 5, 7, 3 }, { 0, 4, 5, 1 }, { 2, 3, 7, 6 } })
+        cube.addTriangle(face[0], face[1], face[2]).addTriangle(face[0], face[2], face[3]);
+    const auto cubeGeometry = cube.build();
+    for (bool nearFirst : { false, true })
+    {
+        float nearest = 100;
+        int selected = -1;
+        for (int index : { nearFirst ? 0 : 1, nearFirst ? 1 : 0 })
+        {
+            float candidate;
+            if (intersectMesh({ { 0, 0, 0 }, { 0, 0, 1 }, 100 }, cubeGeometry.bounds,
+                cubeGeometry.positions, cubeGeometry.indices, XMMatrixTranslation(0, 0, index == 0 ? 4.f : 12.f), candidate) && candidate < nearest)
+            { nearest = candidate; selected = index; }
+        }
+        CHECK(selected == 0 && std::abs(nearest - 3.5f) < 1e-5f);
+    }
+    const auto fallback = creationPosition({ { 1, 2, 3 }, { 0, 0, 1 }, 100 });
+    CHECK(fallback.x == 1 && fallback.y == 2 && fallback.z == 8);
+    MemoryStorage storage;
+    SceneSession session(storage);
+    SceneRequest request{ SceneOperation::CreateEntity, session.documentId() };
+    request.position = math::Vector3{ 3, 4, 5 };
+    session.enqueue(request); session.processRequests();
+    CHECK(session.error().empty());
+    const auto created = session.takeCreatedEntity();
+    CHECK(created != Entity::invalidID);
+    const auto key = session.keyFor(created);
+    CHECK(session.editorScene().getComponent<Transform>(created)->position.exactEqual(request.position));
+    run(session, SceneOperation::Undo);
+    CHECK(session.resolve(key) == Entity::invalidID);
+    run(session, SceneOperation::Redo);
+    CHECK(session.editorScene().getComponent<Transform>(session.resolve(key))->position.exactEqual(request.position));
+    run(session, SceneOperation::SaveAs, "placed");
+    run(session, SceneOperation::Open, "placed");
+    CHECK(session.editorScene().getComponent<Transform>(session.resolve(lastObject(session)))->position.exactEqual(request.position));
+    render::MeshBuilder builder;
+    builder.addVertex({ -1, -2, -3 }).addVertex({ 1, 2, 3 });
+    const auto bounds = builder.build().bounds;
+    CHECK(bounds.valid && bounds.min.y == -2 && bounds.max.z == 3);
+    CHECK(!render::MeshBuilder{}.build().bounds.valid);
+    for (auto projection : { Perspective, Orthographic })
+    {
+        Camera camera; camera.projection = projection;
+        const auto ray = viewportRay(0, 0, camera.projectionMatrix());
+        CHECK(std::abs(ray.origin.z - .1f) < 1e-4f);
+        CHECK(std::abs(ray.direction.z - 1.f) < 1e-5f);
+        float distance;
+        CHECK(intersectBounds(ray, bounds, XMMatrixTranslation(0, 0, 10), distance));
+        CHECK(std::abs(distance - 6.9f) < 1e-3f);
+        CHECK(intersectBounds(ray, bounds, XMMatrixScaling(-2, 3, .5f) * XMMatrixTranslation(0, 0, 5), distance));
+        CHECK(std::abs(distance - 3.4f) < 1e-3f);
+        CHECK(!intersectBounds(ray, bounds, XMMatrixTranslation(20, 0, 10), distance));
+        CHECK(!intersectBounds(ray, bounds, XMMatrixTranslation(0, 0, -10), distance));
+        CHECK(!intersectBounds(ray, bounds, XMMatrixScaling(0, 1, 1), distance));
+    }
+    XMFLOAT4 a{ 0, 0, 2, 1 }, b{ 0, 0, .5f, 1 };
+    CHECK(clipBoundsEdge(a, b) && std::abs(a.z - 1) < 1e-6f);
+    a = { 2, 0, .5f, 1 }; b = { 3, 0, .5f, 1 };
+    CHECK(!clipBoundsEdge(a, b));
+    EditorSelection selection; selection.synchronize(1); selection.select(42);
+    selection.synchronize(1); CHECK(selection.selected() == 42);
+    selection.synchronize(2); CHECK(!selection.hasSelection());
+}
+
 int main()
 {
     try
@@ -703,11 +809,12 @@ int main()
         REGISTER_COMPONENT(RigidBody);
         REGISTER_COMPONENT(BoxCollider);
         reverseDepthProjection();
+        viewportPicking();
         startupDiagnostics();
         startupArguments();
         renderEnvironmentDefaults();
         documentWorkflow(); importWorkflow(); systemLifecycle(); systemsConfiguration(); physicsLifecycle(); fileStorage(); projectConfiguration(); inspectorTransaction();
-        std::cout << "Startup diagnostics, scene workflow, history, systems configuration, project paths, reverse-Z, physics, file save and Inspector checks passed\n";
+        std::cout << "Startup diagnostics, scene workflow, history, systems configuration, project paths, reverse-Z, viewport picking, physics, file save and Inspector checks passed\n";
         return 0;
     }
     catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }

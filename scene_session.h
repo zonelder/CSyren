@@ -4,6 +4,7 @@
 #include "editor_commands.h"
 #include <deque>
 #include <utility>
+#include "math/vector3.h"
 
 namespace csyren::editor
 {
@@ -14,6 +15,7 @@ namespace csyren::editor
         uint64_t document;
         std::string path;
         bool discardChanges{};
+        math::Vector3 position{};
     };
     class SceneSession
     {
@@ -68,7 +70,7 @@ namespace csyren::editor
         bool import(const std::string&);
         bool play();
         bool stop();
-        bool create();
+        bool create(const math::Vector3& position);
         bool apply(const SceneRequest&);
         SceneStorage& _storage;
         std::unique_ptr<core::SceneInstance> _editor, _runtime;
