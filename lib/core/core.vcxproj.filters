@@ -160,4 +160,8 @@
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="scene_context.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="project_paths.h"><Filter>Header Files</Filter></ClInclude>
+  </ItemGroup>
 </Project>

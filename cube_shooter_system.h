@@ -20,12 +20,12 @@ namespace csyren
     public:
         explicit CubeShooterSystem() = default;
 
-        void init() override
+        void onAttach() override
         {
-			auto bus = core::Services::get<core::EventBus2>();
-			auto scene = core::Services::get<core::Scene>();
+			auto bus = &sceneBus();
+			auto scene = &this->scene();
 
-			bus->subscribe<core::InputEvent>(static_cast<uint32_t>(core::InputEvent::Type::KeyDown), [scene](core::InputEvent& event)
+			sub_ = bus->subscribe<core::InputEvent>(static_cast<uint32_t>(core::InputEvent::Type::KeyDown), [scene](core::InputEvent& event)
 				{
 					using namespace core;
 					using namespace physics;
@@ -84,6 +84,7 @@ namespace csyren
 				});
         }
     private:
+        void onDetach() noexcept override { sceneBus().unsubscribe(sub_); sub_ = {}; }
         core::SubscriberToken sub_;
     };
 

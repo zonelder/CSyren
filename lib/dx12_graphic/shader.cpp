@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "shader.h"
+#include "core/project_paths.h"
 #include "cstdmf/string_utils.h"
 #include "renderer.h"
 #include "resource_manager.h"
@@ -8,6 +9,7 @@
 #include <algorithm>
 #include <regex>
 #include <filesystem>
+#include <fstream>
 
 
 namespace csyren::render
@@ -55,12 +57,12 @@ namespace csyren::render
 
     bool GraphicShader::init(const std::string& assetPath)
     {
-        std::filesystem::path relativePath(assetPath);
+        const auto relativePath = core::pathFromUtf8(assetPath);
 
 #if defined(_DEBUG)
 
-        std::string sourcePath = (std::filesystem::path("assets") / relativePath).string();
-        std::string shaderCode = cstdmf::loadStringFromFile(sourcePath);
+        std::ifstream source(core::projectAssetPath(relativePath), std::ios::binary);
+        std::string shaderCode{ std::istreambuf_iterator<char>(source), std::istreambuf_iterator<char>() };
         if (shaderCode.empty())
         {
             log::error("GraphicShader::init: Source file not found in DEBUG mode: {}", assetPath);
@@ -94,7 +96,7 @@ namespace csyren::render
 
         if (!path.empty())
         {
-            std::filesystem::path buildPath = std::filesystem::path("build") / relativePath;
+            std::filesystem::path buildPath = core::projectBuildPath(relativePath);
             std::filesystem::path buildDir = buildPath.parent_path();
             std::filesystem::create_directories(buildDir);
 
@@ -136,7 +138,7 @@ namespace csyren::render
     {
         Renderer& renderer = *core::Services::get<Renderer>();
         log::info("GraphicShader {} : loading pre compiled data...", relativePath.string());
-        std::filesystem::path buildPath = std::filesystem::path("build") / relativePath;
+        std::filesystem::path buildPath = core::projectBuildPath(relativePath);
 
         std::filesystem::path metaPath = buildPath;
         metaPath.replace_extension("json");

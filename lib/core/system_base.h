@@ -5,12 +5,26 @@
 #include <memory>
 #include <unordered_map>
 #include "cstdmf/log.h"
+#include "scene_context.h"
+#include <optional>
 
 namespace csyren::core
 {
 	class System
 	{
 	public:
+        virtual ~System() = default;
+        void attach(SceneContext context)
+        {
+            _context.emplace(context);
+            try { onAttach(); }
+            catch (...) { onDetach(); _context.reset(); throw; }
+        }
+        void detach() noexcept
+        {
+            if (_context) { onDetach(); _context.reset(); }
+        }
+        bool attached() const noexcept { return _context.has_value(); }
 		virtual void init() {}
 
 		virtual void update(){}
@@ -20,7 +34,13 @@ namespace csyren::core
 
 		virtual void shutdown(){}
 
+    protected:
+        Scene& scene() const { return _context->scene; }
+        EventBus2& sceneBus() const { return _context->bus; }
+        virtual void onAttach() {}
+        virtual void onDetach() noexcept {}
 	private:
+        std::optional<SceneContext> _context;
 
 	};
 
@@ -48,10 +68,12 @@ namespace csyren::core
 				if (it != _creators.end()) {
 					return it->second();
 				}
-				// Логирование ошибки: система не найдена
+				// Р›РѕРіРёСЂРѕРІР°РЅРёРµ РѕС€РёР±РєРё: СЃРёСЃС‚РµРјР° РЅРµ РЅР°Р№РґРµРЅР°
 				log::error("attempt to create system {} but its not defined.\n", name);
 				return nullptr;
 			}
+
+            bool contains(std::string_view name) const { return _creators.find(name) != _creators.end(); }
 
 		private:
 			std::unordered_map<std::string_view, SystemCreator> _creators;

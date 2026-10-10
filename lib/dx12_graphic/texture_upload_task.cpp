@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "core/project_paths.h"
 #include "texture_upload_task.h"
 #include "upload_context.h"
 #include "resource_manager.h"
@@ -24,7 +25,9 @@ namespace csyren::render
 	{
         log::debug("TextureUploadTask: start upload of {}", _name);
 		HRESULT hr = S_OK;
-		std::wstring filePathW = cstdmf::to_wstring(_name);
+		const auto resourcePath = core::pathFromUtf8(_name);
+        const std::wstring filePathW = (core::Services::has<core::ProjectPaths>()
+            ? core::projectAssetPath(resourcePath) : resourcePath).wstring();
 		std::wstring extension = filePathW.substr(filePathW.find_last_of(L".") + 1);
         auto renderer = core::Services::get<Renderer>();
         auto device = renderer->device();

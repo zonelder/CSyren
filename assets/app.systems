@@ -1,13 +1,11 @@
 {
     "systems": [
         { "class": "InputDispatchSystem" },
-        { "class": "SceneLoaderSystem" },
         { "class": "PhysicsSystem" },
         { "class": "SpringJoinSystem" },
         { "class": "DebugRotatorSystem" },
-        { "class": "EditorCameraControllerSystem" },
         { "class": "CubeShooterSystem" },
-        { "class": "MeshRenderSystem" },
-        { "class": "EditorSystem" }
+        { "class": "RenderEnvironmentSystem" },
+        { "class": "MeshRenderSystem" }
     ]
 }

@@ -1,137 +1,54 @@
 #pragma once
-#include "core/event_bus.h"
-#include "core/services.h"
 #include "core/system_base.h"
-#include "core/scene.h"
+#include "core/services.h"
+#include "scene_session.h"
 #include "serializer.h"
 
 namespace csyren
 {
-	class SceneLoaderSystem : public core::System
-	{
-	public:
-        void init() override
-        {
-            using ctx = core::Services;
-            auto bus = ctx::get<EventBus2>();
-            _publishTokens.emplace_back() = bus->register_publisher<LoadSceneRequest>();
-            _publishTokens.emplace_back() = bus->register_publisher<ReloadSceneRequest>();
-            _publishTokens.emplace_back() = bus->register_publisher<SaveSceneRequest>();
-
-            _tokens.emplace_back() = bus->subscribe<LoadSceneRequest>([this](auto request) { this->handleLoadScene(request); });
-            _tokens.emplace_back() = bus->subscribe<ReloadSceneRequest>([this](auto request) { this->handleReloadScene(request); });
-            _tokens.emplace_back() = bus->subscribe<SaveSceneRequest>([this](auto request) { this->handleSaveScene(request); });
-        };
-
-        void shutdown() override
-        {
-            using ctx = core::Services;
-            auto bus = ctx::get<EventBus2>();
-            for (auto token : _tokens)
-            {
-                bus->unsubscribe(token);
-            }
-
-            for (auto token : _publishTokens)
-            {
-                bus->unregister_publisher(token);
-            }
-        }
-
-
+    // Compatibility only. New editor actions enqueue explicit session operations.
+    class SceneLoaderSystem : public core::System
+    {
+    public:
         void update() override
         {
-            using ctx = core::Services;
-            auto scene = ctx::get<core::Scene>();
-
-            std::vector<std::string> saveRequests;
-            std::vector<std::string> loadRequests;
-            bool needReload = false;
-
-            using RequestType = SceneLoaderRequest::RequestType;
-            for (auto [entt, req] : scene->view<SceneLoaderRequest>())
+            auto& session = *core::Services::get<editor::SceneSession>();
+            if (session.playing()) return;
+            for (auto [entity, request] : scene().view<SceneLoaderRequest>())
             {
-                switch (req.type)
+                switch (request.type)
                 {
-                case RequestType::SAVE:
-                    saveRequests.push_back(req.path);
-                    break;
-                case RequestType::LOAD:
-                    loadRequests.push_back(req.path);
-                    break;
-                case RequestType::RELOAD:
-                    needReload = true;
+                case SceneLoaderRequest::LOAD: session.enqueue(editor::SceneOperation::Open, request.path); break;
+                case SceneLoaderRequest::RELOAD: session.enqueue(editor::SceneOperation::Reload); break;
+                case SceneLoaderRequest::SAVE:
+                    session.enqueue(request.path.empty() ? editor::SceneOperation::Save : editor::SceneOperation::SaveAs, request.path);
                     break;
                 }
-
-                scene->removeComponent<SceneLoaderRequest>(entt);//temporal component
-            }
-
-            for (const auto& path: saveRequests)
-            {
-                handleSaveScene(SaveSceneRequest(path,scene));
-            }
-
-            if (!loadRequests.empty())
-            {
-                handleLoadScene(LoadSceneRequest(loadRequests.back(), scene));
-                needReload = false;//we load new scene. reload dont needed;
-            }
-
-            if (needReload)
-            {
-                handleReloadScene(ReloadSceneRequest{scene});
+                scene().removeComponent<SceneLoaderRequest>(entity);
             }
         }
-
-
+    protected:
+        void onAttach() override
+        {
+            auto& session = *core::Services::get<editor::SceneSession>();
+            _tokens.push_back(sceneBus().subscribe<core::LoadSceneRequest>([&session](const auto& request) {
+                if (request.scene == &session.editorScene()) session.enqueue(editor::SceneOperation::Open, request.scenePath);
+            }));
+            _tokens.push_back(sceneBus().subscribe<core::ReloadSceneRequest>([&session](const auto& request) {
+                if (request.scene == &session.editorScene()) session.enqueue(editor::SceneOperation::Reload);
+            }));
+            _tokens.push_back(sceneBus().subscribe<core::SaveSceneRequest>([&session](const auto& request) {
+                if (request.scene == &session.editorScene()) session.enqueue(
+                    request.filepath.empty() ? editor::SceneOperation::Save : editor::SceneOperation::SaveAs, request.filepath);
+            }));
+        }
+        void onDetach() noexcept override
+        {
+            for (auto token : _tokens) sceneBus().unsubscribe(token);
+            _tokens.clear();
+        }
     private:
-        void handleLoadScene(const LoadSceneRequest& event)
-        {
-            using ctx = core::Services;
-            auto ser = ctx::get<Serializer>();
-            log::info("Handling LoadSceneRequest for: {}", event.scenePath);
-            if (ser->loadScene(event.scenePath,*event.scene))
-            {
-                _loadedScenePath = event.scenePath;
-            }
-        }
-
-        void handleReloadScene(const ReloadSceneRequest& event)
-        {
-            if (_loadedScenePath.empty())
-            {
-                log::warning("Cannot reload scene: no current scene is active.");
-                return;
-            }
-            log::info("Handling ReloadCurrentSceneRequest for: {}", _loadedScenePath);
-            //todo clear scene.
-            using ctx = core::Services;
-            auto ser = ctx::get<Serializer>();
-            ser->loadScene(_loadedScenePath,*(event.scene));
-
-        }
-
-        void handleSaveScene(const SaveSceneRequest& event)
-        {
-            if (event.filepath.empty())
-            {
-                log::error("Handling save of current scene but filepath are not set.");
-                return;
-            }
-            using ctx = core::Services;
-            auto ser = ctx::get<Serializer>();
-            if (ser->saveScene(event.filepath, *(event.scene)))
-            {
-                log::info("Scene successfully saved to '{}'.", event.filepath);
-                _loadedScenePath = event.filepath;//now we work with that new scene.
-            }
-
-        }
-        std::string _loadedScenePath;
-        std::vector<PublishToken>    _publishTokens;
-        std::vector<SubscriberToken> _tokens;
-	};
-
+        std::vector<core::SubscriberToken> _tokens;
+    };
     REGISTER_SYSTEM(SceneLoaderSystem)
 }

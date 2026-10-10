@@ -10,7 +10,11 @@ namespace csyren::core
 	void InputDispatchSystem::init()
 	{
 		setToMainWindow();
-		auto bus = Services::get<EventBus2>();
+	}
+
+	void InputDispatchSystem::onAttach()
+	{
+		auto bus = &sceneBus();
 		_actionToken = bus->register_publisher<InputAction>();
 
 		using EventType = InputEvent::Type;
@@ -26,7 +30,7 @@ namespace csyren::core
 	{
 		InputAction action{ "","" };
 		auto devices = Services::get<Devices>();
-		auto bus = Services::get<EventBus2>();
+		auto bus = &sceneBus();
 
 		devices->preUpdate();
 		while (!_eventBuffer.empty())
@@ -51,14 +55,17 @@ namespace csyren::core
 
 
 
-	void InputDispatchSystem::shutdown()
+	void InputDispatchSystem::onDetach() noexcept
 	{
-		auto bus = Services::get<EventBus2>();
+		auto bus = &sceneBus();
 		bus->unregister_publisher(_actionToken);
 
 		for (auto [_, token] : _tokens)
 		{
 			bus->unregister_publisher(token);
 		}
+		_tokens.clear();
+		while (!_eventBuffer.empty()) (void)_eventBuffer.pop();
 	}
+	void InputDispatchSystem::shutdown() {}
 }

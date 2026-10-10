@@ -22,13 +22,20 @@
     <ClCompile Include="meta_common.cpp" />
     <ClCompile Include="serializer.cpp" />
     <ClCompile Include="serializer_scene.cpp" />
+    <ClCompile Include="scene_session.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="CSyren.csyrenproj" />
+    <None Include="assets\app.systems" />
+    <None Include="assets\editor.systems" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application.h" />
+    <ClInclude Include="project_settings.h" />
+    <ClInclude Include="startup_options.h" />
+    <ClInclude Include="render_environment_system.h" />
     <ClInclude Include="base_editor_window.h" />
     <ClInclude Include="common_editor.h" />
     <ClInclude Include="component_editor.h" />
@@ -47,6 +54,11 @@
     <ClInclude Include="statistic_window.h" />
     <ClInclude Include="scene_hierarchy.h" />
     <ClInclude Include="scene_loader.h" />
+    <ClInclude Include="scene_session.h" />
+    <ClInclude Include="scene_storage.h" />
+    <ClInclude Include="editor_commands.h" />
+    <ClInclude Include="editor_view.h" />
+    <ClInclude Include="scene_workflow_window.h" />
     <ClInclude Include="serializer.h" />
     <ClInclude Include="statistic_monitor.h" />
     <ClInclude Include="system_registrator.h" />

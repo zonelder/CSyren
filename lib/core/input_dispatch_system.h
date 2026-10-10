@@ -21,6 +21,9 @@ namespace csyren::core
 		void shutdown() override;
 
 		void update() override;
+	protected:
+		void onAttach() override;
+		void onDetach() noexcept override;
 
 	private:
 		InputContextManager _contextManager;

@@ -14,6 +14,9 @@ namespace csyren::physics
         void init() override;
         void update() override;
         void shutdown() override;
+    protected:
+        void onAttach() override;
+        void onDetach() noexcept override;
 
     };
     class PhysicsEngine

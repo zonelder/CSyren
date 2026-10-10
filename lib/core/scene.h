@@ -36,18 +36,18 @@ namespace csyren::core
 		ComponentRef() = default;
 		ComponentRef(Entity::ID id, std::shared_ptr<ComponentPool<T>> pool) :
 			_pool(pool),
-			_id(id)
+			_id(id), _generation(pool ? pool->generation(id) : 0)
 		{}
 
 		T* get() noexcept 
 		{
-			_cached = _pool ? _pool->try_get(_id) : nullptr;
+			_cached = _pool && _pool->generation(_id) == _generation ? _pool->try_get(_id) : nullptr;
 			return _cached;
 		}
 
 		const T* get() const noexcept 
 		{
-			_cached = _pool ? _pool->try_get(_id) : nullptr;
+			_cached = _pool && _pool->generation(_id) == _generation ? _pool->try_get(_id) : nullptr;
 			return _cached;
 		}
 
@@ -74,18 +74,19 @@ namespace csyren::core
 
 		bool operator==(const ComponentRef& other) const noexcept 
 		{
-			return _id == other._id && _pool == other._pool;
+			return _id == other._id && _pool == other._pool && _generation == other._generation;
 		}
 
 		bool operator!=(const ComponentRef& other) const noexcept
 		{
 			return !(*this == other);
 		}
-		operator bool() const noexcept { return _pool && _pool->contains(_id); }
+		operator bool() const noexcept { return get() != nullptr; }
 	private:
 
 		std::shared_ptr<ComponentPool<T>> _pool{ nullptr };
 		Entity::ID _id{ Entity::invalidID };
+        uint64_t _generation{};
 		mutable T* _cached{ nullptr };//for debug olny;it is not save to address to this field.
 	};
 
@@ -240,7 +241,9 @@ namespace csyren::core
 			{
 				Entity* ent = _em.tryGet(id);
 				if (!ent) continue;
-				for (const auto& family : ent->componentView())
+                // destroy removes the family from componentView; iterate a copy.
+                const auto families = ent->componentView();
+				for (const auto family : families)
 				{
 					auto it = _cStates.find(family);
 					if (it == _cStates.end()) continue;

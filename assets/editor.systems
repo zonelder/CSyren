@@ -1,0 +1,10 @@
+{
+    "systems": [
+        { "class": "InputDispatchSystem", "scene": "active" },
+        { "class": "SceneLoaderSystem", "scene": "editor" },
+        { "class": "EditorCameraControllerSystem", "scene": "editor" },
+        { "class": "RenderEnvironmentSystem", "scene": "active" },
+        { "class": "MeshRenderSystem", "scene": "active" },
+        { "class": "EditorSystem", "scene": "editor" }
+    ]
+}

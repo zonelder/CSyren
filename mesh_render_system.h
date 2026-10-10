@@ -20,13 +20,12 @@ namespace csyren
     class MeshRenderSystem : public core::System
     {
     public:
-        explicit MeshRenderSystem() = default;
 
         void onFrame() override
         {
             using ctx = core::Services;
             auto render = ctx::get<render::Renderer>();
-            auto scene = ctx::get<core::Scene>();
+            auto scene = &this->scene();
             auto& resources = *ctx::get<render::ResourceManager>();
 
             struct EntityData { Transform* tr; Entity::ID id; };

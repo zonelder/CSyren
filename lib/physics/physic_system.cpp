@@ -125,7 +125,8 @@ namespace csyren::physics
     class PhysicsEngine::Impl
     {
     public:
-        core::Scene* scene;
+        core::Scene* scene{};
+        core::EventBus2* bus{};
         std::unique_ptr<JPH::TempAllocatorImpl> m_tempAllocator;
         std::unique_ptr<JPH::JobSystemThreadPool> m_jobSystem;
         std::unique_ptr<JPH::PhysicsSystem> m_physicsSystem;
@@ -134,7 +135,7 @@ namespace csyren::physics
         std::unique_ptr<ObjectVsBroadPhaseLayerFilterImpl> m_objectVsBroadPhaseLayerFilter;
         std::unique_ptr<ObjectLayerPairFilterImpl> m_objectLayerPairFilter;
 
-        // Подписки на события ECS
+        // РџРѕРґРїРёСЃРєРё РЅР° СЃРѕР±С‹С‚РёСЏ ECS
         core::SubscriberToken rbAddedToken;
         core::SubscriberToken rbRemovedToken;
         core::SubscriberToken boxAddedToken;
@@ -153,15 +154,10 @@ namespace csyren::physics
         math::Vector3 gravity{ 0.0f,-9.98f,0.0f };
         bool isGravityDirty{ false };
 
-        void initialize()
+        void initialize(core::Scene& target, core::EventBus2& events)
         {
-            using ctx = core::Services;
-            scene = ctx::get<core::Scene>();
-            auto bus = ctx::get<core::EventBus2>();
-
-            JPH::RegisterDefaultAllocator();
-            JPH::Factory::sInstance = new JPH::Factory();
-            JPH::RegisterTypes();
+            scene = &target;
+            bus = &events;
 
             m_tempAllocator = std::make_unique<JPH::TempAllocatorImpl>(10 * 1024 * 1024);
             m_jobSystem = std::make_unique<JPH::JobSystemThreadPool>(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, 4);
@@ -179,32 +175,33 @@ namespace csyren::physics
                 *m_objectLayerPairFilter
             );
 
-            // Подписка на RigidBody
+            // РџРѕРґРїРёСЃРєР° РЅР° RigidBody
             rbAddedToken = bus->subscribe<csyren::core::ComponentCreateEvent<RigidBody>>(
                 [this](const auto& event) { this->onRigidBodyAdded(event.comp.id()); });
 
             rbRemovedToken = bus->subscribe<csyren::core::ComponentDestroyEvent<RigidBody>>(
                 [this](const auto& event) { this->onRigidBodyRemoved(event.comp.id()); });
 
-            // Подписка на BoxCollider
+            // РџРѕРґРїРёСЃРєР° РЅР° BoxCollider
             boxAddedToken = bus->subscribe<csyren::core::ComponentCreateEvent<BoxCollider>>(
                 [this](const auto& event) { this->onColliderAdded(event.comp.id()); });
             boxRemovedToken = bus->subscribe<csyren::core::ComponentDestroyEvent<BoxCollider>>(
                 [this](const auto& event) { this->onColliderRemoved(event.comp.id()); });
 
-            // Подписка на SphereCollider
+            // РџРѕРґРїРёСЃРєР° РЅР° SphereCollider
             sphereAddedToken = bus->subscribe<csyren::core::ComponentCreateEvent<SphereCollider>>(
                 [this](const auto& event) { this->onColliderAdded(event.comp.id()); });
             sphereRemovedToken = bus->subscribe<csyren::core::ComponentDestroyEvent<SphereCollider>>(
                 [this](const auto& event) { this->onColliderRemoved(event.comp.id()); });
 
-            // Подписка на CapsuleCollider
+            // РџРѕРґРїРёСЃРєР° РЅР° CapsuleCollider
             capsuleAddedToken = bus->subscribe<csyren::core::ComponentCreateEvent<CapsuleCollider>>(
                 [this](const auto& event) { this->onColliderAdded(event.comp.id()); });
             capsuleRemovedToken = bus->subscribe<csyren::core::ComponentDestroyEvent<CapsuleCollider>>(
                 [this](const auto& event) { this->onColliderRemoved(event.comp.id()); });
 
             m_physicsSystem->SetGravity(details::to_jolt(gravity));
+            for (auto [entity, rb] : scene->view<RigidBody>()) rebuildBody(entity);
         }
 
         void onRigidBodyAdded(core::Entity::ID ent) {
@@ -212,7 +209,9 @@ namespace csyren::physics
         }
 
         void onRigidBodyRemoved(core::Entity::ID ent) {
-            removeBody(ent);
+            // A deferred event can outlive this component's generation.
+            if (scene->hasComponent<RigidBody>(ent)) rebuildBody(ent);
+            else removeBody(ent);
         }
 
         void onColliderAdded(core::Entity::ID ent) {
@@ -321,6 +320,7 @@ namespace csyren::physics
 
             auto& bodyInterface = m_physicsSystem->GetBodyInterface();
             JPH::BodyID body = bodyInterface.CreateAndAddBody(settings, JPH::EActivation::Activate);
+            if (body.IsInvalid()) throw std::runtime_error("Physics body capacity exhausted");
 
             entityToBody[ent] = body;
             bodyToEntity[body] = ent;
@@ -425,10 +425,9 @@ namespace csyren::physics
                 }
             }
         }
-        void shutdown()
+        void shutdown() noexcept
         {
-            using ctx = core::Services;
-            auto bus = ctx::get<core::EventBus2>();
+            if (!bus) return;
             bus->unsubscribe(rbAddedToken);
             bus->unsubscribe(rbRemovedToken);
             bus->unsubscribe(boxAddedToken);
@@ -438,8 +437,19 @@ namespace csyren::physics
             bus->unsubscribe(capsuleAddedToken);
             bus->unsubscribe(capsuleRemovedToken);
 
-            entityToBody.clear();
+            while (!entityToBody.empty()) removeBody(entityToBody.begin()->first);
             bodyToEntity.clear();
+            m_activeBodies.clear();
+            pendingForces.clear();
+            gravity = math::Vector3{ 0.0f, -9.98f, 0.0f };
+            isGravityDirty = false;
+            m_physicsSystem.reset();
+            m_jobSystem.reset();
+            m_tempAllocator.reset();
+            m_objectLayerPairFilter.reset();
+            m_objectVsBroadPhaseLayerFilter.reset();
+            m_broadPhaseLayerInterface.reset();
+            bus = nullptr; scene = nullptr;
         }
     };
 
@@ -448,11 +458,18 @@ namespace csyren::physics
         : _pImpl(new Impl())
     {
         csyren::log::debug("PhysicsEngine created.");
+        JPH::RegisterDefaultAllocator();
+        JPH::Factory::sInstance = new JPH::Factory();
+        JPH::RegisterTypes();
     }
 
     PhysicsEngine::~PhysicsEngine()
     {
+        _pImpl->shutdown();
         delete _pImpl;
+        JPH::UnregisterTypes();
+        delete JPH::Factory::sInstance;
+        JPH::Factory::sInstance = nullptr;
     }
 
     void PhysicsEngine::addForce(core::Entity::ID ent, const math::Vector3& force)
@@ -467,10 +484,10 @@ namespace csyren::physics
 
     //-----------------------------------------------------------------------------------------
 
-    void csyren::physics::PhysicsSystem::init()
+    void csyren::physics::PhysicsSystem::onAttach()
     {
         auto physic = core::Services::get<physics::PhysicsEngine>();
-        physic->_pImpl->initialize();
+        physic->_pImpl->initialize(scene(), sceneBus());
     }
 
     void csyren::physics::PhysicsSystem::update()
@@ -479,7 +496,7 @@ namespace csyren::physics
         auto physic = ctx::get<PhysicsEngine>();
         auto impl = physic->_pImpl;
         auto time = ctx::get<core::Time>();
-        auto deltaTime = time->deltaTime();
+        auto deltaTime = std::clamp(time->deltaTime(), 0.0f, 0.1f);
 
         impl->pushTransform();
         impl->applyPendingForces();
@@ -489,8 +506,12 @@ namespace csyren::physics
         impl->pullTransforms();
     }
 
-    void csyren::physics::PhysicsSystem::shutdown()
+    void csyren::physics::PhysicsSystem::onDetach() noexcept
     {
+        core::Services::get<PhysicsEngine>()->_pImpl->shutdown();
     }
+
+    void PhysicsSystem::init() {}
+    void PhysicsSystem::shutdown() {}
 
 }

@@ -25,7 +25,7 @@ namespace csyren::editor
                 {
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
-                    auto& sys = sysList[i];
+                    auto& sys = *sysList[i];
 
                     ImGui::PushID(static_cast<int>(i));
 

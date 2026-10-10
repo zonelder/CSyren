@@ -5,6 +5,7 @@
 
 
 #include "editor_selection.h"
+#include "scene_session.h"
 
 namespace csyren::editor
 {
@@ -25,7 +26,7 @@ namespace csyren::editor
 
             if (hasChildren)
             {
-                // TreeNode для элементов с детьми
+                // TreeNode РґР»СЏ СЌР»РµРјРµРЅС‚РѕРІ СЃ РґРµС‚СЊРјРё
                 ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow
                     | ImGuiTreeNodeFlags_SpanAvailWidth;
                 if (isSelected) flags |= ImGuiTreeNodeFlags_Selected;
@@ -34,6 +35,7 @@ namespace csyren::editor
 
                 if (ImGui::IsItemClicked())
                 {
+                    core::Services::get<SceneSession>()->finishEdit();
                     selection->select(entityId);
                     log::info("select entt '{}' (id={})", entt->name, entityId);
                 }
@@ -49,10 +51,11 @@ namespace csyren::editor
             }
             else
             {
-                // Leaf node — используем Selectable
+                // Leaf node вЂ” РёСЃРїРѕР»СЊР·СѓРµРј Selectable
                 if (ImGui::Selectable(entt->name.c_str(), isSelected,
                     0))
                 {
+                    core::Services::get<SceneSession>()->finishEdit();
                     selection->select(entityId);
                     log::info("select entt '{}' (id={})", entt->name, entityId);
                 }
@@ -62,9 +65,20 @@ namespace csyren::editor
         }
         void onFrame() override
         {
-            auto* scene = core::Services::get<core::Scene>();
+            auto* session = core::Services::get<SceneSession>();
+            auto* scene = &session->editorScene();
             auto* selection = core::Services::get<EditorSelection>();
+            if (_instance != session->editorContext().instance)
+            { selection->clearSelection(); _instance = session->editorContext().instance; }
+            const auto created = session->takeCreatedEntity();
+            if (created != core::Entity::invalidID) selection->select(created);
+            ImGui::BeginDisabled(session->playing());
+            if (ImGui::Button("Create object"))
+            { session->finishEdit(); session->enqueue(SceneOperation::CreateEntity); }
+            ImGui::EndDisabled();
             drawEntityTree(scene, selection, core::EntityManager::ROOT_PARENT);
         }
+    private:
+        core::SceneInstanceId _instance{};
     };
 }

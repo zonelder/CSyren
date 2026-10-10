@@ -23,6 +23,7 @@
 #include "inspector_window.h"
 #include "system_window.h"
 #include "statistic_window.h"
+#include "scene_workflow_window.h"
 
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -96,7 +97,7 @@ namespace csyren::editor
 						bool isKeyboardMessage = (msg >= WM_KEYDOWN && msg <= WM_DEADCHAR) ||
 							(msg >= WM_SYSKEYDOWN && msg <= WM_SYSDEADCHAR);
 
-						// Åñëè ImGui õî÷åò ýòîò òèï èíïóòà — áëîêèðóåì
+						// Ð•ÑÐ»Ð¸ ImGui Ñ…Ð¾Ñ‡ÐµÑ‚ ÑÑ‚Ð¾Ñ‚ Ñ‚Ð¸Ð¿ Ð¸Ð½Ð¿ÑƒÑ‚Ð° â€” Ð±Ð»Ð¾ÐºÐ¸Ñ€ÑƒÐµÐ¼
 						if (isMouseMessage && io.WantCaptureMouse)
 							return true;
 						if (isKeyboardMessage && io.WantCaptureKeyboard)
@@ -107,6 +108,7 @@ namespace csyren::editor
 
 
 			_windows.push_back(std::make_unique<SceneHierarchyWindow>());
+            _workflow = std::make_unique<SceneWorkflowWindow>();
 			_windows.push_back(std::make_unique<InspectorWindow>());
 			_windows.push_back(std::make_unique<SystemWindow>());
 			_windows.push_back(std::make_unique<StatisticWindow>());
@@ -117,9 +119,11 @@ namespace csyren::editor
 			ImGui_ImplDX12_NewFrame();
 			ImGui_ImplWin32_NewFrame();
 			ImGui::NewFrame();
+            _workflow->shortcuts();
 
 			if (ImGui::BeginMainMenuBar()) 
 			{
+                _workflow->menus();
 				if (ImGui::BeginMenu("View")) 
 				{
 					for (auto& window : _windows) 
@@ -134,11 +138,13 @@ namespace csyren::editor
 				ImGui::EndMainMenuBar();
 			}
 
-			// Ðåíäåðèì âñå îêíà
+            _workflow->render();
+			// Ð ÐµÐ½Ð´ÐµÑ€Ð¸Ð¼ Ð²ÑÐµ Ð¾ÐºÐ½Ð°
 			for (auto& window : _windows) 
 			{
 				window->render();
 			}
+            if (!ImGui::IsAnyItemActive()) core::Services::get<SceneSession>()->finishEdit();
 			auto* renderer = core::Services::get<render::Renderer>();
 			ID3D12GraphicsCommandList* cmdList = renderer->commandList();
 
@@ -158,8 +164,10 @@ namespace csyren::editor
 			ImGui_ImplDX12_Shutdown();
 			ImGui_ImplWin32_Shutdown();
 			ImGui::DestroyContext();
+            _windows.clear(); _workflow = nullptr;
 		}
 	private:
+        std::unique_ptr<SceneWorkflowWindow> _workflow;
 		std::vector<std::unique_ptr<BaseEditorWindow>> _windows;
 		static std::vector<render::DescriptorAllocation> s_imguiAllocations;
 	};

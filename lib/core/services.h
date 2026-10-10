@@ -7,6 +7,7 @@
 #include <optional>
 #include <unordered_map>
 #include "cstdmf/assert_helpler.h"
+#include "cstdmf/log.h"
 #include "family_generator.h"
 
 namespace csyren::core::reflection
@@ -120,7 +121,10 @@ namespace csyren::core
             {
                 if constexpr (concepts::HasInit<T>)
                 {
-                    get().init();
+                    try { get().init(); }
+                    catch (const std::exception& error)
+                    { log::exception(std::format("service '{}' init", typeid(T).name()), error); throw; }
+                    catch (...) { log::error("Non-standard exception initializing service '{}'", typeid(T).name()); throw; }
                 }
             }
 

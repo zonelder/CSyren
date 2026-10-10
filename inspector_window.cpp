@@ -30,7 +30,8 @@ namespace csyren::editor
 
 void csyren::editor::InspectorWindow::onFrame()
 {
-    auto* scene = core::Services::get<core::Scene>();
+    auto* session = core::Services::get<SceneSession>();
+    auto* scene = &session->editorScene();
     auto* selector = core::Services::get<EditorSelection>();
 
     if (!selector->hasSelection())
@@ -48,6 +49,7 @@ void csyren::editor::InspectorWindow::onFrame()
     }
 
     EntityInspectorWidget::draw(*scene, entt);
+    ImGui::BeginDisabled(session->playing());
 
 
 
@@ -73,9 +75,11 @@ void csyren::editor::InspectorWindow::onFrame()
         if (ImGui::CollapsingHeader(metaType->id.str.data(), ImGuiTreeNodeFlags_DefaultOpen))
         {
             auto editor = EditorRegistry::get(metaType);
-            editor->draw(compAny, metaType->id.str.data());
+            ValueEditContext context{ *session, session->keyFor(entt->id), i, {} };
+            editor->draw(compAny, metaType->id.str.data(), context);
         }
         ImGui::PopID();
 
     }
+    ImGui::EndDisabled();
 }

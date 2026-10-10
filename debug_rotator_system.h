@@ -25,9 +25,9 @@ namespace csyren
         {
             using ctx = core::Services;
             auto time = ctx::get<core::Time>();
-            auto scene = ctx::get<core::Scene>();
+            auto scene = &this->scene();
             float dt = time->deltaTime();
-            float totalTime = time->totalTime();
+            float totalTime = time->totalTime() - _timeOrigin;
             constexpr float waveSpeed = 2.0f;
             constexpr float waveLength = 3.0f;   
             constexpr float amplitude = 0.1f;    
@@ -40,6 +40,9 @@ namespace csyren
                     tr.position += height*Vector3::up;
                 });
         }
+    private:
+        void onAttach() override { _timeOrigin = core::Services::get<core::Time>()->totalTime(); }
+        float _timeOrigin{};
     };
 
     REGISTER_SYSTEM(DebugRotatorSystem);

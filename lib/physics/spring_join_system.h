@@ -17,7 +17,7 @@ namespace csyren::physics
 		{
 			using ctx = core::Services;
 			auto physicEngine = ctx::get<PhysicsEngine>();
-			auto scene = ctx::get<core::Scene>();
+			auto scene = &this->scene();
 			auto view = scene->view<core::Transform,RigidBody, SpringJoin>();
 			for (auto [ent,trA, rb, join] : view )
 			{

@@ -211,7 +211,9 @@ namespace csyren::render
             {
                 auto shader = rm.get<GraphicShader>(DEFAULT_SHADER_NAME);
                 MaterialStateDesc defaultStates = {};
-                return rm.createMaterial(DEFAULT_MATERIAL_NAME, shader, defaultStates);
+                const auto handle = rm.createMaterial(DEFAULT_MATERIAL_NAME, shader, defaultStates);
+                if (auto* material = rm.getMaterial(handle)) initializeMaterialDefaults(*material);
+                return handle;
             };
         ResourceManager::ProceduralResourceFactory<Material> textureMaterialFabric = [](ResourceManager& rm)
             {
@@ -242,7 +244,9 @@ namespace csyren::render
             {
                 auto shader = rm.get<GraphicShader>(RAINBOW_SHADER_NAME);
                 MaterialStateDesc states = {};
-                return rm.createMaterial(RAINBOW_MATERIAL_NAME, shader, states);
+                const auto handle = rm.createMaterial(RAINBOW_MATERIAL_NAME, shader, states);
+                if (auto* material = rm.getMaterial(handle)) initializeMaterialDefaults(*material);
+                return handle;
             };
 
         ResourceManager::ProceduralResourceFactory<Mesh> triangleMeshFabric = [](ResourceManager& rm) {

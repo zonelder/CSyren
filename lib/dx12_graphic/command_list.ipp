@@ -97,7 +97,7 @@ namespace csyren::render
 	{
 		CS_ASSERT(state_.dsv.ptr != NULL);
 		pCmdList_->ClearDepthStencilView(state_.dsv,
-			D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL,
+			D3D12_CLEAR_FLAG_DEPTH, // D32_FLOAT has no stencil plane.
 			depth,
 			stencil,
 			0,

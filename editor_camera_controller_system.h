@@ -10,6 +10,7 @@
 #include "core/transform.h"
 
 #include "editor_camera_controller.h"
+#include "editor_view.h"
 
 
 using namespace csyren::core;
@@ -20,23 +21,24 @@ namespace csyren
     class EditorCameraControllerSystem : public core::System
     {
     public:
-        explicit EditorCameraControllerSystem() = default;
 
         void update() override
         {
 			using ctx = core::Services;
 			auto devices = ctx::get<core::Devices>();
-			auto scene = ctx::get<core::Scene>();
+			auto editorView = ctx::get<editor::EditorView>();
 			auto time = ctx::get<core::Time>();
 
             auto& keyboard = devices->keyboard();
             auto& mouse = devices->mouse();
 
-			for (auto [mainCameraID, camera, cameraTransform, editorController] : scene->view<Camera, Transform,csyren::EditorCameraController>())
+			if (editorView)
 			{
 
 
-				if (!mouse.isButtonDown(MouseButton::Left))
+				auto& cameraTransform = editorView->transform;
+                auto& editorController = editorView->controller;
+                if (!mouse.isButtonDown(MouseButton::Right))
 					return;
 				float speed = editorController.speed;
 				float movementSpeed = editorController.movementSpeed;

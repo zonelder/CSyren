@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64"><Configuration>Debug</Configuration><Platform>x64</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{34837254-7795-4E1B-9B36-E9E8363E079B}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.22621.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType><PlatformToolset>v143</PlatformToolset>
+    <UseDebugLibraries Condition="'$(Configuration)'=='Debug'">true</UseDebugLibraries>
+    <UseDebugLibraries Condition="'$(Configuration)'!='Debug'">false</UseDebugLibraries>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup>
+    <WorkflowTestSource Condition="'$(WorkflowTestSource)'==''">scene_workflow_tests.cpp</WorkflowTestSource>
+    <TargetName Condition="'$(WorkflowTestName)'!=''">$(WorkflowTestName)</TargetName>
+    <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)Build\$(TargetName)\Intermediate\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <LanguageStandard>stdcpp20</LanguageStandard><WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)lib;$(SolutionDir);$(SolutionDir)lib\imGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary Condition="'$(Configuration)'=='Debug'">MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeLibrary Condition="'$(Configuration)'!='Debug'">MultiThreadedDLL</RuntimeLibrary>
+    </ClCompile>
+    <Link><SubSystem>Console</SubSystem><AdditionalDependencies>$(SolutionDir)Build\$(Configuration)\core.lib;$(SolutionDir)Build\$(Configuration)\math.lib;$(SolutionDir)Build\$(Configuration)\physics.lib;$(SolutionDir)Build\$(Configuration)\Jolt.lib;$(SolutionDir)Build\$(Configuration)\cstdmf.lib;$(SolutionDir)Build\$(Configuration)\dx12_graphic.lib;$(SolutionDir)Build\$(Configuration)\imGui.lib;d3d12.lib;dxgi.lib;dxguid.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies></Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="$(WorkflowTestSource)" />
+    <ClCompile Include="..\..\scene_session.cpp" />
+    <ClCompile Include="..\..\serializer_scene.cpp" />
+    <ClCompile Include="..\..\meta_common.cpp" />
+    <ClCompile Include="..\..\serializer.cpp" />
+    <ClCompile Include="..\..\editor_base.cpp" />
+    <ClCompile Include="..\..\math_editor.cpp" />
+    <ClCompile Include="..\..\inspector_window.cpp" />
+    <ClCompile Include="..\..\lib\dx12_graphic\resource_manager.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\lib\core\core.vcxproj"><Project>{c2d419d8-5a36-4905-bf2f-7fbc3cd025e9}</Project></ProjectReference>
+    <ProjectReference Include="..\..\lib\physics\physics.vcxproj"><Project>{996e7bff-0176-4769-ad10-d9f68d3f755b}</Project></ProjectReference>
+    <ProjectReference Include="..\..\lib\dx12_graphic\dx12_graphic.vcxproj"><Project>{02615bfc-b339-45ba-bf9f-22820d9e80a2}</Project></ProjectReference>
+    <ProjectReference Include="..\..\lib\imGui\imGui.vcxproj"><Project>{98210ad8-65f1-42db-825c-e4cac78084d0}</Project></ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\..\packages\directxtex_uwp.2025.7.10.1\build\native\directxtex_uwp.targets" />
+    <Import Project="..\..\packages\directxtk12_uwp.2025.7.10.1\build\native\directxtk12_uwp.targets" />
+  </ImportGroup>
+</Project>

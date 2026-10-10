@@ -1,0 +1,9 @@
+{
+    "version": 1,
+    "name": "CSyren",
+    "projectPath": ".",
+    "assetsPath": "assets",
+    "editorSystems": "assets/editor.systems",
+    "appSystems": "assets/app.systems",
+    "startScene": "assets/test_scene.scene"
+}

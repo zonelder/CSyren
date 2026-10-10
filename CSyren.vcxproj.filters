@@ -33,6 +33,7 @@
     <ClCompile Include="serializer_scene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="scene_session.cpp"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="lib\dx12_graphic\resource_manager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -137,5 +138,18 @@
     <ClInclude Include="component_registrator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="scene_session.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="scene_storage.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="editor_commands.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="editor_view.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="scene_workflow_window.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="project_settings.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="startup_options.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="render_environment_system.h"><Filter>system</Filter></ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="CSyren.csyrenproj"><Filter>Resource Files</Filter></None>
+    <None Include="assets\app.systems"><Filter>Resource Files</Filter></None>
+    <None Include="assets\editor.systems"><Filter>Resource Files</Filter></None>
   </ItemGroup>
 </Project>

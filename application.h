@@ -10,6 +10,7 @@
 #include "physics/physic_system.h"
 
 #include "serializer.h"
+#include "project_settings.h"
 
 #define DX12_RENDER
 #ifdef DX12_RENDER
@@ -30,11 +31,12 @@ namespace csyren
 		Application(const Application& rhs) = delete;
 		Application& operator=(const Application& rhs) = delete;
 
-		bool init();
+		bool init(const std::filesystem::path& project = "CSyren.csyrenproj");
 		int	 run();
 
 		void onSceneStart();
 
 	private:
+        ProjectSettings _project;
 	};
 }

@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "core/project_paths.h"
 #include "texture.h"
 #include "cstdmf/string_utils.h"
 #include "renderer.h"
@@ -47,12 +48,14 @@ namespace csyren::render
 
     bool Texture::init(Renderer& r, const std::string& filePath)
     {
-        return init(r,cstdmf::to_wstring(filePath));
+        return init(r,core::pathFromUtf8(filePath).wstring());
     }
 
     bool Texture::init(Renderer& renderer, const std::wstring& filePath)
     {
-        if (!std::filesystem::exists(filePath))
+        const auto resolved = core::Services::has<core::ProjectPaths>()
+            ? core::projectAssetPath(filePath) : std::filesystem::path(filePath);
+        if (!std::filesystem::exists(resolved))
         {
             log::warning("Texture: texture file is not found.({})", cstdmf::to_string(filePath));
             return false;

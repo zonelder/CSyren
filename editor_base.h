@@ -1,5 +1,6 @@
 #pragma once
 #include "core/meta_any.h"
+#include "scene_session.h"
 
 #include "imGui/imgui.h"
 #include "imGui/backends/imgui_impl_dx12.h"
@@ -9,11 +10,27 @@
 
 namespace csyren::editor
 {
+    struct ValueEditContext
+    {
+        SceneSession& session;
+        EntityKey entity;
+        size_t family;
+        FieldPath path;
+        template<class T, class Widget> void draw(T& value, Widget widget)
+        {
+            const T before = value;
+            const bool changed = widget();
+            if (changed) session.preview(entity, family, path, before, value, false);
+            if (ImGui::IsKeyPressed(ImGuiKey_Escape, false) && (ImGui::IsItemActive() || ImGui::IsItemDeactivated()))
+                session.cancelEdit();
+            else if (ImGui::IsItemDeactivated() || (changed && !ImGui::IsItemActive())) session.finishEdit();
+        }
+    };
 	class IEditor
 	{
 	public:
         virtual ~IEditor() = default;
-		virtual void draw(core::reflection::MetaAny& any, const char* label)  = 0;
+		virtual void draw(core::reflection::MetaAny& any, const char* label, ValueEditContext&) = 0;
 	};
 
 
@@ -64,17 +81,25 @@ namespace csyren::editor::details
     class DefaultEditor : public IEditor
     {
     public:
-        void draw(core::reflection::MetaAny& any, const char* label) override
+        void draw(core::reflection::MetaAny& any, const char* label, ValueEditContext& context) override
         {
             if (!any) return;
             const float indentLevel = 1;
             float indent = indentLevel * 16.0f;
             ImGui::Indent(indent);
-            any.forEachField([](auto literal, core::reflection::MetaAny any) {
-
-                auto fieldEditor = EditorRegistry::get(any.type());
-                fieldEditor->draw(any, literal.str.data());
-                });
+            using namespace core::reflection;
+            for (const auto& field : any.type()->data)
+            {
+                if (!hasFlag(field.flags, FieldFlags::EditorVisible) || !field.type || !field.get) continue;
+                MetaAny value{ field.get(any.raw()), field.type };
+                auto child = context;
+                child.path.push_back(field.id.id);
+                ImGui::PushID(static_cast<int>(field.id.id));
+                ImGui::BeginDisabled(hasFlag(field.flags, FieldFlags::ReadOnly) || hasFlag(field.flags, FieldFlags::Transient));
+                EditorRegistry::get(field.type)->draw(value, field.name.data(), child);
+                ImGui::EndDisabled();
+                ImGui::PopID();
+            }
 
             ImGui::Unindent(indent);
         }
