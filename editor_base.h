@@ -5,7 +5,7 @@
 #include "imGui/backends/imgui_impl_dx12.h"
 #include "imGui/backends/imgui_impl_win32.h"
 
-
+#include "cstdmf/assert_helpler.h"
 
 namespace csyren::editor
 {
@@ -27,7 +27,7 @@ namespace csyren::editor
         static void add(core::reflection::MetaType* type, IEditor* editor)
         {
             auto it = _metaMap.find(type);
-            CS_ASSERT_MSG(it == _metaMap.end(), "EditorRegistry: attempt to register editor, but we already have defined editor.\n");
+            CS_DEBUG_ASSERT_MSG(it == _metaMap.end(), "EditorRegistry: attempt to register editor, but we already have defined editor.\n");
             _metaMap[type] = editor;
         }
 

@@ -112,7 +112,7 @@ namespace csyren::core
 			if (c(hWnd, msg, wParam, lParam)) return S_OK;
 		}
 
-		CS_ASSERT(_dispatcher != nullptr && "dispatcher should be ready in main game loop.");
+		CS_DEBUG_ASSERT(_dispatcher != nullptr && "dispatcher should be ready in main game loop.");
 		using InputEvent = InputEvent;
 		using EventType = InputEvent::Type;
 		using MouseButton = MouseButton;

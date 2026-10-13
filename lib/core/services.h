@@ -31,7 +31,7 @@ namespace csyren::core
         static T* get()
         {
             auto it = _services.find(reflection::ServiceFamily::getID<std::remove_const_t<T>>());
-            CS_ASSERT(it != _services.end() && "Service not registered.");
+            CS_DEBUG_ASSERT(it != _services.end() && "Service not registered.");
             return reinterpret_cast<T*>(it->second);
         }
 
@@ -46,7 +46,7 @@ namespace csyren::core
         static void add(T* service)
         {
             auto type_id = reflection::ServiceFamily::getID<std::remove_const_t<T>>();
-            CS_ASSERT(_services.find(type_id) == _services.end() && "Attempt to register service but it's already registered.");
+            CS_DEBUG_ASSERT(_services.find(type_id) == _services.end() && "Attempt to register service but it's already registered.");
             _services[type_id] = const_cast<std::remove_const_t<T>*>(service);
         }
 

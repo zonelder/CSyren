@@ -1,103 +1,158 @@
 #pragma once
-#include "assert_helpler.h"
 
+#include <cstddef>
+#include <memory>
+#include <limits>
+#include <new>
+#include <stdexcept>
 #include <type_traits>
-
+#include <utility>
 
 namespace csyren::cstdmf
 {
-	template<typename T,size_t Capacity>
-	class StaticVector
-	{
-	public:
-		static_assert(Capacity > 0, "Capacity must be bigger than zero");
+    // Inline, contiguous storage. Only [0, size()) contains live T objects.
+    // Mutations require exclusive access. Assignment has the basic exception
+    // guarantee; a failed constructor destroys its successfully built prefix.
+    template<typename T, std::size_t Capacity>
+    class StaticVector
+    {
+        static_assert(Capacity > 0);
+        static_assert(Capacity <= std::numeric_limits<std::size_t>::max() / sizeof(T));
+        static_assert(std::is_nothrow_destructible_v<T>, "T must have a noexcept destructor");
+        static_assert(!std::is_const_v<T> && !std::is_volatile_v<T>);
 
-		StaticVector() noexcept = default;
-		StaticVector(const StaticVector&) noexcept(std::is_nothrow_copy_constructible_v<T>) = default;
-		StaticVector& operator=(const StaticVector&) noexcept(std::is_nothrow_copy_assignable_v<T>) = default;
+        struct ConstructionGuard
+        {
+            StaticVector* owner;
+            ~ConstructionGuard() { if (owner) owner->clear(); }
+        };
 
+    public:
+        StaticVector() noexcept = default;
 
-		StaticVector(StaticVector&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
-			: _size(other._size)
-		{
-			for (size_t i = 0; i < _size; ++i)
-				new (ptr(i)) T(std::move(*other.ptr(i)));
-			other._size = 0;
-		}
+        StaticVector(const StaticVector& other) noexcept(std::is_nothrow_copy_constructible_v<T>)
+            requires std::is_copy_constructible_v<T>
+        {
+            ConstructionGuard guard{this};
+            for (const auto& item : other) append_unchecked(item);
+            guard.owner = nullptr;
+        }
 
-		~StaticVector() noexcept(std::is_nothrow_destructible_v<T>) 
-		{
-			clear();
-		}
+        StaticVector(StaticVector&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
+            requires std::is_move_constructible_v<T>
+        {
+            ConstructionGuard guard{this};
+            for (auto& item : other) append_unchecked(std::move(item));
+            other.clear();
+            guard.owner = nullptr;
+        }
 
-		void push_back(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>)
-		{
-			CS_ASSERT_MSG(_size < Capacity, "StaticVector overflow");
-			new (ptr(_size)) T(value);
-			++_size;
-		}
+        StaticVector& operator=(const StaticVector& other)
+            noexcept(std::is_nothrow_copy_constructible_v<T>)
+            requires std::is_copy_constructible_v<T>
+        {
+            if (this != &other)
+            {
+                clear();
+                for (const auto& item : other) append_unchecked(item);
+            }
+            return *this;
+        }
 
-		void push_back(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>)
-		{
-			CS_ASSERT_MSG(_size < Capacity, "StaticVector overflow");
-			new (ptr(_size)) T(std::move(value));
-			++_size;
-		}
+        StaticVector& operator=(StaticVector&& other)
+            noexcept(std::is_nothrow_move_constructible_v<T>)
+            requires std::is_move_constructible_v<T>
+        {
+            if (this != &other)
+            {
+                clear();
+                for (auto& item : other) append_unchecked(std::move(item));
+                other.clear();
+            }
+            return *this;
+        }
 
-		template<typename... Args>
-		T& emplace_back(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
-		{
-			CS_ASSERT_MSG(_size < Capacity, "StaticVector overflow");
-			T* p = new (ptr(_size)) T(std::forward<Args>(args)...);
-			++_size;
-			return *p;
-		}
+        ~StaticVector() { clear(); }
 
-		void clear() noexcept(std::is_nothrow_destructible_v<T>)
-		{
-			if constexpr (!std::is_trivially_destructible_v<T>)
-			{
-				for (size_t i = 0; i < _size; ++i)
-					ptr(i)->~T();
-			}
-			_size = 0;
-		}
+        void push_back(const T& value) { emplace_back(value); }
+        void push_back(T&& value) { emplace_back(std::move(value)); }
 
-		void pop_back() noexcept(std::is_nothrow_destructible_v<T>)
-		{
-			CS_ASSERT_MSG(_size > 0, "StaticVector underflow");
-			--_size;
-			ptr(_size)->~T();
-		}
+        template<typename... Args>
+        T& emplace_back(Args&&... args)
+        {
+            if (full()) throw std::length_error("StaticVector capacity exceeded");
+            return append_unchecked(std::forward<Args>(args)...);
+        }
 
-		T& operator[](size_t i)       noexcept { return *ptr(i); }
-		const T& operator[](size_t i) const noexcept { return *ptr(i); }
+        // Capacity exhaustion is expected control flow for fixed-size buffers.
+        // Construction of T can still throw; in that case size is unchanged.
+        template<typename... Args>
+        T* try_emplace_back(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
+        {
+            if (full()) return nullptr;
+            return &append_unchecked(std::forward<Args>(args)...);
+        }
 
-		T& front()       noexcept { return *ptr(0); }
-		const T& front() const noexcept { return *ptr(0); }
-		T& back()        noexcept { return *ptr(_size - 1); }
-		const T& back()  const noexcept { return *ptr(_size - 1); }
+        void clear() noexcept
+        {
+            if constexpr (std::is_trivially_destructible_v<T>) _size = 0;
+            else while (_size) std::destroy_at(live(--_size));
+        }
 
-		T* data()       noexcept { return ptr(0); }
-		const T* data() const noexcept { return ptr(0); }
+        void pop_back()
+        {
+            if (empty()) throw std::out_of_range("StaticVector is empty");
+            std::destroy_at(live(--_size));
+        }
 
-		T* begin()       noexcept { return ptr(0); }
-		const T* begin() const noexcept { return ptr(0); }
-		T* end()         noexcept { return ptr(_size); }
-		const T* end()   const noexcept { return ptr(_size); }
+        T& at(std::size_t i)
+        {
+            if (i >= _size) throw std::out_of_range("StaticVector index out of range");
+            return *live(i);
+        }
+        const T& at(std::size_t i) const
+        {
+            if (i >= _size) throw std::out_of_range("StaticVector index out of range");
+            return *live(i);
+        }
+        T& operator[](std::size_t i) { return at(i); }
+        const T& operator[](std::size_t i) const { return at(i); }
+        T& front() { return at(0); }
+        const T& front() const { return at(0); }
+        T& back() { return at(_size - 1); }
+        const T& back() const { return at(_size - 1); }
 
-		size_t size()     const noexcept { return _size; }
-		constexpr size_t capacity() const noexcept { return Capacity; }
-		bool   empty()    const noexcept { return _size == 0; }
-		bool   full()     const noexcept { return _size == Capacity; }
+        T* data() noexcept { return empty() ? reinterpret_cast<T*>(_storage) : live(0); }
+        const T* data() const noexcept { return empty() ? reinterpret_cast<const T*>(_storage) : live(0); }
+        T* begin() noexcept { return data(); }
+        const T* begin() const noexcept { return data(); }
+        const T* cbegin() const noexcept { return begin(); }
+        T* end() noexcept { return data() + _size; }
+        const T* end() const noexcept { return data() + _size; }
+        const T* cend() const noexcept { return end(); }
 
+        std::size_t size() const noexcept { return _size; }
+        static constexpr std::size_t capacity() noexcept { return Capacity; }
+        bool empty() const noexcept { return _size == 0; }
+        bool full() const noexcept { return _size == Capacity; }
 
-	private:
-		T* ptr(size_t i)       noexcept { return reinterpret_cast<T*>(_storage) + i; }
-		const T* ptr(size_t i) const noexcept { return reinterpret_cast<const T*>(_storage) + i; }
+    private:
+        template<typename... Args>
+        T& append_unchecked(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
+        {
+            // Byte addressing works before the element's lifetime has begun.
+            T* p = ::new (static_cast<void*>(_storage + sizeof(T) * _size))
+                T(std::forward<Args>(args)...);
+            ++_size;
+            return *p;
+        }
+        T* live(std::size_t i) noexcept
+        { return std::launder(reinterpret_cast<T*>(_storage + sizeof(T) * i)); }
+        const T* live(std::size_t i) const noexcept
+        { return std::launder(reinterpret_cast<const T*>(_storage + sizeof(T) * i)); }
 
-
-		alignas(T) unsigned char _storage[sizeof(T) * Capacity];
-		size_t _size{ 0 };
-	};
+        // C++20 byte-array storage; explicitly construct non-implicit-lifetime T.
+        alignas(T) std::byte _storage[sizeof(T) * Capacity];
+        std::size_t _size = 0;
+    };
 }

@@ -24,10 +24,10 @@ struct ThrowOnCtor {
 struct RefCount {
     static inline int alive = 0;
     RefCount() { ++alive; }
-    RefCount(RefCount&&) { ++alive; }  // Перемещение = новый объект
+    RefCount(RefCount&&) noexcept { ++alive; }  // Перемещение = новый объект
     ~RefCount() { --alive; }
     // Оператор присваивания не меняет счётчик
-    RefCount& operator=(RefCount&&) { return *this; }
+    RefCount& operator=(RefCount&&) noexcept { return *this; }
 };
 
 TEST(SparseSet, Empty) {

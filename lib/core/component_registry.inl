@@ -8,7 +8,7 @@ namespace csyren::core::reflection
         auto& registry = getRegistry();
 
         auto family = ComponentFamily::getID<T>();
-        CS_ASSERT_MSG(registry.find(family) == registry.end(), "ComponentRegistry: This component already registered\n");
+        CS_DEBUG_ASSERT_MSG(registry.find(family) == registry.end(), "ComponentRegistry: This component already registered\n");
 
         ComponentMeta meta;
         meta.name = name;
