@@ -52,25 +52,6 @@
 namespace
 {
 
-	DirectX::XMMATRIX createProjection(csyren::core::Camera& camera)
-	{
-
-		using namespace DirectX;
-		using namespace csyren::core;
-
-		if (camera.projection == ProjectionType::Perspective)
-		{
-			return csyren::math::Matrix4x4::perspective(camera.fov, camera.aspectRatio, camera.near, camera.far);
-		}
-		else // Orthographic
-		{
-			// Interpret FOV as vertical height of view volume
-			float viewHeight = camera.fov;
-			float viewWidth = viewHeight * camera.aspectRatio;
-			return DirectX::XMMatrixOrthographicLH(viewWidth, viewHeight, camera.near, camera.far);
-		}
-	}
-
 	float randomDegree(float minDeg, float maxDeg)
 	{
 		float t = (float)rand() / RAND_MAX;
@@ -167,7 +148,6 @@ namespace csyren
 		renderer->endResourceUpload();
 		log::info("---------------------------------------------------------------------------------------------");
 		log::info("-------------------------------Run Game Loop-------------------------------------------------");
-		const FLOAT clearColor[4] = { 0.1f, 0.1f, 0.3f, 1.0f };
 		MSG msg = { 0 };
 
 		while (true)
@@ -194,40 +174,7 @@ namespace csyren
 			systems->update();
 			auto [mainCameraID,camera,cameraTransform] = *(scene->view<Camera,Transform>().begin());//only first camera accepted
 			currentCameraEntt = mainCameraID;
-			auto engineVariables = renderer->getEngineVariableBuffer();
-			engineVariables->totalTime = time->totalTime();
-			DirectX::XMMATRIX invView = cameraTransform.world();
-			DirectX::XMStoreFloat4x4(&engineVariables->invViewMatrix, invView);
-
-			// viewMatrix = inverse(invViewMatrix)
-			DirectX::XMMATRIX view = DirectX::XMMatrixInverse(nullptr, invView);
-			DirectX::XMStoreFloat4x4(&engineVariables->viewMatrix, view);
-
-			// projectionMatrix = projection
-			DirectX::XMMATRIX proj = createProjection(camera);
-			DirectX::XMStoreFloat4x4(&engineVariables->projectionMatrix, proj);
-
-			// viewProjectionMatrix = view * projection
-			DirectX::XMMATRIX viewProj = DirectX::XMMatrixMultiply(view, proj);
-			DirectX::XMStoreFloat4x4(&engineVariables->viewProjectionMatrix, viewProj);
-
-			float rotationSpeed = DirectX::XM_2PI / 10.0f;
-			float angle = time->totalTime() * rotationSpeed;
-			DirectX::XMVECTOR baseDir = DirectX::XMVectorSet(0.3f, -1.0f, 0.3f, 0.0f);
-			DirectX::XMMATRIX rot = DirectX::XMMatrixRotationZ(angle);
-			DirectX::XMVECTOR rotatedDir = DirectX::XMVector3TransformNormal(baseDir, rot);
-			rotatedDir = DirectX::XMVector3Normalize(rotatedDir);
-			DirectX::XMStoreFloat4(&engineVariables->lightDirection, rotatedDir);
-
-			core::Services::get<render::ResourceManager>()->update();
-			renderer->beginFrame();
-			ID3D12DescriptorHeap* heaps[] = { core::Services::get<render::DescriptorManager>()->shaderHeap()};
-			renderer->commandList()->SetDescriptorHeaps(1, heaps);
-			renderer->clear(&(camera.background.x));
-
 			systems->onFrame();
-
-			renderer->endFrame();
 
 			scene->flush();
 			bus->commit_batch();

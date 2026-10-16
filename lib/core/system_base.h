@@ -14,9 +14,7 @@ namespace csyren::core
 		virtual void init() {}
 
 		virtual void update(){}
-		virtual void startFrame() {};
 		virtual void onFrame() {}
-		virtual void endFrame() {};
 
 		virtual void shutdown(){}
 

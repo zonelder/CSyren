@@ -16,9 +16,10 @@ namespace csyren::render
 
         bool init(ID3D12Device* device, size_t frameBufferSize, UINT numFrames = 3);
 
-        void beginFrame()
+        void beginFrame(UINT frameIndex)
         {
-            _currentFrame = (_currentFrame + 1) % _numFrames;
+            CS_ASSERT(frameIndex < _numFrames);
+            _currentFrame = frameIndex;
             _offset = 0;
         }
         size_t allocate(size_t size, void** cpuPtr, D3D12_GPU_VIRTUAL_ADDRESS* gpuAddr);

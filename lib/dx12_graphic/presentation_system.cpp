@@ -1,134 +1,250 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "presentation_system.h"
+#include "frame_prepare_system.h"
+#include "presentation_state.h"
+#include "resource_manager.h"
+#include "core/scene.h"
+#include "core/time.h"
+#include "core/camera.h"
+#include "core/transform.h"
+#include "math/matrix4x4.h"
+#include <stdexcept>
+#include <algorithm>
+#include <chrono>
 
 namespace csyren::render
 {
-	/*
-	void PresentationSystem::init(core::ServiceContext& ctx)
-	{
-		DXGI_SWAP_CHAIN_DESC1 desc;
+    namespace
+    {
+        void require(bool success, const char* message)
+        {
+            if (!success) throw std::runtime_error(message);
+        }
 
+        void transition(CommandList& commands, ID3D12Resource* resource,
+                        D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after)
+        {
+            D3D12_RESOURCE_BARRIER barrier{};
+            barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+            barrier.Transition.pResource = resource;
+            barrier.Transition.StateBefore = before;
+            barrier.Transition.StateAfter = after;
+            barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+            commands.resourceBarrier(barrier);
+        }
+    }
 
-		size_t presentationBuffersCount = desc.BufferCount + 2;
+    namespace
+    {
+        std::shared_ptr<details::PresentationState> acquireState()
+        {
+            // Resource ownership stays with the systems. This weak reference
+            // only connects independently constructed system instances.
+            static std::weak_ptr<details::PresentationState> shared;
+            if (auto state = shared.lock()) return state;
+            auto state = std::make_shared<details::PresentationState>();
+            state->init();
+            shared = state;
+            return state;
+        }
+    }
 
-		D3D12_COMMAND_QUEUE_DESC qDesc = {};
-		qDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-		qDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-		qDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+    void FramePrepareSystem::init() { _state = acquireState(); }
+    void PresentationSystem::init() { _state = acquireState(); }
+    void FramePrepareSystem::shutdown() { _state.reset(); }
+    void PresentationSystem::shutdown() { _state.reset(); }
 
-		if (!_presentationQueue.init(device, qDesc))
-		{
-			return false;
-		}
+    void FramePrepareSystem::updateCamera(float (&background)[4])
+    {
+        auto* renderer = core::Services::get<Renderer>();
+        auto* variables = renderer->getEngineVariableBuffer();
+        const auto time = core::Services::get<core::Time>()->totalTime();
+        variables->totalTime = time;
+        for (auto [id, camera, transform] : core::Services::get<core::Scene>()->view<core::Camera, core::Transform>())
+        {
+            std::copy(&camera.background.x, &camera.background.x + 4, background);
+            using namespace DirectX;
+            auto invView = transform.world();
+            auto view = XMMatrixInverse(nullptr, invView);
+            auto projection = camera.projection == core::ProjectionType::Perspective
+                ? math::Matrix4x4::perspective(camera.fov, camera.aspectRatio, camera.near, camera.far)
+                : XMMatrixOrthographicLH(camera.fov * camera.aspectRatio, camera.fov, camera.near, camera.far);
+            XMStoreFloat4x4(&variables->invViewMatrix, invView);
+            XMStoreFloat4x4(&variables->viewMatrix, view);
+            XMStoreFloat4x4(&variables->projectionMatrix, projection);
+            XMStoreFloat4x4(&variables->viewProjectionMatrix, XMMatrixMultiply(view, projection));
+            auto light = XMVector3TransformNormal(XMVectorSet(0.3f, -1.0f, 0.3f, 0.0f),
+                                                 XMMatrixRotationZ(time * XM_2PI / 10.0f));
+            XMStoreFloat4(&variables->lightDirection, XMVector3Normalize(light));
+            return;
+        }
+    }
 
-		if (!_swapChain.init(factory, device, _presentationQueue.raw(), hwnd, desc))
-		{
-			return false;
-		}
+    void FramePrepareSystem::onFrame()
+    {
+        auto& context = *_state;
+        auto* renderer = core::Services::get<Renderer>();
+        context.commandIndex = (context.commandIndex + 1) % Renderer::FramesInFlight;
+        auto& commands = context.commands[context.commandIndex];
+        // Allocator/upload storage and color textures have independent lifetimes.
+        renderer->queue().syncAwaitComplete(commands.lastFenceValue());
+        UINT target = details::PresentationState::FrameCount;
+        {
+            std::lock_guard lock(context.mutex);
+            if (context.outputError) std::rethrow_exception(context.outputError);
+            UINT keep = details::PresentationState::FrameCount;
+            UINT64 newest = context.lastCopied;
+            for (UINT i = 0; i < details::PresentationState::FrameCount; ++i)
+            {
+                auto& candidate = context.frames[i];
+                if (candidate.sequence > newest && renderer->queue().isComplete(candidate.renderFence))
+                {
+                    newest = candidate.sequence;
+                    keep = i;
+                }
+            }
+            for (UINT i = 0; i < details::PresentationState::FrameCount; ++i)
+            {
+                const auto& candidate = context.frames[i];
+                if (i != keep && !candidate.copying && !candidate.recording
+                    && (target == details::PresentationState::FrameCount || candidate.sequence < context.frames[target].sequence))
+                    target = i;
+            }
+            require(target != details::PresentationState::FrameCount, "No writable mailbox color buffer");
+            context.frameIndex = target;
+            context.frames[target].recording = true;
+            context.frames[target].sequence = 0;
+        }
+        auto& frame = context.frames[target];
+        float background[]{ 0.1f, 0.1f, 0.3f, 1.0f };
+        updateCamera(background);
+        // Stable colors reuse the texture without waiting for its previous draw:
+        // both writes are already ordered on the same GPU queue.
+        if (frame.color && !std::equal(background, background + 4, frame.clearColor))
+            renderer->queue().syncAwaitComplete(frame.renderFence);
+        context.prepareTarget(frame, background);
+        commands.reset();
+        renderer->setFrameContext(&commands, context.commandIndex);
+        core::Services::get<ResourceManager>()->update();
+        transition(commands, frame.color.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+        commands.setRenderTarget(0, frame.rtv.cpu);
+        commands.setDepthStencil(context.dsv.cpu);
+        commands.submitRenderTargets();
+        commands.clearDepthStencil(0.0f, 0);
+        commands.setViewport({ 0, 0, static_cast<float>(context.width), static_cast<float>(context.height), 0, 1 });
+        commands.setScissorRect({ 0, 0, static_cast<LONG>(context.width), static_cast<LONG>(context.height) });
+        ID3D12DescriptorHeap* heaps[]{ core::Services::get<DescriptorManager>()->shaderHeap() };
+        commands.raw()->SetDescriptorHeaps(1, heaps);
+        commands.clearRenderTarget(0, background);
+    }
 
-		_presentationCommandLists.resize(desc.BufferCount);
-		for (size_t i = 0; i < desc.BufferCount; ++i)
-		{
-			auto& cmdList = _presentationCommandLists[i];
-			if (!cmdList.init(device, qDesc.Type))
-				return false;
-		}
+    void PresentationSystem::onFrame()
+    {
+        auto& context = *_state;
+        auto* renderer = core::Services::get<Renderer>();
+        auto& frame = context.frames[context.frameIndex];
+        auto& commands = context.commands[context.commandIndex];
+        transition(commands, frame.color.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_SOURCE);
+        commands.close();
+        renderer->queue().addCommands(&commands);
+        renderer->queue().execute();
+        {
+            std::lock_guard lock(context.mutex);
+            frame.sequence = ++context.sequence;
+            frame.renderFence = commands.lastFenceValue();
+            frame.recording = false;
+        }
+        renderer->releaseFrameContext();
+        context.changed.notify_one();
+    }
 
-		_renderTargets.resize(presentationBuffersCount);
-		if (!rebuildResources())
-		{
-			return false;
-		}
-		return true;
-	}
+    void details::PresentationState::runOutput() noexcept
+    {
+        try
+        {
+            while (true)
+            {
+                {
+                    std::unique_lock lock(mutex);
+                    if (stopping) break;
+                }
+                pollOutput();
+                // New frames wake this early. The timeout also retires GPU
+                // copies and checks DXGI readiness without spinning.
+                std::unique_lock lock(mutex);
+                changed.wait_for(lock, std::chrono::milliseconds(1));
+                if (stopping) break;
+            }
+        }
+        catch (...)
+        {
+            std::lock_guard lock(mutex);
+            outputError = std::current_exception();
+        }
+    }
 
-	BaseResource& PresentationSystem::currentWriteTarget()
-	{
-		size_t minFence = std::numeric_limits< size_t >::max();
-		for (size_t i = 0; i < _renderTargets.size(); ++i)
-		{
-			auto& rt = _renderTargets[i];
-			if (rt.fence == 0)
-			{
-				currentIdx_ = i;
-				return rt.resource;
-			}
-			if (minFence > rt.fence)
-			{
-				currentIdx_ = i;
-				minFence = rt.fence;
-			}
-		}
+    void details::PresentationState::pollOutput()
+    {
+        auto& context = *this;
+        {
+            std::lock_guard lock(context.mutex);
+            for (auto& frame : context.frames)
+                if (frame.copying && context.presentationQueue.isComplete(frame.copyFence))
+                    frame.copying = false;
+        }
+        auto presentPending = [&] {
+            if (!context.pendingPresent) return true;
+            const auto result = context.swapChain.present(0, DXGI_PRESENT_DO_NOT_WAIT);
+            if (result == DXGI_ERROR_WAS_STILL_DRAWING) return false;
+            require(SUCCEEDED(result), "Mailbox Present failed");
+            context.pendingPresent = false;
+            context.outputReady = false;
+            return true;
+        };
+        if (!presentPending()) return;
+        // Keep at most one color texture owned by the copy queue.
+        if (!context.presentationQueue.isComplete(context.lastCopyFence)) return;
+        if (!context.outputReady) context.outputReady = context.swapChain.ready();
+        if (!context.outputReady) return;
+        auto* renderer = core::Services::get<Renderer>();
+        details::PresentationState::Frame* newest = nullptr;
+        {
+            std::lock_guard lock(context.mutex);
+            for (auto& frame : context.frames)
+            {
+                if (!frame.recording && !frame.copying && frame.sequence > context.lastCopied
+                    && renderer->queue().isComplete(frame.renderFence)
+                    && (!newest || frame.sequence > newest->sequence))
+                    newest = &frame;
+            }
+            if (!newest) return;
+            newest->copying = true;
+        }
+        const auto index = context.swapChain.backBufferIndex();
+        auto& copy = context.copies[index];
+        if (!context.presentationQueue.isComplete(copy.lastFenceValue()))
+        {
+            std::lock_guard lock(context.mutex);
+            newest->copying = false;
+            return;
+        }
+        copy.reset();
+        auto* destination = context.swapChain.currentBackBuffer();
+        transition(copy, destination, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_COPY_DEST);
+        // Offscreen colors stay in COPY_SOURCE between draws on both direct queues.
+        copy.raw()->CopyResource(destination, newest->color.Get());
+        transition(copy, destination, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PRESENT);
+        copy.close();
+        context.presentationQueue.addCommands(&copy);
+        context.presentationQueue.execute();
+        {
+            std::lock_guard lock(context.mutex);
+            newest->copyFence = copy.lastFenceValue();
+            context.lastCopied = newest->sequence;
+        }
+        context.lastCopyFence = copy.lastFenceValue();
+        context.pendingPresent = true;
+        presentPending();
+    }
 
-		auto& optimalRt = _renderTargets[_currentIdx];
-		_presentationQueue.syncAwaitComplete(optimalRt.fence);
-
-		optimalRt.fence = 0;
-
-		return optimalRt.resource;
-	}
-	RenderTargetPtr PresentationSystem::lastWriteTarget() const noexcept
-	{
-		return _renderTargets[_currentIdx].resource;
-	}
-
-
-	bool PresentationSystem::present(RenderQueue& mainContext)
-	{
-		/// this only if driver is ready.if not ->discard frame.
-		// how to be sure that swapChainBuffer_i are ready?
-		auto idx = _swapChain.backBufferIndex();
-		auto& cmdList = _presentationCommandLists[idx];
-		if (!_presentationQueue.isComplete(cmdList.lastFenceValue()))
-		{
-			return false;
-		}
-		auto& currentResource = _renderTargets[_currentIdx];
-		auto descResource = _swapChain.currentBackBuffer();
-		_presentationQueue.awaitComplete(mainContext);
-		cmdList.reset();
-		cmdList.transition(D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_COPY_DEST, descResource);
-		cmdList.raw()->CopyResource(descResource, currentResource.resource->raw());
-		cmdList.transition(D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PRESENT, descResource);
-		cmdList.close();
-
-		_presentationQueue.addCommands(&cmdList);
-		_presentationQueue.execute();
-		currentResource.fence = cmdList.lastFenceValue();
-		_swapChain.present(0, 0);
-		cmdList.signalFence(_presentationQueue.signal());
-		return true;
-	}
-
-	bool PresentationSystem::rebuildResources()
-	{
-		RenderTargetDesc desc;
-		auto meta = swapChain_.meta();
-		desc.width = meta.width;
-		desc.height = meta.height;
-		desc.format = meta.format;
-		for (uint32 i = 0; i < _renderTargets.size(); ++i)
-		{
-			renderTargets_[i] = { 0, new RenderTarget(fmt::format("swap chain backBuffer {}", i)) };
-			renderTargets_[i].resource->create(device_, desc);
-		}
-
-		return true;
-	}
-
-	bool PresentationSystem::resize(size_t width, size_t height, bool windowed)
-	{
-		_presentationQueue.syncAwaitLastComplete();
-
-		if (!_swapChain.resize(width, height, windowed))
-		{
-			return false;
-		}
-		if (!rebuildResources())
-		{
-			return false;
-		}
-		return true;
-	}
-	*/
-} 
+}

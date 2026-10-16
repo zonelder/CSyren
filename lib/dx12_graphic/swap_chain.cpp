@@ -4,6 +4,17 @@
 
 namespace csyren::render
 {
+    SwapChain::~SwapChain()
+    {
+        releaseResources();
+        if (_frameLatencyEvent) CloseHandle(_frameLatencyEvent);
+    }
+
+    bool SwapChain::ready() const
+    {
+        return _frameLatencyEvent && WaitForSingleObject(_frameLatencyEvent, 0) == WAIT_OBJECT_0;
+    }
+
 	bool SwapChain::init(IDXGIFactory4* factory,
 		ID3D12Device* device,
 		details::ComPtr< ID3D12CommandQueue > graphicsQueue,
@@ -15,7 +26,7 @@ namespace csyren::render
 		DXGI_SWAP_CHAIN_DESC1 swapDesc = desc;
 		swapDesc.Scaling = DXGI_SCALING_NONE;
 
-		_swapChainFlags = swapDesc.Flags;
+		_swapChainFlags = swapDesc.Flags | DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 		if (_tearingSupported)
 			_swapChainFlags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 		swapDesc.Flags = _swapChainFlags;
@@ -40,13 +51,18 @@ namespace csyren::render
 		{
 			return false;
 		}
-		if (!collectResources())
-			return false;
+		if (DX_FAILED(_pSwapChain->SetMaximumFrameLatency(1))) return false;
+        _frameLatencyEvent = _pSwapChain->GetFrameLatencyWaitableObject();
+        if (!_frameLatencyEvent) return false;
+        _backBuffers.resize(desc.BufferCount, nullptr);
+        if (!collectResources()) return false;
+        factory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER);
 
 		_meta.format = desc.Format;
 		_meta.width = desc.Width;
 		_meta.height = desc.Height;
-		_meta.flags = desc.Flags;
+		_meta.flags = _swapChainFlags;
+        _meta.count = desc.BufferCount;
 		return true;
 	}
 
@@ -99,17 +115,13 @@ namespace csyren::render
 		return true;
 	}
 
-	bool SwapChain::present(UINT vsync, UINT presentFlags)
-	{
-		if (vsync == 0 && _tearingSupported)
-			presentFlags |= DXGI_PRESENT_ALLOW_TEARING;
-
-		if (DX_FAILED(_pSwapChain->Present(vsync, presentFlags)))
-		{
-			return false;
-		}
-		return true;
-	}
+    HRESULT SwapChain::present(UINT vsync, UINT presentFlags)
+    {
+        if (vsync == 0 && _tearingSupported)
+            presentFlags |= DXGI_PRESENT_ALLOW_TEARING;
+        // WAS_STILL_DRAWING is backpressure, not a device error.
+        return _pSwapChain->Present(vsync, presentFlags);
+    }
 
 
 	bool SwapChain::releaseResources()
@@ -117,7 +129,7 @@ namespace csyren::render
 		bool result = true;
 		for (auto& buffer : _backBuffers)
 		{
-			buffer->Release();
+			if (buffer) buffer->Release();
 			buffer = nullptr;
 		}
 		return result;
@@ -127,7 +139,8 @@ namespace csyren::render
 	{
 		for (uint32_t i = 0; i < _backBuffers.size(); ++i)
 		{
-			_pSwapChain->GetBuffer(i, IID_PPV_ARGS(&_backBuffers[i]));
+			if (DX_FAILED(_pSwapChain->GetBuffer(i, IID_PPV_ARGS(&_backBuffers[i]))))
+                return false;
 		}
 		return true;
 	}

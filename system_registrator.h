@@ -12,3 +12,6 @@
 #include "mesh_render_system.h"
 #include "scene_loader.h"
 #include "dx12_graphic/start_render_system.h"
+
+#include "dx12_graphic/presentation_system.h"
+#include "dx12_graphic/frame_prepare_system.h"

@@ -191,6 +191,8 @@
     <ClInclude Include="mesh_builder.h" />
     <ClInclude Include="pass_data_manager.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="presentation_state.h" />
+    <ClInclude Include="frame_prepare_system.h" />
     <ClInclude Include="presentation_system.h" />
     <ClInclude Include="pso_factory.h" />
     <ClInclude Include="primitives.h" />
@@ -232,6 +234,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="presentation_state.cpp" />
     <ClCompile Include="presentation_system.cpp" />
     <ClCompile Include="primitives.cpp" />
     <ClCompile Include="pso_factory.cpp" />

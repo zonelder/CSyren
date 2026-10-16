@@ -52,7 +52,7 @@ namespace csyren::editor
 			auto* renderer = core::Services::get<render::Renderer>();
 			auto* shaderHeap = core::Services::get<render::DescriptorManager>()->shaderHeap();
 			ID3D12Device* device = renderer->device();
-			auto numFrames = 2;
+			auto numFrames = render::Renderer::FramesInFlight;
 
 			ImGui_ImplDX12_InitInfo init_info = {};
 			init_info.Device = device;
@@ -155,6 +155,7 @@ namespace csyren::editor
 
 		void shutdown() override
 		{
+			core::Services::get<render::Renderer>()->queue().syncAwaitLastComplete();
 			ImGui_ImplDX12_Shutdown();
 			ImGui_ImplWin32_Shutdown();
 			ImGui::DestroyContext();

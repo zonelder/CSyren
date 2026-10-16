@@ -1,34 +1,19 @@
 #pragma once
 #include "core/system_base.h"
-#include "swap_chain.h"
-#include "render_queue.h"
-#include "base_resource.h"
-
 
 namespace csyren::render
 {
-	class PresentationSystem : public core::System
-	{
-		struct PresentResource
-		{
-			uint64_t		fence{ 0 };
-			BaseResource	resource;
-			CommandList		cmdList;
-		};
-	public:
-		void init() override;
-		void startFrame() override;
+    namespace details { struct PresentationState; }
 
-		void endFrame() override;
+    class PresentationSystem : public core::System
+    {
+    public:
+        void init() override;
+        void onFrame() override;
+        void shutdown() override;
+    private:
+        std::shared_ptr<details::PresentationState> _state;
+    };
 
-	private:
-		bool present(RenderQueue& mainContext);
-		bool resize(size_t width, size_t height, bool windowed);
-		bool rebuildResources();
-		SwapChain _swapChain;
-		RenderQueue _presentationQueue;
-		std::vector< PresentResource > _renderTargets;
-		size_t _currentIdx{ 0 };
-
-	};
+    REGISTER_SYSTEM(PresentationSystem)
 }

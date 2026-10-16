@@ -2,6 +2,9 @@
 
 #include "core/system_base.h"
 
+#include <algorithm>
+#include <limits>
+#include <string>
 #include <vector>
 #include <memory>
 #include <string_view>
@@ -117,7 +120,7 @@ namespace csyren::core
 
 			_deferredMove = { SIZE_MAX, SIZE_MAX };
 		}
-		movePair _deferredMove;
+		movePair _deferredMove{ SIZE_MAX, SIZE_MAX };
 
 		std::vector<SystemEntry> _systems;
 	};
