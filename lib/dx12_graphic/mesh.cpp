@@ -173,7 +173,7 @@ namespace csyren::render
         return true;
     }
 
-    void Mesh::bind(Renderer& renderer)
+    void Mesh::bind(Renderer& renderer) const
     {
         ID3D12GraphicsCommandList* cmd = renderer.commandList();
 
@@ -182,7 +182,7 @@ namespace csyren::render
         cmd->IASetIndexBuffer(&_indexView);
     }
 
-    void Mesh::draw(Renderer& renderer)
+    void Mesh::draw(Renderer& renderer) const
     {
         ID3D12GraphicsCommandList* cmd = renderer.commandList();
         cmd->DrawIndexedInstanced(_indexCount, 1, 0, 0, 0);

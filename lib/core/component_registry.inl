@@ -26,8 +26,7 @@ namespace csyren::core::reflection
 
         meta.getRaw = [](Scene* scene, Entity::ID id) -> void*
             {
-                auto pool = scene->getPool<T>();
-                return pool ? pool->try_get(id) : nullptr;
+                return scene->template getComponent<T>(id).get();
             };
 
         meta.remove = [](Scene* scene, Entity::ID id) -> void

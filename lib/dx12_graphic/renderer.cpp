@@ -57,6 +57,7 @@ namespace csyren::render
 
     bool Renderer::earlyInit()
     {
+        _ownerThread = std::this_thread::get_id();
         enableDebugLayer();
         createDevice();
         createCommandQueue();
@@ -75,10 +76,23 @@ namespace csyren::render
         return true;
     }
 
-    void Renderer::setFrameContext(CommandList* commands, UINT uploadSlot)
-    {
-        _commands = commands;
-        _perEntityCB.beginFrame(uploadSlot);
+    Renderer::RecordingData* Renderer::recording() const {
+        if (_recording && _recording->renderer == this) return _recording->data;
+        if (std::this_thread::get_id() != _ownerThread)
+            throw std::logic_error("GPU commands require a declared GPU system task");
+        return nullptr;
+    }
+    ID3D12GraphicsCommandList* Renderer::commandList() const {
+        auto* data = recording(); return data ? data->commands.raw() : _uploadCommands.raw();
+    }
+    UploadRingBuffer* Renderer::getUploadBuffer() {
+        auto* data = recording(); return data ? &data->upload : &_perEntityCB;
+    }
+    EngineVariableBuffer* Renderer::getEngineVariableBuffer() {
+        auto* data = recording(); return data ? &data->engine : &_engineVariableBuffer;
+    }
+    EntityVariableBuffer* Renderer::getEntityVariableBuffer() {
+        auto* data = recording(); return data ? &data->entity : &_entityVariableBuffer;
     }
 
     void Renderer::waitForGpu()
@@ -88,9 +102,10 @@ namespace csyren::render
     }
 
     //TODO CHANGE API
-    bool Renderer::bindMaterial(ResourceManager& rm, MaterialHandle mathandle,const VertexLayout& vertexLayout)
+    bool Renderer::bindMaterial(const ResourceManager& rm, MaterialHandle mathandle,const VertexLayout& vertexLayout)
     {
-        CommandList& cmdList = *_commands;
+        auto* data = recording();
+        CommandList& cmdList = data ? data->commands : _uploadCommands;
         auto* material = rm.getMaterial(mathandle);
         if (!material)
             return false;
@@ -104,7 +119,9 @@ namespace csyren::render
         cmdList.setPipelineState(pso);
         cmdList.setRootSignature(shader->getRootSignature());
 
-        if (!_parameterBinder.updateMaterialBuffer(_device.Get(), cmdList.raw(), &rm, _perEntityCB, mathandle))
+        auto& binder = data ? data->binder : _parameterBinder;
+        auto& upload = data ? data->upload : _perEntityCB;
+        if (!binder.updateMaterialBuffer(_device.Get(), cmdList.raw(), &rm, upload, mathandle))
         {
             return false;
         }
@@ -112,7 +129,7 @@ namespace csyren::render
         auto& textures = material->textures();
         for (const auto& [name, handle] : textures)
         {
-            Texture* tex = rm.getTexture(handle);
+            const Texture* tex = rm.getTexture(handle);
             if (!tex || tex->status() != LoadStatus::Loaded) continue;
 
             auto gpuHandle = tex->getGpuSrvHandle();
@@ -121,7 +138,7 @@ namespace csyren::render
             cmdList.setGraphicsRootDescriptorTable(rootIndex, gpuHandle);
         }
 
-        if (!_parameterBinder.updateFrameBuffer(cmdList.raw(), _engineVariableBuffer, shader->getSemanticBuffer(details::CBufferUpdateType::Pass), _perEntityCB))
+        if (!binder.updateFrameBuffer(cmdList.raw(), *getEngineVariableBuffer(), shader->getSemanticBuffer(details::CBufferUpdateType::Pass), upload))
         {
             return false;
         }
@@ -133,21 +150,25 @@ namespace csyren::render
 
     bool Renderer::bindEntity(const SemanticBufferLayout* layout)
     {
-        CommandList& cmdList = *_commands;
-        return _parameterBinder.updateEntityBuffer(cmdList.raw(), _entityVariableBuffer, layout, _perEntityCB);
+        auto* data = recording();
+        CommandList& cmdList = data ? data->commands : _uploadCommands;
+        auto& binder = data ? data->binder : _parameterBinder;
+        return binder.updateEntityBuffer(cmdList.raw(), *getEntityVariableBuffer(), layout, *getUploadBuffer());
     }
 
 
     void Renderer::beginResourceUpload()
     {
-        CommandList& cmdList = *_commands;
+        auto* data = recording();
+        CommandList& cmdList = data ? data->commands : _uploadCommands;
         cmdList.reset();
     }
 
 
     void Renderer::endResourceUpload()
     {
-        CommandList& cmdList = *_commands;
+        auto* data = recording();
+        CommandList& cmdList = data ? data->commands : _uploadCommands;
         cmdList.close();
         _mainQueue.addCommands(&cmdList);
         _mainQueue.execute();

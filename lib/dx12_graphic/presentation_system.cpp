@@ -2,6 +2,8 @@
 #include "presentation_system.h"
 #include "frame_prepare_system.h"
 #include "presentation_state.h"
+#include "frame_graph_backend.h"
+#include "core/system_manager.h"
 #include "resource_manager.h"
 #include "core/scene.h"
 #include "core/time.h"
@@ -14,6 +16,23 @@
 
 namespace csyren::render
 {
+    core::TaskDescription FrameAcquireSystem::describe() const {
+        core::TaskDescription d; d.phase = "acquire"; d.affinity = core::TaskAffinity::MainThread;
+        d.read<core::Camera>().read<core::Transform>().readResource<core::Time>();
+        d.writeResource<Renderer>().writeResource<ResourceManager>().writeResource<DescriptorManager>();
+        d.writeResource<details::FrameRecording>({}, "ready"); return d;
+    }
+    core::TaskDescription FramePrepareSystem::describe() const {
+        core::TaskDescription d; d.phase = "prepare";
+        d.gpu("frame.color", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
+        d.gpu("frame.depth", D3D12_RESOURCE_STATE_DEPTH_WRITE, core::AccessMode::Write);
+        return d;
+    }
+    core::TaskDescription PresentationSystem::describe() const {
+        core::TaskDescription d; d.phase = "submit"; d.affinity = core::TaskAffinity::MainThread;
+        d.writeResource<Renderer>().writeResource<details::FrameRecording>("ready", "submitted"); return d;
+    }
+
     namespace
     {
         void require(bool success, const char* message)
@@ -49,18 +68,24 @@ namespace csyren::render
         }
     }
 
+    void FrameAcquireSystem::init() {
+        _state = acquireState();
+        if (!_state->graph) _state->graph = std::make_shared<details::FrameGraphBackend>(*_state);
+        core::Services::get<core::SystemManager>()->taskBackend(_state->graph);
+    }
+    void FrameAcquireSystem::shutdown() { _state.reset(); }
     void FramePrepareSystem::init() { _state = acquireState(); }
     void PresentationSystem::init() { _state = acquireState(); }
     void FramePrepareSystem::shutdown() { _state.reset(); }
     void PresentationSystem::shutdown() { _state.reset(); }
 
-    void FramePrepareSystem::updateCamera(float (&background)[4])
+    void FrameAcquireSystem::updateCamera(float (&background)[4])
     {
         auto* renderer = core::Services::get<Renderer>();
         auto* variables = renderer->getEngineVariableBuffer();
-        const auto time = core::Services::get<core::Time>()->totalTime();
+        const auto time = core::Services::get<const core::Time>()->totalTime();
         variables->totalTime = time;
-        for (auto [id, camera, transform] : core::Services::get<core::Scene>()->view<core::Camera, core::Transform>())
+        for (auto [id, camera, transform] : core::Services::get<core::Scene>()->view<const core::Camera, const core::Transform>())
         {
             std::copy(&camera.background.x, &camera.background.x + 4, background);
             using namespace DirectX;
@@ -80,14 +105,12 @@ namespace csyren::render
         }
     }
 
-    void FramePrepareSystem::onFrame()
+    void FrameAcquireSystem::execute()
     {
         auto& context = *_state;
         auto* renderer = core::Services::get<Renderer>();
         context.commandIndex = (context.commandIndex + 1) % Renderer::FramesInFlight;
-        auto& commands = context.commands[context.commandIndex];
-        // Allocator/upload storage and color textures have independent lifetimes.
-        renderer->queue().syncAwaitComplete(commands.lastFenceValue());
+        context.graph->acquire();
         UINT target = details::PresentationState::FrameCount;
         {
             std::lock_guard lock(context.mutex);
@@ -123,38 +146,28 @@ namespace csyren::render
         if (frame.color && !std::equal(background, background + 4, frame.clearColor))
             renderer->queue().syncAwaitComplete(frame.renderFence);
         context.prepareTarget(frame, background);
-        commands.reset();
-        renderer->setFrameContext(&commands, context.commandIndex);
+        std::copy(background, background + 4, context.background);
         core::Services::get<ResourceManager>()->update();
-        transition(commands, frame.color.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
-        commands.setRenderTarget(0, frame.rtv.cpu);
-        commands.setDepthStencil(context.dsv.cpu);
-        commands.submitRenderTargets();
-        commands.clearDepthStencil(0.0f, 0);
-        commands.setViewport({ 0, 0, static_cast<float>(context.width), static_cast<float>(context.height), 0, 1 });
-        commands.setScissorRect({ 0, 0, static_cast<LONG>(context.width), static_cast<LONG>(context.height) });
-        ID3D12DescriptorHeap* heaps[]{ core::Services::get<DescriptorManager>()->shaderHeap() };
-        commands.raw()->SetDescriptorHeaps(1, heaps);
-        commands.clearRenderTarget(0, background);
     }
 
-    void PresentationSystem::onFrame()
+    void FramePrepareSystem::execute() {
+        auto* commands = core::Services::get<Renderer>()->commandList();
+        commands->ClearDepthStencilView(_state->dsv.cpu, D3D12_CLEAR_FLAG_DEPTH, 0.0f, 0, 0, nullptr);
+        commands->ClearRenderTargetView(_state->frames[_state->frameIndex].rtv.cpu, _state->background, 0, nullptr);
+    }
+
+    void PresentationSystem::execute()
     {
         auto& context = *_state;
         auto* renderer = core::Services::get<Renderer>();
         auto& frame = context.frames[context.frameIndex];
-        auto& commands = context.commands[context.commandIndex];
-        transition(commands, frame.color.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_SOURCE);
-        commands.close();
-        renderer->queue().addCommands(&commands);
-        renderer->queue().execute();
+        const auto renderFence = context.graph->submit();
         {
             std::lock_guard lock(context.mutex);
             frame.sequence = ++context.sequence;
-            frame.renderFence = commands.lastFenceValue();
+            frame.renderFence = renderFence;
             frame.recording = false;
         }
-        renderer->releaseFrameContext();
         context.changed.notify_one();
     }
 

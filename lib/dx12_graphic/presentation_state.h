@@ -10,6 +10,7 @@
 
 namespace csyren::render::details
 {
+    class FrameGraphBackend;
     // Backend implementation detail, owned jointly by the two frame systems.
     struct PresentationState
     {
@@ -33,6 +34,8 @@ namespace csyren::render::details
         void runOutput() noexcept;
         void pollOutput();
 
+        std::shared_ptr<FrameGraphBackend> graph;
+        float background[4]{0.1f, 0.1f, 0.3f, 1.0f};
         std::mutex mutex;
         std::condition_variable changed;
         std::thread outputThread;

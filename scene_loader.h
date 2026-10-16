@@ -10,6 +10,12 @@ namespace csyren
 	class SceneLoaderSystem : public core::System
 	{
 	public:
+        core::TaskDescription describe() const override {
+            core::TaskDescription d; d.phase = "scene"; d.affinity = core::TaskAffinity::MainThread;
+            d.exclusiveScene = true; d.dynamicResources = true; d.structuralChanges = true;
+            d.writeResource<Serializer>(); return d;
+        }
+
         void init() override
         {
             using ctx = core::Services;
@@ -39,7 +45,7 @@ namespace csyren
         }
 
 
-        void update() override
+        void execute() override
         {
             using ctx = core::Services;
             auto scene = ctx::get<core::Scene>();

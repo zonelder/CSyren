@@ -39,6 +39,12 @@ namespace
 
 namespace csyren::physics
 {
+    core::TaskDescription PhysicsSystem::describe() const {
+        core::TaskDescription d; d.phase = "simulation";
+        d.write<core::Transform>().write<RigidBody>().writeResource<PhysicsEngine>().readResource<core::Time>();
+        return d;
+    }
+
     namespace Layers
     {
         static constexpr JPH::ObjectLayer NON_MOVING = 0;
@@ -473,12 +479,12 @@ namespace csyren::physics
         physic->_pImpl->initialize();
     }
 
-    void csyren::physics::PhysicsSystem::update()
+    void csyren::physics::PhysicsSystem::execute()
     {
         using ctx = core::Services;
         auto physic = ctx::get<PhysicsEngine>();
         auto impl = physic->_pImpl;
-        auto time = ctx::get<core::Time>();
+        auto time = ctx::get<const core::Time>();
         auto deltaTime = time->deltaTime();
 
         impl->pushTransform();

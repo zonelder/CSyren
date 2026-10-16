@@ -2,6 +2,7 @@
 #include <d3d12.h>
 #include <wrl.h>
 #include <unordered_map>
+#include <mutex>
 
 #include "material.h" // Äëÿ MaterialStateDesc
 #include "shader.h"
@@ -41,11 +42,12 @@ namespace csyren::render::details
 
 		void init();
 
-		ID3D12PipelineState* try_get(GraphicShader* shader, const MaterialStateDesc& desc);
-		ID3D12PipelineState* get(ShaderHandle sh,GraphicShader* shader, const MaterialStateDesc& desc,const VertexLayout& vertexLayout);
+		ID3D12PipelineState* try_get(const GraphicShader* shader, const MaterialStateDesc& desc);
+		ID3D12PipelineState* get(ShaderHandle sh,const GraphicShader* shader, const MaterialStateDesc& desc,const VertexLayout& vertexLayout);
 
 	private:
-		ID3D12Device* _device;
+        std::mutex _mutex;
+        ID3D12Device* _device;
 		std::unordered_map< PSOKey, Microsoft::WRL::ComPtr<ID3D12PipelineState>, PSOKeyHasher > _psoCache;
 	};
 }

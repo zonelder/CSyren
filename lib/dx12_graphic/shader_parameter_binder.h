@@ -78,7 +78,7 @@ namespace csyren::render
         using BufferHash = size_t;
     public:
         
-        bool updateMaterialBuffer(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, ResourceManager* rm, UploadRingBuffer& ringBuffer, MaterialHandle material);
+        bool updateMaterialBuffer(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, const ResourceManager* rm, UploadRingBuffer& ringBuffer, MaterialHandle material);
 
         bool updateFrameBuffer( ID3D12GraphicsCommandList* cmdList,const EngineVariableBuffer& buffer,const SemanticBufferLayout* layout, UploadRingBuffer& ringBuffer);
         bool updateEntityBuffer(ID3D12GraphicsCommandList* cmdList,const EntityVariableBuffer& buffer,const SemanticBufferLayout* layout, UploadRingBuffer& ringBuffer);

@@ -1,4 +1,8 @@
+#include "dx12_graphic/gpu_resources.h"
 #include "application.h"
+#include "core/system_manager.h"
+#include "core/window.h"
+#include "serializer.h"
 
 #include <cassert>
 #include <format>
@@ -107,11 +111,15 @@ namespace csyren
 		editor::EditorRegistry::resolveAll();
 		core::details::TimeHandler timeHandler;
 
-		core::Entity::ID currentCameraEntt;
+
 
 		core::details::ServiceRegistry::create<core::Window>(1200, 786, L"csyren engine");
 		core::details::ServiceRegistry::create<core::Time>();
-		core::details::ServiceRegistry::create<core::CameraContextService>([&currentCameraEntt]() { return currentCameraEntt; });
+		core::details::ServiceRegistry::create<core::CameraContextService>([]() {
+            auto view = core::Services::get<core::Scene>()->view<const core::Camera, const core::Transform>();
+            auto first = view.begin();
+            return first != view.end() ? std::get<0>(*first) : core::Entity::invalidID;
+        });
 		core::details::ServiceRegistry::create<core::EventBus2>();
 		auto bus = core::Services::get<core::EventBus2>();
 		core::details::ServiceRegistry::create<core::Scene>(bus);
@@ -121,6 +129,7 @@ namespace csyren
 		core::details::ServiceRegistry::create<core::SystemManager>();
 		core::details::ServiceRegistry::create<render::DescriptorManager>();
 		core::details::ServiceRegistry::create<render::Renderer>();
+        core::details::ServiceRegistry::create<render::GpuResources>();
 		core::details::ServiceRegistry::create<render::ResourceManager>();
 		core::details::ServiceRegistry::create<render::details::PSOFactory>();
 		core::details::ServiceRegistry::create<editor::EditorSelection>();
@@ -171,13 +180,14 @@ namespace csyren
 				DispatchMessage(&msg);
 			}
 
-			systems->update();
-			auto [mainCameraID,camera,cameraTransform] = *(scene->view<Camera,Transform>().begin());//only first camera accepted
-			currentCameraEntt = mainCameraID;
-			systems->onFrame();
-
-			scene->flush();
-			bus->commit_batch();
+            try { systems->execute(); }
+            catch (const std::exception& error) {
+                log::error("FrameGraph execution failed: {}", error.what());
+                systems->shutdown();
+                core::details::ServiceRegistry::shutdownAll();
+                log::shutdown();
+                return 1;
+            }
 		}
 	}
 

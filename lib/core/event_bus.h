@@ -90,7 +90,9 @@ namespace csyren::core
 				uint64_t id;
 				Callback_t<Event_t> callback;
 				std::optional<EventMarker> marker;
-				bool active{ true };
+                std::atomic<bool> active{true};
+                Subscriber(uint64_t id, Callback_t<Event_t>&& callback, std::optional<EventMarker> marker)
+                    : id(id), callback(std::move(callback)), marker(marker) {}
 			};
 
 			struct EventInstance {
@@ -98,7 +100,7 @@ namespace csyren::core
 				std::optional<EventMarker> marker;
 			};
 
-			std::vector<Subscriber> subscribers_;
+			std::vector<std::shared_ptr<Subscriber>> subscribers_;
 			mutable std::shared_mutex subscribers_mutex_;
 
 			std::vector<EventInstance> pending_events_;
@@ -118,18 +120,20 @@ namespace csyren::core
 					if (pending_events_.empty()) return;
 					events_to_process.swap(pending_events_);
 				}
-				for (const auto& instance : events_to_process) 
+                std::vector<std::shared_ptr<Subscriber>> subscribers;
+                { std::shared_lock lock(subscribers_mutex_); subscribers = subscribers_; }
+                for (const auto& instance : events_to_process)
 				{
-					for (auto& sub : subscribers_) 
+					for (const auto& sub : subscribers)
 					{ // Iterate by reference
 						// Check for active status and marker match
-						if (sub.active) 
+						if (sub->active)
 						{
-							if (instance.marker.has_value() && sub.marker.has_value() && instance.marker != sub.marker)
+							if (instance.marker.has_value() && sub->marker.has_value() && instance.marker != sub->marker)
 							{
 								continue;
 							}
-							sub.callback(const_cast<Event_t&>(instance.event));
+							sub->callback(const_cast<Event_t&>(instance.event));
 						}
 					}
 				}
@@ -138,24 +142,24 @@ namespace csyren::core
 			void unsubscribe(uint64_t sub_id) override {
 				std::unique_lock lock(subscribers_mutex_);
 				auto it = std::find_if(subscribers_.begin(), subscribers_.end(),
-					[sub_id](const Subscriber& s) { return s.id == sub_id; });
+					[sub_id](const auto& s) { return s->id == sub_id; });
 				if (it != subscribers_.end()) 
 				{
-					it->active = false;
+					(*it)->active = false;
 				}
 			}
 
 			uint64_t subscribe(Callback_t<Event_t>&& callback, std::optional<EventMarker> marker) {
 				const uint64_t sub_id = next_subscriber_id_++;
 				std::unique_lock lock(subscribers_mutex_);
-				subscribers_.push_back({ sub_id, std::move(callback), marker });
+				subscribers_.push_back(std::make_shared<Subscriber>(sub_id, std::move(callback), marker));
 				return sub_id;
 			}
 
 			void cleanup_subscribers() override 
 			{
 				std::unique_lock lock(subscribers_mutex_);
-				std::erase_if(subscribers_, [](const Subscriber& s) { return !s.active; });
+				std::erase_if(subscribers_, [](const auto& s) { return !s->active; });
 			}
 		};
 	private:
@@ -164,16 +168,18 @@ namespace csyren::core
 		std::atomic<uint64_t> next_publisher_id_{ 1 };
 		static inline std::atomic<uint64_t> next_subscriber_id_{ 1 };
 
+        std::vector<EventDataWrapper*> snapshot_types() {
+            std::lock_guard lock(_dataMutex);
+            std::vector<EventDataWrapper*> snapshot;
+            for (auto& data : event_data_) if (data) snapshot.push_back(data.get());
+            return snapshot;
+        }
 		template<typename Event_t>
 		EventData<Event_t>& get_typed_data() {
 			const uint64_t type_id = reflection::EventFamily::getID<Event_t>();
-			if (!event_data_[type_id]) {
-				static std::mutex creation_mutex;
-				std::lock_guard lock(creation_mutex);
-				if (!event_data_[type_id]) {
-					event_data_[type_id] = std::make_unique<EventData<Event_t>>();
-				}
-			}
+            std::lock_guard lock(_dataMutex);
+            if (type_id >= event_data_.size()) throw std::out_of_range("Too many event types");
+            if (!event_data_[type_id]) event_data_[type_id] = std::make_unique<EventData<Event_t>>();
 			return static_cast<EventData<Event_t>&>(*event_data_[type_id]);
 		}
 
@@ -223,7 +229,7 @@ namespace csyren::core
 			if (!token.valid()) return;
 			// This part is inefficient as it iterates all event types.
 			// A better design would map token to event type. For now, it works.
-			for (auto& data_ptr : event_data_) {
+			for (auto* data_ptr : snapshot_types()) {
 				if (data_ptr) {
 					data_ptr->unsubscribe(token._data);
 				}
@@ -243,13 +249,13 @@ namespace csyren::core
 		void commit_batch() 
 		{
 			//1.dispatch all pending events
-			for (auto& data_ptr : event_data_) {
+			for (auto* data_ptr : snapshot_types()) {
 				if (data_ptr) {
 					data_ptr->commit();
 				}
 			}
 
-			for (auto& data_ptr : event_data_) 
+			for (auto* data_ptr : snapshot_types())
 			{
 				if (data_ptr) {
 					data_ptr->cleanup_subscribers();
@@ -287,7 +293,8 @@ namespace csyren::core
 			return PublishToken(pub_id);
 		}
 	private:
-		bool _isCommitState{ false };
+        std::mutex _dataMutex;
+        bool _isCommitState{ false };
 	};
    
 }

@@ -8,8 +8,10 @@ namespace csyren::render
     class PresentationSystem : public core::System
     {
     public:
+        core::TaskDescription describe() const override;
+
         void init() override;
-        void onFrame() override;
+        void execute() override;
         void shutdown() override;
     private:
         std::shared_ptr<details::PresentationState> _state;

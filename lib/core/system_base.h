@@ -5,18 +5,18 @@
 #include <memory>
 #include <unordered_map>
 #include "cstdmf/log.h"
+#include "task_description.h"
 
 namespace csyren::core
 {
 	class System
 	{
 	public:
-		virtual void init() {}
-
-		virtual void update(){}
-		virtual void onFrame() {}
-
-		virtual void shutdown(){}
+        virtual ~System() = default;
+        virtual void init() {}
+        virtual TaskDescription describe() const = 0;
+        virtual void execute() {}
+        virtual void shutdown() {}
 
 	private:
 
@@ -38,11 +38,11 @@ namespace csyren::core
 
 			void registerSystem(std::string_view name, SystemCreator creator) 
 			{
-				_creators[name] = creator;
+				_creators[std::string(name)] = std::move(creator);
 			}
 
 			std::shared_ptr<System> create(std::string_view name) {
-				auto it = _creators.find(name);
+				auto it = _creators.find(std::string(name));
 				if (it != _creators.end()) {
 					return it->second();
 				}
@@ -52,7 +52,7 @@ namespace csyren::core
 			}
 
 		private:
-			std::unordered_map<std::string_view, SystemCreator> _creators;
+			std::unordered_map<std::string, SystemCreator> _creators;
 		};
 	}
 }

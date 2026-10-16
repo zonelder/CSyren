@@ -20,23 +20,31 @@ namespace csyren
     class MeshRenderSystem : public core::System
     {
     public:
+        core::TaskDescription describe() const override {
+            core::TaskDescription d; d.phase = "render";
+            d.read<core::Transform>().read<MeshFilter>().read<MeshRenderer>();
+            d.readResource<render::ResourceManager>();
+            d.gpu("frame.color", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
+            d.gpu("frame.depth", D3D12_RESOURCE_STATE_DEPTH_WRITE, core::AccessMode::Write); return d;
+        }
+
         explicit MeshRenderSystem() = default;
 
-        void onFrame() override
+        void execute() override
         {
             using ctx = core::Services;
             auto render = ctx::get<render::Renderer>();
             auto scene = ctx::get<core::Scene>();
-            auto& resources = *ctx::get<render::ResourceManager>();
+            auto& resources = *ctx::get<const render::ResourceManager>();
 
-            struct EntityData { Transform* tr; Entity::ID id; };
+            struct EntityData { const Transform* tr; Entity::ID id; };
             using MeshGroups = std::unordered_map<render::MeshHandle,std::vector<EntityData>>;
             using MaterialGroups = std::unordered_map<render::MaterialHandle, MeshGroups>;
 
 
             MaterialGroups batches;
             auto entityParams = render->getEntityVariableBuffer();
-            for (auto [entt, tr, mf, mr] : scene->view<Transform, MeshFilter, MeshRenderer>())
+            for (auto [entt, tr, mf, mr] : scene->view<const Transform, const MeshFilter, const MeshRenderer>())
             {
                 batches[mr.material][mf.mesh].push_back({ &tr,entt });
             }

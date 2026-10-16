@@ -18,20 +18,25 @@ namespace csyren
     class DebugRotatorSystem : public core::System
     {
     public:
+        core::TaskDescription describe() const override {
+            core::TaskDescription d; d.phase = "simulation";
+            d.read<DebugRotator>().write<core::Transform>().readResource<core::Time>(); return d;
+        }
+
         explicit DebugRotatorSystem() = default;
 
 #pragma optimize("",off)
-        void update() override
+        void execute() override
         {
             using ctx = core::Services;
-            auto time = ctx::get<core::Time>();
+            auto time = ctx::get<const core::Time>();
             auto scene = ctx::get<core::Scene>();
             float dt = time->deltaTime();
             float totalTime = time->totalTime();
             constexpr float waveSpeed = 2.0f;
             constexpr float waveLength = 3.0f;   
             constexpr float amplitude = 0.1f;    
-            scene->view<Transform, DebugRotator>().each([&](Entity::ID entt, Transform& tr, DebugRotator& rot)
+            scene->view<Transform, const DebugRotator>().each([&](Entity::ID entt, Transform& tr, const DebugRotator& rot)
                 {
                     tr.rotation *= math::Quaternion(DirectX::XMQuaternionRotationRollPitchYaw(rot.speed.x * dt, rot.speed.y * dt, rot.speed.z * dt));
 

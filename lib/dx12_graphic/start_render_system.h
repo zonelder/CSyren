@@ -32,6 +32,15 @@ namespace csyren::editor
 	class EditorSystem : public core::System
 	{
 	public:
+        core::TaskDescription describe() const override {
+            core::TaskDescription d; d.phase = "render"; d.affinity = core::TaskAffinity::MainThread;
+            d.exclusiveScene = true; d.dynamicResources = true; d.structuralChanges = true;
+            d.after = {"MeshRenderSystem"};
+            d.writeResource<render::ResourceManager>();
+            d.gpu("frame.color", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
+            d.gpu("frame.depth", D3D12_RESOURCE_STATE_DEPTH_WRITE, core::AccessMode::Write); return d;
+        }
+
 
 		void init() override
 		{
@@ -112,7 +121,7 @@ namespace csyren::editor
 			_windows.push_back(std::make_unique<StatisticWindow>());
 			ImGui_ImplDX12_Init(&init_info);
 		}
-		void onFrame() override
+		void execute() override
 		{
 			ImGui_ImplDX12_NewFrame();
 			ImGui_ImplWin32_NewFrame();

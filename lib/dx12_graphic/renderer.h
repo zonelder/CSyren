@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <thread>
 
 #include "dx_main.h"
 
@@ -32,6 +33,7 @@
 
 namespace csyren::render
 {
+    namespace details { class FrameGraphBackend; }
 	//class ResourceManager;
 
 	struct  alignas(16) PerFrameBuffer
@@ -65,15 +67,15 @@ namespace csyren::render
 		void beginResourceUpload();
 		void endResourceUpload();
 
-		ID3D12GraphicsCommandList* commandList() const noexcept { return _commands->raw(); }
+		ID3D12GraphicsCommandList* commandList() const;
 		ID3D12Device* device() const noexcept { return _device.Get(); }
 
-		UploadRingBuffer* getUploadBuffer() noexcept { return &_perEntityCB; };
+		UploadRingBuffer* getUploadBuffer();
 
-		EngineVariableBuffer* getEngineVariableBuffer() noexcept { return &_engineVariableBuffer; };
-		EntityVariableBuffer* getEntityVariableBuffer() noexcept { return &_entityVariableBuffer; };
+		EngineVariableBuffer* getEngineVariableBuffer();
+		EntityVariableBuffer* getEntityVariableBuffer();
 
-		bool bindMaterial(ResourceManager& rm, MaterialHandle material,const VertexLayout& vertexLayout);
+		bool bindMaterial(const ResourceManager& rm, MaterialHandle material,const VertexLayout& vertexLayout);
 
 		bool bindEntity(const SemanticBufferLayout* layout);
 
@@ -82,11 +84,17 @@ namespace csyren::render
 			return _mainQueue;
 		}
 	private:
-        friend class FramePrepareSystem;
-        friend class PresentationSystem;
-		// The frame system owns recording contexts and output resources.
-		void setFrameContext(CommandList* commands, UINT uploadSlot);
-		void releaseFrameContext() noexcept { _commands = &_uploadCommands; }
+        friend class details::FrameGraphBackend;
+        struct RecordingData {
+            CommandList commands;
+            UploadRingBuffer upload;
+            EngineVariableBuffer engine;
+            EntityVariableBuffer entity;
+            ShaderParameterBinder binder;
+        };
+        struct RecordingBinding { Renderer* renderer; RecordingData* data; };
+        inline static thread_local RecordingBinding* _recording = nullptr;
+        RecordingData* recording() const;
 		void waitForGpu();
 		void enableDebugLayer();
 		void createDevice();
@@ -94,7 +102,7 @@ namespace csyren::render
 
         details::ComPtr<ID3D12Device> _device;
         CommandList _uploadCommands;
-        CommandList* _commands{ &_uploadCommands };
+        std::thread::id _ownerThread;
 		RenderQueue								_mainQueue;
 
 		UploadRingBuffer						_perEntityCB;

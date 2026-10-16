@@ -13,15 +13,20 @@ namespace csyren::physics
 	class SpringJoinSystem : public core::System
 	{
 	public:
-		void update() override
+        core::TaskDescription describe() const override {
+            core::TaskDescription d; d.phase = "simulation";
+            d.read<core::Transform>().read<RigidBody>().read<SpringJoin>().writeResource<PhysicsEngine>(); return d;
+        }
+
+		void execute() override
 		{
 			using ctx = core::Services;
 			auto physicEngine = ctx::get<PhysicsEngine>();
 			auto scene = ctx::get<core::Scene>();
-			auto view = scene->view<core::Transform,RigidBody, SpringJoin>();
+			auto view = scene->view<const core::Transform,const RigidBody, const SpringJoin>();
 			for (auto [ent,trA, rb, join] : view )
 			{
-				auto pTrB = scene->getComponent< core::Transform>(join.connectedEntity);
+				auto pTrB = scene->getComponent<const core::Transform>(join.connectedEntity);
 				if (!pTrB) continue;
 				auto& trB = *pTrB;
 				auto posA = trA.position + join.anchor;

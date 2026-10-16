@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <algorithm>
 #include <memory>
 #include <type_traits>
 #include <functional>
@@ -8,6 +9,7 @@
 #include <unordered_map>
 #include "cstdmf/assert_helpler.h"
 #include "family_generator.h"
+#include "task_description.h"
 
 namespace csyren::core::reflection
 {
@@ -19,6 +21,7 @@ namespace csyren::core
 {
     // Forward declaration
     namespace details { class ServiceRegistry; }
+    class Scene;
 
     // ============================================================
     // ServiceLocator - non-intrusive access to services
@@ -27,11 +30,21 @@ namespace csyren::core
     {
         friend details::ServiceRegistry;
     public:
+        class TaskScope {
+        public:
+            TaskScope() : _previous(_activeTask) { _activeTask = nullptr; }
+            explicit TaskScope(const TaskDescription& description) : _previous(_activeTask) { _activeTask = &description; }
+            ~TaskScope() { _activeTask = _previous; }
+            TaskScope(const TaskScope&) = delete;
+        private:
+            const TaskDescription* _previous;
+        };
         template<typename T>
         static T* get()
         {
+            requireAccess<T>();
             auto it = _services.find(reflection::ServiceFamily::getID<std::remove_const_t<T>>());
-            CS_DEBUG_ASSERT(it != _services.end() && "Service not registered.");
+            if (it == _services.end()) throw std::logic_error("Service not registered: " + std::string(typeid(T).name()));
             return reinterpret_cast<T*>(it->second);
         }
 
@@ -42,6 +55,15 @@ namespace csyren::core
         }
 
     private:
+        template<class T> static void requireAccess() {
+            if (!_activeTask || _activeTask->dynamicResources || std::is_same_v<std::remove_const_t<T>, Scene>) return;
+            const auto type = std::type_index(typeid(std::remove_const_t<T>));
+            if (std::find(_activeTask->localResources.begin(), _activeTask->localResources.end(), type) != _activeTask->localResources.end()) return;
+            for (const auto& access : _activeTask->accesses)
+                if (!access.component && access.type == type && (std::is_const_v<T> || access.mode == AccessMode::Write)) return;
+            throw std::logic_error("Undeclared resource access in system: " + std::string(type.name()));
+        }
+        inline static thread_local const TaskDescription* _activeTask = nullptr;
         template<typename T>
         static void add(T* service)
         {

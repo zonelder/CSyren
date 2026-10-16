@@ -139,6 +139,8 @@
     <ClInclude Include="meta_any.h" />
     <ClInclude Include="mouse_device.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="gpu_execution_plan.h" />
+
     <ClInclude Include="keyboard_device.h" />
     <ClInclude Include="renderer.h" />
     <ClInclude Include="scene.h" />
@@ -146,6 +148,9 @@
     <ClInclude Include="serialize_common.h" />
     <ClInclude Include="services.h" />
     <ClInclude Include="system_base.h" />
+    <ClInclude Include="frame_graph.h" />
+    <ClInclude Include="task_description.h" />
+    <ClInclude Include="scene_events_system.h" />
     <ClInclude Include="system_manager.h" />
     <ClInclude Include="time.h" />
     <ClInclude Include="transform.h" />
@@ -153,6 +158,9 @@
     <ClInclude Include="win_exeption.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\third_party\enkiTS\src\TaskScheduler.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="camera.cpp" />
     <ClCompile Include="dispatch_handle.cpp" />
     <ClCompile Include="input_dispatch_system.cpp" />

@@ -18,6 +18,10 @@ namespace csyren
     class CubeShooterSystem : public core::System
     {
     public:
+        core::TaskDescription describe() const override {
+            core::TaskDescription d; d.phase = "input"; return d;
+        }
+
         explicit CubeShooterSystem() = default;
 
         void init() override

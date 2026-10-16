@@ -1,24 +1,7 @@
 #pragma once
 
 
-#include "core/window.h"
-#include "core/scene.h"
-#include "core/system_manager.h"
-#include "core/time.h"
 #include "cstdmf/file_system.h"
-
-
-#include "physics/physic_system.h"
-
-#include "serializer.h"
-
-#define DX12_RENDER
-#ifdef DX12_RENDER
-#include "dx12_graphic/forward_decl.h"
-#include "dx12_graphic/renderer.h"
-#else
-static_assert(false && "none render pipeline was added.\n");
-#endif
 
 namespace csyren
 {

@@ -94,6 +94,8 @@ namespace csyren::render
             return _storage.get(handle.id);
         }
 
+        const TResource* get(handle_type handle) const { return _storage.get(handle.id); }
+
         handle_type find(const std::string& name)
         {
             if (auto it = _nameToHandleMap.find(name); it != _nameToHandleMap.end())
@@ -252,6 +254,12 @@ namespace csyren::render
         Material* getMaterial(MaterialHandle handle) { return _materialStorage.get(handle); }
         GraphicShader* getShader(ShaderHandle handle) { return _shaderStorage.get(handle); }
         ComputeShader* getComputeShader(ComputeShaderHandle handle) { return _computeShaderStorage.get(handle); }
+
+        const Mesh* getMesh(MeshHandle handle) const { return _meshStorage.get(handle); }
+        const Texture* getTexture(TextureHandle handle) const { return _textureStorage.get(handle); }
+        const Material* getMaterial(MaterialHandle handle) const { return _materialStorage.get(handle); }
+        const GraphicShader* getShader(ShaderHandle handle) const { return _shaderStorage.get(handle); }
+        const ComputeShader* getComputeShader(ComputeShaderHandle handle) const { return _computeShaderStorage.get(handle); }
 
         // --- Get resource name by handle ---
         const std::string& getMeshName(MeshHandle handle) const { return _meshStorage.getName(handle); }

@@ -12,8 +12,9 @@ namespace csyren::render::details
     {
         _device =  core::Services::get<Renderer>()->device();
     }
-    ID3D12PipelineState* PSOFactory::get(ShaderHandle sh,GraphicShader* shader, const MaterialStateDesc& states,const VertexLayout& vertexLayout)
+    ID3D12PipelineState* PSOFactory::get(ShaderHandle sh,const GraphicShader* shader, const MaterialStateDesc& states,const VertexLayout& vertexLayout)
 	{
+        std::lock_guard lock(_mutex);
         PSOKey key{ sh, states,vertexLayout.getHash()};
 
         auto it = _psoCache.find(key);

@@ -82,6 +82,17 @@ namespace csyren
         if (!data.contains("systems")) return false;
 
         systems.shutdown();
+        if (!data.contains("phases")) {
+            log::error("System configuration must declare its phase dependency graph");
+            return false;
+        }
+        for (const auto& phase : data["phases"]) {
+            core::PhaseDescription description;
+            phase.at("name").get_to(description.name);
+            description.after = phase.value("after", std::vector<std::string>{});
+            description.before = phase.value("before", std::vector<std::string>{});
+            systems.phase(std::move(description));
+        }
         const auto& sysJsons = data["systems"];
         systems.reserve(sysJsons.size());
         for (const auto& system : sysJsons)
@@ -108,6 +119,9 @@ namespace csyren
 
         }
         configJson["systems"] = entitiesArray;
+        configJson["phases"] = json::array();
+        for (const auto& phase : systems.phases())
+            configJson["phases"].push_back({{"name", phase.name}, {"after", phase.after}, {"before", phase.before}});
 
         try
         {
