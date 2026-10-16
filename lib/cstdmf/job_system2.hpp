@@ -185,7 +185,6 @@ namespace csyren::cstdmf::multicore
 		// wait(finisherHandle), then clear(). Nested work must be covered as well.
 		// https://github.com/dougbinks/enkiTS/issues/86#issuecomment-1487335696
 		// https://github.com/dougbinks/enkiTS/issues/86#issuecomment-1487526648
-		// See docs/job_system_wait_all.md for the reproduction and full contract.
 		// clear() only releases completed jobs; it does not wait.
 		void clear()
 		{
