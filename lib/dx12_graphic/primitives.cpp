@@ -25,187 +25,13 @@ namespace csyren::render
         constexpr char QUAD_MESH_NAME[]             ="__primitive_quad__";
         constexpr char CUBE_MESH_NAME[]             ="__primitive_cube__";
         constexpr char SPHERE_MESH_NAME[]           = "__primitive_sphere__";
-        
-
-        //TODO create basic shaders file
-        const char* g_primitiveShaderCode = R"(
-            
-            //@update frame
-            cbuffer perFrame
-            {
-                //@semantic ViewProjection
-               matrix viewProjection;
-            }
-
-            //@update entity
-            cbuffer perEntity
-            {
-                //@semantic World
-                matrix world;
-            }
-
-            //@update material
-            cbuffer material
-            {
-                //@editable 
-                float4 tint;
-            }
-
-            struct VS_Input
-            {
-                float3 position : POSITION;
-            };
-
-            struct PS_Input
-            {
-                float4 position : SV_POSITION;
-                float4 color    : COLOR;
-            };
-
-            // --- Vertex GraphicShader ---
-            PS_Input VSMain(VS_Input input)
-            {
-                PS_Input output;
-                float4 pos = float4(input.position, 1.0f);
-                pos = mul(pos, world);
-                pos = mul(pos, viewProjection);
-        
-                output.position = pos;
-                return output;
-            }
-
-            // --- Pixel GraphicShader ---
-            float4 PSMain(PS_Input input) : SV_TARGET
-            {
-                return tint;
-            }
-        )";
-
-            const char* g_primitiveShaderCode2 = R"(
-
-            //@update frame
-            cbuffer perFrame
-            {
-                //@semantic ViewProjection
-                matrix viewProjection;
-                //@semantic Time
-                float time;
-                //@semantic LightDirection
-                float4 lightDir;
-            }
-
-            //@update entity
-            cbuffer perEntity
-            {
-                //@semantic World
-                matrix world;
-            }
-
-            //@update material
-            cbuffer material
-            {
-                //@editable
-                float4 tint;
-            }
-
-            struct VS_Input
-            {
-                float3 position : POSITION;
-                float3 normal   : NORMAL;
-            };
-
-            struct PS_Input
-            {
-                float4 position : SV_POSITION;
-                float3 normal   : NORMAL;
-            };
-
-            PS_Input VSMain(VS_Input input)
-            {
-                PS_Input o;
-                float4 pos = float4(input.position, 1.0f);
-                pos = mul(pos, world);
-                pos = mul(pos, viewProjection);
-                o.position = pos;
-                o.normal = mul(input.normal,(float3x3)world);
-                o.normal = normalize(o.normal);
-                return o;
-            }
-
-            float4 PSMain(PS_Input input) : SV_TARGET
-            {
-                float3 L = normalize(-lightDir);
-                float3 N = normalize(input.normal);
-
-                // diffuse
-                float NdotL = max(dot(N, L), 0.0f);
-
-                // базовый цвет
-                float3 c = tint.rgb * NdotL;
-
-                return float4(c, 1.0f);
-            }
-        )";
-
-        const char* g_primitiveShaderCode3 = R"(
-            
-            //@update frame
-            cbuffer perFrame
-            {
-                //@semantic ViewProjection
-               matrix viewProjection;
-            }
-
-            //@update entity
-            cbuffer perEntity
-            {
-                //@semantic World
-                matrix world;
-            }
-
-            struct VS_Input
-            {
-                float3 position : POSITION;
-                float2 uv : TEXCOORD0;
-            };
-
-            struct PS_Input
-            {
-                float4 position : SV_POSITION;
-                float2 uv       : TEXCOORD0;
-            };
-            
-            Texture2D diffuseTexture : register(t0);
-            SamplerState samplerLinear : register(s0);
-
-
-            // --- Vertex GraphicShader ---
-            PS_Input VSMain(VS_Input input)
-            {
-                PS_Input output;
-                float4 pos = float4(input.position, 1.0f);
-                pos = mul(pos, world);
-                pos = mul(pos, viewProjection);
-                output.position = pos;
-
-                output.uv = input.uv;
-                return output;
-            }
-
-            // --- Pixel GraphicShader ---
-            float4 PSMain(PS_Input input) : SV_TARGET
-            {
-                float4 color = diffuseTexture.Sample(samplerLinear, input.uv);
-                return color;
-            }
-        )";
     }
 
     bool Primitives::registerFabricsAll()
     {
         auto& rm =  *core::Services::get<ResourceManager>();
 
-        ResourceManager::ProceduralResourceFactory<GraphicShader> defaultShaderFabric = [](ResourceManager& rm) { return rm.createShaderFromCode(DEFAULT_SHADER_NAME, std::string(g_primitiveShaderCode)); };
+        ResourceManager::ProceduralResourceFactory<GraphicShader> defaultShaderFabric = [](ResourceManager& rm) { return rm.createShader(DEFAULT_SHADER_NAME, "shaders/default.shader"); };
 
         ResourceManager::ProceduralResourceFactory<Material> defaultMaterialFabric = [](ResourceManager& rm)
             {
@@ -230,11 +56,11 @@ namespace csyren::render
             };
 
         ResourceManager::ProceduralResourceFactory<GraphicShader> rainbowShaderFabric =
-            [](ResourceManager& rm) { return rm.createShaderFromCode(RAINBOW_SHADER_NAME, std::string(g_primitiveShaderCode2)); };
+            [](ResourceManager& rm) { return rm.createShader(RAINBOW_SHADER_NAME, "shaders/rainbow.shader"); };
 
 
         ResourceManager::ProceduralResourceFactory<GraphicShader> textureShaderFabric =
-            [](ResourceManager& rm) { return rm.createShaderFromCode(TEXTURE_SHADER_NAME, std::string(g_primitiveShaderCode3)); };
+            [](ResourceManager& rm) { return rm.createShader(TEXTURE_SHADER_NAME, "shaders/texture.shader"); };
 
 
         ResourceManager::ProceduralResourceFactory<Material> rainbowMaterialFabric =

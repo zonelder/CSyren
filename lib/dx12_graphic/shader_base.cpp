@@ -103,6 +103,11 @@ namespace csyren::render
 
     Microsoft::WRL::ComPtr<ID3DBlob> ShaderBase::compileShader(const std::string& source, const char* target, const std::string& entryPoint, bool ignoreMissingEntryPoint)
     {
+        return compileStage(source, target, entryPoint, ignoreMissingEntryPoint).blob;
+    }
+
+    ShaderBase::CompileResult ShaderBase::compileStage(const std::string& source, const char* target, const std::string& entryPoint, bool ignoreMissingEntryPoint)
+    {
         UINT compileFlags = 0;
 #if defined(_DEBUG)
         // compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
@@ -125,19 +130,22 @@ namespace csyren::render
             std::string msg = (char*)errors->GetBufferPointer();
             if (msg.find("X3501") != std::string::npos)
             {
-                return nullptr;
+                return { nullptr, true };
             }
         }
 
         if (errors)
         {
-            log::error("GraphicShader compilation {}", (char*)errors->GetBufferPointer());
+            if (FAILED(hr))
+                log::error("Shader compilation {}", (char*)errors->GetBufferPointer());
+            else
+                log::warning("Shader compilation {}", (char*)errors->GetBufferPointer());
         }
         if (FAILED(hr))
         {
-            return nullptr;
+            return { nullptr, false };
         }
-        return byteCode;
+        return { std::move(byteCode), true };
     }
 
 
@@ -156,6 +164,10 @@ namespace csyren::render
 
         if (shaderBlobs.empty())
             return true;
+
+        _resourceMap.clear();
+        _variableInfoMap.clear();
+        _constantBufferSizes.clear();
 
         std::unordered_map<ResourceKey, D3D12_SHADER_VISIBILITY> resourceVisibility;
         std::unordered_map<std::string, uint32_t>                cbSizes;
@@ -178,7 +190,7 @@ namespace csyren::render
             refls.emplace_back(visibility, refl);
         }
 
-        log::debug("GraphicShader:: collect resources from shader.");
+        log::debug("ShaderBase: collect resources from shader.");
 
         for (const auto& [visibility, refl] : refls)
         {
@@ -209,7 +221,7 @@ namespace csyren::render
 
         rootParams.reserve(resourceVisibility.size());
         ranges.reserve(resourceVisibility.size());
-        log::debug("GraphicShader: iterate over collected resources");
+        log::debug("ShaderBase: iterate over collected resources");
         for (auto& [key, vis] : items)
         {
             D3D12_ROOT_PARAMETER1 p = {};
@@ -306,7 +318,7 @@ namespace csyren::render
             0, blob->GetBufferPointer(), blob->GetBufferSize(),
             IID_PPV_ARGS(&_rootSignature))))
         {
-            log::error("GraphicShader: Failed to created root signature.");
+            log::error("ShaderBase: Failed to create root signature.");
             return false;
         }
         _constantBufferSizes = std::move(cbSizes);

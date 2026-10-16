@@ -5,6 +5,7 @@
 #include "core/scene.h"
 #include "core/system_manager.h"
 #include "core/time.h"
+#include "cstdmf/file_system.h"
 
 
 #include "physics/physic_system.h"
@@ -30,7 +31,9 @@ namespace csyren
 		Application(const Application& rhs) = delete;
 		Application& operator=(const Application& rhs) = delete;
 
-		bool init();
+        // Empty engineAssets uses the engine repository from CSyren.paths.props.
+        bool init(const std::filesystem::path& engineAssets = {},
+                  const std::vector<cstdmf::FileSystem::Mount>& solutionPaths = {});
 		int	 run();
 
 		void onSceneStart();

@@ -129,9 +129,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="..\test_directory.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="fixed_hash_map_test.cpp" />
+    <ClCompile Include="file_system_test.cpp" />
     <ClCompile Include="fixed_sparse_set_sest.cpp" />
     <ClCompile Include="page_view_test.cpp" />
     <ClCompile Include="pch.cpp">

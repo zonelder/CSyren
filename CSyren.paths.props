@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Import from a game's .vcxproj after its configuration ItemDefinitionGroups.
+       Override these properties before importing to select other repositories. -->
+  <PropertyGroup>
+    <CSyrenEngineAssets Condition="'$(CSyrenEngineAssets)'==''">$(MSBuildThisFileDirectory)assets</CSyrenEngineAssets>
+    <CSyrenGameAssets Condition="'$(CSyrenGameAssets)'==''">$(MSBuildProjectDirectory)\assets</CSyrenGameAssets>
+    <CSyrenEngineAssetsCpp>$([System.String]::Copy('$(CSyrenEngineAssets)').Replace('\', '/'))</CSyrenEngineAssetsCpp>
+    <CSyrenGameAssetsCpp>$([System.String]::Copy('$(CSyrenGameAssets)').Replace('\', '/'))</CSyrenGameAssetsCpp>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PreprocessorDefinitions>CSYREN_ENGINE_ASSETS=L&quot;$(CSyrenEngineAssetsCpp)&quot;;CSYREN_GAME_ASSETS=L&quot;$(CSyrenGameAssetsCpp)&quot;;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+</Project>

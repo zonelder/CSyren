@@ -87,10 +87,33 @@ namespace csyren
 	Application::~Application() {}
 
 
-	bool Application::init()
-	{
-		return true;
-	}
+    bool Application::init(const std::filesystem::path& engineAssets,
+                           const std::vector<cstdmf::FileSystem::Mount>& solutionPaths)
+    {
+        wchar_t executable[32768];
+        const auto length = GetModuleFileNameW(nullptr, executable, 32768);
+        if (!length || length == 32768) return false;
+        const auto directory = std::filesystem::path(executable).parent_path();
+        auto& files = cstdmf::FileSystem::instance();
+#ifdef CSYREN_ENGINE_ASSETS
+        const std::filesystem::path defaultEngineAssets(CSYREN_ENGINE_ASSETS);
+#else
+        const std::filesystem::path defaultEngineAssets("assets");
+#endif
+#ifdef CSYREN_GAME_ASSETS
+        const std::filesystem::path gameAssets(CSYREN_GAME_ASSETS);
+#else
+        const std::filesystem::path gameAssets("assets");
+#endif
+        if (!files.mount("engine", engineAssets.empty() ? defaultEngineAssets : engineAssets, false)
+            || !files.mount("project", gameAssets, true)
+            || !files.mount("cache", directory / "cache", true, false))
+            return false;
+        for (const auto& mount : solutionPaths)
+            if (!files.mount(mount.name, mount.root, mount.writable, mount.searchable))
+                return false;
+        return true;
+    }
 
 	int Application::run()
 	{
@@ -231,11 +254,11 @@ namespace csyren
 		ser->loadSystems("system.config", *systems);
 		//------------------------------------LOAD SCENE------------------------------------------------
 
-		auto texture = res->get<render::Texture>("E:\\stalker_online_git\\res\\textures\\default\\red.dds");
+		auto texture = res->get<render::Texture>("textures/default/red.dds");
 
-		auto texture1 = res->get<render::Texture>("E:\\stalker_online_git\\res\\textures\\default\\white.dds");
+		auto texture1 = res->get<render::Texture>("textures/default/white.dds");
 
-		auto texture2 = res->get<render::Texture>("E:\\stalker_online_git\\res\\textures\\materials\\carpet\\carpet04.dds");
+		auto texture2 = res->get<render::Texture>("textures/materials/carpet/carpet04.dds");
 		//------------------------------------Camera----------------------------------------------------
 		auto mainCameraEntt = scene->createEntity("main camera");
 		auto mainCamera = scene->addComponent<Camera>(mainCameraEntt);

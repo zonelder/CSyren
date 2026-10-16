@@ -205,6 +205,7 @@
     <ClInclude Include="serialize_base.h" />
     <ClInclude Include="serialize_common.h" />
     <ClInclude Include="shader.h" />
+    <ClInclude Include="shader_file.h" />
     <ClInclude Include="shader_base.h" />
     <ClInclude Include="shader_meta.h" />
     <ClInclude Include="shader_parameter_binder.h" />
@@ -238,7 +239,9 @@
     <ClCompile Include="render_queue.cpp" />
     <ClCompile Include="resource_upload_thread.cpp" />
     <ClCompile Include="shader.cpp" />
+    <ClCompile Include="compute_shader.cpp" />
     <ClCompile Include="shader_base.cpp" />
+    <ClCompile Include="shader_lifecycle.cpp" />
     <ClCompile Include="shader_meta.cpp" />
     <ClCompile Include="shader_parameter_binder.cpp" />
     <ClCompile Include="swap_chain.cpp" />

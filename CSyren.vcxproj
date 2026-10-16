@@ -25,6 +25,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="CSyren.paths.props" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application.h" />
@@ -149,6 +150,7 @@
       <UseLibraryDependencyInputs>true</UseLibraryDependencyInputs>
     </ProjectReference>
   </ItemDefinitionGroup>
+  <Import Project="CSyren.paths.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="packages\directxtex_uwp.2025.7.10.1\build\native\directxtex_uwp.targets" Condition="Exists('packages\directxtex_uwp.2025.7.10.1\build\native\directxtex_uwp.targets')" />

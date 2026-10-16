@@ -4,6 +4,7 @@
 #include "resource_manager.h"
 #include "texture.h"
 #include "cstdmf/string_utils.h"
+#include "cstdmf/file_system.h"
 
 #include <ResourceUploadBatch.h>
 #include <DDSTextureLoader.h>
@@ -24,7 +25,14 @@ namespace csyren::render
 	{
         log::debug("TextureUploadTask: start upload of {}", _name);
 		HRESULT hr = S_OK;
-		std::wstring filePathW = cstdmf::to_wstring(_name);
+        const auto physical = cstdmf::FileSystem::instance().resolveRead(cstdmf::to_wstring(_name));
+        if (!physical)
+        {
+            log::error("TextureUploadTask: file not found: {}", _name);
+            _loadFailed = true;
+            return;
+        }
+		std::wstring filePathW = physical->wstring();
 		std::wstring extension = filePathW.substr(filePathW.find_last_of(L".") + 1);
         auto renderer = core::Services::get<Renderer>();
         auto device = renderer->device();

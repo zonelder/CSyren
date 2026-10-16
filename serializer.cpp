@@ -5,7 +5,7 @@
 #include "core/serialize_base.h"
 #include "dx12_graphic/serialize_common.h"
 
-#include <fstream>
+#include "cstdmf/file_system.h"
 
 namespace csyren
 {
@@ -43,11 +43,7 @@ namespace csyren
 
         try
         {
-            std::string sourcePath = (std::filesystem::path("assets") / filepath).string();
-            std::ofstream o(sourcePath);
-            o << sceneJson.dump(4);
-            o.close();
-            return o.good();
+            return cstdmf::FileSystem::instance().writeFile(filepath, sceneJson.dump(4));
         }
         catch (const std::exception& e)
         {
@@ -59,10 +55,8 @@ namespace csyren
 
     bool Serializer::loadSystems(const std::string& filepath, core::SystemManager& systems)
     {
-        std::string sourcePath = (std::filesystem::path("assets") / filepath).string();
-        std::ifstream f(sourcePath);
-
-        if (!f.is_open())
+        std::string source;
+        if (!cstdmf::FileSystem::instance().readFile(filepath, source))
         {
             log::error("Serializer::loadSystems : Failed to open system file {}", filepath);
             return false;
@@ -72,7 +66,7 @@ namespace csyren
 
         try
         {
-            data = json::parse(f, nullptr, false);
+            data = json::parse(source, nullptr, false);
         }
         catch (const std::exception& e)
         {
@@ -117,11 +111,7 @@ namespace csyren
 
         try
         {
-            std::string sourcePath = (std::filesystem::path("assets") / filepath).string();
-            std::ofstream o(sourcePath);
-            o << configJson.dump(4);
-            o.close();
-            return o.good();
+            return cstdmf::FileSystem::instance().writeFile(filepath, configJson.dump(4));
         }
         catch (const std::exception& e)
         {
@@ -131,10 +121,8 @@ namespace csyren
     }
     bool Serializer::loadScene(const std::string& filepath,core::Scene& scene)
     {
-        std::string sourcePath = (std::filesystem::path("assets") / filepath).string();
-        std::ifstream f(sourcePath);
-
-        if (!f.is_open())
+        std::string source;
+        if (!cstdmf::FileSystem::instance().readFile(filepath, source))
         {
             log::error("Serializer::loadScene : Failed to open scene file {}", filepath);
             return false;
@@ -144,7 +132,7 @@ namespace csyren
 
         try
         {
-            data = json::parse(f, nullptr, false);
+            data = json::parse(source, nullptr, false);
         }
         catch (const std::exception& e)
         {
