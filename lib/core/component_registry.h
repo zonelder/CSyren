@@ -32,6 +32,8 @@ namespace csyren::core::reflection
         using DestroyFn = bool(*)(Scene*, Entity::ID);
 
         AddFn           add = nullptr;
+        std::shared_ptr<void> (*createValue)() = nullptr;
+        void* (*addValue)(Scene*, Entity::ID, const void*) = nullptr;
         HasFn           has = nullptr;
         GetRawFn        getRaw = nullptr;
         RemoveFn        remove = nullptr;

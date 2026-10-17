@@ -36,6 +36,9 @@ namespace csyren
             return core::projectAssetPath(path);
         }
     }
+    void ArchiveSceneStorage::configureComponentArchive(core::SerializationContext& context)
+    { attachResourceContext(context); }
+
     bool Serializer::snapshot(core::Scene& scene, std::string& result)
     {
         try {

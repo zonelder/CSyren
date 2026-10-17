@@ -38,6 +38,49 @@ class FrameGraph {
         }
     };
 public:
+    struct InspectionTask {
+        GraphTask task;
+        // Indices into the inspection's topologically ordered task list.
+        std::vector<size_t> parents;
+    };
+    struct Inspection {
+        std::vector<PhaseDescription> phases;
+        std::vector<InspectionTask> tasks;
+        // Transitive reduction of the compiled DAG: identical reachability,
+        // with edges already implied by a longer path removed for display.
+        std::vector<std::vector<size_t>> immediateParents() const {
+            std::vector<std::vector<bool>> ancestors(tasks.size(), std::vector<bool>(tasks.size()));
+            std::vector<std::vector<size_t>> result(tasks.size());
+            for (size_t child = 0; child < tasks.size(); ++child) {
+                for (size_t parent : tasks[child].parents) {
+                    ancestors[child][parent] = true;
+                    for (size_t i = 0; i < tasks.size(); ++i)
+                        ancestors[child][i] = ancestors[child][i] || ancestors[parent][i];
+                }
+                for (size_t parent : tasks[child].parents) {
+                    const bool redundant = std::any_of(tasks[child].parents.begin(), tasks[child].parents.end(),
+                        [&](size_t other) { return other != parent && ancestors[other][parent]; });
+                    if (!redundant) result[child].push_back(parent);
+                }
+            }
+            return result;
+        }
+    };
+    Inspection inspection() const {
+        if (!_compiled) throw std::logic_error("Graph is not compiled");
+        Inspection result;
+        for (size_t index : _phaseOrder) result.phases.push_back(_phases[index]);
+        std::vector<size_t> indices(_nodes.size());
+        for (size_t i = 0; i < _order.size(); ++i) indices[_order[i]] = i;
+        for (size_t index : _order) {
+            const auto& node = *_nodes[index];
+            InspectionTask entry{{node.name, node.description}, {}};
+            for (size_t parent : node.parents) entry.parents.push_back(indices[parent]);
+            std::sort(entry.parents.begin(), entry.parents.end());
+            result.tasks.push_back(std::move(entry));
+        }
+        return result;
+    }
     void phase(PhaseDescription description) {
         if (description.name.empty()) throw std::invalid_argument("Empty phase name");
         for (const auto& p : _phases)
@@ -65,7 +108,7 @@ public:
         _compiled = false;
     }
     void clear() {
-        _nodes.clear(); _phases.clear(); _initialStates.clear(); _order.clear(); _compiled = false;
+        _nodes.clear(); _phases.clear(); _initialStates.clear(); _order.clear(); _phaseOrder.clear(); _compiled = false;
     }
     void compile() {
         _compiled = false;
@@ -89,6 +132,7 @@ public:
             for (const auto& p : _phases[i].before) edge(pp, lookup(phases, p, "phase"), i);
         }
         const auto phaseOrder = topological(pp, "phase");
+        _phaseOrder = phaseOrder;
         // Transitive phase closure also orders tasks across empty phases.
         std::vector<std::vector<bool>> precedes(pp.size(), std::vector<bool>(pp.size()));
         for (size_t child : phaseOrder) for (size_t parent : pp[child]) {
@@ -253,6 +297,7 @@ private:
     std::vector<std::unique_ptr<Node>> _nodes;
     std::unordered_map<std::type_index, std::string> _initialStates;
     std::vector<size_t> _order;
+    std::vector<size_t> _phaseOrder;
     std::atomic<bool> _failed{false};
     std::mutex _failureMutex;
     std::exception_ptr _failure;

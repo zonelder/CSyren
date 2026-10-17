@@ -1,6 +1,7 @@
 #pragma once
 #include "imGui/imgui.h"
 #include "scene_session.h"
+#include "editor_selection.h"
 #include "core/services.h"
 #include <optional>
 
@@ -19,7 +20,14 @@ namespace csyren::editor
         {
             auto& session = *core::Services::get<SceneSession>();
             const auto& io = ImGui::GetIO();
-            if (session.playing() || busy() || !io.KeyCtrl || io.WantTextInput) return;
+            if (session.playing() || busy() || io.WantTextInput ||
+                ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId)) return;
+            if (!ImGui::IsAnyItemActive() && selectedKey(session))
+            {
+                if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_D, false)) entityAction(session, SceneOperation::DuplicateEntity);
+                if (!io.KeyCtrl && !io.KeyAlt && ImGui::IsKeyPressed(ImGuiKey_Delete, false)) entityAction(session, SceneOperation::DeleteEntity);
+            }
+            if (!io.KeyCtrl) return;
             if (io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_N, false))
             { session.finishEdit(); session.enqueue(SceneOperation::CreateEntity); }
             if (ImGui::IsKeyPressed(ImGuiKey_S, false)) save(session);
@@ -48,6 +56,8 @@ namespace csyren::editor
                 ImGui::Separator();
                 if (ImGui::MenuItem("Create empty object", "Ctrl+Shift+N", false, editable))
                 { session.finishEdit(); session.enqueue(SceneOperation::CreateEntity); }
+                if (ImGui::MenuItem("Duplicate object", "Ctrl+D", false, editable && selectedKey(session))) entityAction(session, SceneOperation::DuplicateEntity);
+                if (ImGui::MenuItem("Delete object", "Delete", false, editable && selectedKey(session))) entityAction(session, SceneOperation::DeleteEntity);
                 ImGui::EndMenu();
             }
         }
@@ -68,6 +78,7 @@ namespace csyren::editor
                 ImGui::SameLine(); ImGui::TextDisabled("|"); ImGui::SameLine();
                 ImGui::Text("%s | %s%s", session.playing() ? "Playing" : "Edit",
                     session.path().empty() ? "Untitled" : session.path().c_str(), session.dirty() ? " *" : "");
+                if (!session.playing()) { ImGui::SameLine(); ImGui::TextDisabled("| Move: X/Y/Z handles | F: focus"); }
                 if (!session.error().empty())
                 {
                     ImGui::SameLine(); ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "%s", session.error().c_str());
@@ -120,6 +131,19 @@ namespace csyren::editor
             }
         }
     private:
+        static EntityKey selectedKey(SceneSession& session)
+        {
+            const auto selected = core::Services::get<EditorSelection>()->selected();
+            return session.keyFor(selected);
+        }
+        static void entityAction(SceneSession& session, SceneOperation operation)
+        {
+            const auto key = selectedKey(session);
+            if (!key) return;
+            session.finishEdit();
+            SceneRequest request{ operation, session.documentId() }; request.entity = key;
+            session.enqueue(std::move(request));
+        }
         bool busy() const { return _pending.has_value() || _fileOperation.has_value(); }
         void file(SceneOperation operation) { _fileOperation = operation; _openFile = true; }
         void save(SceneSession& session)

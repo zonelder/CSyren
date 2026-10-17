@@ -45,6 +45,60 @@ TEST(FrameGraph, ReadReadAndDisjointWritesStayIndependent) {
     graph.task("a", a, []{}); graph.task("b", b, []{}); graph.compile();
     EXPECT_FALSE(graph.dependsOn("a", "b")); EXPECT_FALSE(graph.dependsOn("b", "a"));
 }
+TEST(FrameGraph, InspectionExposesCompiledEdgesAndTopologicalIndices) {
+    FrameGraph graph;
+    EXPECT_THROW(graph.inspection(), std::logic_error);
+    graph.phase({"empty", {"custom"}}); graph.phase({"custom"});
+    auto writer = task(); writer.write<Position>(); writer.after = {"reader"};
+    auto reader = task(); reader.read<Position>();
+    auto hazard = task(); hazard.write<Position>();
+    graph.task("writer", writer, []{});
+    graph.task("reader", reader, []{});
+    graph.task("hazard", hazard, []{});
+    graph.task("independent", task(), []{});
+    graph.compile();
+    const auto snapshot = graph.inspection();
+    ASSERT_EQ(snapshot.phases.size(), 2u);
+    EXPECT_EQ(snapshot.phases[0].name, "custom");
+    EXPECT_EQ(snapshot.phases[1].name, "empty");
+    ASSERT_EQ(snapshot.tasks.size(), 4u);
+    EXPECT_EQ(snapshot.tasks[0].task.name, "reader");
+    EXPECT_EQ(snapshot.tasks[1].task.name, "writer");
+    EXPECT_EQ(snapshot.tasks[1].parents, (std::vector<size_t>{0}));
+    EXPECT_EQ(snapshot.tasks[2].parents, (std::vector<size_t>{0, 1}));
+    EXPECT_TRUE(snapshot.tasks[3].parents.empty());
+    const auto immediate = snapshot.immediateParents();
+    EXPECT_EQ(immediate[1], (std::vector<size_t>{0}));
+    EXPECT_EQ(immediate[2], (std::vector<size_t>{1}));
+    EXPECT_TRUE(immediate[3].empty());
+    graph.clear();
+    EXPECT_THROW(graph.inspection(), std::logic_error);
+    EXPECT_EQ(snapshot.tasks[1].task.name, "writer");
+}
+TEST(FrameGraph, ImmediateDependenciesPreserveBothBranchesAndReachability) {
+    FrameGraph graph; graph.phase({"custom"});
+    graph.task("root", task(), []{});
+    auto branch = task(); branch.after = {"root"};
+    graph.task("left", branch, []{}); graph.task("right", branch, []{});
+    auto join = task(); join.after = {"root", "left", "right"};
+    graph.task("join", join, []{});
+    graph.compile();
+    const auto snapshot = graph.inspection();
+    const auto immediate = snapshot.immediateParents();
+    EXPECT_EQ(immediate[3], (std::vector<size_t>{1, 2}));
+    for (size_t child = 0; child < snapshot.tasks.size(); ++child) {
+        std::vector<bool> reached(snapshot.tasks.size());
+        std::vector<size_t> pending = immediate[child];
+        while (!pending.empty()) {
+            const auto parent = pending.back(); pending.pop_back();
+            if (reached[parent]) continue;
+            reached[parent] = true;
+            pending.insert(pending.end(), immediate[parent].begin(), immediate[parent].end());
+        }
+        for (size_t parent = 0; parent < snapshot.tasks.size(); ++parent)
+            EXPECT_EQ(reached[parent], graph.dependsOn(snapshot.tasks[child].task.name, snapshot.tasks[parent].task.name));
+    }
+}
 TEST(FrameGraph, RejectsBadPhasesSystemsAndCycles) {
     FrameGraph graph; graph.phase({"custom", {"missing"}});
     EXPECT_THROW(graph.compile(), std::invalid_argument);

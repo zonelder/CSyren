@@ -8,7 +8,7 @@
 
 namespace csyren::editor
 {
-    enum class SceneOperation { Open, Reload, Import, Save, SaveAs, Play, Stop, CreateEntity, Undo, Redo, CancelEdit };
+    enum class SceneOperation { Open, Reload, Import, Save, SaveAs, Play, Stop, CreateEntity, Undo, Redo, CancelEdit, AddComponent, RemoveComponent, DuplicateEntity, DeleteEntity };
     struct SceneRequest
     {
         SceneOperation operation;
@@ -16,6 +16,8 @@ namespace csyren::editor
         std::string path;
         bool discardChanges{};
         math::Vector3 position{};
+        EntityKey entity{};
+        size_t component{};
     };
     class SceneSession
     {
@@ -71,6 +73,8 @@ namespace csyren::editor
         bool play();
         bool stop();
         bool create(const math::Vector3& position);
+        bool changeComponent(EntityKey, size_t family, bool add);
+        bool changeBranch(EntityKey, bool duplicate);
         bool apply(const SceneRequest&);
         SceneStorage& _storage;
         std::unique_ptr<core::SceneInstance> _editor, _runtime;

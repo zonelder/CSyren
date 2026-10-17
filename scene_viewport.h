@@ -8,6 +8,7 @@
 #include "dx12_graphic/renderer.h"
 #include "core/window.h"
 #include "imGui/imgui.h"
+#include "scene_gizmo.h"
 
 namespace csyren::editor
 {
@@ -23,6 +24,34 @@ namespace csyren::editor
     }
     class SceneViewport
     {
+        static math::MeshBounds localBounds(core::Scene& scene, render::ResourceManager& resources, core::Entity::ID id)
+        {
+            math::MeshBounds bounds;
+            if (scene.hasComponent<render::MeshFilter>(id))
+            {
+                auto filter = scene.getComponent<render::MeshFilter>(id);
+                const auto* mesh = resources.getMesh(filter->mesh);
+                if (mesh && mesh->bounds().valid) return mesh->bounds();
+            }
+            bounds.include({ -.1f, -.1f, -.1f }); bounds.include({ .1f, .1f, .1f });
+            return bounds;
+        }
+        static math::MeshBounds focusTarget(core::Scene& scene, render::ResourceManager& resources, core::Entity::ID id)
+        {
+            math::MeshBounds result;
+            std::vector<core::Entity::ID> branch{ id };
+            for (size_t i = 0; i < branch.size(); ++i)
+            {
+                const auto* entity = scene.entities().try_get(branch[i]);
+                if (!entity) continue;
+                branch.insert(branch.end(), entity->children.begin(), entity->children.end());
+                auto transform = scene.getComponent<core::Transform>(entity->id);
+                if (!transform) continue;
+                const auto bounds = transformedBounds(localBounds(scene, resources, entity->id), transform->world());
+                if (bounds.valid) { result.include(bounds.min); result.include(bounds.max); }
+            }
+            return result;
+        }
         struct Hit { core::Entity::ID entity = core::Entity::invalidID; float distance = 0; };
         static Hit raycast(core::Scene& scene, render::ResourceManager& resources, const PickRay& ray, bool trace = false)
         {
@@ -44,11 +73,12 @@ namespace csyren::editor
             return result;
         }
     public:
+    bool manipulating() const { return _gizmo.active(); }
     void render()
     {
         using namespace DirectX;
         auto& session = *core::Services::get<SceneSession>();
-        if (session.playing()) return;
+        if (session.playing()) { _gizmo.cancel(session); return; }
         auto& selection = *core::Services::get<EditorSelection>();
         auto& resources = *core::Services::get<render::ResourceManager>();
         auto& window = *core::Services::get<core::Window>();
@@ -61,6 +91,17 @@ namespace csyren::editor
         const bool viewportMouse = !ImGui::GetIO().WantCaptureMouse &&
             !ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) && !ImGui::IsAnyItemActive() &&
             client.x >= 0 && client.y >= 0 && client.x < window.width() && client.y < window.height();
+        auto& view = *core::Services::get<EditorView>();
+        const auto& io = ImGui::GetIO();
+        if (!_gizmo.active() && !io.WantTextInput && !io.KeyCtrl && !io.KeyAlt && !ImGui::IsAnyItemActive() &&
+            !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId) && !ImGui::IsMouseDown(ImGuiMouseButton_Right) &&
+            ImGui::IsKeyPressed(ImGuiKey_F, false))
+            focusBounds(view, focusTarget(session.editorScene(), resources, selection.selected()));
+        POINT screen{}; ClientToScreen(window.hwnd(), &screen);
+        const bool gizmoMouse = _gizmo.render(session, selection.selected(), view.camera, vp,
+            ImVec2(static_cast<float>(screen.x), static_cast<float>(screen.y)),
+            ImVec2(static_cast<float>(window.width()), static_cast<float>(window.height())),
+            viewportMouse && !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId) && !ImGui::IsMouseDown(ImGuiMouseButton_Right));
         if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
         {
             _rightClick = viewportMouse;
@@ -98,7 +139,7 @@ namespace csyren::editor
             }
             ImGui::EndPopup();
         }
-        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::GetIO().WantCaptureMouse &&
+        if (!gizmoMouse && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::GetIO().WantCaptureMouse &&
             !ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) && !ImGui::IsAnyItemActive() &&
             client.x >= 0 && client.y >= 0 && client.x < window.width() && client.y < window.height())
         {
@@ -110,22 +151,13 @@ namespace csyren::editor
         auto& scene = session.editorScene();
         if (!scene.hasComponent<core::Transform>(selection.selected())) return;
         auto transform = scene.getComponent<core::Transform>(selection.selected());
-        // Empty entities have a small editor marker around their pivot.
-        math::MeshBounds bounds;
-        bounds.include({ -.1f, -.1f, -.1f }); bounds.include({ .1f, .1f, .1f });
-        if (scene.hasComponent<render::MeshFilter>(selection.selected()))
-        {
-            auto filter = scene.getComponent<render::MeshFilter>(selection.selected());
-            const auto* mesh = resources.getMesh(filter->mesh);
-            if (mesh && mesh->bounds().valid) bounds = selectionBounds(mesh->bounds());
-        }
+        const auto bounds = selectionBounds(localBounds(scene, resources, selection.selected()));
         XMFLOAT4 corners[8];
         const auto matrix = XMMatrixMultiply(transform->world(), vp);
         for (int i = 0; i < 8; ++i)
             XMStoreFloat4(&corners[i], XMVector4Transform(XMVectorSet(
                 (i&1) ? bounds.max.x : bounds.min.x, (i&2) ? bounds.max.y : bounds.min.y,
                 (i&4) ? bounds.max.z : bounds.min.z, 1), matrix));
-        POINT screen{}; ClientToScreen(window.hwnd(), &screen);
         auto* draw = ImGui::GetBackgroundDrawList(ImGui::GetMainViewport());
         const auto project = [&](const XMFLOAT4& p) { return ImVec2(
             screen.x+(p.x/p.w+1)*.5f*window.width(), screen.y+(1-p.y/p.w)*.5f*window.height()); };
@@ -137,6 +169,7 @@ namespace csyren::editor
             }
     }
     private:
+        MoveGizmo _gizmo;
         math::Vector3 _position{};
         uint64_t _document{};
         bool _rightClick = false, _dragged = false;

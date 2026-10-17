@@ -1,6 +1,7 @@
 #pragma once
 #include "core/scene.h"
 #include <string>
+#include "core/serialization_context.h"
 
 namespace csyren
 {
@@ -9,6 +10,7 @@ namespace csyren
     {
     public:
         virtual ~SceneStorage() = default;
+        virtual void configureComponentArchive(core::SerializationContext&) {}
         virtual bool read(const std::string& path, core::Scene&) = 0; // append/import
         virtual bool write(const std::string& path, core::Scene&) = 0;
         virtual bool snapshot(core::Scene&, std::string&) = 0;

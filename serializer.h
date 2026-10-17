@@ -70,6 +70,7 @@ namespace csyren
     {
     public:
         explicit ArchiveSceneStorage(Serializer& serializer) : _serializer(serializer) {}
+        void configureComponentArchive(core::SerializationContext&) override;
         bool read(const std::string& path, core::Scene& scene) override { return _serializer.loadScene(path, scene); }
         bool write(const std::string& path, core::Scene& scene) override { return _serializer.saveScene(path, scene); }
         bool snapshot(core::Scene& scene, std::string& archive) override { return _serializer.snapshot(scene, archive); }

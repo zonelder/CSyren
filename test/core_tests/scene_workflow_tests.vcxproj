@@ -43,6 +43,10 @@
     <ClCompile Include="..\..\lib\dx12_graphic\resource_manager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="scene_pipeline_cases.h" />
+    <None Include="SCENE_WORKFLOW_TESTS.md" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\lib\core\core.vcxproj"><Project>{c2d419d8-5a36-4905-bf2f-7fbc3cd025e9}</Project></ProjectReference>
     <ProjectReference Include="..\..\lib\physics\physics.vcxproj"><Project>{996e7bff-0176-4769-ad10-d9f68d3f755b}</Project></ProjectReference>
     <ProjectReference Include="..\..\lib\dx12_graphic\dx12_graphic.vcxproj"><Project>{02615bfc-b339-45ba-bf9f-22820d9e80a2}</Project></ProjectReference>
@@ -52,5 +56,6 @@
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\..\packages\directxtex_uwp.2025.7.10.1\build\native\directxtex_uwp.targets" />
     <Import Project="..\..\packages\directxtk12_uwp.2025.7.10.1\build\native\directxtk12_uwp.targets" />
+    <Import Project="..\..\packages\Microsoft.googletest.v140.windesktop.msvcstl.static.rt-dyn.1.8.1.7\build\native\Microsoft.googletest.v140.windesktop.msvcstl.static.rt-dyn.targets" />
   </ImportGroup>
 </Project>

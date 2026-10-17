@@ -24,8 +24,8 @@ namespace csyren
     public:
         core::TaskDescription describe() const override {
             core::TaskDescription d; d.phase = "simulation";
-            d.read<core::Camera>().read<EditorCameraController>().write<core::Transform>();
-            d.affinity = core::TaskAffinity::MainThread;
+            // Input is a snapshot after the input phase. Only EditorView is mutated;
+            // this controller neither calls window APIs nor accesses scene components.
             d.readResource<core::Devices>().readResource<core::Time>().writeResource<editor::EditorView>(); return d;
         }
 

@@ -73,7 +73,7 @@ namespace csyren::core
         {
             for (auto it = _systems.rbegin(); it != _systems.rend(); ++it)
             { it->system->detach(); it->instance = 0; }
-            _editor.reset(); _active.reset(); _dirty = true;
+            _editor.reset(); _active.reset(); invalidateGraph();
         }
         void init()
         {
@@ -93,9 +93,9 @@ namespace csyren::core
                 it->system->detach();
                 if (_initialized) it->system->shutdown();
             }
-            _graph.clear(); _transactions.clear(); _initialStates.clear(); _backend.reset(); _phases.clear();
+            _graph.clear(); _inspection = {}; _transactions.clear(); _initialStates.clear(); _backend.reset(); _phases.clear();
             if (_jobs.getNumThreads()) _jobs.fini();
-            _dirty = true;
+            invalidateGraph();
             _schedule.clear(); _systems.clear(); _configuration = {};
             _deferredMove = { BACK_POS, BACK_POS }; _initialized = false;
         }
@@ -121,10 +121,41 @@ namespace csyren::core
                 rebuildSchedule();
             }
         }
-        template<class T> void resourceState(std::string state) { _initialStates.insert_or_assign(std::type_index(typeid(T)), std::move(state)); _dirty = true; }
-        void taskBackend(std::shared_ptr<TaskBackend> backend) { _backend = std::move(backend); _dirty = true; }
-        void phase(PhaseDescription phase) { _phases.push_back(std::move(phase)); _dirty = true; }
+        template<class T> void resourceState(std::string state) { _initialStates.insert_or_assign(std::type_index(typeid(T)), std::move(state)); invalidateGraph(); }
+        void taskBackend(std::shared_ptr<TaskBackend> backend) { _backend = std::move(backend); invalidateGraph(); }
+        void phase(PhaseDescription phase) { _phases.push_back(std::move(phase)); invalidateGraph(); }
         const auto& phases() const { return _phases; }
+        // Inspect the last successfully compiled schedule; never rebuild from editor callbacks.
+        const FrameGraph::Inspection& executionGraph() const noexcept { return _inspection; }
+        bool executionGraphPending() const noexcept { return _dirty; }
+        struct GraphPreview {
+            FrameGraph::Inspection graph;
+            std::string error;
+            size_t revision = (std::numeric_limits<size_t>::max)();
+        };
+        const GraphPreview& previewExecutionGraph(bool playing, bool standalone = false) const {
+            auto& preview = standalone ? _standalonePreview : playing ? _gamePreview : _editorPreview;
+            if (preview.revision == _graphRevision) return preview;
+            preview.graph = {}; preview.error.clear();
+            try {
+                FrameGraph graph;
+                initializeGraph(graph);
+                std::vector<const SystemEntry*> schedule;
+                const auto names = standalone ? _configuration.app : scheduleNames(playing);
+                for (const auto& name : names) schedule.push_back(findSystem(name));
+                for (const auto& entry : describeSchedule(schedule)) {
+                    graph.task(entry.entry->name, entry.description, []{});
+                    if (entry.description.structuralChanges)
+                        graph.task(entry.entry->name + "/apply", commitDescription(entry.entry->name, entry.description), []{});
+                }
+                graph.compile();
+                preview.graph = graph.inspection();
+            }
+            catch (const std::exception& error) { preview.error = error.what(); }
+            preview.revision = _graphRevision;
+            return preview;
+        }
+        bool playing() const noexcept { return _playing; }
         void execute() {
             processMove();
             if (_dirty) rebuild();
@@ -156,26 +187,31 @@ namespace csyren::core
             auto it = std::find_if(_configuration.editor.begin(), _configuration.editor.end(), [&](const auto& entry) { return entry.name == name; });
             return it == _configuration.editor.end() ? nullptr : &*it;
         }
-        void rebuildSchedule()
-        {
-            _dirty = true;
-            _schedule.clear();
-            if (!_editor && !_active && Services::has<Scene>()) {
-                for (const auto& name : _configuration.app) _schedule.push_back(findSystem(name));
-                return;
-            }
-            if (!_playing)
-            {
-                for (const auto& entry : _configuration.editor) _schedule.push_back(findSystem(entry.name));
-            }
-            else
-            {
-                for (const auto& name : _configuration.app) _schedule.push_back(findSystem(name));
+        const SystemEntry* findSystem(const std::string& name) const {
+            const auto it = std::find_if(_systems.begin(), _systems.end(), [&](const auto& entry) { return entry.name == name; });
+            return it == _systems.end() ? nullptr : &*it;
+        }
+        std::vector<std::string> scheduleNames(bool playing) const {
+            std::vector<std::string> names;
+            if (!playing) {
+                for (const auto& entry : _configuration.editor) names.push_back(entry.name);
+            } else {
+                names = _configuration.app;
                 for (const auto& entry : _configuration.editor)
                     if (entry.scene == EditorSystemScene::Editor &&
-                        std::find(_configuration.app.begin(), _configuration.app.end(), entry.name) == _configuration.app.end())
-                        _schedule.push_back(findSystem(entry.name));
+                        std::find(names.begin(), names.end(), entry.name) == names.end()) names.push_back(entry.name);
             }
+            return names;
+        }
+        void invalidateGraph() { _dirty = true; ++_graphRevision; }
+        void rebuildSchedule()
+        {
+            invalidateGraph();
+            _schedule.clear();
+            const bool standalone = !_editor && !_active && Services::has<Scene>();
+            // Standalone hosts use only the application list, without editor systems.
+            const auto names = standalone ? _configuration.app : scheduleNames(_playing);
+            for (const auto& name : names) _schedule.push_back(findSystem(name));
         }
         void refresh()
         {
@@ -230,19 +266,45 @@ namespace csyren::core
             if (src < dst) std::rotate(src, src + 1, dst + 1);
             else std::rotate(dst, src, src + 1);
         }
+        void initializeGraph(FrameGraph& graph) const {
+            for (const auto& phase : _phases) graph.phase(phase);
+            for (const auto& [type, state] : _initialStates) graph.resourceState(type, state);
+        }
+        struct DescribedSystem { const SystemEntry* entry; TaskDescription description; };
+        std::vector<DescribedSystem> describeSchedule(const std::vector<const SystemEntry*>& schedule) const {
+            std::vector<DescribedSystem> result;
+            std::unordered_map<std::string, bool> structural;
+            for (const auto* entry : schedule) {
+                if (!entry) throw std::logic_error("Configured system is missing");
+                auto description = entry->system->describe();
+                structural[entry->name] = description.structuralChanges;
+                if (_backend) _backend->describe(description);
+                result.push_back({entry, std::move(description)});
+            }
+            for (auto& entry : result)
+                for (auto& name : entry.description.after)
+                    if (structural.contains(name) && structural[name]) name += "/apply";
+            return result;
+        }
+        static TaskDescription commitDescription(const std::string& name, const TaskDescription& description) {
+            TaskDescription apply;
+            apply.phase = description.phase;
+            apply.after = {name};
+            apply.before = description.before;
+            apply.exclusiveScene = true;
+            apply.structuralCommitFor = name;
+            // Event registration and destruction callbacks have main-thread affinity.
+            apply.affinity = TaskAffinity::MainThread;
+            return apply;
+        }
         void rebuild() {
             _graph.clear();
             _transactions.clear();
-            for (const auto& phase : _phases) _graph.phase(phase);
-            for (const auto& [type, state] : _initialStates) _graph.resourceState(type, state);
-            std::unordered_map<std::string, bool> structural;
-            for (const auto* pointer : _schedule) structural[pointer->name] = pointer->system->describe().structuralChanges;
-            for (const auto* pointer : _schedule) {
-                const auto& entry = *pointer;
-                auto description = entry.system->describe();
-                if (_backend) _backend->describe(description);
-                for (auto& name : description.after)
-                    if (structural.contains(name) && structural[name]) name += "/apply";
+            initializeGraph(_graph);
+            const std::vector<const SystemEntry*> schedule(_schedule.begin(), _schedule.end());
+            for (const auto& described : describeSchedule(schedule)) {
+                const auto& entry = *described.entry;
+                auto description = described.description;
                 auto* scene = entry.system->boundScene();
                 if (!scene && Services::has<Scene>()) scene = Services::get<Scene>();
                 if (!scene) continue;
@@ -264,28 +326,25 @@ namespace csyren::core
                     } else invoke();
                 });
                 if (changes) {
-                    TaskDescription apply;
-                    apply.phase = description.phase;
-                    apply.after = {entry.name};
-                    apply.before = description.before;
-                    apply.exclusiveScene = true;
-                    apply.structuralCommitFor = entry.name;
-                    // Event registration and destruction callbacks have main-thread affinity.
-                    apply.affinity = TaskAffinity::MainThread;
+                    auto apply = commitDescription(entry.name, description);
                     _graph.task(entry.name + "/apply", std::move(apply), [scene, transaction] { transaction->apply(*scene); });
                 }
             }
             _graph.compile();
             if (_backend) _backend->compile(_graph.orderedTasks());
+            _inspection = _graph.inspection();
             _dirty = false;
         }
         FrameGraph _graph;
+        FrameGraph::Inspection _inspection;
         std::vector<std::shared_ptr<Scene::Transaction>> _transactions;
         std::shared_ptr<TaskBackend> _backend;
         cstdmf::multicore::JobSystem _jobs;
         std::vector<PhaseDescription> _phases;
         std::unordered_map<std::type_index, std::string> _initialStates;
         bool _dirty = true;
+        size_t _graphRevision = 0;
+        mutable GraphPreview _editorPreview, _gamePreview, _standalonePreview;
 
         SystemConfiguration _configuration;
         std::optional<SceneContext> _editor, _active;

@@ -130,7 +130,7 @@ namespace csyren::editor
 			ImGui_ImplWin32_NewFrame();
 			ImGui::NewFrame();
             synchronizeSelection();
-            _workflow->shortcuts();
+            if (!_viewport.manipulating()) _workflow->shortcuts();
 
 			if (ImGui::BeginMainMenuBar()) 
 			{
@@ -156,7 +156,7 @@ namespace csyren::editor
 				window->render();
 			}
             _viewport.render();
-            if (!ImGui::IsAnyItemActive()) core::Services::get<SceneSession>()->finishEdit();
+            if (!ImGui::IsAnyItemActive() && !_viewport.manipulating()) core::Services::get<SceneSession>()->finishEdit();
 			auto* renderer = core::Services::get<render::Renderer>();
 			ID3D12GraphicsCommandList* cmdList = renderer->commandList();
 

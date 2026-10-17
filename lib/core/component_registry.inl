@@ -12,6 +12,13 @@ namespace csyren::core::reflection
 
         ComponentMeta meta;
         meta.family = family;
+        if constexpr (std::is_copy_constructible_v<T>)
+        {
+            meta.createValue = []() -> std::shared_ptr<void> { return std::make_shared<T>(); };
+            meta.addValue = [](Scene* scene, Entity::ID id, const void* value) -> void* {
+                return scene->template addComponent<T>(id, *static_cast<const T*>(value)).get();
+            };
+        }
         meta.name = name;
         meta.metaType = resolve<T>();
 

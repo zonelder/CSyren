@@ -1,5 +1,7 @@
 #include "scene_session.h"
 #include "core/transform.h"
+#include "core/meta_json.h"
+#include "core/scene_serialization_context.h"
 #include <stdexcept>
 
 namespace csyren::editor
@@ -160,6 +162,159 @@ namespace csyren::editor
         return _history.execute(std::move(command), context);
     }
 
+    bool SceneSession::changeComponent(EntityKey key, size_t family, bool add)
+    {
+        const auto* meta = core::reflection::ComponentRegistry::get(family);
+        const auto id = resolve(key);
+        if (!meta || !meta->metaType || !meta->createValue || !meta->addValue ||
+            !meta->metaType->archive.save || !meta->metaType->archive.load ||
+            id == core::EntityManager::ROOT_PARENT || !editorScene().entities().contains(id)) return false;
+        if (meta->has(&editorScene(), id) == add) return false;
+        auto archive = std::make_shared<nlohmann::json>();
+        if (!add)
+        {
+            core::SerializationContext serialization;
+            _storage.configureComponentArchive(serialization);
+            auto& refs = serialization.emplaceService<core::SceneEntityReferences>();
+            for (const auto& entity : editorScene().entities())
+                if (entity.id != core::EntityManager::ROOT_PARENT) refs.saved.emplace(entity.id, keyFor(entity.id));
+            core::JsonArchiveWriter writer(*archive);
+            if (!writer.object() || !writer.beginField("value"_hs.id, "value") ||
+                !core::reflection::save(writer, serialization, *meta->metaType, meta->getRaw(&editorScene(), id)) ||
+                !writer.endField() || !serialization.saveSections(writer) || !writer.endObject()) return false;
+        }
+        const auto remove = [key, family](EditContext& context) {
+            const auto* info = core::reflection::ComponentRegistry::get(family);
+            const auto target = context.resolve(key);
+            if (!context.scene.entities().contains(target) || !info->has(&context.scene, target)) return false;
+            info->remove(&context.scene, target); context.scene.flush();
+            return !info->has(&context.scene, target);
+        };
+        const auto insert = [this, key, family, archive, add](EditContext& context) {
+            const auto* info = core::reflection::ComponentRegistry::get(family);
+            const auto target = context.resolve(key);
+            if (!context.scene.entities().contains(target) || info->has(&context.scene, target)) return false;
+            if (add) return info->add(&context.scene, target) != nullptr;
+            auto value = info->createValue();
+            core::SerializationContext serialization;
+            _storage.configureComponentArchive(serialization);
+            auto& refs = serialization.emplaceService<core::SceneEntityReferences>();
+            for (const auto& [entityKey, entity] : context.entities) refs.loaded.emplace(entityKey, entity);
+            core::JsonArchiveReader reader(*archive);
+            uint32_t version{}; bool present{};
+            if (!reader.object(version) || !serialization.loadSections(reader) ||
+                !reader.beginField("value"_hs.id, "value", present) || !present ||
+                !core::reflection::load(reader, serialization, *info->metaType, value.get()) ||
+                !reader.endField() || !reader.endObject() || !serialization.finishLoad()) return false;
+            return info->addValue(&context.scene, target, value.get()) != nullptr;
+        };
+        auto command = std::make_unique<FunctionCommand>(std::string(add ? "Add " : "Remove ") + std::string(meta->name),
+            add ? FunctionCommand::Action(insert) : FunctionCommand::Action(remove),
+            add ? FunctionCommand::Action(remove) : FunctionCommand::Action(insert));
+        auto context = editContext();
+        return _history.execute(std::move(command), context);
+    }
+
+    bool SceneSession::changeBranch(EntityKey key, bool duplicate)
+    {
+        const auto source = resolve(key);
+        if (!key || source == core::EntityManager::ROOT_PARENT || !editorScene().entities().contains(source)) return false;
+        auto before = std::make_shared<Snapshot>();
+        auto after = std::make_shared<Snapshot>();
+        if (!capture(*before)) return false;
+        auto candidate = std::make_unique<core::SceneInstance>();
+        if (!_storage.restore(before->archive, candidate->scene())) return false;
+        auto keys = mapKeys(candidate->scene(), before->keys);
+        auto& scene = candidate->scene();
+        const auto root = keys.at(key);
+        EntityKey copyKey = 0;
+        if (duplicate)
+        {
+            std::vector<core::Entity::ID> branch{ root };
+            for (size_t i = 0; i < branch.size(); ++i)
+            {
+                const auto* entity = scene.entities().try_get(branch[i]);
+                branch.insert(branch.end(), entity->children.begin(), entity->children.end());
+            }
+            core::SerializationContext saving;
+            _storage.configureComponentArchive(saving);
+            auto& savedRefs = saving.emplaceService<core::SceneEntityReferences>();
+            for (const auto& [entityKey, id] : keys) savedRefs.saved.emplace(id, entityKey);
+            struct Component { size_t family; nlohmann::json value; };
+            std::vector<std::vector<Component>> components(branch.size());
+            for (size_t i = 0; i < branch.size(); ++i)
+                for (const auto family : scene.entities().try_get(branch[i])->componentView())
+                {
+                    const auto* info = core::reflection::ComponentRegistry::get(family);
+                    if (!info || !info->metaType) return false;
+                    Component component{ family, {} };
+                    core::JsonArchiveWriter writer(component.value);
+                    if (!core::reflection::save(writer, saving, *info->metaType, info->getRaw(&scene, branch[i]))) return false;
+                    components[i].push_back(std::move(component));
+                }
+            nlohmann::json sections;
+            core::JsonArchiveWriter sectionWriter(sections);
+            if (!sectionWriter.object() || !saving.saveSections(sectionWriter) || !sectionWriter.endObject()) return false;
+            core::SerializationContext loading;
+            _storage.configureComponentArchive(loading);
+            auto& loadedRefs = loading.emplaceService<core::SceneEntityReferences>();
+            for (const auto& [entityKey, id] : keys) loadedRefs.loaded.emplace(entityKey, id);
+            auto batch = scene.stageEntities(branch.size());
+            auto scope = loading.scopedService(batch);
+            std::unordered_map<core::Entity::ID, core::Entity::ID> copies;
+            for (size_t i = 0; i < branch.size(); ++i)
+            {
+                const auto* entity = scene.entities().try_get(branch[i]);
+                const auto copy = batch.createEntity(entity->name + (i == 0 ? " (Copy)" : ""));
+                copies.emplace(branch[i], copy);
+                loadedRefs.loaded[savedRefs.saved.at(branch[i])] = copy;
+                const auto newKey = ++_nextKey;
+                keys.emplace(newKey, copy);
+                if (i == 0) copyKey = newKey;
+            }
+            core::JsonArchiveReader sectionReader(sections);
+            uint32_t version{};
+            if (!sectionReader.object(version) || !loading.loadSections(sectionReader) || !sectionReader.endObject()) return false;
+            for (size_t i = 0; i < branch.size(); ++i)
+            {
+                const auto copy = copies.at(branch[i]);
+                if (i && !batch.setParent(copy, copies.at(scene.entities().try_get(branch[i])->parent))) return false;
+                for (const auto& component : components[i])
+                {
+                    const auto* info = core::reflection::ComponentRegistry::get(component.family);
+                    core::JsonArchiveReader reader(component.value);
+                    if (!core::reflection::load(reader, loading, *info->metaType, batch.addComponent(copy, component.family))) return false;
+                }
+            }
+            const auto parent = scene.entities().try_get(root)->parent;
+            if (!loading.finishLoad() || !scene.append(std::move(batch)) || !scene.setParent(copies.at(root), parent)) return false;
+        }
+        else
+        {
+            scene.destroyEntity(root); candidate->settle();
+            std::erase_if(keys, [&](const auto& entry) { return !scene.entities().contains(entry.second); });
+        }
+        if (!_storage.snapshot(scene, after->archive))
+        {
+            _error = "Cannot save the changed branch; check references to deleted objects.";
+            return false;
+        }
+        for (const auto& entity : scene.entities())
+        {
+            if (entity.id == core::EntityManager::ROOT_PARENT) continue;
+            for (const auto& [entityKey, id] : keys) if (id == entity.id) { after->keys.push_back(entityKey); break; }
+        }
+        // Validate the complete result before committing; dangling required
+        // references must not leave the live document partially changed.
+        auto validation = std::make_unique<core::SceneInstance>();
+        if (!_storage.restore(after->archive, validation->scene())) return false;
+        auto command = std::make_unique<FunctionCommand>(duplicate ? "Duplicate object" : "Delete object",
+            [this, after, copyKey](EditContext&) { if (!restore(*after)) return false; _createdKey = copyKey; return true; },
+            [this, before, key](EditContext&) { if (!restore(*before)) return false; _createdKey = key; return true; });
+        auto context = editContext();
+        return _history.execute(std::move(command), context);
+    }
+
     bool SceneSession::play()
     {
         if (_runtime) return true;
@@ -203,6 +358,10 @@ namespace csyren::editor
         case SceneOperation::SaveAs: return save(request.path);
         case SceneOperation::Play: return play();
         case SceneOperation::CreateEntity: return create(request.position);
+        case SceneOperation::AddComponent: return changeComponent(request.entity, request.component, true);
+        case SceneOperation::RemoveComponent: return changeComponent(request.entity, request.component, false);
+        case SceneOperation::DuplicateEntity: return changeBranch(request.entity, true);
+        case SceneOperation::DeleteEntity: return changeBranch(request.entity, false);
         case SceneOperation::Undo: { auto context = editContext(); return _history.undo(context); }
         case SceneOperation::Redo: { auto context = editContext(); return _history.redo(context); }
         default: return false;
