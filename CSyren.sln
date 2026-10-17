@@ -52,6 +52,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "imGui", "lib\imGui\imGui.vc
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "scene_workflow_tests", "test\core_tests\scene_workflow_tests.vcxproj", "{34837254-7795-4E1B-9B36-E9E8363E079B}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dx12_graphic_tests", "test\dx12_graphic_tests\dx12_graphic_tests.vcxproj", "{80F45382-8AF5-42CC-B40B-067FC2942E75}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -62,6 +64,10 @@ Global
 		{34837254-7795-4E1B-9B36-E9E8363E079B}.Debug|x64.Build.0 = Debug|x64
 		{34837254-7795-4E1B-9B36-E9E8363E079B}.Release|x64.ActiveCfg = Release|x64
 		{34837254-7795-4E1B-9B36-E9E8363E079B}.Release|x64.Build.0 = Release|x64
+		{80F45382-8AF5-42CC-B40B-067FC2942E75}.Debug|x64.ActiveCfg = Debug|x64
+		{80F45382-8AF5-42CC-B40B-067FC2942E75}.Debug|x64.Build.0 = Debug|x64
+		{80F45382-8AF5-42CC-B40B-067FC2942E75}.Release|x64.ActiveCfg = Release|x64
+		{80F45382-8AF5-42CC-B40B-067FC2942E75}.Release|x64.Build.0 = Release|x64
 		{43CB669E-1269-4AD8-A542-1F52AD812FCC}.Debug|x64.ActiveCfg = Debug|x64
 		{43CB669E-1269-4AD8-A542-1F52AD812FCC}.Debug|x64.Build.0 = Debug|x64
 		{43CB669E-1269-4AD8-A542-1F52AD812FCC}.Release|x64.ActiveCfg = Release|x64

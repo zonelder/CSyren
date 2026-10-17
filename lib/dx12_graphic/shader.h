@@ -56,39 +56,14 @@ namespace csyren::render
 	{
 		friend class ResourceStorage<GraphicShader>;
 	public:
-		GraphicShader() = default;
-		bool init(from_source_code_t, const std::string& code);
-		bool init(from_asset_path_t, const std::string& filepath);
-		bool init(const std::string& filepath);
+        GraphicShader() : ShaderBase(ShaderType::Graphics) {}
 
-		const std::vector< D3D12_INPUT_ELEMENT_DESC>& getInputLayout() const noexcept { return _inputLayout; };
-
-		D3D12_SHADER_BYTECODE getPSBytecode() const noexcept 
-		{ 
-			if (!_psBlob) return  { nullptr,0 }; 
-			return { _psBlob->GetBufferPointer(), _psBlob->GetBufferSize() };
-		}
-
-		D3D12_SHADER_BYTECODE getVSBytecode() const noexcept 
-		{
-			if (!_vsBlob) return  { nullptr,0 };
-			return { _vsBlob->GetBufferPointer(), _vsBlob->GetBufferSize() };
-		}
-		D3D12_SHADER_BYTECODE getGSBytecode() const noexcept
-		{
-			if (!_gsBlob) return  { nullptr,0 };
-			return { _gsBlob->GetBufferPointer(), _gsBlob->GetBufferSize() };
-		}
-		D3D12_SHADER_BYTECODE getHSBytecode() const noexcept
-		{
-			if (!_hsBlob) return  { nullptr,0 };
-			return { _hsBlob->GetBufferPointer(), _hsBlob->GetBufferSize() };
-		}
-		D3D12_SHADER_BYTECODE getDSBytecode() const noexcept
-		{
-			if (!_dsBlob) return  { nullptr,0 };
-			return { _dsBlob->GetBufferPointer(), _dsBlob->GetBufferSize() };
-		}
+        const std::vector<D3D12_INPUT_ELEMENT_DESC>& getInputLayout() const noexcept { return _inputLayout; }
+        D3D12_SHADER_BYTECODE getPSBytecode() const noexcept { return getBytecode(ShaderStage::Pixel); }
+        D3D12_SHADER_BYTECODE getVSBytecode() const noexcept { return getBytecode(ShaderStage::Vertex); }
+        D3D12_SHADER_BYTECODE getGSBytecode() const noexcept { return getBytecode(ShaderStage::Geometry); }
+        D3D12_SHADER_BYTECODE getHSBytecode() const noexcept { return getBytecode(ShaderStage::Hull); }
+        D3D12_SHADER_BYTECODE getDSBytecode() const noexcept { return getBytecode(ShaderStage::Domain); }
 
 		const LinkedBuffer* getConstantBuffer(details::CBufferUpdateType updateType) const noexcept;
 
@@ -96,17 +71,9 @@ namespace csyren::render
 	private:
 		bool buildInputLayoutFromReflection();
 
-		bool compileAndInit(const std::string& shaderCode, const std::filesystem::path relativePath);
-		bool finalizeInit(ID3D12Device* device);
-		bool loadPrecompiledAndInit(const std::filesystem::path& relativePath);
-		void linkSemantics();
-		void buildSemanticLayout();
-
-		Microsoft::WRL::ComPtr< ID3DBlob> _vsBlob;
-		Microsoft::WRL::ComPtr< ID3DBlob> _psBlob;
-		Microsoft::WRL::ComPtr< ID3DBlob> _gsBlob;
-		Microsoft::WRL::ComPtr< ID3DBlob> _hsBlob;
-		Microsoft::WRL::ComPtr< ID3DBlob> _dsBlob;
+        bool finalizeInit(ID3D12Device* device) override;
+        void linkSemantics();
+        void buildSemanticLayout();
 
 		std::vector<LinkedBuffer>								_linkedBuffers;
 		std::vector<SemanticBufferLayout>						_semanticLayouts;

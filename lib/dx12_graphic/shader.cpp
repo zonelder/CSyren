@@ -2,9 +2,6 @@
 #include "shader.h"
 #include "core/project_paths.h"
 #include "cstdmf/string_utils.h"
-#include "renderer.h"
-#include "resource_manager.h"
-#include "cstdmf/string_utils.h"
 
 #include <algorithm>
 #include <regex>
@@ -16,21 +13,6 @@ namespace csyren::render
 {
 	bool GraphicShader::finalizeInit(ID3D12Device* device)
 	{
-        std::vector<std::pair<D3D12_SHADER_VISIBILITY, ID3DBlob*>> blobs;
-        blobs.reserve(6);
-
-        blobs.emplace_back(D3D12_SHADER_VISIBILITY_VERTEX,   _vsBlob.Get());
-        blobs.emplace_back(D3D12_SHADER_VISIBILITY_PIXEL,    _psBlob.Get());
-        blobs.emplace_back(D3D12_SHADER_VISIBILITY_DOMAIN,   _dsBlob.Get());
-        blobs.emplace_back(D3D12_SHADER_VISIBILITY_HULL,     _hsBlob.Get());
-        blobs.emplace_back(D3D12_SHADER_VISIBILITY_GEOMETRY, _gsBlob.Get());
-
-        if (!buildRootSignatureFromReflection(device, blobs))
-        {
-            log::error("GraphicShader::init : cant read reflection from shader.");
-            return false;
-        }
-
         if (!buildInputLayoutFromReflection())
         {
             log::error("GraphicShader::init : failed to build Input Layout from reflection.");
@@ -45,141 +27,10 @@ namespace csyren::render
 
 	}
 
-    bool GraphicShader::init(from_source_code_t, const std::string& code)
-    {
-        return compileAndInit(code,"");
-    }
-
-    bool GraphicShader::init(from_asset_path_t, const std::string& filepath)
-    {
-        return init(filepath);
-    }
-
-    bool GraphicShader::init(const std::string& assetPath)
-    {
-        const auto relativePath = core::pathFromUtf8(assetPath);
-
-#if defined(_DEBUG)
-
-        std::ifstream source(core::projectAssetPath(relativePath), std::ios::binary);
-        std::string shaderCode{ std::istreambuf_iterator<char>(source), std::istreambuf_iterator<char>() };
-        if (shaderCode.empty())
-        {
-            log::error("GraphicShader::init: Source file not found in DEBUG mode: {}", assetPath);
-            return false;
-        }
-        return compileAndInit(shaderCode, relativePath);
-#else
-        return loadPrecompiledAndInit(relativePath);
-#endif
-    }
-
-    bool GraphicShader::compileAndInit(const std::string& shaderCode, const std::filesystem::path relativePath)
-    {
-        Renderer& renderer = *core::Services::get<Renderer>();
-        auto path = relativePath.string();
-        log::info("GraphicShader {}: Compiling on the fly...", path);
-        constexpr bool INGORE_MISSING_SHADER_STEP = true;
-
-        _vsBlob = compileShader(shaderCode, "vs_5_1", "VSMain");
-        _psBlob = compileShader(shaderCode, "ps_5_1", "PSMain");
-        _gsBlob = compileShader(shaderCode, "gs_5_1", "GSMain", INGORE_MISSING_SHADER_STEP);
-        _hsBlob = compileShader(shaderCode, "hs_5_1", "HSMain", INGORE_MISSING_SHADER_STEP);
-        _dsBlob = compileShader(shaderCode, "ds_5_1", "DSMain", INGORE_MISSING_SHADER_STEP);
-
-        _meta = ShaderMetaBuilder::build(shaderCode);
-        if (!_meta)
-        {
-            log::error("GraphicShader {}: Failed to build metadata from source", path);
-            return false;
-        }
-
-        if (!path.empty())
-        {
-            std::filesystem::path buildPath = core::projectBuildPath(relativePath);
-            std::filesystem::path buildDir = buildPath.parent_path();
-            std::filesystem::create_directories(buildDir);
-
-            std::filesystem::path metaPath = buildPath;
-            metaPath.replace_extension("json");
-            ShaderMetaBuilder::save(*_meta, metaPath.string());
-
-            // universal shader stage saver
-            std::vector<std::pair<ID3DBlob*, std::string>> stages = {
-                { _vsBlob.Get(), "_vs.cso" },
-                { _psBlob.Get(), "_ps.cso" },
-                { _gsBlob.Get(), "_gs.cso" },
-                { _hsBlob.Get(), "_hs.cso" },
-                { _dsBlob.Get(), "_ds.cso" }
-            };
-
-            for (auto& [blob, suffix] : stages)
-            {
-                if (!blob)
-                    continue; // optional stage (missing entry point)
-
-                std::filesystem::path blobPath = buildPath;
-                blobPath.replace_extension(suffix);
-
-                HRESULT hr = D3DWriteBlobToFile(blob, blobPath.c_str(), TRUE);
-                if (FAILED(hr))
-                {
-                    log::error("Failed to save shader blob {}", blobPath.string());
-                }
-            }
-
-            //TODO save opitional shader steps
-            log::info("GraphicShader {}: Build shader saved.", path);
-        }
-        return finalizeInit(renderer.device());
-    }
-
-    bool GraphicShader::loadPrecompiledAndInit(const std::filesystem::path& relativePath)
-    {
-        Renderer& renderer = *core::Services::get<Renderer>();
-        log::info("GraphicShader {} : loading pre compiled data...", relativePath.string());
-        std::filesystem::path buildPath = core::projectBuildPath(relativePath);
-
-        std::filesystem::path metaPath = buildPath;
-        metaPath.replace_extension("json");
-
-        std::ifstream metaFile(metaPath);
-
-        if (!metaFile.is_open())
-        {
-            log::error("GraphicShader : Could not load metadata file: {}", metaPath.string());
-            return false;
-        }
-
-        _meta = ShaderMetaBuilder::build(nlohmann::json::parse(metaFile));
-        if (!_meta)
-        {
-            log::error("GraphicShader : Filed to build metadata from file {}.", metaPath.string());
-            return false;
-        }
-
-        std::filesystem::path vsBlobPath = buildPath;
-        vsBlobPath.replace_extension("_vs.cso");
-
-        if (DX_LOG(D3DReadFileToBlob(vsBlobPath.c_str(), &_vsBlob)))
-        {
-            return false;
-        }
-
-        std::filesystem::path psBlobPath = buildPath;
-        psBlobPath.replace_extension("_ps.cso");
-        if (DX_LOG(D3DReadFileToBlob(psBlobPath.c_str(), &_psBlob)))
-        {
-            return false;
-        }
-        return finalizeInit(renderer.device());
-
-    }
-
     bool GraphicShader::buildInputLayoutFromReflection()
     {
         Microsoft::WRL::ComPtr<ID3D12ShaderReflection> reflection;
-        HRESULT hr = D3DReflect(_vsBlob->GetBufferPointer(), _vsBlob->GetBufferSize(), IID_PPV_ARGS(&reflection));
+        HRESULT hr = D3DReflect(stageBlob(ShaderStage::Vertex)->GetBufferPointer(), stageBlob(ShaderStage::Vertex)->GetBufferSize(), IID_PPV_ARGS(&reflection));
         if (DX_FAILED(hr))
         {
             return false;
@@ -187,6 +38,7 @@ namespace csyren::render
         D3D12_SHADER_DESC shaderDesc;
         reflection->GetDesc(&shaderDesc);
         _inputLayout.clear();
+        _InputLayoutSemantic.clear();
         _inputLayout.reserve(shaderDesc.InputParameters);
         _InputLayoutSemantic.reserve(shaderDesc.InputParameters);
 

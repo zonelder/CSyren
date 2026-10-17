@@ -6,9 +6,6 @@ namespace csyren::render
 {
 	void RenderQueue::execute()
 	{
-#ifndef _DEBUG
-		statistic_.reset();
-#endif
 		std::vector< ID3D12CommandList* > cmdLists;
 		cmdLists.reserve(frameContexts_.size());
 
@@ -27,9 +24,6 @@ namespace csyren::render
 		{
 			frame->signalFence(fenceValue);
 			fenceValue = fenceValue;
-#ifndef _DEBUG
-			statistic_ += frame->getStatistic();
-#endif
 		}
 
 

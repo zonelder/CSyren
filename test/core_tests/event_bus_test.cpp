@@ -315,3 +315,17 @@ TEST_F(EventBusTest, NoSubscribers) {
         bus->commit_batch();
         });
 }
+TEST(EventBusConcurrency, SubscriptionDuringDispatchUsesStableSnapshot) {
+    struct Event { int value; };
+    auto bus = std::make_unique<csyren::core::EventBus2>();
+    auto publisher = bus->register_publisher<Event>();
+    int first = 0, next = 0;
+    bus->subscribe<Event>([&](auto&) {
+        ++first;
+        for (int i = 0; i < 128; ++i) bus->subscribe<Event>([&](auto&) { ++next; });
+    });
+    bus->publish(publisher, Event{1}); bus->commit_batch();
+    EXPECT_EQ(first, 1); EXPECT_EQ(next, 0);
+    bus->publish(publisher, Event{2}); bus->commit_batch();
+    EXPECT_EQ(first, 2); EXPECT_EQ(next, 128);
+}

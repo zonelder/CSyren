@@ -1,10 +1,44 @@
 {
     "systems": [
-        { "class": "InputDispatchSystem", "scene": "active" },
-        { "class": "SceneLoaderSystem", "scene": "editor" },
-        { "class": "EditorCameraControllerSystem", "scene": "editor" },
-        { "class": "RenderEnvironmentSystem", "scene": "active" },
-        { "class": "MeshRenderSystem", "scene": "active" },
-        { "class": "EditorSystem", "scene": "editor" }
+        {
+            "class": "InputDispatchSystem",
+            "scene": "active"
+        },
+        {
+            "class": "SceneLoaderSystem",
+            "scene": "editor"
+        },
+        {
+            "class": "EditorCameraControllerSystem",
+            "scene": "editor"
+        },
+        {
+            "class": "RenderEnvironmentSystem",
+            "scene": "active"
+        },
+        {
+            "class": "FrameAcquireSystem",
+            "scene": "active"
+        },
+        {
+            "class": "FramePrepareSystem",
+            "scene": "active"
+        },
+        {
+            "class": "MeshRenderSystem",
+            "scene": "active"
+        },
+        {
+            "class": "EditorSystem",
+            "scene": "editor"
+        },
+        {
+            "class": "PresentationSystem",
+            "scene": "active"
+        },
+        {
+            "class": "SceneEventsSystem",
+            "scene": "active"
+        }
     ]
 }

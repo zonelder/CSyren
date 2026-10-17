@@ -2,6 +2,7 @@
 #include "shader_meta.h"
 #include <regex>
 #include "cstdmf/string_utils.h"
+#include "cstdmf/file_system.h"
 
 namespace csyren::render::details
 {
@@ -216,16 +217,10 @@ namespace csyren::render
        jsonData["variables"] = variableJson;
        jsonData["cbuffers"] = cbufferJson;
 
-       std::ofstream file(filepath);
-       if (!file.is_open()) 
-       {
-           log::error("ShaderMetaBuilder::save:Could not open file for writing: {}", filepath);
-           return false;
-       }
-
        try 
        {
-           file << jsonData.dump(4);
+           if (!cstdmf::FileSystem::instance().writeFile(filepath, jsonData.dump(4)))
+               return false;
        }
        catch (const nlohmann::json::exception& e) 
        {

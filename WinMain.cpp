@@ -1,6 +1,7 @@
 #define CONSOLE_ENABLE
 
 #include <iostream>
+#include "cstdmf/window_clean.h"
 #include "application.h"
 #include "startup_options.h"
 #include <shellapi.h>

@@ -4,6 +4,7 @@
 #include "dx_main.h"
 #include "command_list.h"
 #include "dx_log.h"
+#include <stdexcept>
 
 
 namespace csyren::render
@@ -25,9 +26,6 @@ namespace csyren::render
 	{
 	public:
 		RenderQueue() = default;
-#ifndef _DEBUG
-		using Statistic = CommandList::Statistic;
-#endif
 		bool init(ID3D12Device* device, const D3D12_COMMAND_QUEUE_DESC& desc)
 		{
 			if (DX_FAILED(device->CreateCommandQueue(&desc, IID_PPV_ARGS(&_pQueue))))
@@ -67,6 +65,11 @@ namespace csyren::render
 			_pQueue->Wait(other.fence_.Get(), fenceValueToWait);
 		}
 
+        void awaitFence(const RenderQueue& other, UINT64 value) {
+            if (value && FAILED(_pQueue->Wait(other.fence_.Get(), value)))
+                throw std::runtime_error("GPU queue wait failed");
+        }
+
 		/**
 		* @brief Convenience method to signal and then immediately wait for completion.
 		*
@@ -84,14 +87,16 @@ namespace csyren::render
 		 *
 		 * @param fenceValue The fence value to wait for
 		 */
-		void syncAwaitComplete(UINT64  fenceValue)
-		{
-			if (fenceValue != EMPTY_CMD_QUEUE && fence_->GetCompletedValue() < fenceValue)
-			{
-				fence_->SetEventOnCompletion(fenceValue, fenceEvent_);
-				WaitForSingleObject(fenceEvent_, INFINITE);
-			}
-		}
+        void syncAwaitComplete(UINT64 value) {
+            if (!value || fence_->GetCompletedValue() >= value) return;
+            HANDLE event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+            if (!event) throw std::runtime_error("Failed to allocate GPU completion event");
+            const auto result = fence_->SetEventOnCompletion(value, event);
+            if (FAILED(result)) { CloseHandle(event); throw std::runtime_error("GPU fence wait failed"); }
+            const auto waited = WaitForSingleObject(event, INFINITE);
+            CloseHandle(event);
+            if (waited != WAIT_OBJECT_0) throw std::runtime_error("GPU completion wait failed");
+        }
 
 		/**
 		 * @brief Returns the last completed fence value.
@@ -118,7 +123,7 @@ namespace csyren::render
 		UINT64 signal()
 		{
 			++fenceValue_;
-			_pQueue->Signal(fence_.Get(), fenceValue_);
+            if (FAILED(_pQueue->Signal(fence_.Get(), fenceValue_))) throw std::runtime_error("GPU queue signal failed");
 			return fenceValue_;
 		}
 
@@ -156,17 +161,8 @@ namespace csyren::render
 		{
 			return type_;
 		}
-#ifndef _DEBUG
-		const Statistic& getStatistic() const noexcept
-		{
-			return statistic_;
-		};
-#endif
 
 	private:
-#ifndef _DEBUG
-		Statistic							statistic_;
-#endif
 		static constexpr UINT64 EMPTY_CMD_QUEUE = 0u;
 
 		details::ComPtr< ID3D12CommandQueue >	_pQueue;

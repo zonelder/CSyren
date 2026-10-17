@@ -10,6 +10,12 @@ namespace csyren::render
     class RenderEnvironmentSystem : public core::System
     {
     public:
+        core::TaskDescription describe() const override {
+            core::TaskDescription d; d.phase = "acquire"; d.before = {"FrameAcquireSystem"};
+            d.affinity = core::TaskAffinity::MainThread;
+            d.writeResource<Renderer>().readResource<core::Time>(); return d;
+        }
+        void execute() override { updateLight(); }
         void init() override
         {
             // Register factories before the startup scene resolves its resources.
@@ -32,7 +38,7 @@ namespace csyren::render
         static void updateLight()
         {
             core::Services::get<Renderer>()->getEngineVariableBuffer()->lightDirection =
-                lightDirection(core::Services::get<core::Time>()->totalTime());
+                lightDirection(core::Services::get<const core::Time>()->totalTime());
         }
     };
     REGISTER_SYSTEM(RenderEnvironmentSystem)

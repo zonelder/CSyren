@@ -2,6 +2,7 @@
 #define	 __CSYREN_COMPONENT_POOL__
 #include "component_base.h"
 #include "entity.h"
+#include <unordered_map>
 
 #include "cstdmf/page_view.h"
 #include "cstdmf/sparse_set.h"
@@ -35,6 +36,7 @@ namespace csyren::core
             if (!existing && value) it->second = ++_nextGeneration;
             return value;
         }
+        uint64_t version(Entity::ID id) const noexcept { return generation(id); }
         uint64_t generation(Entity::ID id) const noexcept
         {
             auto it = _generations.find(id);

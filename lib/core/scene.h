@@ -6,6 +6,9 @@
 #include <unordered_map>
 #include <memory>
 #include <stdexcept>
+#include <any>
+#include <functional>
+#include <type_traits>
 
 #include "cstdmf/assert_helpler.h"
 #include "component_base.h"
@@ -19,76 +22,63 @@
 #include "command_buffer.h"
 #include "event_bus.h"
 #include "services.h"
+#include "task_description.h"
 
 class SceneTest;
 
 namespace csyren::core::details
 {
-
+    struct SceneJobTestAccess;
 }
 
 namespace csyren::core
 {
-	template<typename T>
-	class ComponentRef
-	{
-	public:
-		ComponentRef() = default;
-		ComponentRef(Entity::ID id, std::shared_ptr<ComponentPool<T>> pool) :
-			_pool(pool),
-			_id(id), _generation(pool ? pool->generation(id) : 0)
-		{}
-
-		T* get() noexcept 
-		{
-			_cached = _pool && _pool->generation(_id) == _generation ? _pool->try_get(_id) : nullptr;
-			return _cached;
-		}
-
-		const T* get() const noexcept 
-		{
-			_cached = _pool && _pool->generation(_id) == _generation ? _pool->try_get(_id) : nullptr;
-			return _cached;
-		}
-
-		T& operator*() noexcept
-		{
-			T* ptr = get();
-			CS_ASSERT(ptr && "Dereferencing invalid ComponentRef!");
-			return *ptr;
-		}
-
-		const T& operator*() const noexcept
-		{
-			const T* ptr = get();
-			CS_ASSERT(ptr && "Dereferencing invalid ComponentRef!");
-			return *ptr;
-		}
-
-		T* operator->() noexcept { return get(); }
-		const T* operator->() const noexcept { return get(); }
-		Entity::ID id() const noexcept { return _id; }
-
-		bool operator==(std::nullptr_t) const { return !static_cast<bool>(*this); }
-		bool operator!=(std::nullptr_t) const { return static_cast<bool>(*this); }
-
-		bool operator==(const ComponentRef& other) const noexcept 
-		{
-			return _id == other._id && _pool == other._pool && _generation == other._generation;
-		}
-
-		bool operator!=(const ComponentRef& other) const noexcept
-		{
-			return !(*this == other);
-		}
-		operator bool() const noexcept { return get() != nullptr; }
-	private:
-
-		std::shared_ptr<ComponentPool<T>> _pool{ nullptr };
-		Entity::ID _id{ Entity::invalidID };
-        uint64_t _generation{};
-		mutable T* _cached{ nullptr };//for debug olny;it is not save to address to this field.
-	};
+    template<class T> struct StagedComponent {
+        std::shared_ptr<T> value;
+        std::shared_ptr<ComponentPool<T>> pool;
+        uint64_t version = 0;
+    };
+    template<typename T> class ComponentRef {
+        using Value = std::remove_const_t<T>;
+    public:
+        template<class> friend class ComponentRef;
+        ComponentRef() = default;
+        template<class U> requires (std::is_const_v<T> && std::is_same_v<U, Value>)
+        ComponentRef(const ComponentRef<U>& other) : _pool(other._pool), _id(other._id), _version(other._version), _staged(other._staged) {}
+        ComponentRef(Entity::ID id, std::shared_ptr<ComponentPool<Value>> pool)
+            : _pool(std::move(pool)), _id(id), _version(_pool ? _pool->version(id) : 0) {}
+        ComponentRef(Entity::ID id, std::shared_ptr<StagedComponent<Value>> staged)
+            : _id(id), _staged(std::move(staged)) {}
+        T* get() noexcept {
+            if (_staged) {
+                if (_staged->value) return _staged->value.get();
+                return _staged->pool && _staged->pool->version(_id) == _staged->version
+                    ? _staged->pool->try_get(_id) : nullptr;
+            }
+            return _pool && _pool->version(_id) == _version ? _pool->try_get(_id) : nullptr;
+        }
+        const T* get() const noexcept { return const_cast<ComponentRef*>(this)->get(); }
+        T& operator*() noexcept { auto* p = get(); CS_ASSERT(p); return *p; }
+        const T& operator*() const noexcept { auto* p = get(); CS_ASSERT(p); return *p; }
+        T* operator->() noexcept { return get(); }
+        const T* operator->() const noexcept { return get(); }
+        Entity::ID id() const noexcept { return _id; }
+        explicit operator bool() const noexcept { return get() != nullptr; }
+        bool operator==(std::nullptr_t) const { return !static_cast<bool>(*this); }
+        bool operator!=(std::nullptr_t) const { return static_cast<bool>(*this); }
+        bool operator==(const ComponentRef& other) const noexcept {
+            if (_id != other._id) return false;
+            if ((_staged && _staged->value) || (other._staged && other._staged->value)) return _staged == other._staged;
+            return (_staged ? _staged->pool : _pool) == (other._staged ? other._staged->pool : other._pool) &&
+                (_staged ? _staged->version : _version) == (other._staged ? other._staged->version : other._version);
+        }
+        bool operator!=(const ComponentRef& other) const noexcept { return !(*this == other); }
+    private:
+        std::shared_ptr<ComponentPool<Value>> _pool;
+        Entity::ID _id = Entity::invalidID;
+        uint64_t _version = 0;
+        std::shared_ptr<StagedComponent<Value>> _staged;
+    };
 
 }
 
@@ -118,6 +108,8 @@ namespace csyren::core
 	//class Application;
 	class Scene
 	{
+        friend class SystemManager;
+        friend struct details::SceneJobTestAccess;
 		friend class Application;
 		friend reflection::ComponentRegistry;
 		friend SceneTest;
@@ -146,6 +138,44 @@ namespace csyren::core
         // Scene mutation and EventBus dispatch must not run concurrently with append.
         bool append(EntityBatch&& data);
 
+    private:
+        // Owned by a graph task. Public Scene methods automatically use the active
+        // transaction; users never manage command buffers or temporary entity IDs.
+        class Transaction {
+            friend class Scene;
+            template<typename...> friend class SceneView;
+            std::vector<std::function<void()>> commands;
+            std::vector<std::function<void()>> cancellations;
+            std::unordered_map<uint64_t, std::any> components;
+            std::unordered_map<Entity::ID, bool> entities;
+        public:
+            void apply(Scene& scene) {
+                try {
+                    for (auto& command : commands) command();
+                    scene.flush();
+                } catch (...) { discard(); throw; }
+                discard();
+            }
+            void discard() {
+                for (auto& cancel : cancellations) cancel();
+                cancellations.clear(); commands.clear(); components.clear(); entities.clear();
+            }
+        };
+        class TaskScope {
+        public:
+            TaskScope(Scene& scene, Transaction* transaction, const TaskDescription* description = nullptr) : _previous(_active), _binding{&scene, transaction, description} { _active = &_binding; }
+            ~TaskScope() { _active = _previous; }
+            TaskScope(const TaskScope&) = delete;
+        private:
+            struct Binding { Scene* scene; Transaction* transaction; const TaskDescription* description; };
+            Binding* _previous;
+            Binding _binding;
+            inline static thread_local Binding* _active = nullptr;
+            friend class Scene;
+        };
+
+    public:
+		EventBus2& eventBus() const { return *_bus; }
 		explicit Scene(EventBus2* bus) : _bus(bus) {}
 
 		void init()
@@ -160,8 +190,20 @@ namespace csyren::core
 			_em.init();			
 		}
 
-		bool setName(Entity::ID id, std::string_view newName) { return _em.setName(id, newName); }
-        bool setParent(Entity::ID id, Entity::ID parent) { return _em.setParent(id, parent); }
+		bool setParent(Entity::ID id, Entity::ID parent) {
+            requireStructuralAccess();
+            if (auto* tx = transaction()) { tx->commands.emplace_back([this, id, parent] { _em.setParent(id, parent); }); return true; }
+            return _em.setParent(id, parent);
+        }
+        bool setName(Entity::ID id, std::string_view newName) {
+            requireStructuralAccess();
+            if (auto* tx = transaction()) {
+                std::string name(newName);
+                tx->commands.emplace_back([this, id, name = std::move(name)] { _em.setName(id, name); });
+                return tx->entities.contains(id) || _em.contains(id);
+            }
+            return _em.setName(id, newName);
+        }
 
 		[[nodiscard]] Entity::ID createEntity(Entity::ID parent = EntityManager::ROOT_PARENT)
 		{
@@ -171,18 +213,55 @@ namespace csyren::core
 		[[nodiscard]] Entity::ID createEntity(std::string_view name,
 			Entity::ID parent = EntityManager::ROOT_PARENT)
 		{
-			Entity::ID id = _em.createEntity(name, parent);
-            _bus->publish(_entityCreateToken, EntityCreateEvent{ id });
+            requireStructuralAccess();
+            if (auto* tx = transaction()) {
+                const auto id = _em.reserveId();
+                tx->entities.emplace(id, true);
+                tx->commands.emplace_back([this, id, parent, name = std::string(name)] {
+                    _em.createReservedEntity(id, name, parent);
+                    _bus->publish(_entityCreateToken, EntityCreateEvent{id});
+                });
+                return id;
+            }
+            Entity::ID id = _em.createEntity(name, parent);
+			_bus->publish(_entityCreateToken, EntityCreateEvent{ id });
 			return id;
 		}
 
-		void destroyEntity(Entity::ID id) { _em.queueDestroy(id); }
+		void destroyEntity(Entity::ID id) {
+            requireStructuralAccess();
+            if (auto* tx = transaction()) {
+                tx->commands.emplace_back([this, id] { _em.queueDestroy(id); });
+                return;
+            }
+            _em.queueDestroy(id);
+        }
 
 		template<typename T, typename... Args>
 		ComponentRef<T> addComponent(Entity::ID id, Args&&... args)
-		{
-			Entity* ent = _em.tryGet(id);
-			if (!ent) return ComponentRef<T>();
+        {
+            requireStructuralAccess();
+            requireComponentAccess<T>();
+            if (auto* tx = transaction()) {
+                if (!tx->entities.contains(id) && !_em.contains(id)) return {};
+                const auto family = reflection::ComponentFamily::getID<T>();
+                const uint64_t key = componentKey(id, family);
+                if (hasComponent<T>(id)) throw std::runtime_error("Component already present");
+                auto staged = std::make_shared<StagedComponent<T>>();
+                staged->value = std::make_shared<T>(std::forward<Args>(args)...);
+                ComponentRef<T> result(id, staged);
+                tx->components.insert_or_assign(key, result);
+                tx->cancellations.emplace_back([staged] { if (staged->value) staged->value.reset(); });
+                tx->commands.emplace_back([this, id, staged] {
+                    auto live = addComponent<T>(id, std::move_if_noexcept(*staged->value));
+                    staged->pool = getPool<T>();
+                    staged->version = staged->pool ? staged->pool->version(id) : 0;
+                    staged->value.reset();
+                });
+                return result;
+            }
+            Entity* ent = _em.tryGet(id);
+            if (!ent) return ComponentRef<T>();
 
 			const size_t family = reflection::ComponentFamily::getID<T>();
 			if (ent->has(family)) throw std::runtime_error("Component Already presented)");
@@ -199,17 +278,39 @@ namespace csyren::core
 			return compRef;
 		}
 
-		template<typename T> bool          hasComponent(Entity::ID id) { return _em.contains(id) && _em.tryGet(id)->has(reflection::ComponentFamily::getID<T>()); }
-		template<typename T> void          removeComponent(Entity::ID id) { removeComponent(id, reflection::ComponentFamily::getID<T>()); }
+		template<typename T> bool hasComponent(Entity::ID id) { return bool(getComponent<const std::remove_const_t<T>>(id)); }
+		template<typename T> void removeComponent(Entity::ID id) { requireComponentAccess<T>(); removeComponent(id, reflection::ComponentFamily::getID<T>()); }
 		void                               removeComponent(Entity::ID id, size_t family)
 		{
-			if (Entity* ent = _em.tryGet(id); ent && ent->has(family))
-				_deferred.emplace_back(DestroyComponentCommand{ id, family });
+            requireStructuralAccess();
+            if (auto* tx = transaction()) {
+                tx->components.insert_or_assign(componentKey(id, family), std::any{});
+                tx->commands.emplace_back([this, id, family] {
+                    auto it = _cStates.find(family);
+                    if (it != _cStates.end()) it->second.meta->destroy(this, id);
+                });
+                return;
+            }
+            if (Entity* ent = _em.tryGet(id); ent && ent->has(family))
+                _deferred.emplace_back(DestroyComponentCommand{ id, family });
 		}
 
 		template<typename T> ComponentRef<T> getComponent(Entity::ID id)
 		{
-			return _em.contains(id) ? ComponentRef<T>(id, getPool<T>()) : ComponentRef<T>();
+            using Value = std::remove_const_t<T>;
+            requireComponentAccess<T>();
+            if (auto* tx = transaction()) {
+                auto it = tx->components.find(componentKey(id, reflection::ComponentFamily::getID<Value>()));
+                if (it != tx->components.end()) {
+                    if (!it->second.has_value()) return {};
+                    if constexpr (!std::is_const_v<T>) return std::any_cast<ComponentRef<Value>>(it->second);
+                    else {
+                        auto writable = std::any_cast<ComponentRef<Value>>(it->second);
+                        return ComponentRef<T>(writable);
+                    }
+                }
+            }
+            return ComponentRef<T>(id, getPool<Value>());
 		}
 
 		void* getComponentRaw(Entity::ID id, size_t family)
@@ -220,13 +321,23 @@ namespace csyren::core
 		}
 
 		template<typename... Cs>
-		SceneView<Cs...> view(){ return SceneView<Cs...>(this); }
+		SceneView<Cs...> view(){ (requireComponentAccess<Cs>(), ...); return SceneView<Cs...>(this); }
 
-		const cstdmf::SparseSet<Entity>& entities() const { return _em.all(); }
+		const cstdmf::SparseSet<Entity>& entities() const {
+            const auto* b = TaskScope::_active;
+            if (b && b->scene == this && b->description && !b->description->exclusiveScene && !b->description->structuralChanges) {
+                const auto& accesses = b->description->accesses;
+                if (std::none_of(accesses.begin(), accesses.end(), [](const auto& a) {
+                    return !a.component && a.type == std::type_index(typeid(SceneEntities));
+                })) throw std::logic_error("System must declare SceneEntities access before enumerating entities");
+            }
+            return _em.all();
+        }
 
 
-		void flush()
-		{
+        void flush()
+        {
+            if (transaction()) return; // The graph owns the safe application point.
 			for (const auto& e : _deferred)
 			{
 				auto it = _cStates.find(e.family);
@@ -260,6 +371,27 @@ namespace csyren::core
 		}
 
 	private:
+
+        void requireStructuralAccess() const {
+            const auto* b = TaskScope::_active;
+            if (b && b->scene == this && !b->transaction)
+                throw std::logic_error("System must declare structuralChanges before changing Scene structure");
+        }
+        template<class T> void requireComponentAccess() const {
+            const auto* b = TaskScope::_active;
+            if (!b || b->scene != this || !b->description || b->description->exclusiveScene) return;
+            const auto type = std::type_index(typeid(std::remove_const_t<T>));
+            for (const auto& a : b->description->accesses)
+                if (a.component && a.type == type && (std::is_const_v<T> || a.mode == AccessMode::Write)) return;
+            throw std::logic_error("Undeclared component access in system: " + std::string(type.name()));
+        }
+        Transaction* transaction() const {
+            auto* binding = TaskScope::_active;
+            return binding && binding->scene == this ? binding->transaction : nullptr;
+        }
+        static uint64_t componentKey(Entity::ID id, size_t family) {
+            return (uint64_t(id) << 32) | uint32_t(family);
+        }
 
 		template<class T>
 		bool destroy(Entity::ID id)
@@ -351,7 +483,7 @@ namespace csyren::core
 	class SceneView
 	{
 		template<class T>
-		using PoolPtr = std::shared_ptr<ComponentPool<T>>;
+		using PoolPtr = std::shared_ptr<ComponentPool<std::remove_const_t<T>>>;
 		using Pools = std::tuple<PoolPtr<Cs>...>;
 		using DenseContainer = std::vector<Entity::ID>;
 		using DenseIt = DenseContainer::const_iterator;
@@ -453,31 +585,56 @@ namespace csyren::core
 		[[nodiscard]] std::tuple<Cs&...> get(Entity::ID id)
 		{
 			assert(contains(id) && "Entity does not belong to this view");
+            if (_overlayMode) return std::tuple<Cs&...>(*(_scene->template getComponent<Cs>(id))...);
 			return std::tie((*std::get<PoolPtr<Cs>>(_pools))[id]...);
 		}
 		[[nodiscard]] std::tuple<const Cs&...> get(Entity::ID id) const
 		{
 			assert(contains(id) && "Entity does not belong to this view");
+            if (_overlayMode) return std::tuple<const Cs&...>(*(_scene->template getComponent<const std::remove_const_t<Cs>>(id))...);
 			return std::tie((*std::get<PoolPtr<Cs>>(_pools))[id]...);
 		}
 
 	private:
 		auto make_pointer_tuple(Entity::ID id) const
 		{
+            if (_overlayMode) return std::tuple<Entity::ID, const Cs&...>(id, *(_scene->template getComponent<const std::remove_const_t<Cs>>(id))...);
 			return std::tuple<Entity::ID,const Cs&...>(id, (*std::get<PoolPtr<Cs>>(_pools))[id]...);
 		}
 		auto make_pointer_tuple(Entity::ID id)
 		{
+            if (_overlayMode) return std::tuple<Entity::ID, Cs&...>(id, *(_scene->template getComponent<Cs>(id))...);
 			return std::tuple<Entity::ID, Cs&...>(id, (*std::get<PoolPtr<Cs>>(_pools))[id]...);
 		}
 		
 		void gather_pools() const
 		{
-			((std::get<PoolPtr<Cs>>(_pools) = _scene->template getPool<Cs>()), ...);
+			((std::get<PoolPtr<Cs>>(_pools) = _scene->template getPool<std::remove_const_t<Cs>>()), ...);
 		}
 
-		void refresh() const
-		{
+        void refresh() const
+        {
+            if (auto* tx = _scene->transaction(); tx && !tx->components.empty()) {
+                if (!_overlayMode) {
+                    gather_pools();
+                    size_t smallest = std::numeric_limits<size_t>::max();
+                    std::apply([&](auto&... pool) {
+                        ([&] {
+                            if (pool && pool->size() < smallest) {
+                                smallest = pool->size();
+                                _overlayKeys.assign(pool->key_begin(), pool->key_end());
+                            }
+                        }(), ...);
+                    }, _pools);
+                    for (const auto& [key, value] : tx->components) _overlayKeys.push_back(Entity::ID(key >> 32));
+                    std::sort(_overlayKeys.begin(), _overlayKeys.end());
+                    _overlayKeys.erase(std::unique(_overlayKeys.begin(), _overlayKeys.end()), _overlayKeys.end());
+                    _overlayMode = true;
+                }
+                _empty = false;
+                _first = _overlayKeys.begin(); _last = _overlayKeys.end();
+                return;
+            }
 			if (!_empty)
 			{
 				pick_smallest();
@@ -508,9 +665,12 @@ namespace csyren::core
 		}
 		bool has_all_components(Entity::ID id) const
 		{
+            if (_overlayMode) return (bool(_scene->template getComponent<const std::remove_const_t<Cs>>(id)) && ...);
 			return (std::get<PoolPtr<Cs>>(_pools)->contains(id) && ...);
 		}
 
+        mutable bool _overlayMode = false;
+        mutable std::vector<Entity::ID> _overlayKeys;
 		mutable Pools _pools;
 		Scene* _scene;
 		mutable DenseIt _first, _last;

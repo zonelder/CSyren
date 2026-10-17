@@ -1,11 +1,84 @@
 {
     "systems": [
-        { "class": "InputDispatchSystem" },
-        { "class": "PhysicsSystem" },
-        { "class": "SpringJoinSystem" },
-        { "class": "DebugRotatorSystem" },
-        { "class": "CubeShooterSystem" },
-        { "class": "RenderEnvironmentSystem" },
-        { "class": "MeshRenderSystem" }
+        {
+            "class": "InputDispatchSystem"
+        },
+        {
+            "class": "PhysicsSystem"
+        },
+        {
+            "class": "SpringJoinSystem"
+        },
+        {
+            "class": "DebugRotatorSystem"
+        },
+        {
+            "class": "CubeShooterSystem"
+        },
+        {
+            "class": "RenderEnvironmentSystem"
+        },
+        {
+            "class": "FrameAcquireSystem"
+        },
+        {
+            "class": "FramePrepareSystem"
+        },
+        {
+            "class": "MeshRenderSystem"
+        },
+        {
+            "class": "PresentationSystem"
+        },
+        {
+            "class": "SceneEventsSystem"
+        }
+    ],
+    "phases": [
+        {
+            "name": "input"
+        },
+        {
+            "name": "scene",
+            "after": [
+                "input"
+            ]
+        },
+        {
+            "name": "simulation",
+            "after": [
+                "scene"
+            ]
+        },
+        {
+            "name": "acquire",
+            "after": [
+                "simulation"
+            ]
+        },
+        {
+            "name": "prepare",
+            "after": [
+                "acquire"
+            ]
+        },
+        {
+            "name": "render",
+            "after": [
+                "prepare"
+            ]
+        },
+        {
+            "name": "submit",
+            "after": [
+                "render"
+            ]
+        },
+        {
+            "name": "events",
+            "after": [
+                "submit"
+            ]
+        }
     ]
 }

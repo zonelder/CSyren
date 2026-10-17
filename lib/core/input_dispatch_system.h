@@ -16,11 +16,13 @@ namespace csyren::core
 	class InputDispatchSystem : public System,private details::DispatchHandle
 	{
 	public:
+        core::TaskDescription describe() const override;
+
 		void init() override;
 
 		void shutdown() override;
 
-		void update() override;
+		void execute() override;
 	protected:
 		void onAttach() override;
 		void onDetach() noexcept override;

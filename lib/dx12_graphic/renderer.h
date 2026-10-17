@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <thread>
 
 #include "dx_main.h"
 
@@ -32,6 +33,7 @@
 
 namespace csyren::render
 {
+    namespace details { class FrameGraphBackend; }
 	//class ResourceManager;
 
 	struct  alignas(16) PerFrameBuffer
@@ -51,6 +53,7 @@ namespace csyren::render
 	class Renderer
 	{
 	public:
+		static constexpr UINT FramesInFlight = 3;
 		Renderer() noexcept = default;
 		~Renderer();
 
@@ -58,24 +61,21 @@ namespace csyren::render
 		Renderer& operator=(const Renderer&) = delete;
 
 		bool earlyInit();
-		void init();
-		void beginFrame();
-		void clear(const FLOAT color[4]);
-		void endFrame();
+
 
 
 		void beginResourceUpload();
 		void endResourceUpload();
 
-		ID3D12GraphicsCommandList* commandList() const noexcept { return _cmdLists[_frameIndex].raw(); }
+		ID3D12GraphicsCommandList* commandList() const;
 		ID3D12Device* device() const noexcept { return _device.Get(); }
 
-		UploadRingBuffer* getUploadBuffer() noexcept { return &_perEntityCB; };
+		UploadRingBuffer* getUploadBuffer();
 
-		EngineVariableBuffer* getEngineVariableBuffer() noexcept { return &_engineVariableBuffer; };
-		EntityVariableBuffer* getEntityVariableBuffer() noexcept { return &_entityVariableBuffer; };
+		EngineVariableBuffer* getEngineVariableBuffer();
+		EntityVariableBuffer* getEntityVariableBuffer();
 
-		bool bindMaterial(ResourceManager& rm, MaterialHandle material,const VertexLayout& vertexLayout);
+		bool bindMaterial(const ResourceManager& rm, MaterialHandle material,const VertexLayout& vertexLayout);
 
 		bool bindEntity(const SemanticBufferLayout* layout);
 
@@ -84,29 +84,25 @@ namespace csyren::render
 			return _mainQueue;
 		}
 	private:
+        friend class details::FrameGraphBackend;
+        struct RecordingData {
+            CommandList commands;
+            UploadRingBuffer upload;
+            EngineVariableBuffer engine;
+            EntityVariableBuffer entity;
+            ShaderParameterBinder binder;
+        };
+        struct RecordingBinding { Renderer* renderer; RecordingData* data; };
+        inline static thread_local RecordingBinding* _recording = nullptr;
+        RecordingData* recording() const;
 		void waitForGpu();
-		void resizeSwapChain(uint32_t width, uint32_t height);
 		void enableDebugLayer();
-		void createFactory();
 		void createDevice();
 		void createCommandQueue();
-		void createSwapChain(HWND hwnd,uint32_t width, uint32_t height);
 
-		static constexpr UINT FrameCount = 2;
-
-		details::ComPtr<ID3D12Device>			_device;
-		details::ComPtr<IDXGISwapChain3>		_swapChain;
-		details::ComPtr<IDXGIFactory4>			_factory;
-
-		details::ComPtr<ID3D12Resource> _renderTargets[FrameCount];
-		DescriptorAllocation			_rtv[FrameCount];
-		details::ComPtr<ID3D12Resource> _depthStencil;
-		DescriptorAllocation			_dsv;
-
-		D3D12_RESOURCE_STATES _depthStencilCurrentState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
-
-
-		CommandList								_cmdLists[FrameCount];
+        details::ComPtr<ID3D12Device> _device;
+        CommandList _uploadCommands;
+        std::thread::id _ownerThread;
 		RenderQueue								_mainQueue;
 
 		UploadRingBuffer						_perEntityCB;
@@ -114,12 +110,6 @@ namespace csyren::render
 		EntityVariableBuffer					_entityVariableBuffer;
 		ShaderParameterBinder					_parameterBinder;
 
-		uint32_t								 _width;
-		uint32_t								 _height;
-		uint8_t									_frameIndex;
-		uint8_t									_lastBackBuffer;
-
-		bool									_enableVSync{ false };
 	};
 }
 

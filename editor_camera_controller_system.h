@@ -7,6 +7,7 @@
 #include "core/camera.h"
 #include "math/math.h"
 #include "core/time.h"
+#include "core/devices.h"
 #include "core/transform.h"
 
 #include "editor_camera_controller.h"
@@ -21,13 +22,21 @@ namespace csyren
     class EditorCameraControllerSystem : public core::System
     {
     public:
+        core::TaskDescription describe() const override {
+            core::TaskDescription d; d.phase = "simulation";
+            d.read<core::Camera>().read<EditorCameraController>().write<core::Transform>();
+            d.affinity = core::TaskAffinity::MainThread;
+            d.readResource<core::Devices>().readResource<core::Time>().writeResource<editor::EditorView>(); return d;
+        }
 
-        void update() override
+        explicit EditorCameraControllerSystem() = default;
+
+        void execute() override
         {
 			using ctx = core::Services;
-			auto devices = ctx::get<core::Devices>();
+			auto devices = ctx::get<const core::Devices>();
 			auto editorView = ctx::get<editor::EditorView>();
-			auto time = ctx::get<core::Time>();
+			auto time = ctx::get<const core::Time>();
 
             auto& keyboard = devices->keyboard();
             auto& mouse = devices->mouse();

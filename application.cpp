@@ -1,4 +1,8 @@
+#include "dx12_graphic/gpu_resources.h"
 #include "application.h"
+#include "core/system_manager.h"
+#include "core/window.h"
+#include "serializer.h"
 
 #include <cassert>
 #include <format>
@@ -51,20 +55,6 @@
 
 #include "component_registrator.h"
 
-namespace
-{
-
-	DirectX::XMMATRIX createProjection(csyren::core::Camera& camera)
-	{
-
-		using namespace DirectX;
-		using namespace csyren::core;
-
-        return camera.projectionMatrix();
-	}
-
-}
-
 namespace csyren
 {
 	Application::Application()
@@ -82,7 +72,16 @@ namespace csyren
         _project = ProjectSettings::load(project);
         log::info("Project '{}' loaded; root='{}', assets='{}'", _project.name,
             core::pathToUtf8(_project.paths().root), core::pathToUtf8(_project.paths().assets));
-        return true;
+        auto& files = cstdmf::FileSystem::instance();
+        const auto paths = _project.paths();
+#ifdef CSYREN_ENGINE_ASSETS
+        const std::filesystem::path engineAssets(CSYREN_ENGINE_ASSETS);
+#else
+        const auto engineAssets = paths.assets;
+#endif
+        return files.mount("engine", engineAssets, false)
+            && files.mount("project", paths.assets, true)
+            && files.mount("cache", paths.build({}), true, false);
 	}
 
 	int Application::run()
@@ -97,11 +96,18 @@ namespace csyren
 		editor::EditorRegistry::resolveAll();
 		core::details::TimeHandler timeHandler;
 
-		core::Entity::ID currentCameraEntt = core::Entity::invalidID;
+
 
 		core::details::ServiceRegistry::create<core::Window>(1200, 786, L"csyren engine");
 		core::details::ServiceRegistry::create<core::Time>();
-		core::details::ServiceRegistry::create<core::CameraContextService>([&currentCameraEntt]() { return currentCameraEntt; });
+		core::details::ServiceRegistry::create<core::CameraContextService>([]() {
+            auto* session = core::Services::get<editor::SceneSession>();
+            auto id = core::Entity::invalidID;
+            int priority = (std::numeric_limits<int>::min)();
+            if (session->playing()) for (auto [candidate, camera] : session->activeContext().scene.view<const core::Camera>())
+                if (id == core::Entity::invalidID || camera.priority > priority) { id = candidate; priority = camera.priority; }
+            return id;
+        });
 		core::details::ServiceRegistry::create<Serializer>();
         core::details::ServiceRegistry::create<ArchiveSceneStorage>(*core::Services::get<Serializer>());
         core::details::ServiceRegistry::create<editor::SceneSession>(*core::Services::get<ArchiveSceneStorage>());
@@ -111,6 +117,7 @@ namespace csyren
 		core::details::ServiceRegistry::create<core::SystemManager>();
 		core::details::ServiceRegistry::create<render::DescriptorManager>();
 		core::details::ServiceRegistry::create<render::Renderer>();
+        core::details::ServiceRegistry::create<render::GpuResources>();
 		core::details::ServiceRegistry::create<render::ResourceManager>();
 		core::details::ServiceRegistry::create<render::details::PSOFactory>();
 		core::details::ServiceRegistry::create<editor::EditorSelection>();
@@ -126,6 +133,17 @@ namespace csyren
 		auto stats = core::Services::get<StatisticMonitor>();
 		session->setBind([systems](auto editor, auto active, bool playing) { systems->bind(editor, active, playing); });
 
+        core::Services::get<core::CameraContextService>()->viewProvider([session, window]() {
+            auto* editorView = core::Services::get<editor::EditorView>();
+            editorView->camera.aspectRatio = static_cast<float>(window->width()) / (std::max)(1, window->height());
+            const Camera* camera = &editorView->camera;
+            const Transform* transform = &editorView->transform;
+            bool found = false;
+            if (session->playing()) for (auto [id, candidate, tr] : session->activeContext().scene.view<const Camera, const Transform>()) {
+                if (!found || candidate.priority > camera->priority) { camera = &candidate; transform = &tr; found = true; }
+            }
+            return core::CameraContextService::View{camera, transform};
+        });
         core::details::ServiceRegistry::initializeAll();
 		log::info("-------------------------------------------------------------------------------------------");
 		log::info("-------------------------------Setup Start Up------------------------------------------------");
@@ -162,49 +180,8 @@ namespace csyren
 				DispatchMessage(&msg);
 			}
 
-			systems->update();
-			auto* editorView = core::Services::get<editor::EditorView>();
-            editorView->camera.aspectRatio = static_cast<float>(window->width()) / (std::max)(1, window->height());
-            Camera* activeCamera = &editorView->camera;
-            Transform* activeTransform = &editorView->transform;
-            currentCameraEntt = Entity::invalidID;
-            if (session->playing())
-            {
-                for (auto [id, camera, transform] : session->activeContext().scene.view<Camera, Transform>())
-                {
-                    if (currentCameraEntt == Entity::invalidID || camera.priority > activeCamera->priority)
-                    { currentCameraEntt = id; activeCamera = &camera; activeTransform = &transform; }
-                }
-            }
-            auto& camera = *activeCamera;
-            auto& cameraTransform = *activeTransform;
-			auto engineVariables = renderer->getEngineVariableBuffer();
-			engineVariables->totalTime = time->totalTime();
-			DirectX::XMMATRIX invView = cameraTransform.world();
-			DirectX::XMStoreFloat4x4(&engineVariables->invViewMatrix, invView);
-
-			// viewMatrix = inverse(invViewMatrix)
-			DirectX::XMMATRIX view = DirectX::XMMatrixInverse(nullptr, invView);
-			DirectX::XMStoreFloat4x4(&engineVariables->viewMatrix, view);
-
-			// projectionMatrix = projection
-			DirectX::XMMATRIX proj = createProjection(camera);
-			DirectX::XMStoreFloat4x4(&engineVariables->projectionMatrix, proj);
-
-			// viewProjectionMatrix = view * projection
-			DirectX::XMMATRIX viewProj = DirectX::XMMatrixMultiply(view, proj);
-			DirectX::XMStoreFloat4x4(&engineVariables->viewProjectionMatrix, viewProj);
-
-
-			core::Services::get<render::ResourceManager>()->update();
-			renderer->beginFrame();
-			ID3D12DescriptorHeap* heaps[] = { core::Services::get<render::DescriptorManager>()->shaderHeap()};
-			renderer->commandList()->SetDescriptorHeaps(1, heaps);
-			renderer->clear(&(camera.background.x));
-
-			systems->onFrame();
-
-			renderer->endFrame();
+            try { systems->execute(); }
+            catch (...) { systems->shutdown(); core::details::ServiceRegistry::shutdownAll(); throw; }
 
 			session->settle();
             session->processRequests();
@@ -224,6 +201,11 @@ namespace csyren
         if (!serializer->loadSystems(core::pathToUtf8(paths.resolve(core::pathFromUtf8(_project.appSystems))),
             core::pathToUtf8(paths.resolve(core::pathFromUtf8(_project.editorSystems))), *systems))
             throw std::runtime_error("Failed to load project systems");
+        // Restore the demo material setup before the archive resolves its resource handles.
+        auto* resources = core::Services::get<render::ResourceManager>();
+        auto texture = resources->get<render::Texture>("textures/materials/carpet/carpet04.dds");
+        auto material = render::Primitives::getTextureMaterial();
+        resources->getMaterial(material)->setTexture("diffuseTexture", texture);
         if (!_project.startScene.empty())
         {
 

@@ -26,7 +26,7 @@ namespace csyren::core
 		_tokens[static_cast<uint32_t>(EventType::MouseMove)] =			bus->register_publisher<InputEvent>(static_cast<uint32_t>(EventType::MouseMove));
 	}
 
-	void InputDispatchSystem::update()
+	void InputDispatchSystem::execute()
 	{
 		InputAction action{ "","" };
 		auto devices = Services::get<Devices>();
@@ -68,4 +68,10 @@ namespace csyren::core
 		while (!_eventBuffer.empty()) (void)_eventBuffer.pop();
 	}
 	void InputDispatchSystem::shutdown() {}
+}
+namespace csyren::core {
+TaskDescription InputDispatchSystem::describe() const {
+    TaskDescription d; d.phase = "input"; d.affinity = TaskAffinity::MainThread;
+    d.writeResource<Devices>().writeResource<EventBus2>(); return d;
+}
 }

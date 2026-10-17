@@ -6,6 +6,7 @@
 
 #include <unordered_set>
 #include <algorithm>
+#include <mutex>
 
 
 namespace csyren::core
@@ -29,12 +30,24 @@ namespace csyren::core
         [[nodiscard]] Entity::ID createEntity(std::string_view name = DEFAULT_NAME,
             Entity::ID parent = ROOT_PARENT)
         {
+            return createReservedEntity(reserveId(), name, parent);
+        }
+
+        // Reservation only touches the allocator, never the entity storage.
+        Entity::ID reserveId() {
+            std::lock_guard lock(_idMutex);
+            return allocateId();
+        }
+
+        Entity::ID createReservedEntity(Entity::ID id, std::string_view name,
+            Entity::ID parent = ROOT_PARENT)
+        {
             if (isPendingDestroy(parent))
             {
                 log::error("Cannot create entity under pending-destroy parent {}", parent);
                 parent = ROOT_PARENT;
             }
-            Entity::ID id = allocateId();
+
 
 
             if (!canBeParent(parent, id))
@@ -170,6 +183,7 @@ namespace csyren::core
 
             _entities.erase(id);
 
+            std::lock_guard lock(_idMutex);
             if (id + 1 == _nextId)
                 --_nextId;
             else
@@ -222,6 +236,7 @@ namespace csyren::core
         cstdmf::SparseSet<Entity> _entities;
         std::vector<Entity::ID>   _freeIDs;
         Entity::ID                _nextId = 1;
+        std::mutex _idMutex;
         std::unordered_set<Entity::ID>   _pendingDestroy;
     };
 }

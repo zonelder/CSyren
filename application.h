@@ -19,6 +19,7 @@
 #else
 static_assert(false && "none render pipeline was added.\n");
 #endif
+#include "cstdmf/file_system.h"
 
 namespace csyren
 {

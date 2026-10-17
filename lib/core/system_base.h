@@ -7,6 +7,7 @@
 #include "cstdmf/log.h"
 #include "scene_context.h"
 #include <optional>
+#include "task_description.h"
 
 namespace csyren::core
 {
@@ -27,7 +28,10 @@ namespace csyren::core
         bool attached() const noexcept { return _context.has_value(); }
 		virtual void init() {}
 
-		virtual void update(){}
+		virtual TaskDescription describe() const { TaskDescription d; d.phase = "simulation"; d.affinity = TaskAffinity::MainThread; d.exclusiveScene = true; d.dynamicResources = true; return d; }
+        virtual void execute() { update(); onFrame(); }
+        Scene* boundScene() const { return _context ? &_context->scene : nullptr; }
+        virtual void update(){}
 		virtual void startFrame() {};
 		virtual void onFrame() {}
 		virtual void endFrame() {};
@@ -60,11 +64,11 @@ namespace csyren::core
 
 			void registerSystem(std::string_view name, SystemCreator creator) 
 			{
-				_creators[name] = creator;
+				_creators[std::string(name)] = std::move(creator);
 			}
 
 			std::shared_ptr<System> create(std::string_view name) {
-				auto it = _creators.find(name);
+				auto it = _creators.find(std::string(name));
 				if (it != _creators.end()) {
 					return it->second();
 				}
@@ -73,10 +77,10 @@ namespace csyren::core
 				return nullptr;
 			}
 
-            bool contains(std::string_view name) const { return _creators.find(name) != _creators.end(); }
+            bool contains(std::string_view name) const { return _creators.find(std::string(name)) != _creators.end(); }
 
 		private:
-			std::unordered_map<std::string_view, SystemCreator> _creators;
+			std::unordered_map<std::string, SystemCreator> _creators;
 		};
 	}
 }

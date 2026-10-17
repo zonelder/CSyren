@@ -1,5 +1,8 @@
 #pragma once
 #include "system_base.h"
+#include "core/scene.h"
+#include "frame_graph.h"
+
 #include <algorithm>
 #include <limits>
 #include <string>
@@ -70,11 +73,15 @@ namespace csyren::core
         {
             for (auto it = _systems.rbegin(); it != _systems.rend(); ++it)
             { it->system->detach(); it->instance = 0; }
-            _editor.reset(); _active.reset();
+            _editor.reset(); _active.reset(); _dirty = true;
         }
         void init()
         {
             if (_initialized) return;
+            if (!_jobs.getNumThreads()) {
+                const auto available = (std::max)(1u, std::thread::hardware_concurrency());
+                _jobs.init((std::min)(8u, available > 4 ? available - 4 : 1u));
+            }
             for (auto& entry : _systems) initializeSystem(*entry.system, entry.name);
             _initialized = true;
             refresh();
@@ -86,10 +93,13 @@ namespace csyren::core
                 it->system->detach();
                 if (_initialized) it->system->shutdown();
             }
+            _graph.clear(); _transactions.clear(); _initialStates.clear(); _backend.reset(); _phases.clear();
+            if (_jobs.getNumThreads()) _jobs.fini();
+            _dirty = true;
             _schedule.clear(); _systems.clear(); _configuration = {};
             _deferredMove = { BACK_POS, BACK_POS }; _initialized = false;
         }
-        void update()
+        void processMove()
         {
             auto [src, dst] = _deferredMove;
             _deferredMove = { BACK_POS, BACK_POS };
@@ -110,8 +120,18 @@ namespace csyren::core
                 }
                 rebuildSchedule();
             }
-            for (auto* entry : _schedule) if (entry->system->attached()) entry->system->update();
         }
+        template<class T> void resourceState(std::string state) { _initialStates.insert_or_assign(std::type_index(typeid(T)), std::move(state)); _dirty = true; }
+        void taskBackend(std::shared_ptr<TaskBackend> backend) { _backend = std::move(backend); _dirty = true; }
+        void phase(PhaseDescription phase) { _phases.push_back(std::move(phase)); _dirty = true; }
+        const auto& phases() const { return _phases; }
+        void execute() {
+            processMove();
+            if (_dirty) rebuild();
+            try { _graph.execute(_jobs); }
+            catch (...) { for (auto& transaction : _transactions) transaction->discard(); throw; }
+        }
+        void update() { processMove(); for (auto* entry : _schedule) if (entry->system->attached()) entry->system->update(); }
         void onFrame()
         {
             for (auto* entry : _schedule) if (entry->system->attached()) entry->system->onFrame();
@@ -138,7 +158,12 @@ namespace csyren::core
         }
         void rebuildSchedule()
         {
+            _dirty = true;
             _schedule.clear();
+            if (!_editor && !_active && Services::has<Scene>()) {
+                for (const auto& name : _configuration.app) _schedule.push_back(findSystem(name));
+                return;
+            }
             if (!_playing)
             {
                 for (const auto& entry : _configuration.editor) _schedule.push_back(findSystem(entry.name));
@@ -157,6 +182,11 @@ namespace csyren::core
             _deferredMove = { BACK_POS, BACK_POS };
             rebuildSchedule();
             if (!_initialized) return;
+            if (!_editor && !_active && Services::has<Scene>()) {
+                auto* scene = Services::get<Scene>();
+                for (auto* entry : _schedule) if (!entry->system->attached()) entry->system->attach({*scene, scene->eventBus(), 0});
+                return;
+            }
             // Every outgoing consumer is detached before any incoming attach.
             for (auto it = _systems.rbegin(); it != _systems.rend(); ++it)
             {
@@ -200,6 +230,63 @@ namespace csyren::core
             if (src < dst) std::rotate(src, src + 1, dst + 1);
             else std::rotate(dst, src, src + 1);
         }
+        void rebuild() {
+            _graph.clear();
+            _transactions.clear();
+            for (const auto& phase : _phases) _graph.phase(phase);
+            for (const auto& [type, state] : _initialStates) _graph.resourceState(type, state);
+            std::unordered_map<std::string, bool> structural;
+            for (const auto* pointer : _schedule) structural[pointer->name] = pointer->system->describe().structuralChanges;
+            for (const auto* pointer : _schedule) {
+                const auto& entry = *pointer;
+                auto description = entry.system->describe();
+                if (_backend) _backend->describe(description);
+                for (auto& name : description.after)
+                    if (structural.contains(name) && structural[name]) name += "/apply";
+                auto* scene = entry.system->boundScene();
+                if (!scene && Services::has<Scene>()) scene = Services::get<Scene>();
+                if (!scene) continue;
+                auto transaction = std::make_shared<Scene::Transaction>();
+                _transactions.push_back(transaction);
+                const bool changes = description.structuralChanges;
+                auto system = entry.system;
+                _graph.task(entry.name, description, [this, system, scene, transaction, changes, description, name = entry.name] {
+                    transaction->discard();
+                    Scene::TaskScope scope(*scene, changes ? transaction.get() : nullptr, &description);
+                    auto invoke = [system, scene, &description] {
+                        Services::SceneScope binding(scene, &scene->eventBus());
+                        Services::TaskScope resources(description);
+                        system->execute();
+                    };
+                    if (!description.gpuAccesses.empty()) {
+                        if (!_backend) throw std::logic_error("GPU task has no execution backend");
+                        _backend->record(name, invoke);
+                    } else invoke();
+                });
+                if (changes) {
+                    TaskDescription apply;
+                    apply.phase = description.phase;
+                    apply.after = {entry.name};
+                    apply.before = description.before;
+                    apply.exclusiveScene = true;
+                    apply.structuralCommitFor = entry.name;
+                    // Event registration and destruction callbacks have main-thread affinity.
+                    apply.affinity = TaskAffinity::MainThread;
+                    _graph.task(entry.name + "/apply", std::move(apply), [scene, transaction] { transaction->apply(*scene); });
+                }
+            }
+            _graph.compile();
+            if (_backend) _backend->compile(_graph.orderedTasks());
+            _dirty = false;
+        }
+        FrameGraph _graph;
+        std::vector<std::shared_ptr<Scene::Transaction>> _transactions;
+        std::shared_ptr<TaskBackend> _backend;
+        cstdmf::multicore::JobSystem _jobs;
+        std::vector<PhaseDescription> _phases;
+        std::unordered_map<std::type_index, std::string> _initialStates;
+        bool _dirty = true;
+
         SystemConfiguration _configuration;
         std::optional<SceneContext> _editor, _active;
         bool _playing{}, _initialized{};

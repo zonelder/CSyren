@@ -27,8 +27,8 @@ namespace csyren::render
 		};
 
 		Mesh() noexcept = default;
-		void bind(Renderer& renderer);
-		void draw(Renderer& renderer);
+		void bind(Renderer& renderer) const;
+		void draw(Renderer& renderer) const;
 
 		const VertexLayout& getLayout() const { return _layout; }
 		const math::MeshBounds& bounds() const noexcept { return _bounds; }

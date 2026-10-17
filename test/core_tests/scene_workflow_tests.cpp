@@ -1,5 +1,6 @@
 #include "scene_session.h"
 #include "serializer.h"
+#include "cstdmf/file_system.h"
 #include "meta_common.h"
 #include "core/meta_json.h"
 #include "core/scene_serialization_context.h"
@@ -409,6 +410,19 @@ void fileStorage()
     SceneInstance loaded; CHECK(serializer.loadScene(path, loaded.scene()));
     CHECK(loaded.scene().entities().size() == 2);
     for (auto [id, transform] : loaded.scene().view<Transform>()) CHECK(transform.position == math::Vector3(1, 2, 3));
+    auto& filesystem = cstdmf::FileSystem::instance();
+    const auto mountedFile = directory / "mounted.scene";
+    struct MountCleanup {
+        std::filesystem::path file;
+        ~MountCleanup() { cstdmf::FileSystem::instance().unmount("workflow"); std::error_code ignored; std::filesystem::remove(file, ignored); }
+    } mountedCleanup{mountedFile};
+    CHECK(filesystem.mount("workflow", directory, true));
+    CHECK(serializer.saveScene("workflow:/mounted.scene", scene.scene()));
+    SceneInstance mounted; CHECK(serializer.loadScene("workflow:/mounted.scene", mounted.scene()));
+    CHECK(mounted.scene().entities().size() == 2);
+    CHECK(filesystem.mount("workflow", directory, false));
+    CHECK(!serializer.saveScene("workflow:/mounted.scene", scene.scene()));
+
 }
 
 void startupDiagnostics()

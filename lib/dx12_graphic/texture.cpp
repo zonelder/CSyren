@@ -3,6 +3,7 @@
 #include "texture.h"
 #include "cstdmf/string_utils.h"
 #include "renderer.h"
+#include "cstdmf/file_system.h"
 
 #include <DirectXTex.h>
 #include <DDSTextureLoader.h>
@@ -53,9 +54,7 @@ namespace csyren::render
 
     bool Texture::init(Renderer& renderer, const std::wstring& filePath)
     {
-        const auto resolved = core::Services::has<core::ProjectPaths>()
-            ? core::projectAssetPath(filePath) : std::filesystem::path(filePath);
-        if (!std::filesystem::exists(resolved))
+        if (!cstdmf::FileSystem::instance().exists(filePath))
         {
             log::warning("Texture: texture file is not found.({})", cstdmf::to_string(filePath));
             return false;

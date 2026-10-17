@@ -191,6 +191,11 @@
     <ClInclude Include="mesh_builder.h" />
     <ClInclude Include="pass_data_manager.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="gpu_resources.h" />
+
+    <ClInclude Include="presentation_state.h" />
+    <ClInclude Include="frame_graph_backend.h" />
+    <ClInclude Include="frame_prepare_system.h" />
     <ClInclude Include="presentation_system.h" />
     <ClInclude Include="pso_factory.h" />
     <ClInclude Include="primitives.h" />
@@ -206,6 +211,7 @@
     <ClInclude Include="serialize_base.h" />
     <ClInclude Include="serialize_common.h" />
     <ClInclude Include="shader.h" />
+    <ClInclude Include="shader_file.h" />
     <ClInclude Include="shader_base.h" />
     <ClInclude Include="shader_meta.h" />
     <ClInclude Include="shader_parameter_binder.h" />
@@ -232,7 +238,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="presentation_state.cpp" />
     <ClCompile Include="presentation_system.cpp" />
+    <ClCompile Include="frame_graph_backend.cpp" />
     <ClCompile Include="primitives.cpp" />
     <ClCompile Include="pso_factory.cpp" />
     <ClCompile Include="renderer.cpp" />
@@ -240,7 +248,9 @@
     <ClCompile Include="resource_upload_thread.cpp" />
     <ClCompile Include="resource_handle_meta.cpp" />
     <ClCompile Include="shader.cpp" />
+    <ClCompile Include="compute_shader.cpp" />
     <ClCompile Include="shader_base.cpp" />
+    <ClCompile Include="shader_lifecycle.cpp" />
     <ClCompile Include="shader_meta.cpp" />
     <ClCompile Include="shader_parameter_binder.cpp" />
     <ClCompile Include="swap_chain.cpp" />

@@ -56,12 +56,12 @@ namespace csyren::render
 				_params.erase(name);
 			}
 		}
-		VariableContainer getVariable(const std::string& name)
+		VariableContainer getVariable(const std::string& name) const
 		{
 			if (!_params.contains(name))
 				return {};
 
-			return _params[name];
+			return _params.at(name);
 		}
 
 		TextureHandle getTexture(const std::string& name)

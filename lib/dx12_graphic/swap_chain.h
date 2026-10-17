@@ -13,6 +13,8 @@ namespace csyren::render
 	class SwapChain
 	{
 	public:
+        ~SwapChain();
+        bool ready() const;
 
 		//@brief information about current state of SwapChain. maybe we should erase this class in release build.
 		struct Meta
@@ -38,7 +40,7 @@ namespace csyren::render
 		}
 
 
-		bool present(UINT syncInterval, UINT presentFlags = 0);
+		HRESULT present(UINT syncInterval, UINT presentFlags = 0);
 
 		ID3D12Resource* currentBackBuffer() const noexcept
 		{
@@ -54,7 +56,8 @@ namespace csyren::render
 
 		std::vector<ID3D12Resource*> _backBuffers;
 		uint8_t _frameIndex{ 0u };
-		Meta _meta;
+		Meta _meta{};
+        HANDLE _frameLatencyEvent{ nullptr };
 		UINT _swapChainFlags{ 0u };
 		bool _tearingSupported{ false };
 	};

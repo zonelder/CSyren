@@ -10,9 +10,11 @@ namespace csyren::physics
     class PhysicsSystem : public core::System
     {
     public:
+        core::TaskDescription describe() const override;
+
         PhysicsSystem() = default;
         void init() override;
-        void update() override;
+        void execute() override;
         void shutdown() override;
     protected:
         void onAttach() override;

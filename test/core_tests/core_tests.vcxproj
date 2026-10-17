@@ -143,6 +143,8 @@
     </ClCompile>
     <ClCompile Include="scene_test.cpp" />
     <ClCompile Include="audit_regression_test.cpp" />
+    <ClCompile Include="job_system_test.cpp" />
+    <ClCompile Include="frame_graph_test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

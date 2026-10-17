@@ -8,6 +8,7 @@ namespace csyren::render
 	class Texture;
 	class Mesh;
 	class GraphicShader;
+    class ComputeShader;
 	class Material;
 
 	template<typename T> class ResourceStorage;

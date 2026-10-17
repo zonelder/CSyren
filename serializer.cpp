@@ -4,6 +4,7 @@
 #include "core/meta_json.h"
 #include "core/services.h"
 #include "core/project_paths.h"
+#include "cstdmf/file_system.h"
 #include "dx12_graphic/resource_handle_meta.h"
 #include "dx12_graphic/resource_manager.h"
 #include "cstdmf/window_clean.h"
@@ -21,9 +22,18 @@ namespace csyren
             if (core::Services::has<render::ResourceManager>())
                 render::attachResources(context, *core::Services::get<render::ResourceManager>());
         }
-        std::filesystem::path scenePath(const std::string& utf8)
+        std::filesystem::path scenePath(const std::string& utf8, bool writing = false)
         {
-            return core::projectAssetPath(core::pathFromUtf8(utf8));
+            const auto path = core::pathFromUtf8(utf8);
+            auto& files = cstdmf::FileSystem::instance();
+            const auto colon = utf8.find(":/");
+            const bool mounted = colon != std::string::npos && colon > 1;
+            if (mounted || (!core::Services::has<core::ProjectPaths>() && !path.is_absolute() && !files.mounts().empty())) {
+                auto resolved = writing ? files.resolveWrite(path) : files.resolveRead(path);
+                if (resolved) return *resolved;
+                throw std::runtime_error("Cannot resolve scene or systems path: " + utf8);
+            }
+            return core::projectAssetPath(path);
         }
     }
     bool Serializer::snapshot(core::Scene& scene, std::string& result)
@@ -57,7 +67,8 @@ namespace csyren
         try {
             std::string document;
             if (filepath.empty() || !snapshot(scene, document)) return false;
-            const auto target = scenePath(filepath);
+            const auto target = scenePath(filepath, true);
+            std::filesystem::create_directories(target.parent_path());
             static std::atomic<uint64_t> nextTemp{};
             auto temporary = target;
             temporary += ".tmp." + std::to_string(GetCurrentProcessId()) + "." + std::to_string(++nextTemp);
@@ -94,12 +105,20 @@ namespace csyren
     bool Serializer::loadSystems(const std::string& appPath, const std::string& editorPath, core::SystemManager& systems)
     {
         try {
-            auto read = [](const std::string& path) {
+            std::vector<core::PhaseDescription> phases;
+            auto read = [&phases](const std::string& path) {
                 std::ifstream file(scenePath(path));
                 if (!file) throw std::runtime_error("Cannot open systems configuration: " + path);
                 auto data = nlohmann::json::parse(file);
                 if (!data.contains("systems") || !data["systems"].is_array())
                     throw std::runtime_error("Expected a systems array: " + path);
+                if (data.contains("phases")) for (const auto& phase : data["phases"]) {
+                    core::PhaseDescription description;
+                    phase.at("name").get_to(description.name);
+                    description.after = phase.value("after", std::vector<std::string>{});
+                    description.before = phase.value("before", std::vector<std::string>{});
+                    if (std::none_of(phases.begin(), phases.end(), [&](const auto& p) { return p.name == description.name; })) phases.push_back(std::move(description));
+                }
                 return data["systems"];
             };
             core::SystemConfiguration configuration;
@@ -125,6 +144,7 @@ namespace csyren
             }
             // Validate both files before changing the running configuration.
             systems.shutdown(); systems.reserve(configuration.app.size() + configuration.editor.size());
+            for (auto& phase : phases) systems.phase(std::move(phase));
             for (const auto& name : configuration.app) systems.add(name);
             for (const auto& entry : configuration.editor) systems.addEditor(entry.name, entry.scene);
             systems.init(); return true;
@@ -140,12 +160,14 @@ namespace csyren
     {
         try {
             auto write = [](const std::string& path, const nlohmann::json& document) {
-                std::ofstream file(scenePath(path));
+                std::ofstream file(scenePath(path, true));
                 if (!file) return false;
                 file << document.dump(4); file.close(); return file.good();
             };
             nlohmann::json app, editor;
             app["systems"] = nlohmann::json::array(); editor["systems"] = nlohmann::json::array();
+            app["phases"] = nlohmann::json::array();
+            for (const auto& phase : systems.phases()) app["phases"].push_back({{"name", phase.name}, {"after", phase.after}, {"before", phase.before}});
             for (const auto& name : systems.configuration().app) app["systems"].push_back({ { "class", name } });
             for (const auto& entry : systems.configuration().editor)
                 editor["systems"].push_back({ { "class", entry.name },
