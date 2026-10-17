@@ -2,6 +2,8 @@
 #include "resource_manager.h"
 #include "texture.h"
 #include "renderer.h"
+#include "camera_render_target.h"
+#include "core/time.h"
 
 using Microsoft::WRL::ComPtr;
 namespace csyren::render
@@ -95,6 +97,66 @@ namespace csyren::render
         auto* data = recording(); return data ? &data->entity : &_entityVariableBuffer;
     }
 
+    std::shared_ptr<details::CameraRenderView> Renderer::addCameraView(CameraSource source)
+    {
+        auto view = std::make_shared<details::CameraRenderView>();
+        _externalCameras.push_back({std::move(source),view});
+        return view;
+    }
+    void Renderer::removeCameraView(const std::shared_ptr<details::CameraRenderView>& view)
+    {
+        std::erase_if(_externalCameras,[&](const auto& external) { return external.view == view; });
+        std::erase(_views,view);
+    }
+    void Renderer::prepareCameraViews(core::Scene& scene,UINT width,UINT height)
+    {
+        struct Source { const core::Camera* camera; const core::Transform* transform; std::shared_ptr<details::CameraRenderView> view; };
+        std::vector<Source> sources; _views.clear(); _primaryView.reset();
+        int priority = 0;
+        _cameraViews.each(scene,[&](const auto& camera,const auto& transform,auto view) {
+            sources.push_back({&camera,&transform,view});
+            if (!_primaryView || camera.priority > priority || (camera.priority == priority && view->id < _primaryView->id)) {
+                priority = camera.priority; _primaryView = view;
+            }
+        });
+        if (_presentCameraOutput && _primaryView) _primaryView->target->request(width,height);
+        for (const auto& external : _externalCameras) {
+            auto [camera,transform] = external.source();
+            if (camera && transform) sources.push_back({camera,transform,external.view});
+        }
+        const auto time = core::Services::get<const core::Time>()->totalTime();
+        for (auto& source : sources) {
+            auto& view = *source.view;
+            view.render = view.schedule.due(source.camera->render_type,view.target->needsResize());
+            view.ticket = view.schedule.ticket();
+            view.target->prepare(*this);
+            if (view.render) {
+                view.background = source.camera->background;
+                view.engine = details::cameraFrame(*source.camera,*source.transform,view.target->width(),view.target->height(),time);
+            }
+            _views.push_back(source.view);
+        }
+        std::sort(_views.begin(),_views.end(),[](const auto& a,const auto& b) { return a->id < b->id; });
+        if (_primaryView) _engineVariableBuffer = _primaryView->engine;
+    }
+    void Renderer::clearCamera()
+    {
+        auto* data = recording();
+        if (!data) throw std::logic_error("Camera clear requires a render pass");
+        clearDepth(); clearColor(&data->background.x);
+    }
+    void Renderer::clearColor(const float color[4])
+    {
+        auto* data = recording();
+        if (!data || !data->colorTarget.ptr) throw std::logic_error("Clear requires a declared color target");
+        data->commands.raw()->ClearRenderTargetView(data->colorTarget,color,0,nullptr);
+    }
+    void Renderer::clearDepth()
+    {
+        auto* data = recording();
+        if (!data || !data->depthTarget.ptr) throw std::logic_error("Clear requires a declared depth target");
+        data->commands.raw()->ClearDepthStencilView(data->depthTarget,D3D12_CLEAR_FLAG_DEPTH,0,0,0,nullptr);
+    }
     void Renderer::waitForGpu()
     {
         _mainQueue.signal();

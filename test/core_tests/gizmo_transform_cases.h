@@ -139,7 +139,7 @@ struct GizmoMouseFixture
 {
     MemoryStorage storage;
     SceneSession session{storage};
-    EditorView view;
+    EditorViewportState view;
     TransformGizmo gizmo;
     Entity::ID id;
     GizmoMouseFixture()

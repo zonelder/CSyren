@@ -1,5 +1,5 @@
 #include "scene_picking.h"
-#include "editor_view.h"
+#include "editor_viewport_state.h"
 #include "dx12_graphic/mesh_builder.h"
 #include "core/meta_json.h"
 #include <fstream>
@@ -34,7 +34,7 @@ int main(int argc, char** argv)
         transform.rotation = math::Quaternion(t["rotation"][0], t["rotation"][1], t["rotation"][2], t["rotation"][3]);
         worlds.push_back(transform.world());
     }
-    editor::EditorView view;
+    editor::EditorViewportState view;
     const auto vp = XMMatrixMultiply(XMMatrixInverse(nullptr, view.transform.world()), view.camera.projectionMatrix());
     int checked = 0;
     for (int y = 0; y <= 40; ++y) for (int x = 0; x <= 40; ++x)

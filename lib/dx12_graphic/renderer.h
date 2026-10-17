@@ -29,6 +29,8 @@
 #include "descriptor_allocation.h"
 
 #include "core/services.h"
+#include "core/camera.h"
+#include "camera_render_registry.h"
 
 
 namespace csyren::render
@@ -49,6 +51,7 @@ namespace csyren::render
 		DirectX::XMMATRIX world;
 	};
 	class Texture;
+    class CameraRenderTarget;
 
 	class Renderer
 	{
@@ -78,6 +81,23 @@ namespace csyren::render
 		bool bindMaterial(const ResourceManager& rm, MaterialHandle material,const VertexLayout& vertexLayout);
 
 		bool bindEntity(const SemanticBufferLayout* layout);
+        using CameraSource = std::function<std::pair<const core::Camera*,const core::Transform*>()>;
+        std::shared_ptr<details::CameraRenderView> addCameraView(CameraSource source);
+        void removeCameraView(const std::shared_ptr<details::CameraRenderView>& view);
+        void presentCameraOutput(bool enabled) { _presentCameraOutput = enabled; }
+        bool presentsCameraOutput() const { return _presentCameraOutput; }
+        std::shared_ptr<CameraRenderTarget> primaryCameraTarget() const { return _primaryView ? _primaryView->target : nullptr; }
+        void attachCameraScene(core::Scene& scene) { _cameraViews.attach(scene); }
+        void detachCameraScene() { _views.clear(); _primaryView.reset(); _cameraViews.detach(); }
+        void prepareCameraViews(core::Scene& scene,UINT width,UINT height);
+        const auto& cameraViews() const { return _views; }
+        const auto& outputView() const { return _primaryView; }
+        bool requestCameraRender(core::Entity::ID id) { return _cameraViews.request(id); }
+        void requestPrimaryCameraRender() { if (_primaryView) _primaryView->schedule.request(); }
+        void completeCameraViews() { for (auto& view : _views) if (view->render) view->schedule.submitted(view->ticket); }
+        void clearCamera();
+        void clearColor(const float color[4]);
+        void clearDepth();
 
 		RenderQueue& queue() noexcept
 		{
@@ -91,6 +111,8 @@ namespace csyren::render
             EngineVariableBuffer engine;
             EntityVariableBuffer entity;
             ShaderParameterBinder binder;
+            D3D12_CPU_DESCRIPTOR_HANDLE colorTarget{},depthTarget{};
+            math::Vector4 background{};
         };
         struct RecordingBinding { Renderer* renderer; RecordingData* data; };
         inline static thread_local RecordingBinding* _recording = nullptr;
@@ -109,6 +131,12 @@ namespace csyren::render
 		EngineVariableBuffer					_engineVariableBuffer;
 		EntityVariableBuffer					_entityVariableBuffer;
 		ShaderParameterBinder					_parameterBinder;
+        details::CameraRenderRegistry _cameraViews;
+        struct ExternalCamera { CameraSource source; std::shared_ptr<details::CameraRenderView> view; };
+        std::vector<ExternalCamera> _externalCameras;
+        bool _presentCameraOutput = true;
+        std::shared_ptr<details::CameraRenderView> _primaryView;
+        std::vector<std::shared_ptr<details::CameraRenderView>> _views;
 
 	};
 }

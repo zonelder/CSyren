@@ -12,7 +12,9 @@ namespace csyren::render
         void execute() override;
         void shutdown() override;
     private:
-        void updateCamera(float (&background)[4]);
+        void onAttach() override;
+        void onDetach() noexcept override;
+        void updateCamera();
         std::shared_ptr<details::PresentationState> _state;
     };
     REGISTER_SYSTEM(FrameAcquireSystem)

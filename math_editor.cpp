@@ -3,6 +3,8 @@ using namespace csyren::math;
 
 namespace csyren::editor
 {
+    using core::CameraRenderType;
+    REGISTER_EDITOR(CameraRenderType, CameraRenderTypeEditor);
 	REGISTER_EDITOR(float, FloatEditor);
 	REGISTER_EDITOR(int, IntEditor);
 	REGISTER_EDITOR(bool, BoolEditor);

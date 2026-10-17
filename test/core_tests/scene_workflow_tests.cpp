@@ -1,4 +1,5 @@
 #include "gtest/gtest.h"
+#include "editor_layout.h"
 #include "scene_gizmo.h"
 #include "scene_session.h"
 #include "serializer.h"
@@ -16,7 +17,7 @@
 #include "inspector_window.h"
 #include "editor_selection.h"
 #include "scene_workflow_window.h"
-#include "editor_view.h"
+#include "editor_viewport_state.h"
 #include "editor_camera_controller_system.h"
 #include "project_settings.h"
 #include "startup_options.h"
@@ -595,7 +596,7 @@ void editorCameraWorkerExecution()
 {
     auto& devices = core::details::ServiceRegistry::create<core::Devices>();
     core::details::ServiceRegistry::create<core::Time>();
-    auto& view = core::details::ServiceRegistry::create<EditorView>();
+    auto& view = core::details::ServiceRegistry::create<EditorViewportState>();
     auto& mouse = const_cast<core::MouseDevice&>(devices.mouse());
     mouse.setButtonState(core::MouseButton::Right, true);
     mouse.setMousePosition(20, 10);
@@ -818,7 +819,7 @@ void reverseDepthProjection()
             }
         }
     }
-    EditorView editor;
+    EditorViewportState editor;
     const auto point = DirectX::XMVector3TransformCoord(DirectX::XMVectorSet(0, 0, editor.camera.near, 1),
         editor.camera.projectionMatrix());
     CHECK(std::abs(DirectX::XMVectorGetZ(point) - 1.0f) < 1e-5f);
@@ -1129,6 +1130,7 @@ protected:
         REGISTER_COMPONENT(RigidBody);
         REGISTER_COMPONENT(BoxCollider);
         REGISTER_COMPONENT(ComponentResource);
+        REGISTER_COMPONENT(Camera);
     }
     void TearDown() override
     {
@@ -1175,7 +1177,7 @@ TEST_F(SceneWorkflow, FocusFitsBoundsAndPreservesCameraOrientation)
         {
             SCOPED_TRACE(aspect);
             SCOPED_TRACE(static_cast<int>(projection));
-            EditorView view;
+            EditorViewportState view;
             view.camera.aspectRatio = aspect; view.camera.projection = projection;
             view.transform.rotation = XMQuaternionRotationRollPitchYaw(.2f, -.7f, 0);
             const auto rotation = view.transform.rotation;
@@ -1195,7 +1197,7 @@ TEST_F(SceneWorkflow, FocusFitsBoundsAndPreservesCameraOrientation)
 
 TEST_F(SceneWorkflow, FocusHandlesEmptyPointAndLargeBounds)
 {
-    EditorView view;
+    EditorViewportState view;
     const auto initial = view.transform.position;
     EXPECT_FALSE(focusBounds(view, {}));
     EXPECT_TRUE(view.transform.position.exactEqual(initial));
@@ -1275,7 +1277,7 @@ TEST_F(SceneWorkflow, ImGuiGizmoMouseDragUsesSingleUndo)
     auto& io = ImGui::GetIO(); io.IniFilename = nullptr;
     io.DisplaySize = ImVec2(800,600); io.DeltaTime = 1.f/60;
     unsigned char* pixels; int w, h; io.Fonts->GetTexDataAsRGBA32(&pixels, &w, &h);
-    EditorView view; view.camera.aspectRatio = 4.f/3;
+    EditorViewportState view; view.camera.aspectRatio = 4.f/3;
     view.transform.position = math::Vector3{0,0,-5};
     const auto vp = DirectX::XMMatrixMultiply(DirectX::XMMatrixInverse(nullptr, view.transform.world()), view.camera.projectionMatrix());
     TransformGizmo gizmo;
@@ -1312,3 +1314,4 @@ TEST_F(SceneWorkflow, ImGuiGizmoMouseDragUsesSingleUndo)
 }
 
 #include "gizmo_transform_cases.h"
+#include "viewport_cases.h"

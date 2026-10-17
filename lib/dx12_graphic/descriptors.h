@@ -16,6 +16,7 @@ namespace csyren::render
 		
 
 		void init();
+        void init(ID3D12Device* device);
 
 		// --- RTV ------------------------------------------------
 

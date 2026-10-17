@@ -1,3 +1,4 @@
+#include "imGui/imgui_internal.h"
 #include "dx12_graphic/gpu_resources.h"
 #include "application.h"
 #include "core/system_manager.h"
@@ -32,7 +33,7 @@
 #include "debug_rotator_system.h"
 #include "scene_loader.h"
 #include "scene_session.h"
-#include "editor_view.h"
+#include "editor_viewport_state.h"
 
 
 #include "physics/rigid_body.h"
@@ -111,7 +112,7 @@ namespace csyren
 		core::details::ServiceRegistry::create<Serializer>();
         core::details::ServiceRegistry::create<ArchiveSceneStorage>(*core::Services::get<Serializer>());
         core::details::ServiceRegistry::create<editor::SceneSession>(*core::Services::get<ArchiveSceneStorage>());
-        core::details::ServiceRegistry::create<editor::EditorView>();
+        core::details::ServiceRegistry::create<editor::EditorViewportState>();
 		core::details::ServiceRegistry::create<physics::PhysicsEngine>();
 		core::details::ServiceRegistry::create<core::Devices>();
 		core::details::ServiceRegistry::create<core::SystemManager>();
@@ -133,17 +134,6 @@ namespace csyren
 		auto stats = core::Services::get<StatisticMonitor>();
 		session->setBind([systems](auto editor, auto active, bool playing) { systems->bind(editor, active, playing); });
 
-        core::Services::get<core::CameraContextService>()->viewProvider([session, window]() {
-            auto* editorView = core::Services::get<editor::EditorView>();
-            editorView->camera.aspectRatio = static_cast<float>(window->width()) / (std::max)(1, window->height());
-            const Camera* camera = &editorView->camera;
-            const Transform* transform = &editorView->transform;
-            bool found = false;
-            if (session->playing()) for (auto [id, candidate, tr] : session->activeContext().scene.view<const Camera, const Transform>()) {
-                if (!found || candidate.priority > camera->priority) { camera = &candidate; transform = &tr; found = true; }
-            }
-            return core::CameraContextService::View{camera, transform};
-        });
         core::details::ServiceRegistry::initializeAll();
 		log::info("-------------------------------------------------------------------------------------------");
 		log::info("-------------------------------Setup Start Up------------------------------------------------");
@@ -157,35 +147,25 @@ namespace csyren
 
 		log::info("---------------------------------------------------------------------------------------------");
 		log::info("-------------------------------Run Game Loop-------------------------------------------------");
-		MSG msg = { 0 };
-
-		while (true)
-		{
-			timeHandler.update(*time);
-			stats->update(*time);
-			window->preMessagePump();
-			while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
-			{
-				if (msg.message == WM_QUIT) 
-				{
-					log::info("---------------------------------------------------------------------------------------------");
-
-					log::info("-------------------------------Shutdown------------------------------------------------------");
-					systems->unbind();
-                    systems->shutdown();
-					core::details::ServiceRegistry::shutdownAll();
-					return static_cast<int>(msg.wParam);
-				}
-				TranslateMessage(&msg);
-				DispatchMessage(&msg);
-			}
-
-            try { systems->execute(); }
-            catch (...) { systems->shutdown(); core::details::ServiceRegistry::shutdownAll(); throw; }
-
-			session->settle();
-            session->processRequests();
-		}
+        const auto shutdown = [&] {
+            systems->unbind(); systems->shutdown(); core::details::ServiceRegistry::shutdownAll();
+        };
+        MSG msg{};
+        while (true) {
+            window->preMessagePump();
+            while (PeekMessage(&msg,nullptr,0,0,PM_REMOVE)) {
+                if (msg.message == WM_QUIT) {
+                    log::info("-------------------------------Shutdown------------------------------------------------------");
+                    shutdown(); return static_cast<int>(msg.wParam);
+                }
+                TranslateMessage(&msg); DispatchMessage(&msg);
+            }
+            try {
+                timeHandler.update(*time); stats->update(*time);
+                systems->execute(); session->settle(); session->processRequests();
+            }
+            catch (...) { shutdown(); throw; }
+        }
 	}
 
 

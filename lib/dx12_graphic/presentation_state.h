@@ -8,6 +8,8 @@
 #include <condition_variable>
 #include <exception>
 
+namespace csyren::core { class Window; }
+
 namespace csyren::render::details
 {
     class FrameGraphBackend;
@@ -29,8 +31,12 @@ namespace csyren::render::details
 
         ~PresentationState() { shutdown(); }
         void init();
+        void init(ID3D12Device* device,RenderQueue& graphics,DescriptorManager& descriptors,core::Window& window);
         void shutdown();
         void prepareTarget(Frame& frame, const float color[4]);
+        void resize(UINT width, UINT height);
+        void resizeTargets(UINT width, UINT height);
+        void prepareDepth();
         void runOutput() noexcept;
         void pollOutput();
 
@@ -40,6 +46,8 @@ namespace csyren::render::details
         std::condition_variable changed;
         std::thread outputThread;
         bool stopping{ false };
+        bool resizePending{ false };
+        UINT requestedWidth{0},requestedHeight{0};
         std::exception_ptr outputError;
 
         SwapChain swapChain;
@@ -53,10 +61,13 @@ namespace csyren::render::details
         UINT frameIndex{ FrameCount - 1 };
         UINT64 sequence{ 0 };
         UINT64 lastCopied{ 0 };
+        UINT64 lastPresented{ 0 };
         UINT64 lastCopyFence{ 0 };
         UINT width{ 0 }, height{ 0 };
         bool pendingPresent{ false };
-        bool outputReady{ false };
         bool initialized{ false };
+        ComPtr<ID3D12Device> device;
+        RenderQueue* graphics = nullptr;
+        DescriptorManager* descriptors = nullptr;
     };
 }

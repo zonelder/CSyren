@@ -15,6 +15,7 @@ namespace csyren::core
 			.data< &ViewportRect::h>("h"_hs);
 
 		reflection::MetaFactory<Camera>{}.type("Camera"_hs)
+			.data<&Camera::render_type>("render_type"_hs)
 			.data<&Camera::far>("far"_hs)
 			.data<&Camera::near>("near"_hs)
 			.data<&Camera::fov>("fov"_hs)
@@ -25,5 +26,6 @@ namespace csyren::core
 			.data<&Camera::viewportRect>("viewportRect"_hs);
 
 		reflection::MetaFactory<ProjectionType>{}.primitiveType("ProjectionType"_hs).archive(reflection::scalarArchive<ProjectionType>());
+        reflection::MetaFactory<CameraRenderType>{}.primitiveType("CameraRenderType"_hs).archive(reflection::scalarArchive<CameraRenderType>());
 	}
 }

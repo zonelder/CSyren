@@ -22,10 +22,11 @@ namespace csyren
     public:
         core::TaskDescription describe() const override {
             core::TaskDescription d; d.phase = "render";
+            d.gpuScope = core::GpuTaskScope::View;
             d.read<core::Transform>().read<MeshFilter>().read<MeshRenderer>();
             d.readResource<render::ResourceManager>();
-            d.gpu("frame.color", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
-            d.gpu("frame.depth", D3D12_RESOURCE_STATE_DEPTH_WRITE, core::AccessMode::Write); return d;
+            d.gpu("scene.color", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
+            d.gpu("scene.depth", D3D12_RESOURCE_STATE_DEPTH_WRITE, core::AccessMode::Write); return d;
         }
 
         explicit MeshRenderSystem() = default;

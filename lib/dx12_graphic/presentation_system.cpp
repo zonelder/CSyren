@@ -3,10 +3,12 @@
 #include "frame_prepare_system.h"
 #include "presentation_state.h"
 #include "frame_graph_backend.h"
+#include "camera_render_target.h"
 #include "core/system_manager.h"
 #include "resource_manager.h"
 #include "core/scene.h"
 #include "core/time.h"
+#include "core/window.h"
 #include "core/camera.h"
 #include "core/camera_service.h"
 #include "core/transform.h"
@@ -19,15 +21,16 @@ namespace csyren::render
 {
     core::TaskDescription FrameAcquireSystem::describe() const {
         core::TaskDescription d; d.phase = "acquire"; d.affinity = core::TaskAffinity::MainThread;
-        d.read<core::Camera>().read<core::Transform>().readResource<core::Time>();
+        d.read<core::Camera>().read<core::Transform>().readResource<core::Time>().readResource<core::Window>();
         d.dynamicResources = true;
         d.writeResource<Renderer>().writeResource<ResourceManager>().writeResource<DescriptorManager>();
         d.writeResource<details::FrameRecording>({}, "ready"); return d;
     }
     core::TaskDescription FramePrepareSystem::describe() const {
         core::TaskDescription d; d.phase = "prepare";
-        d.gpu("frame.color", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
-        d.gpu("frame.depth", D3D12_RESOURCE_STATE_DEPTH_WRITE, core::AccessMode::Write);
+        d.gpuScope = core::GpuTaskScope::View;
+        d.gpu("scene.color", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
+        d.gpu("scene.depth", D3D12_RESOURCE_STATE_DEPTH_WRITE, core::AccessMode::Write);
         return d;
     }
     core::TaskDescription PresentationSystem::describe() const {
@@ -76,45 +79,24 @@ namespace csyren::render
         core::Services::get<core::SystemManager>()->taskBackend(_state->graph);
     }
     void FrameAcquireSystem::shutdown() { _state.reset(); }
+    void FrameAcquireSystem::onAttach() { core::Services::get<Renderer>()->attachCameraScene(scene()); }
+    void FrameAcquireSystem::onDetach() noexcept { core::Services::get<Renderer>()->detachCameraScene(); }
     void FramePrepareSystem::init() { _state = acquireState(); }
     void PresentationSystem::init() { _state = acquireState(); }
     void FramePrepareSystem::shutdown() { _state.reset(); }
     void PresentationSystem::shutdown() { _state.reset(); }
 
-    void FrameAcquireSystem::updateCamera(float (&background)[4])
+    void FrameAcquireSystem::updateCamera()
     {
-        auto* renderer = core::Services::get<Renderer>();
-        auto* variables = renderer->getEngineVariableBuffer();
-        const auto time = core::Services::get<const core::Time>()->totalTime();
-        variables->totalTime = time;
-        auto apply = [&](const core::Camera& camera, const core::Transform& transform) {
-            std::copy(&camera.background.x, &camera.background.x + 4, background);
-            using namespace DirectX;
-            auto invView = transform.world();
-            auto view = XMMatrixInverse(nullptr, invView);
-            auto projection = camera.projectionMatrix();
-            XMStoreFloat4x4(&variables->invViewMatrix, invView);
-            XMStoreFloat4x4(&variables->viewMatrix, view);
-            XMStoreFloat4x4(&variables->projectionMatrix, projection);
-            XMStoreFloat4x4(&variables->viewProjectionMatrix, XMMatrixMultiply(view, projection));
-            auto light = XMVector3TransformNormal(XMVectorSet(0.3f, -1.0f, 0.3f, 0.0f), XMMatrixRotationZ(time * XM_2PI / 10.0f));
-            XMStoreFloat4(&variables->lightDirection, XMVector3Normalize(light));
-        };
-        if (core::Services::has<core::CameraContextService>()) {
-            auto [camera, transform] = core::Services::get<const core::CameraContextService>()->view();
-            if (camera && transform) { apply(*camera, *transform); return; }
-        }
-        const core::Camera* selected = nullptr;
-        const core::Transform* selectedTransform = nullptr;
-        for (auto [id, camera, transform] : scene().view<const core::Camera, const core::Transform>())
-            if (!selected || camera.priority > selected->priority) { selected = &camera; selectedTransform = &transform; }
-        if (selected) apply(*selected, *selectedTransform);
+        core::Services::get<Renderer>()->prepareCameraViews(scene(),_state->width,_state->height);
     }
 
     void FrameAcquireSystem::execute()
     {
         auto& context = *_state;
         auto* renderer = core::Services::get<Renderer>();
+        auto* window = core::Services::get<const core::Window>();
+        context.resize(static_cast<UINT>(window->width()),static_cast<UINT>(window->height()));
         context.commandIndex = (context.commandIndex + 1) % Renderer::FramesInFlight;
         context.graph->acquire();
         UINT target = details::PresentationState::FrameCount;
@@ -146,7 +128,7 @@ namespace csyren::render
         }
         auto& frame = context.frames[target];
         float background[]{ 0.1f, 0.1f, 0.3f, 1.0f };
-        updateCamera(background);
+        updateCamera();
         // Stable colors reuse the texture without waiting for its previous draw:
         // both writes are already ordered on the same GPU queue.
         if (frame.color && !std::equal(background, background + 4, frame.clearColor))
@@ -154,12 +136,12 @@ namespace csyren::render
         context.prepareTarget(frame, background);
         std::copy(background, background + 4, context.background);
         core::Services::get<ResourceManager>()->update();
+        context.graph->prepareViews();
     }
 
     void FramePrepareSystem::execute() {
-        auto* commands = core::Services::get<Renderer>()->commandList();
-        commands->ClearDepthStencilView(_state->dsv.cpu, D3D12_CLEAR_FLAG_DEPTH, 0.0f, 0, 0, nullptr);
-        commands->ClearRenderTargetView(_state->frames[_state->frameIndex].rtv.cpu, _state->background, 0, nullptr);
+        auto* renderer = core::Services::get<Renderer>();
+        renderer->clearCamera();
     }
 
     void PresentationSystem::execute()
@@ -186,6 +168,11 @@ namespace csyren::render
                 {
                     std::unique_lock lock(mutex);
                     if (stopping) break;
+                    if (resizePending) {
+                        const auto w = requestedWidth,h = requestedHeight;
+                        lock.unlock(); resizeTargets(w,h); lock.lock();
+                        resizePending = false; changed.notify_all();
+                    }
                 }
                 pollOutput();
                 // New frames wake this early. The timeout also retires GPU
@@ -199,6 +186,7 @@ namespace csyren::render
         {
             std::lock_guard lock(mutex);
             outputError = std::current_exception();
+            changed.notify_all();
         }
     }
 
@@ -217,22 +205,25 @@ namespace csyren::render
             if (result == DXGI_ERROR_WAS_STILL_DRAWING) return false;
             require(SUCCEEDED(result), "Mailbox Present failed");
             context.pendingPresent = false;
-            context.outputReady = false;
+            bool resumed;
+            { std::lock_guard lock(context.mutex); resumed = context.lastPresented == 0; context.lastPresented = context.lastCopied; }
+            if (resumed) log::debug("Presentation resumed at {}x{}, frame {}",context.width,context.height,context.lastCopied);
+            context.changed.notify_all();
             return true;
         };
         if (!presentPending()) return;
         // Keep at most one color texture owned by the copy queue.
         if (!context.presentationQueue.isComplete(context.lastCopyFence)) return;
-        if (!context.outputReady) context.outputReady = context.swapChain.ready();
-        if (!context.outputReady) return;
-        auto* renderer = core::Services::get<Renderer>();
+        // Present(DO_NOT_WAIT) provides backpressure. A consumed latency event
+        // can otherwise strand output after resize/occlusion without a Present
+        // to signal it again. Queue fences still protect every copy allocator.
         details::PresentationState::Frame* newest = nullptr;
         {
             std::lock_guard lock(context.mutex);
             for (auto& frame : context.frames)
             {
                 if (!frame.recording && !frame.copying && frame.sequence > context.lastCopied
-                    && renderer->queue().isComplete(frame.renderFence)
+                    && context.graphics->isComplete(frame.renderFence)
                     && (!newest || frame.sequence > newest->sequence))
                     newest = &frame;
             }

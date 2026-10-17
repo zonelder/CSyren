@@ -18,11 +18,13 @@ namespace csyren::render::details
     void PresentationState::init()
     {
         auto* renderer = core::Services::get<Renderer>();
-        auto* device = renderer->device();
-        auto* window = core::Services::get<core::Window>();
-        auto* descriptors = core::Services::get<DescriptorManager>();
-        width = window->width();
-        height = window->height();
+        init(renderer->device(),renderer->queue(),*core::Services::get<DescriptorManager>(),*core::Services::get<core::Window>());
+    }
+
+    void PresentationState::init(ID3D12Device* device,RenderQueue& graphics,DescriptorManager& descriptors,core::Window& window)
+    {
+        this->device = device; this->graphics = &graphics; this->descriptors = &descriptors;
+        width = window.width(); height = window.height();
 
         D3D12_COMMAND_QUEUE_DESC queueDesc{};
         queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
@@ -37,12 +39,22 @@ namespace csyren::render::details
         swapDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         swapDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
         swapDesc.SampleDesc.Count = 1;
-        require(swapChain.init(factory.Get(), device, presentationQueue.raw(), window->hwnd(), swapDesc),
+        require(swapChain.init(factory.Get(), device, presentationQueue.raw(), window.hwnd(), swapDesc),
                 "Failed to create mailbox swap chain");
 
         initialized = true;
         for (auto& command : commands)
             require(command.init(device, queueDesc.Type), "Failed to create frame commands");
+        prepareDepth();
+        for (auto& copy : copies)
+            require(copy.init(device, queueDesc.Type), "Failed to create presentation commands");
+        outputThread = std::thread([this] { runOutput(); });
+    }
+
+    void PresentationState::prepareDepth()
+    {
+        auto* device = this->device.Get();
+        auto* descriptors = this->descriptors;
         D3D12_HEAP_PROPERTIES heap{};
         heap.Type = D3D12_HEAP_TYPE_DEFAULT;
         D3D12_RESOURCE_DESC desc{};
@@ -63,19 +75,53 @@ namespace csyren::render::details
         D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
         dsvDesc.Format = desc.Format;
         dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-        dsv = descriptors->createDSV(depth.Get(), &dsvDesc);
+        if (dsv.valid()) descriptors->recreateDSV(dsv,depth.Get(),&dsvDesc);
+        else dsv = descriptors->createDSV(depth.Get(), &dsvDesc);
         require(dsv.valid(), "Failed to allocate frame DSV");
-        for (auto& copy : copies)
-            require(copy.init(device, queueDesc.Type), "Failed to create presentation commands");
-        initialized = true;
-        outputThread = std::thread([this] { runOutput(); });
+    }
+
+    void PresentationState::resize(UINT newWidth, UINT newHeight)
+    {
+        if (!newWidth || !newHeight || (newWidth == width && newHeight == height)) return;
+        std::unique_lock lock(mutex);
+        requestedWidth = newWidth; requestedHeight = newHeight; resizePending = true;
+        changed.notify_one();
+        while (resizePending && !outputError && !stopping) {
+            changed.wait_for(lock,std::chrono::milliseconds(1));
+            lock.unlock();
+            // ResizeBuffers/Present can synchronously message the HWND owner.
+            MSG message{};
+            while (PeekMessage(&message,nullptr,0,0,PM_REMOVE)) {
+                if (message.message == WM_QUIT) { PostQuitMessage(static_cast<int>(message.wParam)); break; }
+                TranslateMessage(&message); DispatchMessage(&message);
+            }
+            lock.lock();
+        }
+        if (outputError) std::rethrow_exception(outputError);
+    }
+
+    void PresentationState::resizeTargets(UINT newWidth, UINT newHeight)
+    {
+        // Runs on the output thread with frame acquisition suspended.
+        graphics->syncAwaitLastComplete();
+        presentationQueue.syncAwaitLastComplete();
+        for (auto& copy : copies) { copy.reset(); copy.close(); }
+        require(swapChain.resize(newWidth,newHeight,true),"Failed to resize editor swap chain");
+        width = newWidth; height = newHeight;
+        for (auto& frame : frames) {
+            auto rtv = std::move(frame.rtv); frame = {}; frame.rtv = std::move(rtv);
+        }
+        prepareDepth();
+        sequence = 0; lastCopied = 0; lastCopyFence = 0;
+        pendingPresent = false; lastPresented = 0;
+        log::debug("Presentation targets resized to {}x{}",width,height);
     }
 
     void PresentationState::prepareTarget(Frame& frame, const float color[4])
     {
         if (frame.color && std::equal(color, color + 4, frame.clearColor)) return;
-        auto* device = core::Services::get<Renderer>()->device();
-        auto* descriptors = core::Services::get<DescriptorManager>();
+        auto* device = this->device.Get();
+        auto* descriptors = this->descriptors;
         D3D12_HEAP_PROPERTIES heap{};
         heap.Type = D3D12_HEAP_TYPE_DEFAULT;
         D3D12_RESOURCE_DESC desc{};
@@ -127,9 +173,9 @@ namespace csyren::render::details
             outputThread.join();
         }
         // Drain both queues before editor/resource descriptors are released.
-        core::Services::get<Renderer>()->queue().syncAwaitLastComplete();
+        graphics->syncAwaitLastComplete();
         presentationQueue.syncAwaitLastComplete();
-        auto* descriptors = core::Services::get<DescriptorManager>();
+        auto* descriptors = this->descriptors;
         for (auto& frame : frames)
         {
             descriptors->freeRTV(frame.rtv);

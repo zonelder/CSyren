@@ -1,9 +1,23 @@
 #pragma once
 #include "editor_base.h"
 #include "math/math.h"
+#include "core/camera.h"
 
 namespace csyren::editor
 {
+    class CameraRenderTypeEditor : public IEditor
+    {
+    public:
+        void draw(core::reflection::MetaAny& any,const char* label,ValueEditContext& context) override
+        {
+            auto& value = any.get<core::CameraRenderType>();
+            context.draw(value,[&] {
+                int selected = static_cast<int>(value);
+                if (!ImGui::Combo(label,&selected,"Each frame\0Once\0")) return false;
+                value = static_cast<core::CameraRenderType>(selected); return true;
+            });
+        }
+    };
     class FloatEditor : public IEditor
     {
     public:

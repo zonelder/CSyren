@@ -71,6 +71,7 @@ namespace csyren::core
 		bool _ctrlDown = false;
 		bool _altDown = false;
 		std::vector <PreMessageCallback> preMessageCallbacks_;
+
 	};
 }
 

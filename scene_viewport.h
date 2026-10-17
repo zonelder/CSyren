@@ -1,7 +1,7 @@
 #pragma once
 #include "scene_picking.h"
 #include "editor_selection.h"
-#include "editor_view.h"
+#include "editor_viewport_state.h"
 #include "scene_session.h"
 #include "mesh_filter.h"
 #include "dx12_graphic/resource_manager.h"
@@ -9,6 +9,7 @@
 #include "core/window.h"
 #include "imGui/imgui.h"
 #include "scene_gizmo.h"
+#include "dx12_graphic/camera_render_target.h"
 
 namespace csyren::editor
 {
@@ -73,54 +74,87 @@ namespace csyren::editor
             return result;
         }
     public:
+    void cameraView(std::shared_ptr<render::details::CameraRenderView> view) { _cameraView = std::move(view); }
     bool manipulating() const { return _gizmo.active(); }
-    void render()
+    void render(bool* open = nullptr,ViewportCamera mode = ViewportCamera::Scene)
+    {
+        auto& session = *core::Services::get<SceneSession>();
+        auto& view = *core::Services::get<EditorViewportState>();
+        const bool game = mode == ViewportCamera::Game;
+        auto& viewport = game ? view.gameViewport : view.viewport;
+        viewport = {};
+        if (open && !*open) { if (!game) view.navigation = {}; _gizmo.cancel(session); return; }
+        const bool visible = ImGui::Begin(game ? "Game" : "Scene",open,ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse);
+        struct EndWindow { ~EndWindow() { ImGui::End(); } } endWindow;
+        if (!visible) { if (!game) view.navigation = {}; _gizmo.cancel(session); return; }
+        auto* renderer = core::Services::get<render::Renderer>();
+        const auto target = game ? renderer->primaryCameraTarget() : (_cameraView ? _cameraView->target : nullptr);
+        if (game && ImGui::Button("Render again")) renderer->requestPrimaryCameraRender();
+        if (game && !target) { ImGui::TextUnformatted("No game camera in the active scene."); return; }
+        const auto available = ImGui::GetContentRegionAvail();
+        if (!target || !target->color() || available.x < 1 || available.y < 1)
+        { if (!game) view.navigation = {}; _gizmo.cancel(session); return; }
+        target->request(static_cast<UINT>(std::clamp(available.x,1.f,8192.f)),static_cast<UINT>(std::clamp(available.y,1.f,8192.f)));
+        const auto start = ImGui::GetCursorScreenPos();
+        auto image = ViewportImage::fit(start.x,start.y,available.x,available.y,float(target->width())/target->height());
+        ImGui::SetCursorScreenPos(ImVec2(image.x,image.y));
+        ImGui::Image(ImTextureRef(static_cast<ImTextureID>(target->srv().ptr)),ImVec2(image.width,image.height));
+        image.hovered = ImGui::IsItemHovered(); image.focused = ImGui::IsWindowFocused();
+        viewport = image;
+        const auto& io = ImGui::GetIO();
+        const bool popup = ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId);
+        if (game) return;
+        if (image.hovered && !popup && !_gizmo.active() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) view.navigation.captured = true;
+        if (!ImGui::IsMouseDown(ImGuiMouseButton_Right)) view.navigation.captured = false;
+        view.navigation.forward = float(ImGui::IsKeyDown(ImGuiKey_W))-float(ImGui::IsKeyDown(ImGuiKey_S));
+        view.navigation.right = float(ImGui::IsKeyDown(ImGuiKey_D))-float(ImGui::IsKeyDown(ImGuiKey_A));
+        view.navigation.active = view.navigation.captured && !popup && !io.WantTextInput &&
+            (ImGui::IsMouseDragging(ImGuiMouseButton_Right) || view.navigation.forward != 0 || view.navigation.right != 0);
+        view.navigation.dx = view.navigation.active ? io.MouseDelta.x : 0;
+        view.navigation.dy = view.navigation.active ? io.MouseDelta.y : 0;
+        renderInteraction(image);
+    }
+    private:
+    void renderInteraction(const ViewportImage& image)
     {
         using namespace DirectX;
         auto& session = *core::Services::get<SceneSession>();
-        if (session.playing()) { _gizmo.cancel(session); return; }
         auto& selection = *core::Services::get<EditorSelection>();
         auto& resources = *core::Services::get<render::ResourceManager>();
-        auto& window = *core::Services::get<core::Window>();
-        if (window.width() <= 0 || window.height() <= 0) return;
-        const auto* frame = core::Services::get<render::Renderer>()->getEngineVariableBuffer();
+        const auto* frame = &_cameraView->engine;
         const auto vp = XMLoadFloat4x4(&frame->viewProjectionMatrix);
         const auto mouse = ImGui::GetIO().MousePos;
-        POINT client{ static_cast<LONG>(mouse.x), static_cast<LONG>(mouse.y) };
-        ScreenToClient(window.hwnd(), &client);
-        const bool viewportMouse = !ImGui::GetIO().WantCaptureMouse &&
-            !ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) && !ImGui::IsAnyItemActive() &&
-            client.x >= 0 && client.y >= 0 && client.x < window.width() && client.y < window.height();
-        auto& view = *core::Services::get<EditorView>();
+        const auto ndc = image.ndc(mouse.x,mouse.y);
+        const bool viewportMouse = image.hovered && !ImGui::IsAnyItemActive();
+        auto& view = *core::Services::get<EditorViewportState>();
         const auto& io = ImGui::GetIO();
-        if (!_gizmo.active() && !io.WantTextInput && !io.KeyCtrl && !io.KeyAlt && !ImGui::IsAnyItemActive() &&
+        view.camera.aspectRatio = image.width/image.height;
+        if (image.focused && !_gizmo.active() && !io.WantTextInput && !io.KeyCtrl && !io.KeyAlt && !ImGui::IsAnyItemActive() &&
             !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId) && !ImGui::IsMouseDown(ImGuiMouseButton_Right))
         {
             if (ImGui::IsKeyPressed(ImGuiKey_W, false)) view.gizmoMode = GizmoMode::Move;
             if (ImGui::IsKeyPressed(ImGuiKey_E, false)) view.gizmoMode = GizmoMode::Rotate;
             if (ImGui::IsKeyPressed(ImGuiKey_R, false)) view.gizmoMode = GizmoMode::Scale;
         }
-        if (!_gizmo.active() && !io.WantTextInput && !io.KeyCtrl && !io.KeyAlt && !ImGui::IsAnyItemActive() &&
+        if (image.focused && !_gizmo.active() && !io.WantTextInput && !io.KeyCtrl && !io.KeyAlt && !ImGui::IsAnyItemActive() &&
             !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId) && !ImGui::IsMouseDown(ImGuiMouseButton_Right) &&
             ImGui::IsKeyPressed(ImGuiKey_F, false))
             focusBounds(view, focusTarget(session.editorScene(), resources, selection.selected()));
-        POINT screen{}; ClientToScreen(window.hwnd(), &screen);
+        if (session.playing()) { _gizmo.cancel(session); return; }
         const bool gizmoMouse = _gizmo.render(session, selection.selected(), view.camera, vp,
-            ImVec2(static_cast<float>(screen.x), static_cast<float>(screen.y)),
-            ImVec2(static_cast<float>(window.width()), static_cast<float>(window.height())),
-            viewportMouse && !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId) && !ImGui::IsMouseDown(ImGuiMouseButton_Right), view.gizmoMode);
+            ImVec2(image.x,image.y),ImVec2(image.width,image.height),
+            viewportMouse && !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId) && !ImGui::IsMouseDown(ImGuiMouseButton_Right), view.gizmoMode,ImGui::GetWindowDrawList());
         if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
         {
             _rightClick = viewportMouse;
             _dragged = false;
         }
-        if (ImGui::IsMouseDragging(ImGuiMouseButton_Right)) _dragged = true;
+        if (ImGui::IsMouseDragging(ImGuiMouseButton_Right) || view.navigation.active) _dragged = true;
         if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
         {
             if (_rightClick && !_dragged && viewportMouse)
             {
-                auto ray = viewportRay(2.f*client.x/window.width()-1.f,
-                    1.f-2.f*client.y/window.height(), vp);
+                auto ray = viewportRay(ndc.x,ndc.y,vp);
                 constexpr float creationRayDistance = 100.f;
                 ray.length = std::min(ray.length, creationRayDistance);
                 const auto hit = raycast(session.editorScene(), resources, ray, true);
@@ -146,12 +180,9 @@ namespace csyren::editor
             }
             ImGui::EndPopup();
         }
-        if (!gizmoMouse && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::GetIO().WantCaptureMouse &&
-            !ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) && !ImGui::IsAnyItemActive() &&
-            client.x >= 0 && client.y >= 0 && client.x < window.width() && client.y < window.height())
+        if (!gizmoMouse && viewportMouse && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
         {
-            const auto ray = viewportRay(2.f*client.x/window.width()-1.f,
-                1.f-2.f*client.y/window.height(), vp);
+            const auto ray = viewportRay(ndc.x,ndc.y,vp);
             const auto hit = raycast(session.editorScene(), resources, ray);
             session.finishEdit(); selection.select(hit.entity);
         }
@@ -165,17 +196,20 @@ namespace csyren::editor
             XMStoreFloat4(&corners[i], XMVector4Transform(XMVectorSet(
                 (i&1) ? bounds.max.x : bounds.min.x, (i&2) ? bounds.max.y : bounds.min.y,
                 (i&4) ? bounds.max.z : bounds.min.z, 1), matrix));
-        auto* draw = ImGui::GetBackgroundDrawList(ImGui::GetMainViewport());
+        auto* draw = ImGui::GetWindowDrawList();
+        draw->PushClipRect(ImVec2(image.x,image.y),ImVec2(image.x+image.width,image.y+image.height),true);
         const auto project = [&](const XMFLOAT4& p) { return ImVec2(
-            screen.x+(p.x/p.w+1)*.5f*window.width(), screen.y+(1-p.y/p.w)*.5f*window.height()); };
+            image.x+(p.x/p.w+1)*.5f*image.width, image.y+(1-p.y/p.w)*.5f*image.height); };
         for (int i = 0; i < 8; ++i)
             for (int bit : { 1, 2, 4 }) if (!(i&bit))
             {
                 auto a = corners[i], b = corners[i|bit];
                 if (clipBoundsEdge(a, b)) draw->AddLine(project(a), project(b), IM_COL32(255, 190, 50, 255), 2.f);
             }
+        draw->PopClipRect();
     }
     private:
+    std::shared_ptr<render::details::CameraRenderView> _cameraView;
         TransformGizmo _gizmo;
         math::Vector3 _position{};
         uint64_t _document{};

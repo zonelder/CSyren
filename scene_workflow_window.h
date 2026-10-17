@@ -2,7 +2,8 @@
 #include "imGui/imgui.h"
 #include "scene_session.h"
 #include "editor_selection.h"
-#include "editor_view.h"
+#include "editor_viewport_state.h"
+#include "editor_toolbar_layout.h"
 #include "core/services.h"
 #include <optional>
 
@@ -66,8 +67,9 @@ namespace csyren::editor
         {
             auto& session = *core::Services::get<SceneSession>();
             const auto flags = ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
-            const float height = ImGui::GetFrameHeight() + 2 * ImGui::GetStyle().WindowPadding.y;
-            if (ImGui::BeginViewportSideBar("##SceneToolbar", ImGui::GetMainViewport(), ImGuiDir_Up, height, flags))
+            const bool tools = !session.playing() && core::Services::has<EditorViewportState>();
+            const auto layout = WorkflowToolbarLayout::measure(ImGui::GetMainViewport()->Size.x,tools,session.error().c_str());
+            if (ImGui::BeginViewportSideBar("##SceneToolbar", ImGui::GetMainViewport(), ImGuiDir_Up, layout.height, flags))
             {
                 ImGui::BeginDisabled(session.playing() || busy());
                 if (ImGui::Button("Play")) session.enqueue(SceneOperation::Play);
@@ -77,14 +79,25 @@ namespace csyren::editor
                 if (ImGui::Button("Stop")) session.enqueue(SceneOperation::Stop);
                 ImGui::EndDisabled();
                 ImGui::SameLine(); ImGui::TextDisabled("|"); ImGui::SameLine();
-                ImGui::Text("%s | %s%s", session.playing() ? "Playing" : "Edit",
-                    session.path().empty() ? "Untitled" : session.path().c_str(), session.dirty() ? " *" : "");
-                if (!session.playing() && core::Services::has<EditorView>())
+                ImGui::AlignTextToFramePadding(); ImGui::TextUnformatted(session.playing() ? "Playing" : "Edit");
+                ImGui::SameLine();
+                const auto nameStart = session.path().find_last_of("/\\");
+                std::string document = session.path().empty() ? "Untitled" : session.path().substr(nameStart == std::string::npos ? 0 : nameStart+1);
+                if (session.dirty()) document += " *";
+                const auto position = ImGui::GetCursorScreenPos();
+                const auto height = ImGui::GetFrameHeight();
+                ImGui::PushClipRect(position,ImVec2(position.x+layout.documentWidth,position.y+height),true);
+                ImGui::GetWindowDrawList()->AddText(ImVec2(position.x,position.y+ImGui::GetStyle().FramePadding.y),ImGui::GetColorU32(ImGuiCol_Text),document.c_str());
+                ImGui::PopClipRect(); ImGui::Dummy(ImVec2(layout.documentWidth,height));
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s",session.path().empty() ? "Untitled" : session.path().c_str());
+                if (tools)
                 {
-                    auto& view = *core::Services::get<EditorView>();
-                    ImGui::SameLine(); ImGui::TextDisabled("|");
+                    auto& view = *core::Services::get<EditorViewportState>();
+                    if (!layout.wrapTools) { ImGui::SameLine(); ImGui::TextDisabled("|"); }
+                    bool first = true;
                     const auto mode = [&](const char* label, GizmoMode value) {
-                        ImGui::SameLine();
+                        if (!first || !layout.wrapTools) ImGui::SameLine();
+                        first = false;
                         if (ImGui::RadioButton(label, view.gizmoMode == value)) view.gizmoMode = value;
                     };
                     mode("Move (W)", GizmoMode::Move); mode("Rotate (E)", GizmoMode::Rotate); mode("Scale (R)", GizmoMode::Scale);
@@ -92,7 +105,8 @@ namespace csyren::editor
                 }
                 if (!session.error().empty())
                 {
-                    ImGui::SameLine(); ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "%s", session.error().c_str());
+                    ImGui::PushStyleColor(ImGuiCol_Text,ImVec4(1,.4f,.4f,1));
+                    ImGui::TextWrapped("%s",session.error().c_str()); ImGui::PopStyleColor();
                 }
             }
             ImGui::End();

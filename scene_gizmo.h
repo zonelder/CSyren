@@ -11,7 +11,8 @@ namespace csyren::editor
         void cancel(SceneSession& session) { _gesture.cancel(session); }
         // Move/Rotate use world axes. Scale uses the object's local axes.
         bool render(SceneSession& session, core::Entity::ID selected, const core::Camera& camera,
-            DirectX::FXMMATRIX vp, ImVec2 origin, ImVec2 size, bool allowMouse, GizmoMode requested = GizmoMode::Move)
+            DirectX::FXMMATRIX vp, ImVec2 origin, ImVec2 size, bool allowMouse, GizmoMode requested = GizmoMode::Move,
+            ImDrawList* overlay = nullptr)
         {
             using namespace DirectX;
             if (active() && !_gesture.valid(session, selected)) _gesture.cancel(session);
@@ -124,7 +125,7 @@ namespace csyren::editor
                     _mode = mode; _dragAxis = hovered; _pressMouse = mouse; _angle = 0;
                 }
             }
-            auto* draw = ImGui::GetBackgroundDrawList(ImGui::GetMainViewport());
+            auto* draw = overlay ? overlay : ImGui::GetBackgroundDrawList(ImGui::GetMainViewport());
             draw->PushClipRect(origin,ImVec2(origin.x+size.x,origin.y+size.y),true);
             const ImU32 colors[] = { IM_COL32(245,80,80,255),IM_COL32(90,225,110,255),IM_COL32(90,150,255,255),IM_COL32_WHITE };
             const auto color = [&](int index) { return (active() ? _dragAxis == index : allowMouse && hovered == index) ? IM_COL32(255,220,80,255) : colors[index]; };

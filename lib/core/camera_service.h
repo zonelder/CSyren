@@ -15,13 +15,9 @@ namespace csyren::core
 
 		CameraContextService(CameraEntityGetter&& getter) noexcept : _getter(std::move(getter)) {}
 
-        using View = std::pair<const Camera*, const Transform*>;
-        void viewProvider(std::function<View()> provider) { _view = std::move(provider); }
-        View view() const { return _view ? _view() : View{}; }
 		Entity::ID get() const { return _getter(); }
 
 	private:
 		CameraEntityGetter _getter;
-        std::function<View()> _view;
 	};
 }

@@ -13,6 +13,7 @@ struct SceneEntities {};
 
 enum class AccessMode { Read, Write };
 enum class TaskAffinity { Worker, MainThread };
+enum class GpuTaskScope { Frame, View };
 struct PhaseDescription {
     std::string name;
     std::vector<std::string> after;
@@ -37,6 +38,7 @@ struct TaskDescription {
     std::vector<TaskAccess> accesses;
     std::vector<GpuAccess> gpuAccesses;
     std::string gpuQueue = "graphics";
+    GpuTaskScope gpuScope = GpuTaskScope::Frame;
     TaskDescription& gpu(std::string resource, uint32_t state, AccessMode mode) {
         gpuAccesses.push_back({std::move(resource), state, mode}); return *this;
     }

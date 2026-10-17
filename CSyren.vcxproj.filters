@@ -141,7 +141,6 @@
     <ClInclude Include="scene_session.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="scene_storage.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="editor_commands.h"><Filter>Header Files</Filter></ClInclude>
-    <ClInclude Include="editor_view.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="scene_workflow_window.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="project_settings.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="startup_options.h"><Filter>Header Files</Filter></ClInclude>

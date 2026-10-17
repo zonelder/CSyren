@@ -45,6 +45,7 @@
   <ItemGroup>
     <ClInclude Include="scene_pipeline_cases.h" />
     <ClInclude Include="gizmo_transform_cases.h" />
+    <ClInclude Include="viewport_cases.h" />
     <None Include="SCENE_WORKFLOW_TESTS.md" />
   </ItemGroup>
   <ItemGroup>

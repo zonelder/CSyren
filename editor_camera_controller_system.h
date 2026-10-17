@@ -11,7 +11,7 @@
 #include "core/transform.h"
 
 #include "editor_camera_controller.h"
-#include "editor_view.h"
+#include "editor_viewport_state.h"
 
 
 using namespace csyren::core;
@@ -24,9 +24,9 @@ namespace csyren
     public:
         core::TaskDescription describe() const override {
             core::TaskDescription d; d.phase = "simulation";
-            // Input is a snapshot after the input phase. Only EditorView is mutated;
+            // Input is a snapshot after the input phase. Only EditorViewportState is mutated;
             // this controller neither calls window APIs nor accesses scene components.
-            d.readResource<core::Devices>().readResource<core::Time>().writeResource<editor::EditorView>(); return d;
+            d.readResource<core::Devices>().readResource<core::Time>().writeResource<editor::EditorViewportState>(); return d;
         }
 
         explicit EditorCameraControllerSystem() = default;
@@ -35,7 +35,7 @@ namespace csyren
         {
 			using ctx = core::Services;
 			auto devices = ctx::get<const core::Devices>();
-			auto editorView = ctx::get<editor::EditorView>();
+			auto editorView = ctx::get<editor::EditorViewportState>();
 			auto time = ctx::get<const core::Time>();
 
             auto& keyboard = devices->keyboard();
@@ -47,13 +47,15 @@ namespace csyren
 
 				auto& cameraTransform = editorView->transform;
                 auto& editorController = editorView->controller;
-                if (!mouse.isButtonDown(MouseButton::Right))
+                const auto navigation = editorView->navigation;
+                if (editorView->viewportInput) { editorView->navigation.dx = 0; editorView->navigation.dy = 0; }
+                if (editorView->viewportInput ? !navigation.active : !mouse.isButtonDown(MouseButton::Right))
 					return;
 				float speed = editorController.speed;
 				float movementSpeed = editorController.movementSpeed;
 				auto& delta = mouse.deltaPosition();
-				float cam_yaw = speed * delta.x;
-				float cam_pitch = speed * delta.y;
+				float cam_yaw = speed * (editorView->viewportInput ? navigation.dx : float(delta.x));
+				float cam_pitch = speed * (editorView->viewportInput ? navigation.dy : float(delta.y));
 				Quaternion yawQuat = Quaternion::angleAxis(cam_yaw, Vector3::up);
 
 				// Calculate the forward vector from the current rotation
@@ -85,6 +87,7 @@ namespace csyren
 
 				if (keyboard.isKeyDown(KeyCode::A)) movement[0] = -1.0f;
 				if (keyboard.isKeyDown(KeyCode::D)) movement[0] = +1.0f;
+                if (editorView->viewportInput) { movement.x = navigation.right; movement.z = navigation.forward; }
 
 				if (movement[0] != 0.0f || movement[1] != 0.0f || movement[2] != 0.0f)
 				{

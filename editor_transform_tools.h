@@ -1,5 +1,5 @@
 #pragma once
-#include "editor_view.h"
+#include "editor_viewport_state.h"
 #include "scene_session.h"
 #include "scene_picking.h"
 
@@ -16,7 +16,7 @@ namespace csyren::editor
         return result;
     }
 
-    inline bool focusBounds(EditorView& view, const math::MeshBounds& bounds)
+    inline bool focusBounds(EditorViewportState& view, const math::MeshBounds& bounds)
     {
         using namespace DirectX;
         if (!bounds.valid || !std::isfinite(view.camera.aspectRatio) || view.camera.aspectRatio <= 0 ||

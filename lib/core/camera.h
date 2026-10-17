@@ -5,6 +5,7 @@
 
 namespace csyren::core
 {
+    enum class CameraRenderType { EachFrame, Once };
 	enum ProjectionType
 	{
 		Perspective,
@@ -21,6 +22,7 @@ namespace csyren::core
 
 	struct Camera
 	{
+        CameraRenderType render_type = CameraRenderType::EachFrame;
 		float far{ 1000.0f };
 		float near{ 0.1f };
 		float aspectRatio{ 16.0f / 9.0f };

@@ -61,12 +61,12 @@ namespace csyren::core
 		wr.right = _width + wr.left;
 		wr.top = 100;
 		wr.bottom = _height + wr.top;
-		if (AdjustWindowRect(&wr, WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU, FALSE) == 0) {
+        if (AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE) == 0) {
 			return _hWnd;
 		}
 
 		_hWnd = CreateWindow(_wndCLassName, _title,
-			WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU,
+			WS_OVERLAPPEDWINDOW,
 			CW_USEDEFAULT, CW_USEDEFAULT, wr.right - wr.left, wr.bottom - wr.top,
 			nullptr, nullptr, _hInst, this
 		);
@@ -96,6 +96,15 @@ namespace csyren::core
 		{
 			pThis = reinterpret_cast<Window*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 		}
+
+        if (pThis && msg == WM_SIZE) {
+            pThis->_width = LOWORD(lParam); pThis->_height = HIWORD(lParam);
+        }
+        if (msg == WM_GETMINMAXINFO) {
+            auto* limits = reinterpret_cast<MINMAXINFO*>(lParam);
+            limits->ptMinTrackSize = {640,480};
+            return 0;
+        }
 
 		if (pThis && pThis->ready())
 		{

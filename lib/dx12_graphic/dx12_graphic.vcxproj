@@ -169,6 +169,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="base_resource.h" />
+    <ClInclude Include="camera_render_target.h" />
+    <ClInclude Include="camera_render_registry.h" />
+    <ClInclude Include="camera_render_view.h" />
+    <ClInclude Include="camera_view_graph.h" />
     <ClInclude Include="buffer_view.h" />
     <ClInclude Include="command_list.h" />
     <ClInclude Include="command_list.ipp" />
@@ -244,6 +248,7 @@
     <ClCompile Include="primitives.cpp" />
     <ClCompile Include="pso_factory.cpp" />
     <ClCompile Include="renderer.cpp" />
+    <ClCompile Include="camera_render_target.cpp" />
     <ClCompile Include="render_queue.cpp" />
     <ClCompile Include="resource_upload_thread.cpp" />
     <ClCompile Include="resource_handle_meta.cpp" />
