@@ -94,6 +94,13 @@ namespace csyren::editor
         auto& view = *core::Services::get<EditorView>();
         const auto& io = ImGui::GetIO();
         if (!_gizmo.active() && !io.WantTextInput && !io.KeyCtrl && !io.KeyAlt && !ImGui::IsAnyItemActive() &&
+            !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId) && !ImGui::IsMouseDown(ImGuiMouseButton_Right))
+        {
+            if (ImGui::IsKeyPressed(ImGuiKey_W, false)) view.gizmoMode = GizmoMode::Move;
+            if (ImGui::IsKeyPressed(ImGuiKey_E, false)) view.gizmoMode = GizmoMode::Rotate;
+            if (ImGui::IsKeyPressed(ImGuiKey_R, false)) view.gizmoMode = GizmoMode::Scale;
+        }
+        if (!_gizmo.active() && !io.WantTextInput && !io.KeyCtrl && !io.KeyAlt && !ImGui::IsAnyItemActive() &&
             !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId) && !ImGui::IsMouseDown(ImGuiMouseButton_Right) &&
             ImGui::IsKeyPressed(ImGuiKey_F, false))
             focusBounds(view, focusTarget(session.editorScene(), resources, selection.selected()));
@@ -101,7 +108,7 @@ namespace csyren::editor
         const bool gizmoMouse = _gizmo.render(session, selection.selected(), view.camera, vp,
             ImVec2(static_cast<float>(screen.x), static_cast<float>(screen.y)),
             ImVec2(static_cast<float>(window.width()), static_cast<float>(window.height())),
-            viewportMouse && !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId) && !ImGui::IsMouseDown(ImGuiMouseButton_Right));
+            viewportMouse && !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId) && !ImGui::IsMouseDown(ImGuiMouseButton_Right), view.gizmoMode);
         if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
         {
             _rightClick = viewportMouse;
@@ -169,7 +176,7 @@ namespace csyren::editor
             }
     }
     private:
-        MoveGizmo _gizmo;
+        TransformGizmo _gizmo;
         math::Vector3 _position{};
         uint64_t _document{};
         bool _rightClick = false, _dragged = false;

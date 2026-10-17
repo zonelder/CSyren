@@ -5,11 +5,13 @@
 
 namespace csyren::editor
 {
+    enum class GizmoMode { Move, Rotate, Scale };
     struct EditorView
     {
         core::Camera camera;
         core::Transform transform;
         EditorCameraController controller;
+        GizmoMode gizmoMode = GizmoMode::Move;
         EditorView()
         {
             camera.near = 0.1f; camera.far = 1000.0f;

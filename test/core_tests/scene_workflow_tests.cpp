@@ -1214,7 +1214,7 @@ TEST_F(SceneWorkflow, GizmoGestureCommitsOneUndoAndEscapeRestoresValues)
     run(session, SceneOperation::CreateEntity);
     const auto id = session.takeCreatedEntity(); const auto key = session.keyFor(id);
     run(session, SceneOperation::SaveAs, "gizmo");
-    TranslationGesture gesture;
+    TransformGesture gesture;
     ASSERT_TRUE(gesture.begin(session, id));
     ASSERT_TRUE(gesture.move(session, { 1, 0, 0 }));
     ASSERT_TRUE(gesture.move(session, { 2, 0, 0 }));
@@ -1252,7 +1252,7 @@ TEST_F(SceneWorkflow, OldGizmoCannotCancelAnEditInAnotherDocument)
     MemoryStorage storage; SceneSession session(storage);
     run(session, SceneOperation::CreateEntity);
     const auto id = session.takeCreatedEntity(); run(session, SceneOperation::SaveAs, "before focus");
-    TranslationGesture gesture;
+    TransformGesture gesture;
     ASSERT_TRUE(gesture.begin(session, id));
     ASSERT_TRUE(gesture.move(session, { 1, 0, 0 }));
     run(session, SceneOperation::Open, "before focus", true);
@@ -1278,7 +1278,7 @@ TEST_F(SceneWorkflow, ImGuiGizmoMouseDragUsesSingleUndo)
     EditorView view; view.camera.aspectRatio = 4.f/3;
     view.transform.position = math::Vector3{0,0,-5};
     const auto vp = DirectX::XMMatrixMultiply(DirectX::XMMatrixInverse(nullptr, view.transform.world()), view.camera.projectionMatrix());
-    MoveGizmo gizmo;
+    TransformGizmo gizmo;
     const auto frame = [&] {
         ImGui::NewFrame();
         gizmo.render(session, id, view.camera, vp, {0,0}, {800,600}, true);
@@ -1310,3 +1310,5 @@ TEST_F(SceneWorkflow, ImGuiGizmoMouseDragUsesSingleUndo)
     EXPECT_FALSE(session.dirty());
     io.AddKeyEvent(ImGuiKey_Escape, false); io.AddMouseButtonEvent(0,false); frame();
 }
+
+#include "gizmo_transform_cases.h"

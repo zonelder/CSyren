@@ -56,7 +56,23 @@ namespace csyren::editor
         return std::isfinite(parameter);
     }
 
-    class TranslationGesture
+    inline bool rotationPlaneVector(const PickRay& ray, const math::Vector3& pivot,
+        const math::Vector3& axis, math::Vector3& vector)
+    {
+        const float denominator = axis.dot(ray.direction);
+        if (std::abs(denominator) < 1e-4f) return false;
+        const float distance = axis.dot(pivot - ray.origin) / denominator;
+        if (distance < 0 || distance > ray.length) return false;
+        vector = ray.origin + ray.direction * distance - pivot;
+        const float length = vector.magnitude();
+        if (!std::isfinite(length) || length < 1e-6f) return false;
+        vector = vector / length; return true;
+    }
+
+    inline float rotationStep(const math::Vector3& before, const math::Vector3& after, const math::Vector3& axis)
+    { return std::atan2(axis.dot(before.cross(after)), std::clamp(before.dot(after), -1.f, 1.f)); }
+
+    class TransformGesture
     {
     public:
         bool active() const noexcept { return _active; }
@@ -64,25 +80,57 @@ namespace csyren::editor
         { return _active && !session.playing() && _document == session.documentId() &&
             _instance == session.editorContext().instance && session.resolve(_key) == selected &&
             session.editorScene().hasComponent<core::Transform>(selected); }
-        bool begin(SceneSession& session, core::Entity::ID id)
+        bool begin(SceneSession& session, core::Entity::ID id, GizmoMode mode = GizmoMode::Move)
         {
             if (_active || session.playing()) return false;
             auto transform = session.editorScene().getComponent<core::Transform>(id);
             const auto key = session.keyFor(id);
             if (!transform || !key) return false;
             session.finishEdit();
-            _before = transform->position; _key = key; _document = session.documentId();
+            _before = *transform; _mode = mode; _key = key; _document = session.documentId();
             _instance = session.editorContext().instance; _active = true; return true;
         }
         bool move(SceneSession& session, const math::Vector3& delta)
         {
-            if (!valid(session, session.resolve(_key))) return false;
+            if (_mode != GizmoMode::Move || !valid(session, session.resolve(_key))) return false;
             auto transform = session.editorScene().getComponent<core::Transform>(session.resolve(_key));
             if (!transform) return false;
-            const auto next = _before + delta;
+            const auto next = _before.position + delta;
+            if (!finite(next)) return false;
             transform->position = next;
             session.preview(_key, core::reflection::ComponentFamily::getID<core::Transform>(),
-                { "position"_hs.id }, _before, next, false);
+                { "position"_hs.id }, _before.position, next, false);
+            return true;
+        }
+        bool rotate(SceneSession& session, const math::Vector3& worldAxis, float angle)
+        {
+            if (_mode != GizmoMode::Rotate || !valid(session, session.resolve(_key)) || !std::isfinite(angle) ||
+                !finite(worldAxis) || worldAxis.sqrMagnitude() < 1e-8f) return false;
+            auto transform = session.editorScene().getComponent<core::Transform>(session.resolve(_key));
+            const math::Quaternion next = angle == 0 ? _before.rotation : math::Quaternion(DirectX::XMQuaternionNormalize(
+                DirectX::XMQuaternionMultiply(_before.rotation, DirectX::XMQuaternionRotationAxis(worldAxis, angle))));
+            if (!std::isfinite(next.x) || !std::isfinite(next.y) || !std::isfinite(next.z) || !std::isfinite(next.w)) return false;
+            transform->rotation = next;
+            session.preview(_key, core::reflection::ComponentFamily::getID<core::Transform>(),
+                { "rotation"_hs.id }, _before.rotation, next, false);
+            return true;
+        }
+        bool scale(SceneSession& session, int axis, float factor)
+        {
+            if (_mode != GizmoMode::Scale || !valid(session, session.resolve(_key)) ||
+                axis < 0 || axis > 3 || !std::isfinite(factor) || factor <= 0) return false;
+            auto next = _before.scale;
+            if (factor != 1) for (int i = 0; i < 3; ++i) if (axis == 3 || axis == i)
+            {
+                const float value = _before.scale[i] * factor;
+                if (!std::isfinite(value)) return false;
+                next[i] = std::copysign(std::max(.001f, std::abs(value)), _before.scale[i]);
+            }
+            if (!finite(next)) return false;
+            auto transform = session.editorScene().getComponent<core::Transform>(session.resolve(_key));
+            transform->scale = next;
+            session.preview(_key, core::reflection::ComponentFamily::getID<core::Transform>(),
+                { "scale"_hs.id }, _before.scale, next, false);
             return true;
         }
         void finish(SceneSession& session)
@@ -92,7 +140,10 @@ namespace csyren::editor
     private:
         bool sameDocument(SceneSession& session) const
         { return _active && _document == session.documentId() && _instance == session.editorContext().instance; }
-        math::Vector3 _before;
+        static bool finite(const math::Vector3& value)
+        { return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z); }
+        core::Transform _before;
+        GizmoMode _mode = GizmoMode::Move;
         EntityKey _key{};
         uint64_t _document{}, _instance{};
         bool _active = false;

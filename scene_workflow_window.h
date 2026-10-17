@@ -2,6 +2,7 @@
 #include "imGui/imgui.h"
 #include "scene_session.h"
 #include "editor_selection.h"
+#include "editor_view.h"
 #include "core/services.h"
 #include <optional>
 
@@ -78,7 +79,17 @@ namespace csyren::editor
                 ImGui::SameLine(); ImGui::TextDisabled("|"); ImGui::SameLine();
                 ImGui::Text("%s | %s%s", session.playing() ? "Playing" : "Edit",
                     session.path().empty() ? "Untitled" : session.path().c_str(), session.dirty() ? " *" : "");
-                if (!session.playing()) { ImGui::SameLine(); ImGui::TextDisabled("| Move: X/Y/Z handles | F: focus"); }
+                if (!session.playing() && core::Services::has<EditorView>())
+                {
+                    auto& view = *core::Services::get<EditorView>();
+                    ImGui::SameLine(); ImGui::TextDisabled("|");
+                    const auto mode = [&](const char* label, GizmoMode value) {
+                        ImGui::SameLine();
+                        if (ImGui::RadioButton(label, view.gizmoMode == value)) view.gizmoMode = value;
+                    };
+                    mode("Move (W)", GizmoMode::Move); mode("Rotate (E)", GizmoMode::Rotate); mode("Scale (R)", GizmoMode::Scale);
+                    ImGui::SameLine(); ImGui::TextDisabled("| F: focus");
+                }
                 if (!session.error().empty())
                 {
                     ImGui::SameLine(); ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "%s", session.error().c_str());

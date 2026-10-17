@@ -59,6 +59,8 @@
     <ClInclude Include="scene_storage.h" />
     <ClInclude Include="editor_commands.h" />
     <ClInclude Include="editor_view.h" />
+    <ClInclude Include="editor_transform_tools.h" />
+    <ClInclude Include="scene_gizmo.h" />
     <ClInclude Include="scene_workflow_window.h" />
     <ClInclude Include="serializer.h" />
     <ClInclude Include="statistic_monitor.h" />
