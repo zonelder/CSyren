@@ -25,7 +25,8 @@ namespace csyren::render
     Texture::Texture(Texture&& other) noexcept
         : _dxData(std::move(other._dxData)),
         _srvHandles(std::move(other._srvHandles)),
-        _heapManager(other._heapManager)
+        _heapManager(other._heapManager),
+        _loadStatus(other._loadStatus)
     {
         other._srvHandles = {};
         other._heapManager = nullptr;
@@ -40,6 +41,7 @@ namespace csyren::render
             _dxData = std::move(other._dxData);
             _srvHandles = std::move(other._srvHandles);
             _heapManager = other._heapManager;
+            _loadStatus = other._loadStatus;
 
             other._srvHandles = {};
             other._heapManager = nullptr;
@@ -59,7 +61,7 @@ namespace csyren::render
             log::warning("Texture: texture file is not found.({})", cstdmf::to_string(filePath));
             return false;
         }
-        //do nothing as resource manager pass this texture to upload thread and its been loaded there.
+        // File textures are staged and uploaded by ResourceUploadPipeline jobs.
         return true;
     }
 

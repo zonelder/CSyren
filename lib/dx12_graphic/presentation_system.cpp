@@ -75,7 +75,7 @@ namespace csyren::render
 
     void FrameAcquireSystem::init() {
         _state = acquireState();
-        if (!_state->graph) _state->graph = std::make_shared<details::FrameGraphBackend>(*_state);
+        if (!_state->graph) _state->graph = std::make_shared<details::FrameGraphBackend>(*_state, core::Services::get<Renderer>()->queue());
         core::Services::get<core::SystemManager>()->taskBackend(_state->graph);
     }
     void FrameAcquireSystem::shutdown() { _state.reset(); }
@@ -96,6 +96,7 @@ namespace csyren::render
         auto& context = *_state;
         auto* renderer = core::Services::get<Renderer>();
         auto* window = core::Services::get<const core::Window>();
+        renderer->collectDeferredReleases();
         context.resize(static_cast<UINT>(window->width()),static_cast<UINT>(window->height()));
         context.commandIndex = (context.commandIndex + 1) % Renderer::FramesInFlight;
         context.graph->acquire();

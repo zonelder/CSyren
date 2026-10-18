@@ -10,7 +10,7 @@ namespace csyren::render::details
     struct TextureBase
     {
         Microsoft::WRL::ComPtr<ID3D12Resource> buffer;
-        D3D12_RESOURCE_DESC                    desc;
+        D3D12_RESOURCE_DESC                    desc{};
     };
 }
 

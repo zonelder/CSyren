@@ -2,7 +2,8 @@
 #include "forward_decl.h"
 #include <limits>
 #include <cstdint>
-#include <vector>//for hash
+#include <functional>
+#include <tuple>
 
 namespace csyren::render
 {
@@ -11,11 +12,13 @@ namespace csyren::render
     {
         static constexpr uint64_t INVALID = { std::numeric_limits< uint64_t>::max() };
         uint64_t id{ INVALID };
+        // Runtime identity of this allocation; zero means no generation was issued.
+        uint64_t generation{};
 
-        bool operator<(const THandle<T>& other) const { return id < other.id; }
-        bool operator==(const THandle<T>& other) const { return id == other.id; }
+        bool operator<(const THandle<T>& other) const { return std::tie(id, generation) < std::tie(other.id, other.generation); }
+        bool operator==(const THandle<T>& other) const = default;
 
-        explicit operator bool() const { return id != INVALID; }
+        explicit operator bool() const { return id != INVALID && generation != 0; }
     };
 
     using MeshHandle = THandle<Mesh>;
@@ -33,7 +36,7 @@ namespace std
     {
         std::size_t operator()(const csyren::render::THandle<T>& handle) const
         {
-            return std::hash<uint64_t>()(handle.id);
+            return std::hash<uint64_t>()(handle.id) ^ (std::hash<uint64_t>()(handle.generation) << 1);
         }
     };
 }

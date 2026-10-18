@@ -10,7 +10,7 @@ struct FrameRecording {};
 // Private backend: systems declare logical GPU usages, never receive frame/output ownership.
 class FrameGraphBackend final : public core::TaskBackend {
 public:
-    explicit FrameGraphBackend(PresentationState& state) : _state(state) {}
+    FrameGraphBackend(PresentationState& state, RenderQueue& graphics) : _state(state), _graphics(graphics) {}
     ~FrameGraphBackend() override;
     void describe(core::TaskDescription& description) const override;
     void compile(const std::vector<core::GraphTask>& tasks) override;
@@ -18,7 +18,7 @@ public:
     void acquire();
     void prepareViews();
     uint64_t submit();
-    void queue(std::string name, RenderQueue& queue);
+    void queue(std::string name, std::shared_ptr<RenderQueue> queue);
 private:
     using RecordingData = Renderer::RecordingData;
     struct Storage { std::string queue; std::array<RecordingData, Renderer::FramesInFlight> frames; };
@@ -37,6 +37,8 @@ private:
     std::unordered_set<std::string> _mutableResources;
     std::unordered_map<std::string, std::vector<core::GpuAccess>> _usages;
     std::unordered_map<std::string, std::unique_ptr<Storage>> _storage;
-    std::unordered_map<std::string, RenderQueue*> _queues;
+    RenderQueue& _graphics;
+    std::unordered_map<std::string, std::shared_ptr<RenderQueue>> _queues;
+    bool _compiled = false;
 };
 }

@@ -68,21 +68,15 @@ namespace csyren::render
 
 	void TextureUploadTask::onSync(ResourceManager& rm)
 	{
-		//get texture from rm. check is this really exactly asked resource.
+        if (!isCurrent(rm)) return;
 
         if (_loadFailed)
         {
             log::error("TextureUploadTask: Failed to load texture {}", _name);
-            rm.unload(_handle);
+            onFailure(rm);
             return;
         }
 
-        if (rm.getTextureName(_handle) != _name)
-        {
-            log::error("TextureUploadTask::Cant sync texture {},erase it from manager.", _name);
-            rm.unload(_handle);
-            return;
-        }
         Texture* texture = rm.getTexture(_handle);
         Renderer& renderer = *core::Services::get<Renderer>();
 
@@ -113,4 +107,15 @@ namespace csyren::render
 
         log::debug("texture loading is complete {}", _name);
 	}
+
+    bool TextureUploadTask::isCurrent(const ResourceManager& rm) const
+    {
+        const auto* texture = rm.getTexture(_handle);
+        return texture && texture->status() == LoadStatus::Loading;
+    }
+
+    void TextureUploadTask::onFailure(ResourceManager& rm)
+    {
+        if (isCurrent(rm)) rm.getTexture(_handle)->_loadStatus = LoadStatus::Failed;
+    }
 }

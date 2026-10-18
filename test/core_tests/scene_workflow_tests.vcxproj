@@ -33,6 +33,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="$(WorkflowTestSource)" />
+    <ClCompile Include="resource_upload_tests.cpp" />
     <ClCompile Include="..\..\scene_session.cpp" />
     <ClCompile Include="..\..\serializer_scene.cpp" />
     <ClCompile Include="..\..\meta_common.cpp" />

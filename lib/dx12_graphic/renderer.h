@@ -95,6 +95,10 @@ namespace csyren::render
         bool requestCameraRender(core::Entity::ID id) { return _cameraViews.request(id); }
         void requestPrimaryCameraRender() { if (_primaryView) _primaryView->schedule.request(); }
         void completeCameraViews() { for (auto& view : _views) if (view->render) view->schedule.submitted(view->ticket); }
+        // Owner-thread API: resources retired while recording get this frame's final fence.
+        void deferRelease(std::shared_ptr<void> resource);
+        void collectDeferredReleases();
+        void flushDeferredReleases(); // Shutdown between frames, after recording has stopped.
         void clearCamera();
         void clearColor(const float color[4]);
         void clearDepth();
@@ -105,6 +109,9 @@ namespace csyren::render
 		}
 	private:
         friend class details::FrameGraphBackend;
+        void completeFrame(uint64_t fence);
+        struct DeferredRelease { std::shared_ptr<void> resource; uint64_t fence = 0; };
+        std::vector<DeferredRelease> _deferredReleases;
         struct RecordingData {
             CommandList commands;
             UploadRingBuffer upload;

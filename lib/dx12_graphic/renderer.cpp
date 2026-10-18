@@ -52,7 +52,7 @@ namespace csyren::render
     {
         if (_device)
         {
-            waitForGpu();
+            flushDeferredReleases();
         }
     }
 
@@ -138,6 +138,25 @@ namespace csyren::render
         }
         std::sort(_views.begin(),_views.end(),[](const auto& a,const auto& b) { return a->id < b->id; });
         if (_primaryView) _engineVariableBuffer = _primaryView->engine;
+    }
+    void Renderer::deferRelease(std::shared_ptr<void> resource)
+    { if (resource) _deferredReleases.push_back({std::move(resource)}); }
+
+    void Renderer::completeFrame(uint64_t fence)
+    {
+        for (auto& retired : _deferredReleases) if (!retired.fence) retired.fence = fence;
+        collectDeferredReleases();
+    }
+    void Renderer::collectDeferredReleases()
+    {
+        std::erase_if(_deferredReleases, [&](const auto& retired) {
+            return retired.fence && _mainQueue.isComplete(retired.fence);
+        });
+    }
+    void Renderer::flushDeferredReleases()
+    {
+        waitForGpu();
+        _deferredReleases.clear();
     }
     void Renderer::clearCamera()
     {

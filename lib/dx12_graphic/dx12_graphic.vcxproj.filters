@@ -108,7 +108,7 @@
     <ClInclude Include="vertex_layout.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="resource_upload_thread.h">
+    <ClInclude Include="resource_upload_pipeline.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="upload_task.h">
@@ -218,7 +218,7 @@
     <ClCompile Include="vertex_layout.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="resource_upload_thread.cpp">
+    <ClCompile Include="resource_upload_pipeline.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="resource_handle_meta.cpp">

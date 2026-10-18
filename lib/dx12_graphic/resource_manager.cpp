@@ -1,16 +1,31 @@
-#include "resource_manager.h"
-#include "resource_manager.h"
 #include "pch.h"
 #include "resource_manager.h"
+#include "core/system_manager.h"
 
 namespace csyren::render
 {
 
     void ResourceManager::init()
     {
-        if (!_pUploadThread)
-            _pUploadThread = std::make_unique<ResourceUploadThread>();
+        if (!_uploads)
+            _uploads = std::make_unique<ResourceUploadPipeline>(core::Services::get<core::SystemManager>()->jobs());
     }
+    ResourceManager::~ResourceManager() { shutdown(); }
+
+    void ResourceManager::enqueueTexture(TextureHandle handle, const std::string& name)
+    {
+        if (!_uploads) throw std::logic_error("Initialize ResourceManager before requesting file textures");
+        _uploads->addTask(std::make_unique<TextureUploadTask>(handle, name));
+    }
+
+    void ResourceManager::retire(std::shared_ptr<void> resource)
+    {
+        if (core::Services::has<Renderer>() && core::Services::get<Renderer>()->device())
+            core::Services::get<Renderer>()->deferRelease(std::move(resource));
+    }
+
+    void ResourceManager::update()
+    { if (_uploads) _uploads->update(*this); }
     // Shaders (from string code)
     ShaderHandle ResourceManager::createShader(const std::string& name, const std::string& filepath)
     {
@@ -51,6 +66,10 @@ namespace csyren::render
     }
     void csyren::render::ResourceManager::shutdown()
     {
+        // Called between frames while Renderer and DescriptorManager still live.
+        if (_uploads) { _uploads->shutdown(); _uploads.reset(); }
+        if (core::Services::has<Renderer>() && core::Services::get<Renderer>()->device())
+            core::Services::get<Renderer>()->flushDeferredReleases();
         _proceduralMeshFactories.clear();
         _proceduralTextureFactories.clear();
         _proceduralShaderFactories.clear();

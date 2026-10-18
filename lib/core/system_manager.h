@@ -123,6 +123,7 @@ namespace csyren::core
         }
         template<class T> void resourceState(std::string state) { _initialStates.insert_or_assign(std::type_index(typeid(T)), std::move(state)); invalidateGraph(); }
         void taskBackend(std::shared_ptr<TaskBackend> backend) { _backend = std::move(backend); invalidateGraph(); }
+        const std::shared_ptr<TaskBackend>& taskBackend() const noexcept { return _backend; }
         void phase(PhaseDescription phase) { _phases.push_back(std::move(phase)); invalidateGraph(); }
         const auto& phases() const { return _phases; }
         // Inspect the last successfully compiled schedule; never rebuild from editor callbacks.
@@ -156,6 +157,7 @@ namespace csyren::core
             return preview;
         }
         bool playing() const noexcept { return _playing; }
+        cstdmf::multicore::JobSystem& jobs() noexcept { return _jobs; }
         void execute() {
             processMove();
             if (_dirty) rebuild();

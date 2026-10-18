@@ -8,14 +8,18 @@
 
 namespace csyren::render::details {
 FrameGraphBackend::~FrameGraphBackend() {
+    _graphics.syncAwaitLastComplete();
     for (auto& [name, queue] : _queues) queue->syncAwaitLastComplete();
 }
-void FrameGraphBackend::queue(std::string name, RenderQueue& value) {
-    if (value.type() != D3D12_COMMAND_LIST_TYPE_DIRECT)
-        throw std::invalid_argument("FrameGraph currently supports direct GPU queues only");
-    _queues.insert_or_assign(std::move(name), &value);
+void FrameGraphBackend::queue(std::string name, std::shared_ptr<RenderQueue> value) {
+    if (_compiled) throw std::logic_error("Declare GPU queues before compiling the frame graph");
+    if (!value || name.empty() || name == "graphics" || value->type() != D3D12_COMMAND_LIST_TYPE_DIRECT)
+        throw std::invalid_argument("Expected a named direct GPU queue");
+    if (!_queues.emplace(std::move(name), std::move(value)).second)
+        throw std::invalid_argument("Duplicate GPU queue");
 }
 RenderQueue& FrameGraphBackend::queueFor(const std::string& name) const {
+    if (name == "graphics") return _graphics;
     auto it = _queues.find(name);
     if (it == _queues.end()) throw std::invalid_argument("Unknown GPU queue: " + name);
     return *it->second;
@@ -31,15 +35,15 @@ void FrameGraphBackend::describe(core::TaskDescription& description) const {
 void FrameGraphBackend::compile(const std::vector<core::GraphTask>& tasks) {
     auto& renderer = *core::Services::get<Renderer>();
     _templates = tasks;
-    queue("graphics",renderer.queue());
     if (core::Services::has<GpuResources>()) {
         auto& imports = *core::Services::get<GpuResources>();
-        for (const auto& [name, importedQueue] : imports._queues) queue(name, *importedQueue);
         imports._sealed = true;
     }
     for (const auto& task : tasks)
         if (!task.description.gpuAccesses.empty()) (void)queueFor(task.description.gpuQueue);
+    _compiled = true;
     // Graph edits occur between CPU frames, while previous GPU work can still be in flight.
+    _graphics.syncAwaitLastComplete();
     for (auto& [name, queue] : _queues) queue->syncAwaitLastComplete();
     if (core::Services::has<GpuResources>()) {
         auto& imports = *core::Services::get<GpuResources>();
@@ -250,6 +254,7 @@ uint64_t FrameGraphBackend::submit() {
     graphics.addCommands(&final);
     graphics.execute();
     _previousFrameFence = final.lastFenceValue();
+    renderer.completeFrame(_previousFrameFence);
     renderer.completeCameraViews();
     return _previousFrameFence;
 }

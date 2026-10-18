@@ -945,7 +945,7 @@ static void componentResourceWorkflow()
 {
     auto& resources = core::details::ServiceRegistry::create<render::ResourceManager>();
     // This CPU-only material is never rendered; its shader handle is opaque here.
-    const auto material = resources.createMaterial("component-test-material", render::ShaderHandle{ 0 }, render::MaterialStateDesc{});
+    const auto material = resources.createMaterial("component-test-material", render::ShaderHandle{ 0, 1 }, render::MaterialStateDesc{});
     CHECK(material);
     Serializer serializer;
     ArchiveSceneStorage storage(serializer);
@@ -1315,3 +1315,98 @@ TEST_F(SceneWorkflow, ImGuiGizmoMouseDragUsesSingleUndo)
 
 #include "gizmo_transform_cases.h"
 #include "viewport_cases.h"
+
+TEST_F(SceneWorkflow, ResourceHandleGenerationRejectsReusedSlots)
+{
+    render::ResourceManager manager;
+    render::ResourceStorage<render::Texture> storage(manager);
+    const auto [oldHandle, oldResource] = storage.create("texture");
+    ASSERT_TRUE(oldHandle);
+    ASSERT_NE(oldResource, nullptr);
+    storage.unload(oldHandle);
+    const auto [current, resource] = storage.create("texture");
+    EXPECT_EQ(oldHandle.id, current.id);
+    EXPECT_NE(oldHandle.generation, current.generation);
+    EXPECT_NE(oldHandle, current);
+    EXPECT_TRUE(oldHandle < current);
+    std::unordered_map<render::TextureHandle, int> handles{{oldHandle, 1}, {current, 2}};
+    EXPECT_EQ(handles.size(), 2u);
+    EXPECT_EQ(storage.get(oldHandle), nullptr);
+    EXPECT_EQ(std::as_const(storage).get(oldHandle), nullptr);
+    EXPECT_TRUE(storage.getName(oldHandle).empty());
+    storage.unload(oldHandle);
+    EXPECT_EQ(storage.get(current), resource);
+    EXPECT_EQ(storage.find("texture"), current);
+    storage.unloadAll();
+    const auto [afterClear, afterClearResource] = storage.create("texture");
+    EXPECT_EQ(current.id, afterClear.id);
+    EXPECT_NE(current.generation, afterClear.generation);
+    storage.unload(current);
+    EXPECT_EQ(storage.get(current), nullptr);
+    EXPECT_EQ(storage.get(afterClear), afterClearResource);
+    EXPECT_FALSE(render::TextureHandle{});
+    EXPECT_FALSE((render::TextureHandle{afterClear.id}));
+}
+
+TEST_F(SceneWorkflow, FailedResourceInitializationInvalidatesItsHandle)
+{
+    struct Resource { bool init(bool success) { return success; } };
+    render::ResourceManager manager;
+    render::ResourceStorage<Resource> storage(manager);
+    const auto [oldHandle, resource] = storage.create("old");
+    storage.unload("old");
+    EXPECT_FALSE(storage.load("failed", false));
+    EXPECT_FALSE(storage.find("failed"));
+    const auto current = storage.load("current", true);
+    EXPECT_EQ(oldHandle.id, current.id);
+    EXPECT_GT(current.generation, oldHandle.generation + 1);
+    storage.unload(oldHandle);
+    EXPECT_NE(storage.get(current), nullptr);
+}
+
+TEST_F(SceneWorkflow, ResourceArchivePreservesAndChecksGeneration)
+{
+    render::describeResourceHandleMeta();
+    render::ResourceManager manager;
+    const auto create = [&] {
+        return manager.createMaterial("generation-material", render::ShaderHandle{0, 1}, render::MaterialStateDesc{});
+    };
+    const auto original = create();
+    ASSERT_TRUE(original);
+    SerializationContext context;
+    render::attachResources(context, manager);
+    auto* resources = context.tryGet<render::ResourceSerializationContext>();
+    const auto* type = reflection::resolve<render::MaterialHandle>();
+    const auto save = [&](auto handle, nlohmann::json& document) {
+        JsonArchiveWriter writer(document);
+        return reflection::save(writer, context, *type, &handle);
+    };
+    const auto load = [&](const nlohmann::json& document, auto& handle) {
+        JsonArchiveReader reader(document);
+        return reflection::load(reader, context, *type, &handle);
+    };
+    nlohmann::json first, second;
+    ASSERT_TRUE(save(original, first));
+    manager.unload(original);
+    const auto current = create();
+    ASSERT_EQ(current.id, original.id);
+    EXPECT_FALSE(save(original, second));
+    ASSERT_TRUE(save(current, second));
+    EXPECT_NE(first, second);
+    ASSERT_TRUE(resources->indexRecords());
+    render::MaterialHandle restored, cached;
+    ASSERT_TRUE(load(second, restored));
+    EXPECT_EQ(restored, current);
+    ASSERT_TRUE(load(second, cached));
+    EXPECT_EQ(cached, current);
+    manager.unload(current);
+    const auto replacement = create();
+    EXPECT_NE(replacement, current);
+    EXPECT_FALSE(load(second, cached));
+    manager.shutdown();
+    const auto afterShutdown = create();
+    EXPECT_EQ(afterShutdown.id, replacement.id);
+    EXPECT_NE(afterShutdown.generation, replacement.generation);
+    manager.unload(replacement);
+    EXPECT_NE(manager.getMaterial(afterShutdown), nullptr);
+}

@@ -18,7 +18,8 @@ namespace csyren::render
 	class UploadRingBuffer;
 	class Renderer;
 	class ResourceManager;
-	class ResourceUploadThread;
+    class ResourceUploadPipeline;
+    class RenderQueue;
 	class UploadContext;
 
 }

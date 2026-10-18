@@ -52,10 +52,10 @@ namespace csyren::render
                     if (!resources) return false;
                     const auto handle = *static_cast<const Handle*>(value);
                     if (!handle) return writer.unsignedInteger(Handle::INVALID);
-                    const ResourceKey key{ type.id.id, handle.id };
-                    if (auto it = resources->saved.find(key); it != resources->saved.end()) return writer.unsignedInteger(it->second);
+                    const ResourceKey key{ type.id.id, handle.id, handle.generation };
                     const auto& path = (resources->manager().*GetName)(handle);
                     if (path.empty()) return false;
+                    if (auto it = resources->saved.find(key); it != resources->saved.end()) return writer.unsignedInteger(it->second);
                     const uint64_t id = resources->records.size();
                     resources->records.push_back({ id, std::string(type.name), path });
                     resources->saved.emplace(key, id);
@@ -69,10 +69,14 @@ namespace csyren::render
                     if (entry == resources->recordIndex.end()) return false;
                     const auto& record = resources->records[entry->second];
                     if (record.type != type.name) return false;
-                    if (auto it = resources->loaded.find(id); it != resources->loaded.end()) { *static_cast<Handle*>(value) = Handle{ it->second }; return true; }
+                    if (auto it = resources->loaded.find(id); it != resources->loaded.end()) {
+                        const Handle handle{ it->second.id, it->second.generation };
+                        if ((resources->manager().*GetName)(handle).empty()) return false;
+                        *static_cast<Handle*>(value) = handle; return true;
+                    }
                     const Handle handle = resources->manager().get<Resource>(record.path);
                     if (!handle) return false;
-                    resources->loaded.emplace(id, handle.id); *static_cast<Handle*>(value) = handle; return true;
+                    resources->loaded.emplace(id, ResourceIdentity{ handle.id, handle.generation }); *static_cast<Handle*>(value) = handle; return true;
                 }
             };
         }

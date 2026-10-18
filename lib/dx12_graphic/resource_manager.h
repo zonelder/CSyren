@@ -7,7 +7,7 @@
 #include "material.h"
 #include "shader.h"
 #include "compute_shader.h"
-#include "resource_upload_thread.h"
+#include "resource_upload_pipeline.h"
 #include "texture_upload_task.h"
 #include "renderer.h"
 
@@ -21,18 +21,8 @@
 #include <unordered_map>
 #include <functional>
 #include <type_traits>
-
-namespace csyren::render::reflection
-{
-    template<class Resource>
-    struct UploadResourceTask;
-
-    template<>
-    struct UploadResourceTask<Texture>
-    {
-        using Type = TextureUploadTask;
-    };
-}
+#include <stdexcept>
+#include <limits>
 
 namespace csyren::render
 {
@@ -79,8 +69,12 @@ namespace csyren::render
 
         std::pair<handle_type, TResource*> create(const std::string& name)
         {
-            handle_type handle{ _storage.emplace() };
-            if (!handle) return { handle ,nullptr};
+            if (const auto existing = find(name)) return {existing, get(existing)};
+            // Never reset on unloadAll: cleared pages can reuse the same slot IDs.
+            // Refuse to wrap so an old handle can never become current again.
+            if (_lastGeneration == std::numeric_limits<uint64_t>::max())
+                throw std::overflow_error("Resource generation exhausted");
+            handle_type handle{ _storage.emplace(), ++_lastGeneration };
 
             TResource* resource_ptr = _storage.get(handle.id);
             _nameToHandleMap[name] = handle;
@@ -91,10 +85,13 @@ namespace csyren::render
         // Basic accessors
         TResource* get(handle_type handle)
         {
-            return _storage.get(handle.id);
+            return _handleToNameMap.contains(handle) ? _storage.get(handle.id) : nullptr;
         }
 
-        const TResource* get(handle_type handle) const { return _storage.get(handle.id); }
+        const TResource* get(handle_type handle) const
+        {
+            return _handleToNameMap.contains(handle) ? _storage.get(handle.id) : nullptr;
+        }
 
         handle_type find(const std::string& name)
         {
@@ -116,9 +113,18 @@ namespace csyren::render
         }
 
         // Unloading
+        std::shared_ptr<TResource> extract(handle_type handle)
+        {
+            auto* resource = get(handle);
+            if (!resource) return {};
+            auto retired = std::make_shared<TResource>(std::move(*resource));
+            unload(handle);
+            return retired;
+        }
+
         void unload(handle_type handle)
         {
-            if (_storage.contains(handle.id))
+            if (_handleToNameMap.contains(handle))
             {
                 std::string name = getName(handle);
                 _storage.erase(handle.id);
@@ -150,6 +156,7 @@ namespace csyren::render
         std::unordered_map<std::string, handle_type> _nameToHandleMap;
         std::unordered_map<handle_type, std::string> _handleToNameMap; // For reverse lookup
         cstdmf::PageView<TResource> _storage;
+        uint64_t _lastGeneration = 0;
     };
     
     // --- ResourceManager: The central facade ---
@@ -165,7 +172,7 @@ namespace csyren::render
         {
         }
 
-        ~ResourceManager() = default;
+        ~ResourceManager();
         ResourceManager(const ResourceManager&) = delete;
         ResourceManager& operator=(const ResourceManager&) = delete;
 
@@ -187,7 +194,7 @@ namespace csyren::render
         {
             auto& storage = getStorage<TResource>();
             auto handle = storage.find(name);
-            if (handle.id != THandle<TResource>::INVALID)
+            if (handle)
             {
                 log::debug("Resource found in cache: {}", name);
                 return handle;
@@ -205,9 +212,9 @@ namespace csyren::render
                 log::debug("ResourceManager::get: async load from file: {} ", name);
                 auto [new_handle, ptr] = storage.create(name);
 
-                if (new_handle.id == THandle<TResource>::INVALID) return {};
-                using TaskType = typename reflection::UploadResourceTask<TResource>::Type;
-                _pUploadThread->addTask(std::make_unique<TaskType>(new_handle, name));
+                if (!new_handle) return {};
+                try { enqueueTexture(new_handle, name); }
+                catch (...) { storage.unload(new_handle); throw; }
                 return new_handle;
             }
             else
@@ -261,6 +268,15 @@ namespace csyren::render
         const GraphicShader* getShader(ShaderHandle handle) const { return _shaderStorage.get(handle); }
         const ComputeShader* getComputeShader(ComputeShaderHandle handle) const { return _computeShaderStorage.get(handle); }
 
+        LoadStatus status(TextureHandle handle) const {
+            const auto* texture = getTexture(handle);
+            return texture ? texture->status() : LoadStatus::Failed;
+        }
+        TextureHandle reloadTexture(const std::string& name) {
+            unload<Texture>(name);
+            return get<Texture>(name);
+        }
+
         // --- Get resource name by handle ---
         const std::string& getMeshName(MeshHandle handle) const { return _meshStorage.getName(handle); }
         const std::string& getTextureName(TextureHandle handle) const { return _textureStorage.getName(handle); }
@@ -272,27 +288,25 @@ namespace csyren::render
         template<typename TResource>
         void unload(const std::string& name)
         {
-            getStorage<TResource>().unload(name);
+            unload(getStorage<TResource>().find(name));
         }
 
         template<typename TResource>
         void unload(THandle<TResource> handle)
         {
-            getStorage<TResource>().unload(handle);
+            if (auto resource = getStorage<TResource>().extract(handle)) retire(std::move(resource));
         }
 
-        //main loop shoud call this method for handling optimizations;
+        // Owner-thread API. update() runs once at frame acquire, before recording.
         void init();
 
         void shutdown();
 
-        void update()
-        {
-            _pUploadThread->sync(*this);
-        }
+        void update();
     private:
-        std::unique_ptr< ResourceUploadThread> _pUploadThread;
-
+        void enqueueTexture(TextureHandle handle, const std::string& name);
+        void retire(std::shared_ptr<void> resource);
+        std::unique_ptr<ResourceUploadPipeline> _uploads;
         // Specialized ResourceStorage instances
         ResourceStorage<Mesh> _meshStorage;
         ResourceStorage<Texture> _textureStorage;
