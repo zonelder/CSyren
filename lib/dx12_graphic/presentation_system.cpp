@@ -22,6 +22,7 @@ namespace csyren::render
     core::TaskDescription FrameAcquireSystem::describe() const {
         core::TaskDescription d; d.phase = "acquire"; d.affinity = core::TaskAffinity::MainThread;
         d.read<core::Camera>().read<core::Transform>().readResource<core::Time>().readResource<core::Window>();
+        d.readResource<core::SceneEntities>();
         d.dynamicResources = true;
         d.writeResource<Renderer>().writeResource<ResourceManager>().writeResource<DescriptorManager>();
         d.writeResource<details::FrameRecording>({}, "ready"); return d;

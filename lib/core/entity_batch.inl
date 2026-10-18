@@ -48,6 +48,7 @@ namespace csyren::core
                 if (it == scene._cStates.end()) continue;
                 scene._bus->unregister_publisher(it->second.addToken);
                 scene._bus->unregister_publisher(it->second.removeToken);
+                scene._bus->unregister_publisher(it->second.patchToken);
                 scene._cStates.erase(it);
             }
             throw;
@@ -70,6 +71,8 @@ namespace csyren::core
             else destination->moveFrom(*components.pool);
         }
         _consumed = true;
+        if (size()) ++scene._hierarchyRevision;
+        for (const auto& [family, components] : _components) ++scene._cStates.at(family).revision;
         for (size_t i = 0; i < size(); ++i) {
             const auto id = _planned[i];
             scene._bus->publish(scene._entityCreateToken, EntityCreateEvent{id});

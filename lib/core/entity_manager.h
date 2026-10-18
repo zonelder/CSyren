@@ -3,6 +3,7 @@
 
 #include "entity.h"
 #include "cstdmf/sparse_set.h"
+#include "cstdmf/tree_algorithms.h"
 
 #include <unordered_set>
 #include <algorithm>
@@ -81,30 +82,17 @@ namespace csyren::core
 
         void queueDestroy(Entity::ID id)
         {
-            if (!_entities.contains(id)) return;
+            if (id == ROOT_PARENT || !_entities.contains(id)) return;
             _pendingDestroy.insert(id);
         }
 
         [[nodiscard]] std::vector<Entity::ID> collectDestroyList() const
         {
             std::vector<Entity::ID> result;
-            std::vector<Entity::ID> stack;
-
-            for (Entity::ID rootId : _pendingDestroy)
-                stack.push_back(rootId);
-
-            while (!stack.empty())
-            {
-                Entity::ID current = stack.back();
-                stack.pop_back();
-
-                const Entity* ent = _entities.try_get(current);
-                if (!ent) continue;
-
-                result.push_back(current);
-                for (Entity::ID child : ent->children)
-                    stack.push_back(child);
-            }
+            for (auto root : _pendingDestroy)
+                cstdmf::tree::preorder(root,
+                    [this](auto id) -> const auto& { return tryGet(id)->children; },
+                    [&](auto id) { result.push_back(id); });
 
             std::sort(result.begin(), result.end());
             result.erase(std::unique(result.begin(), result.end()), result.end());
@@ -147,14 +135,9 @@ namespace csyren::core
         }
         bool setParent(Entity::ID id, Entity::ID parent)
         {
-            if (id == ROOT_PARENT || !_entities.contains(parent) || !canBeParent(parent, id)) return false;
-            auto* entity = _entities.try_get(id);
-            if (!entity) return false;
-            if (entity->parent == parent) return true;
-            _entities.try_get(parent)->children.push_back(id);
-            if (auto* old = _entities.try_get(entity->parent)) std::erase(old->children, id);
-            entity->parent = parent;
-            return true;
+            if (id == ROOT_PARENT || isPendingDestroy(id) || isPendingDestroy(parent)) return false;
+            return cstdmf::tree::reparent(id, parent, Entity::invalidID,
+                [this](auto key) { return tryGet(key); }, &Entity::parent, &Entity::children);
         }
         [[nodiscard]] const cstdmf::SparseSet<Entity>& all() const { return _entities; }
 
@@ -222,15 +205,9 @@ namespace csyren::core
 
         bool isAncestor(Entity::ID ancestor, Entity::ID descendant) const
         {
-            Entity::ID current = descendant;
-            while (current != Entity::invalidID)
-            {
-                if (current == ancestor) return true;
-                const Entity* e = _entities.try_get(current);
-                if (!e) return false;
-                current = e->parent;
-            }
-            return false;
+            return cstdmf::tree::isAncestor(ancestor, descendant, Entity::invalidID, [this](auto id) {
+                const auto* e = tryGet(id); return e ? e->parent : Entity::invalidID;
+            });
         }
 
         cstdmf::SparseSet<Entity> _entities;

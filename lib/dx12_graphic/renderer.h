@@ -31,6 +31,7 @@
 #include "core/services.h"
 #include "core/camera.h"
 #include "camera_render_registry.h"
+#include "core/transform_hierarchy.h"
 
 
 namespace csyren::render
@@ -90,6 +91,7 @@ namespace csyren::render
         void attachCameraScene(core::Scene& scene) { _cameraViews.attach(scene); }
         void detachCameraScene() { _views.clear(); _primaryView.reset(); _cameraViews.detach(); }
         void prepareCameraViews(core::Scene& scene,UINT width,UINT height);
+        const core::WorldTransforms& worldTransforms() const { return _worldTransforms; }
         const auto& cameraViews() const { return _views; }
         const auto& outputView() const { return _primaryView; }
         bool requestCameraRender(core::Entity::ID id) { return _cameraViews.request(id); }
@@ -139,6 +141,7 @@ namespace csyren::render
 		EntityVariableBuffer					_entityVariableBuffer;
 		ShaderParameterBinder					_parameterBinder;
         details::CameraRenderRegistry _cameraViews;
+        core::WorldTransforms _worldTransforms;
         struct ExternalCamera { CameraSource source; std::shared_ptr<details::CameraRenderView> view; };
         std::vector<ExternalCamera> _externalCameras;
         bool _presentCameraOutput = true;

@@ -228,18 +228,18 @@ namespace csyren::math
 	{
 		using namespace DirectX;
 
-		XMVECTOR scale, rotationQuat, translation;
-		if (!XMMatrixDecompose(&scale, &rotationQuat, &translation, input))
-			return false;
-
-		if (XMVector4NearEqual(scale, XMVectorZero(), XMVectorReplicate(1e-6f)))
-			return false;
-
-		XMMATRIX invTranslate = XMMatrixTranslationFromVector(XMVectorNegate(translation));
-		XMVECTOR invRotation = XMQuaternionInverse(rotationQuat);
-		XMMATRIX invScale = XMMatrixScalingFromVector(XMVectorReciprocal(scale));
-
-		output = Matrix4x4(invTranslate * XMMatrixRotationQuaternion(invRotation) * invScale);
+        // Parent rotation with nonuniform scale can produce shear. A TRS
+        // decomposition would discard it and yield an incorrect inverse.
+        if (input._14 != 0 || input._24 != 0 || input._34 != 0 || input._44 != 1) return false;
+        XMVECTOR determinant;
+        const auto inverse = XMMatrixInverse(&determinant, input);
+        const float det = XMVectorGetX(determinant);
+        const float volume = XMVectorGetX(XMVector3Length(input.getRow(0))) *
+            XMVectorGetX(XMVector3Length(input.getRow(1))) * XMVectorGetX(XMVector3Length(input.getRow(2)));
+        if (!std::isfinite(det) || !std::isfinite(volume) || std::abs(det) <= 1e-6f * volume) return false;
+        for (const auto& row : inverse.r)
+            if (XMVector4IsNaN(row) || XMVector4IsInfinite(row)) return false;
+        output = Matrix4x4(inverse);
 
 		return true;
 	}

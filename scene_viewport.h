@@ -40,34 +40,32 @@ namespace csyren::editor
         static math::MeshBounds focusTarget(core::Scene& scene, render::ResourceManager& resources, core::Entity::ID id)
         {
             math::MeshBounds result;
-            std::vector<core::Entity::ID> branch{ id };
-            for (size_t i = 0; i < branch.size(); ++i)
-            {
-                const auto* entity = scene.entities().try_get(branch[i]);
-                if (!entity) continue;
-                branch.insert(branch.end(), entity->children.begin(), entity->children.end());
-                auto transform = scene.getComponent<core::Transform>(entity->id);
-                if (!transform) continue;
-                const auto bounds = transformedBounds(localBounds(scene, resources, entity->id), transform->world());
+            const auto& entities = scene.entities();
+            if (!entities.contains(id)) return result;
+            core::WorldTransforms worlds; worlds.update(scene);
+            cstdmf::tree::preorder(id, [&](auto key) -> const auto& { return entities.try_get(key)->children; }, [&](auto key) {
+                if (!scene.hasComponent<core::Transform>(key)) return;
+                const auto bounds = transformedBounds(localBounds(scene, resources, key), worlds.matrix(key));
                 if (bounds.valid) { result.include(bounds.min); result.include(bounds.max); }
-            }
+            });
             return result;
         }
         struct Hit { core::Entity::ID entity = core::Entity::invalidID; float distance = 0; };
         static Hit raycast(core::Scene& scene, render::ResourceManager& resources, const PickRay& ray, bool trace = false)
         {
             Hit result{ core::Entity::invalidID, ray.length };
+            core::WorldTransforms worlds; worlds.update(scene);
             for (auto [id, transform, filter, renderer] : scene.view<core::Transform, render::MeshFilter, render::MeshRenderer>())
             {
                 const auto* mesh = resources.getMesh(filter.mesh);
                 float distance;
                 if (!mesh || !resources.getMaterial(renderer.material)) continue;
-                if (intersectMesh(ray, mesh->bounds(), mesh->positions(), mesh->indices(), transform.world(), distance))
+                if (intersectMesh(ray, mesh->bounds(), mesh->positions(), mesh->indices(), worlds.matrix(id), distance))
                 {
                     if (trace) log::info("Viewport ray hit entity={} distance={}", id, distance);
                     if (distance < result.distance || result.entity == core::Entity::invalidID) result = { id, distance };
                 }
-                else if (trace && intersectBounds(ray, mesh->bounds(), transform.world(), distance))
+                else if (trace && intersectBounds(ray, mesh->bounds(), worlds.matrix(id), distance))
                     log::info("Viewport ray bounds only entity={} distance={} vertices={} indices={}",
                         id, distance, mesh->positions().size(), mesh->indices().size());
             }
@@ -188,10 +186,9 @@ namespace csyren::editor
         }
         auto& scene = session.editorScene();
         if (!scene.hasComponent<core::Transform>(selection.selected())) return;
-        auto transform = scene.getComponent<core::Transform>(selection.selected());
         const auto bounds = selectionBounds(localBounds(scene, resources, selection.selected()));
         XMFLOAT4 corners[8];
-        const auto matrix = XMMatrixMultiply(transform->world(), vp);
+        const auto matrix = XMMatrixMultiply(core::worldMatrix(scene, selection.selected()), vp);
         for (int i = 0; i < 8; ++i)
             XMStoreFloat4(&corners[i], XMVector4Transform(XMVectorSet(
                 (i&1) ? bounds.max.x : bounds.min.x, (i&2) ? bounds.max.y : bounds.min.y,

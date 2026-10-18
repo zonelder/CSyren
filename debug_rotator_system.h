@@ -43,6 +43,7 @@ namespace csyren
                     float phase = (tr.position[0] + tr.position[2]) / waveLength;
                     float height = sinf(totalTime * waveSpeed - phase) * amplitude;
                     tr.position += height*Vector3::up;
+                    scene->patch<Transform>(entt);
                 });
         }
     private:

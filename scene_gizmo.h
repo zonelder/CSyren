@@ -47,7 +47,7 @@ namespace csyren::editor
                 }
                 if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) || !ImGui::IsMouseDown(ImGuiMouseButton_Left)) _gesture.finish(session);
             }
-            const auto pivot = transform->position;
+            const auto pivot = core::worldMatrix(session.editorScene(), selected).translation();
             const auto clipPoint = [&](const math::Vector3& point) {
                 XMFLOAT4 clip; XMStoreFloat4(&clip, XMVector4Transform(XMVectorSet(point.x,point.y,point.z,1),vp)); return clip;
             };
@@ -62,7 +62,7 @@ namespace csyren::editor
             const auto center = project(centerClip);
             math::Vector3 axes[] = { {1,0,0}, {0,1,0}, {0,0,1} };
             if (mode == GizmoMode::Scale)
-                for (auto& axis : axes) axis = math::Vector3(XMVector3Rotate(axis,transform->rotation));
+                for (auto& axis : axes) axis = math::Vector3(XMVector3Normalize(core::worldMatrix(session.editorScene(), selected).multiplyVector(axis)));
             struct Segment { ImVec2 a,b; int axis; };
             std::vector<Segment> segments;
             ImVec2 ends[3]{}; bool visible[3]{};

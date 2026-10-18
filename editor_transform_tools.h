@@ -1,4 +1,5 @@
 #pragma once
+#include "core/transform_hierarchy.h"
 #include "editor_viewport_state.h"
 #include "scene_session.h"
 #include "scene_picking.h"
@@ -95,7 +96,10 @@ namespace csyren::editor
             if (_mode != GizmoMode::Move || !valid(session, session.resolve(_key))) return false;
             auto transform = session.editorScene().getComponent<core::Transform>(session.resolve(_key));
             if (!transform) return false;
-            const auto next = _before.position + delta;
+            math::Matrix4x4 inverseParent;
+            if (!math::Matrix4x4::inverse3DAffine(core::worldMatrix(session.editorScene(),
+                core::parentOf(session.editorScene(), session.resolve(_key))), inverseParent)) return false;
+            const auto next = _before.position + inverseParent.multiplyVector(delta);
             if (!finite(next)) return false;
             transform->position = next;
             session.preview(_key, core::reflection::ComponentFamily::getID<core::Transform>(),
@@ -107,8 +111,10 @@ namespace csyren::editor
             if (_mode != GizmoMode::Rotate || !valid(session, session.resolve(_key)) || !std::isfinite(angle) ||
                 !finite(worldAxis) || worldAxis.sqrMagnitude() < 1e-8f) return false;
             auto transform = session.editorScene().getComponent<core::Transform>(session.resolve(_key));
+            const auto parentRotation = core::worldRotation(session.editorScene(), core::parentOf(session.editorScene(), session.resolve(_key)));
+            const math::Vector3 localAxis = parentRotation.inverse() * worldAxis;
             const math::Quaternion next = angle == 0 ? _before.rotation : math::Quaternion(DirectX::XMQuaternionNormalize(
-                DirectX::XMQuaternionMultiply(_before.rotation, DirectX::XMQuaternionRotationAxis(worldAxis, angle))));
+                DirectX::XMQuaternionMultiply(_before.rotation, DirectX::XMQuaternionRotationAxis(localAxis, angle))));
             if (!std::isfinite(next.x) || !std::isfinite(next.y) || !std::isfinite(next.z) || !std::isfinite(next.w)) return false;
             transform->rotation = next;
             session.preview(_key, core::reflection::ComponentFamily::getID<core::Transform>(),

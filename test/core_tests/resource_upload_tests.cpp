@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "core/system_manager.h"
+#include "core/time.h"
 #include "dx12_graphic/resource_manager.h"
 #include "dx12_graphic/gpu_resources.h"
 #include "dx12_graphic/frame_graph_backend.h"
@@ -237,4 +238,51 @@ TEST_F(ResourceUpload, ShutdownReleasesPendingDeletionWithoutAnotherFrame) {
     resources->shutdown();
     EXPECT_EQ(descriptors->srvUavStats().active, active - 1);
 }
+TEST_F(ResourceUpload, GPUPlanCachesStableViewsAndRebuildsOnceBranchesAndGraphEdits) {
+    core::details::ServiceRegistry::create<core::Time>();
+    core::SceneInstance instance;
+    core::Camera camera; core::Transform transform;
+    renderer->presentCameraOutput(false);
+    auto view=renderer->addCameraView([&] { return std::pair{&camera,&transform}; });
+    view->target->request(32,32);
+    renderer->prepareCameraViews(instance.scene(),32,32);
+    ResourceFrame frame(*renderer);
+    core::TaskDescription draw; draw.gpuScope=core::GpuTaskScope::View;
+    draw.gpu("scene.color",D3D12_RESOURCE_STATE_RENDER_TARGET,core::AccessMode::Write);
+    draw.gpu("scene.depth",D3D12_RESOURCE_STATE_DEPTH_WRITE,core::AccessMode::Write);
+    core::TaskDescription scratch;
+    scratch.gpu("retirement.scratch",D3D12_RESOURCE_STATE_COPY_DEST,core::AccessMode::Write);
+    const std::vector<core::GraphTask> tasks{{"view",draw},{"retirement",scratch}};
+    frame.graph.compile(tasks);
+    int recordings=0;
+    const auto run=[&] {
+        renderer->prepareCameraViews(instance.scene(),32,32);
+        frame.graph.acquire(); frame.graph.prepareViews();
+        frame.graph.record("view",[&] {
+            ++recordings;
+            EXPECT_FLOAT_EQ(renderer->getEngineVariableBuffer()->cameraPosition.x,transform.position.x);
+        });
+        frame.graph.record("retirement",[] {});
+        renderer->queue().syncAwaitComplete(frame.graph.submit());
+    };
+    run(); const auto initial=frame.graph.planRevision();
+    for(int i=0;i<12;++i) { transform.position.x=float(i); run(); EXPECT_EQ(frame.graph.planRevision(),initial); }
+    view->target->request(64,48); run();
+    EXPECT_EQ(view->target->width(),64u); EXPECT_EQ(frame.graph.planRevision(),initial);
+    camera.render_type=core::CameraRenderType::Once; run();
+    EXPECT_EQ(frame.graph.planRevision(),initial);
+    run(); const auto asleep=frame.graph.planRevision(); EXPECT_EQ(asleep,initial+1);
+    const auto previous=recordings; run(); EXPECT_EQ(recordings,previous); EXPECT_EQ(frame.graph.planRevision(),asleep);
+    view->schedule.request(); run(); EXPECT_EQ(recordings,previous+1); EXPECT_EQ(frame.graph.planRevision(),asleep+1);
+    run();
+    auto second=renderer->addCameraView([&] { return std::pair{&camera,&transform}; });
+    second->target->request(16,16); const auto beforeAdd=frame.graph.planRevision();
+    run(); EXPECT_EQ(frame.graph.planRevision(),beforeAdd+1);
+    renderer->removeCameraView(second); const auto beforeRemove=frame.graph.planRevision();
+    run(); EXPECT_EQ(frame.graph.planRevision(),beforeRemove+1);
+    frame.graph.compile(tasks); const auto beforeCompile=frame.graph.planRevision();
+    run(); EXPECT_EQ(frame.graph.planRevision(),beforeCompile+1);
+    renderer->removeCameraView(view);
+}
+
 }

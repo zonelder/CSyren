@@ -49,6 +49,7 @@ namespace csyren::editor
             const T& before, const T& after, bool finished)
         {
             if (playing()) return;
+            editorScene().patch(resolve(key), family);
             auto* edit = dynamic_cast<FieldEdit<T>*>(_edit.get());
             if (!edit || edit->key != key || edit->family != family || edit->path != path)
             {

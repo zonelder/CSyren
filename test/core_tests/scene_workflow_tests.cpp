@@ -1183,7 +1183,7 @@ TEST_F(SceneWorkflow, FocusFitsBoundsAndPreservesCameraOrientation)
             const auto rotation = view.transform.rotation;
             ASSERT_TRUE(focusBounds(view, bounds));
             EXPECT_TRUE(XMVector4Equal(rotation, view.transform.rotation));
-            const auto vp = XMMatrixMultiply(XMMatrixInverse(nullptr, view.transform.world()), view.camera.projectionMatrix());
+            const auto vp = XMMatrixMultiply(XMMatrixInverse(nullptr, view.transform.localMatrix()), view.camera.projectionMatrix());
             for (int i = 0; i < 8; ++i)
             {
                 const math::Vector3 p(XMVector3TransformCoord(XMVectorSet(
@@ -1279,7 +1279,7 @@ TEST_F(SceneWorkflow, ImGuiGizmoMouseDragUsesSingleUndo)
     unsigned char* pixels; int w, h; io.Fonts->GetTexDataAsRGBA32(&pixels, &w, &h);
     EditorViewportState view; view.camera.aspectRatio = 4.f/3;
     view.transform.position = math::Vector3{0,0,-5};
-    const auto vp = DirectX::XMMatrixMultiply(DirectX::XMMatrixInverse(nullptr, view.transform.world()), view.camera.projectionMatrix());
+    const auto vp = DirectX::XMMatrixMultiply(DirectX::XMMatrixInverse(nullptr, view.transform.localMatrix()), view.camera.projectionMatrix());
     TransformGizmo gizmo;
     const auto frame = [&] {
         ImGui::NewFrame();
@@ -1315,6 +1315,7 @@ TEST_F(SceneWorkflow, ImGuiGizmoMouseDragUsesSingleUndo)
 
 #include "gizmo_transform_cases.h"
 #include "viewport_cases.h"
+#include "transform_hierarchy_cases.h"
 
 TEST_F(SceneWorkflow, ResourceHandleGenerationRejectsReusedSlots)
 {

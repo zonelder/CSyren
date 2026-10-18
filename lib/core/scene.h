@@ -42,6 +42,7 @@ namespace csyren::core
         using Value = std::remove_const_t<T>;
     public:
         template<class> friend class ComponentRef;
+        friend class Scene;
         ComponentRef() = default;
         template<class U> requires (std::is_const_v<T> && std::is_same_v<U, Value>)
         ComponentRef(const ComponentRef<U>& other) : _pool(other._pool), _id(other._id), _version(other._version), _staged(other._staged) {}
@@ -86,6 +87,8 @@ namespace csyren::core
 {
 	struct EntityCreateEvent { Entity::ID id; };
 	struct EntityDestroyEvent { Entity::ID id; };
+    struct EntityReparentEvent { Entity::ID id, previous, parent; };
+    template<class T> struct ComponentPatchEvent { ComponentRef<T> comp; };
 
 	template<typename T>
 	struct ComponentCreateEvent
@@ -123,6 +126,8 @@ namespace csyren::core
 			std::shared_ptr<PoolBase> pool;
 			PublishToken      addToken;
 			PublishToken      removeToken;
+            PublishToken patchToken;
+            uint64_t revision = 0;
 			const reflection::ComponentMeta* meta;
 
 		};
@@ -177,6 +182,13 @@ namespace csyren::core
     public:
 		EventBus2& eventBus() const { return *_bus; }
 		explicit Scene(EventBus2* bus) : _bus(bus) {}
+        uint64_t identity() const { return _identity; }
+        uint64_t hierarchyRevision() const { (void)entities(); return _hierarchyRevision; }
+        template<class T> uint64_t componentRevision() const {
+            requireComponentAccess<const T>();
+            auto it = _cStates.find(reflection::ComponentFamily::getID<std::remove_const_t<T>>());
+            return it == _cStates.end() ? 0 : it->second.revision;
+        }
 
 		void init()
 		{
@@ -187,13 +199,22 @@ namespace csyren::core
 			}
 			_entityCreateToken = _bus->register_publisher<EntityCreateEvent>();
 			_entityDestroyToken = _bus->register_publisher<EntityDestroyEvent>();
+            _entityReparentToken = _bus->register_publisher<EntityReparentEvent>();
 			_em.init();			
 		}
 
 		bool setParent(Entity::ID id, Entity::ID parent) {
             requireStructuralAccess();
-            if (auto* tx = transaction()) { tx->commands.emplace_back([this, id, parent] { _em.setParent(id, parent); }); return true; }
-            return _em.setParent(id, parent);
+            if (auto* tx = transaction()) { tx->commands.emplace_back([this, id, parent] { setParent(id, parent); }); return true; }
+            const auto* entity = _em.tryGet(id);
+            if (!entity) return false;
+            const auto previous = entity->parent;
+            if (!_em.setParent(id, parent)) return false;
+            if (previous != parent) {
+                ++_hierarchyRevision;
+                _bus->publish(_entityReparentToken, EntityReparentEvent{id, previous, parent});
+            }
+            return true;
         }
         bool setName(Entity::ID id, std::string_view newName) {
             requireStructuralAccess();
@@ -219,11 +240,13 @@ namespace csyren::core
                 tx->entities.emplace(id, true);
                 tx->commands.emplace_back([this, id, parent, name = std::string(name)] {
                     _em.createReservedEntity(id, name, parent);
+                    ++_hierarchyRevision;
                     _bus->publish(_entityCreateToken, EntityCreateEvent{id});
                 });
                 return id;
             }
             Entity::ID id = _em.createEntity(name, parent);
+            ++_hierarchyRevision;
 			_bus->publish(_entityCreateToken, EntityCreateEvent{ id });
 			return id;
 		}
@@ -272,6 +295,7 @@ namespace csyren::core
 			if (ptr)
 			{
 				ent->add(family);
+                ++_cStates.at(family).revision;
                 _bus->publish(getAddToken<T>(),
 					ComponentCreateEvent<T>{compRef});
 			}
@@ -312,6 +336,38 @@ namespace csyren::core
             }
             return ComponentRef<T>(id, getPool<Value>());
 		}
+
+        // A patch notifies derived data after a mutation. The callback overload
+        // also reports partial writes if the callback throws. It does not add an
+        // undo command; editor history is a separate concern.
+        template<class T> bool patch(ComponentRef<T> component) {
+            static_assert(!std::is_const_v<T>);
+            requireComponentAccess<T>();
+            if (!component || component != getComponent<T>(component.id())) return false;
+            if (auto* tx = transaction(); tx && component._staged && component._staged->value) {
+                tx->commands.emplace_back([this, component] { patch(component); });
+                return true;
+            }
+            auto& state = _cStates.at(reflection::ComponentFamily::getID<T>());
+            ++state.revision;
+            _bus->publish(state.patchToken, ComponentPatchEvent<T>{component});
+            return true;
+        }
+        template<class T, class Edit> bool patch(ComponentRef<T> component, Edit&& edit) {
+            requireComponentAccess<T>();
+            if (!component || component != getComponent<T>(component.id())) return false;
+            try { std::invoke(std::forward<Edit>(edit), *component); }
+            catch (...) { patch(component); throw; }
+            return patch(component);
+        }
+        template<class T> bool patch(Entity::ID id) { return patch(getComponent<T>(id)); }
+        template<class T, class Edit> bool patch(Entity::ID id, Edit&& edit) {
+            return patch(getComponent<T>(id), std::forward<Edit>(edit));
+        }
+        bool patch(Entity::ID id, size_t family) {
+            auto* meta = reflection::ComponentRegistry::get(family);
+            return meta && meta->patch && meta->patch(this, id);
+        }
 
 		void* getComponentRaw(Entity::ID id, size_t family)
 		{
@@ -364,6 +420,7 @@ namespace csyren::core
 
 				_bus->publish(_entityDestroyToken, EntityDestroyEvent{ id });
 				_em.finalizeDestroy(id);
+                ++_hierarchyRevision;
 			}
 
 			_em.clearPending();
@@ -403,6 +460,7 @@ namespace csyren::core
 				auto family = reflection::ComponentFamily::getID<T>();
                 _bus->publish(_cStates[family].removeToken, ComponentDestroyEvent<T>{ComponentRef<T>(id, pool)});
 				pool->erase(id);
+                ++_cStates.at(family).revision;
 				if (Entity* ent = _em.tryGet(id))
 				{
 					ent->remove(family);
@@ -445,6 +503,7 @@ namespace csyren::core
 			auto& m = _cStates[family];
 			m.addToken = _bus->register_publisher<ComponentCreateEvent<T>>();
 			m.removeToken = _bus->register_publisher<ComponentDestroyEvent<T>>();
+            m.patchToken = _bus->register_publisher<ComponentPatchEvent<T>>();
 			m.meta = meta;
 			return true;
 		}
@@ -473,6 +532,10 @@ namespace csyren::core
 
 		PublishToken _entityCreateToken;
 		PublishToken _entityDestroyToken;
+        PublishToken _entityReparentToken;
+        inline static std::atomic<uint64_t> _nextIdentity{0};
+        const uint64_t _identity = ++_nextIdentity;
+        uint64_t _hierarchyRevision = 0;
 
 		EventBus2* _bus;
 		//

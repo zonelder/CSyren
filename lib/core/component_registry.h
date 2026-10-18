@@ -36,6 +36,7 @@ namespace csyren::core::reflection
         void* (*addValue)(Scene*, Entity::ID, const void*) = nullptr;
         HasFn           has = nullptr;
         GetRawFn        getRaw = nullptr;
+        bool (*patch)(Scene*, Entity::ID) = nullptr;
         RemoveFn        remove = nullptr;
         DestroyFn       destroy = nullptr;
         std::shared_ptr<PoolBase> (*createPool)() = nullptr;

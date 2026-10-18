@@ -47,6 +47,7 @@ struct JobHandle {
 };
 
 class JobSystem {
+    friend class JobGraph;
 public:
     static JobSystem& instance() { static JobSystem system; return system; }
     void init(uint32_t numThreads = 0) {
@@ -131,6 +132,7 @@ private:
     class JobFailure {
     public:
         void rethrow() const { if (_failure) std::rethrow_exception(_failure); }
+        void reset() { _failure = nullptr; }
     protected:
         void invoke(IJob* job, uint32_t start, uint32_t end, uint32_t thread) noexcept {
             try { job->execute(start, end, thread); }

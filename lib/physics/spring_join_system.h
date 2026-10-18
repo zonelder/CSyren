@@ -2,6 +2,7 @@
 #include "core/system_base.h"
 #include "core/scene.h"
 #include "core/transform.h"
+#include "core/transform_hierarchy.h"
 #include "core/services.h"
 
 #include "rigid_body.h"
@@ -15,7 +16,7 @@ namespace csyren::physics
 	public:
         core::TaskDescription describe() const override {
             core::TaskDescription d; d.phase = "simulation";
-            d.read<core::Transform>().read<RigidBody>().read<SpringJoin>().writeResource<PhysicsEngine>(); return d;
+            d.read<core::Transform>().read<RigidBody>().read<SpringJoin>().writeResource<PhysicsEngine>().readResource<core::SceneEntities>(); return d;
         }
 
 		void execute() override
@@ -29,8 +30,8 @@ namespace csyren::physics
 				auto pTrB = scene->getComponent<const core::Transform>(join.connectedEntity);
 				if (!pTrB) continue;
 				auto& trB = *pTrB;
-				auto posA = trA.position + join.anchor;
-				auto posB = trB.position + join.connectedAnchor;
+				auto posA = core::worldMatrix(*scene,ent).multiplyPoint3x4(join.anchor);
+				auto posB = core::worldMatrix(*scene,join.connectedEntity).multiplyPoint3x4(join.connectedAnchor);
 
 				auto delta = posB - posA;
 				float dist = delta.magnitude();

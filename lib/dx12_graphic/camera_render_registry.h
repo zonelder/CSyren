@@ -41,7 +41,7 @@ namespace csyren::render::details
         {
             for (auto& [id,entry] : _entries) {
                 auto transform = scene.getComponent<const core::Transform>(id);
-                if (entry.camera && transform) callback(*entry.camera,*transform,entry.view);
+                if (entry.camera && transform) callback(id,*entry.camera,*transform,entry.view);
             }
         }
         bool request(core::Entity::ID id)

@@ -172,6 +172,7 @@
     <ClInclude Include="fixed_hash_map.h" />
     <ClInclude Include="fixed_sparse_set.h" />
     <ClInclude Include="job_system2.hpp" />
+    <ClInclude Include="job_graph.hpp" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="hash_literal.h" />
     <ClInclude Include="inline_helper.h" />

@@ -4,6 +4,7 @@
 #include "renderer.h"
 #include "camera_render_target.h"
 #include "core/time.h"
+#include "core/transform_hierarchy.h"
 
 using Microsoft::WRL::ComPtr;
 namespace csyren::render
@@ -110,11 +111,12 @@ namespace csyren::render
     }
     void Renderer::prepareCameraViews(core::Scene& scene,UINT width,UINT height)
     {
-        struct Source { const core::Camera* camera; const core::Transform* transform; std::shared_ptr<details::CameraRenderView> view; };
+        _worldTransforms.update(scene);
+        struct Source { const core::Camera* camera; math::Matrix4x4 world; std::shared_ptr<details::CameraRenderView> view; };
         std::vector<Source> sources; _views.clear(); _primaryView.reset();
         int priority = 0;
-        _cameraViews.each(scene,[&](const auto& camera,const auto& transform,auto view) {
-            sources.push_back({&camera,&transform,view});
+        _cameraViews.each(scene,[&](auto id,const auto& camera,const auto& transform,auto view) {
+            sources.push_back({&camera,_worldTransforms.matrix(id),view});
             if (!_primaryView || camera.priority > priority || (camera.priority == priority && view->id < _primaryView->id)) {
                 priority = camera.priority; _primaryView = view;
             }
@@ -122,7 +124,7 @@ namespace csyren::render
         if (_presentCameraOutput && _primaryView) _primaryView->target->request(width,height);
         for (const auto& external : _externalCameras) {
             auto [camera,transform] = external.source();
-            if (camera && transform) sources.push_back({camera,transform,external.view});
+            if (camera && transform) sources.push_back({camera,transform->localMatrix(),external.view});
         }
         const auto time = core::Services::get<const core::Time>()->totalTime();
         for (auto& source : sources) {
@@ -132,7 +134,7 @@ namespace csyren::render
             view.target->prepare(*this);
             if (view.render) {
                 view.background = source.camera->background;
-                view.engine = details::cameraFrame(*source.camera,*source.transform,view.target->width(),view.target->height(),time);
+                view.engine = details::cameraFrame(*source.camera,source.world,view.target->width(),view.target->height(),time);
             }
             _views.push_back(source.view);
         }

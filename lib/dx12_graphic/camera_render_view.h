@@ -7,12 +7,11 @@
 
 namespace csyren::render::details
 {
-    inline EngineVariableBuffer cameraFrame(core::Camera camera,const core::Transform& transform,UINT width,UINT height,float time)
+    inline EngineVariableBuffer cameraFrame(core::Camera camera,const math::Matrix4x4& invView,UINT width,UINT height,float time)
     {
         using namespace DirectX;
         EngineVariableBuffer frame{};
         camera.aspectRatio = float(width)/(std::max)(1u,height);
-        const auto invView = transform.world();
         const auto view = XMMatrixInverse(nullptr,invView),projection = camera.projectionMatrix();
         XMStoreFloat4x4(&frame.invViewMatrix,invView); XMStoreFloat4x4(&frame.viewMatrix,view);
         XMStoreFloat4x4(&frame.projectionMatrix,projection);
@@ -22,6 +21,8 @@ namespace csyren::render::details
         XMStoreFloat4(&frame.lightDirection,XMVector3Normalize(light)); frame.totalTime = time;
         return frame;
     }
+    inline EngineVariableBuffer cameraFrame(core::Camera camera,const core::Transform& transform,UINT width,UINT height,float time)
+    { return cameraFrame(camera,transform.localMatrix(),width,height,time); }
     class CameraRenderSchedule
     {
     public:

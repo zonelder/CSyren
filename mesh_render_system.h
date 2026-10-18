@@ -7,6 +7,7 @@
 #include "core/services.h"
 
 #include "core/transform.h"
+#include "core/transform_hierarchy.h"
 #include "mesh_filter.h"
 #include "math/math.h"
 
@@ -24,7 +25,7 @@ namespace csyren
             core::TaskDescription d; d.phase = "render";
             d.gpuScope = core::GpuTaskScope::View;
             d.read<core::Transform>().read<MeshFilter>().read<MeshRenderer>();
-            d.readResource<render::ResourceManager>();
+            d.readResource<render::ResourceManager>().readResource<core::SceneEntities>();
             d.gpu("scene.color", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
             d.gpu("scene.depth", D3D12_RESOURCE_STATE_DEPTH_WRITE, core::AccessMode::Write); return d;
         }
@@ -37,8 +38,9 @@ namespace csyren
             auto render = ctx::get<render::Renderer>();
             auto scene = &this->scene();
             auto& resources = *ctx::get<const render::ResourceManager>();
+            const auto& worlds = render->worldTransforms();
 
-            struct EntityData { const Transform* tr; Entity::ID id; };
+            struct EntityData { Entity::ID id; };
             using MeshGroups = std::unordered_map<render::MeshHandle,std::vector<EntityData>>;
             using MaterialGroups = std::unordered_map<render::MaterialHandle, MeshGroups>;
 
@@ -47,7 +49,7 @@ namespace csyren
             auto entityParams = render->getEntityVariableBuffer();
             for (auto [entt, tr, mf, mr] : scene->view<const Transform, const MeshFilter, const MeshRenderer>())
             {
-                batches[mr.material][mf.mesh].push_back({ &tr,entt });
+                batches[mr.material][mf.mesh].push_back({ entt });
             }
 
             for (auto& [matID, meshGroups] : batches)
@@ -71,7 +73,7 @@ namespace csyren
                     for (auto& data : entities)
                     {
                         //TODO instancing look pretty well here.
-                        DirectX::XMStoreFloat4x4(&entityParams->worldMatrix, data.tr->world());
+                        DirectX::XMStoreFloat4x4(&entityParams->worldMatrix, worlds.matrix(data.id));
                         entityParams->entityID = data.id;
                         if (!render->bindEntity(cb)) continue;
                         mesh->draw(*render);

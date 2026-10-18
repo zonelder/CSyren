@@ -1,6 +1,7 @@
 #pragma once
 
 #include "cstdmf/job_system2.hpp"
+#include "cstdmf/job_graph.hpp"
 #include "task_description.h"
 #include <algorithm>
 #include <atomic>
@@ -108,6 +109,7 @@ public:
         _compiled = false;
     }
     void clear() {
+        _execution.reset();
         _nodes.clear(); _phases.clear(); _initialStates.clear(); _order.clear(); _phaseOrder.clear(); _compiled = false;
     }
     void compile() {
@@ -216,27 +218,18 @@ public:
             }
             _nodes[i]->parents = std::move(parents[i]);
         }
+        std::vector<cstdmf::multicore::JobGraph::Task> tasks;
+        tasks.reserve(_nodes.size());
+        for (auto& node : _nodes) tasks.push_back({node.get(), node->parents,
+            node->description.affinity == TaskAffinity::MainThread ? 0u : UINT32_MAX});
+        _execution = std::make_unique<cstdmf::multicore::JobGraph>(tasks);
         _compiled = true;
     }
     void execute(JobSystem& scheduler) {
         if (!_compiled) compile();
         _failure = nullptr;
         _failed.store(false, std::memory_order_release);
-        std::vector<JobHandle> handles;
-        handles.reserve(_nodes.size());
-        auto finishFn = [](uint32_t, uint32_t, uint32_t) {};
-        cstdmf::multicore::LambdaJob finish(std::move(finishFn));
-        for (auto& n : _nodes) handles.push_back(n->description.affinity == TaskAffinity::MainThread
-            ? scheduler.schedulePinned(n.get()) : scheduler.schedule(n.get()));
-        const auto terminal = scheduler.schedule(&finish);
-        for (size_t i = 0; i < _nodes.size(); ++i) {
-            for (size_t parent : _nodes[i]->parents) scheduler.addDependency(handles[i], handles[parent]);
-            scheduler.addDependency(terminal, handles[i]);
-        }
-        if (_nodes.empty()) scheduler.submitRoot(terminal);
-        for (size_t i = 0; i < _nodes.size(); ++i)
-            if (_nodes[i]->parents.empty()) scheduler.submitRoot(handles[i]);
-        scheduler.wait(terminal);
+        _execution->execute(scheduler);
         scheduler.clear();
         if (_failure) std::rethrow_exception(_failure);
     }
@@ -302,5 +295,6 @@ private:
     std::mutex _failureMutex;
     std::exception_ptr _failure;
     bool _compiled = false;
+    std::unique_ptr<cstdmf::multicore::JobGraph> _execution;
 };
 }

@@ -88,7 +88,8 @@ namespace csyren::editor
         {
             auto* destination = context.field<T>(key, family, path);
             if (!destination) return false;
-            *destination = value; return true;
+            *destination = value;
+            return context.scene.patch(context.resolve(key), family);
         }
     };
     class CommandHistory

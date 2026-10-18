@@ -19,6 +19,7 @@
 #include "core/scene.h"
 #include "core/entity.h"
 #include "core/transform.h"
+#include "core/transform_hierarchy.h"
 
 #include "core/event_bus.h"
 #include "core/services.h"
@@ -42,6 +43,7 @@ namespace csyren::physics
     core::TaskDescription PhysicsSystem::describe() const {
         core::TaskDescription d; d.phase = "simulation";
         d.write<core::Transform>().write<RigidBody>().writeResource<PhysicsEngine>().readResource<core::Time>();
+        d.readResource<core::SceneEntities>();
         return d;
     }
 
@@ -133,6 +135,7 @@ namespace csyren::physics
     public:
         core::Scene* scene{};
         core::EventBus2* bus{};
+        core::WorldTransforms worlds;
         std::unique_ptr<JPH::TempAllocatorImpl> m_tempAllocator;
         std::unique_ptr<JPH::JobSystemThreadPool> m_jobSystem;
         std::unique_ptr<JPH::PhysicsSystem> m_physicsSystem;
@@ -150,6 +153,7 @@ namespace csyren::physics
         core::SubscriberToken sphereRemovedToken;
         core::SubscriberToken capsuleAddedToken;
         core::SubscriberToken capsuleRemovedToken;
+        std::vector<core::SubscriberToken> patchTokens;
 
         // Entity -> BodyID
         std::unordered_map<core::Entity::ID, JPH::BodyID> entityToBody;
@@ -207,6 +211,14 @@ namespace csyren::physics
                 [this](const auto& event) { this->onColliderRemoved(event.comp.id()); });
 
             m_physicsSystem->SetGravity(details::to_jolt(gravity));
+            patchTokens.push_back(bus->subscribe<core::ComponentPatchEvent<RigidBody>>(
+                [this](auto& event) { if (event.comp == scene->getComponent<RigidBody>(event.comp.id())) rebuildBody(event.comp.id()); }));
+            patchTokens.push_back(bus->subscribe<core::ComponentPatchEvent<BoxCollider>>(
+                [this](auto& event) { if (event.comp == scene->getComponent<BoxCollider>(event.comp.id())) rebuildBody(event.comp.id()); }));
+            patchTokens.push_back(bus->subscribe<core::ComponentPatchEvent<SphereCollider>>(
+                [this](auto& event) { if (event.comp == scene->getComponent<SphereCollider>(event.comp.id())) rebuildBody(event.comp.id()); }));
+            patchTokens.push_back(bus->subscribe<core::ComponentPatchEvent<CapsuleCollider>>(
+                [this](auto& event) { if (event.comp == scene->getComponent<CapsuleCollider>(event.comp.id())) rebuildBody(event.comp.id()); }));
             for (auto [entity, rb] : scene->view<RigidBody>()) rebuildBody(entity);
         }
 
@@ -307,8 +319,8 @@ namespace csyren::physics
                 : rb->type == BodyType::Dynamic ?   JPH::EMotionType::Dynamic
                 :                                   JPH::EMotionType::Kinematic;
 
-            settings.mPosition = details::to_jolt(transform->position);
-            settings.mRotation = details::to_jolt(transform->rotation);
+            settings.mPosition = details::to_jolt(core::worldMatrix(*scene, ent).translation());
+            settings.mRotation = details::to_jolt(core::worldRotation(*scene, ent));
             settings.mObjectLayer  = Layers::MOVING;
             settings.mFriction = rb->friction;
             settings.mRestitution = rb->restitution;
@@ -385,6 +397,7 @@ namespace csyren::physics
         void pushTransform()
         {
             auto& bodyInterface = m_physicsSystem->GetBodyInterface();
+            worlds.update(*scene);
             auto view = scene->view<RigidBody, core::Transform>();
             for (auto [ent,rb,tr] : view)
             {
@@ -392,14 +405,16 @@ namespace csyren::physics
                 if (entityToBody.find(ent) == entityToBody.end())
                     continue;
 
-                if (rb.type == BodyType::Static || rb.type == BodyType::Kinematic)
+                // Dynamic bodies are also teleported when a local edit or a
+                // moving parent changes their desired world pose. Unchanged
+                // poses do not wake sleeping bodies.
                 {
                     auto bodyID = entityToBody[ent];
-                    bodyInterface.SetPositionAndRotation(
+                    bodyInterface.SetPositionAndRotationWhenChanged(
                         bodyID,
-                        details::to_jolt(tr.position),
-                        details::to_jolt(tr.rotation),
-                        JPH::EActivation::DontActivate
+                        details::to_jolt(worlds.matrix(ent).translation()),
+                        details::to_jolt(worlds.rotation(ent)),
+                        rb.type == BodyType::Dynamic ? JPH::EActivation::Activate : JPH::EActivation::DontActivate
                     );
                 }
             }
@@ -407,30 +422,23 @@ namespace csyren::physics
         void pullTransforms()
         {
 
-            auto view = scene->view<RigidBody, core::Transform>();
-            for (auto [ent,rb,tr] : view)
-            {
-                if (entityToBody.find(ent) == entityToBody.end())
-                    continue;
-
-                if (rb.type == BodyType::Dynamic)
-                {
-                    auto bodyID = entityToBody[ent];
-                    const JPH::BodyLockRead lock(m_physicsSystem->GetBodyLockInterface(), bodyID);
-                    if (!lock.Succeeded()) continue;
-
-                    const JPH::Body& body = lock.GetBody();
-                    tr.position = details::from_jolt(body.GetPosition());
-                    tr.rotation = details::from_jolt(body.GetRotation());
-
-                    if (rb.type == physics::BodyType::Dynamic)
-                    {
-                        rb.linearVelocity = details::from_jolt(body.GetLinearVelocity());
-                        rb.angularVelocity = details::from_jolt(body.GetAngularVelocity());
-                    }
-                }
-            }
+            // Propagate the new body poses and inherited local transforms in one
+            // pass. No ancestor walks or rebuilding the snapshot for each body.
+            worlds.propagate(*scene, [&](auto ent, const auto& parentMatrix, const auto& parentRotation) {
+                auto found = entityToBody.find(ent);
+                if (found == entityToBody.end()) return;
+                auto rb = scene->getComponent<RigidBody>(ent);
+                if (!rb || rb->type != BodyType::Dynamic) return;
+                const JPH::BodyLockRead lock(m_physicsSystem->GetBodyLockInterface(), found->second);
+                if (!lock.Succeeded()) return;
+                const auto& body = lock.GetBody();
+                core::setWorldPose(*scene, ent, details::from_jolt(body.GetPosition()),
+                    details::from_jolt(body.GetRotation()), parentMatrix, parentRotation);
+                rb->linearVelocity = details::from_jolt(body.GetLinearVelocity());
+                rb->angularVelocity = details::from_jolt(body.GetAngularVelocity());
+            });
         }
+
         void shutdown() noexcept
         {
             if (!bus) return;
@@ -442,6 +450,8 @@ namespace csyren::physics
             bus->unsubscribe(sphereRemovedToken);
             bus->unsubscribe(capsuleAddedToken);
             bus->unsubscribe(capsuleRemovedToken);
+            for (auto token : patchTokens) bus->unsubscribe(token);
+            patchTokens.clear();
 
             while (!entityToBody.empty()) removeBody(entityToBody.begin()->first);
             bodyToEntity.clear();

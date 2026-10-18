@@ -358,4 +358,51 @@ TEST(SystemManager, GraphFollowsEditorAndRuntimeBindings) {
     systems.shutdown();
 }
 
+TEST(SceneJobs, PatchChecksWriteAccessAndCommitsStagedNotifications) {
+    registerJobComponents();
+    SceneInstance instance; auto& scene=instance.scene(); auto& bus=scene.eventBus();
+    auto id=scene.createEntity(); scene.addComponent<Position>(id);
+    auto reader=task(); reader.read<Position>();
+    { SceneJobAccess::TaskScope scope(scene,nullptr,&reader);
+      EXPECT_THROW(scene.patch<Position>(id,[](auto& p) { p.x=9; }),std::logic_error); }
+    EXPECT_EQ(scene.getComponent<Position>(id)->x,0);
+    int notified=0;
+    bus.subscribe<ComponentPatchEvent<Position>>([&](auto& e) { EXPECT_TRUE(e.comp); ++notified; });
+    SceneJobAccess::Transaction tx; auto writer=task(); writer.write<Position>(); writer.structuralChanges=true;
+    Entity::ID created;
+    { SceneJobAccess::TaskScope scope(scene,&tx,&writer);
+      created=scene.createEntity(); auto staged=scene.addComponent<Position>(created);
+      EXPECT_TRUE(scene.patch(staged,[](auto& p) { p.x=17; })); }
+    bus.commit_batch(); EXPECT_EQ(notified,0);
+    tx.apply(scene); bus.commit_batch(); EXPECT_EQ(notified,1);
+    EXPECT_EQ(scene.getComponent<Position>(created)->x,17);
+    const auto revision=scene.componentRevision<Position>();
+    { SceneJobAccess::TaskScope scope(scene,&tx,&writer);
+      EXPECT_TRUE(scene.patch<Position>(id,[](auto& p) { p.x=31; })); }
+    tx.discard(); // live value writes, unlike staged additions, are immediate
+    EXPECT_GT(scene.componentRevision<Position>(),revision);
+    bus.commit_batch(); EXPECT_EQ(notified,2);
+}
+
+TEST(FrameGraph, RepeatedExecutionRecoversWithoutRecompilingAndRebuildsAfterEdits) {
+    csyren::cstdmf::multicore::JobSystem jobs; jobs.init(3);
+    FrameGraph graph; graph.phase({"custom"});
+    int frame=0, applied=0;
+    graph.task("producer",task(),[&] { if(frame==17) throw std::runtime_error("once"); });
+    auto consumer=task(); consumer.after={"producer"}; consumer.affinity=TaskAffinity::MainThread;
+    graph.task("consumer",consumer,[&] { ++applied; });
+    graph.compile();
+    for(;frame<500;++frame) {
+        if(frame==17) EXPECT_THROW(graph.execute(jobs),std::runtime_error);
+        else EXPECT_NO_THROW(graph.execute(jobs));
+    }
+    EXPECT_EQ(applied,499);
+    graph.task("added",consumer,[&] { ++applied; });
+    graph.execute(jobs); EXPECT_EQ(applied,501);
+    graph.clear(); graph.phase({"custom"});
+    graph.task("replacement",task(),[&] { applied+=10; });
+    graph.execute(jobs); EXPECT_EQ(applied,511);
+    jobs.fini();
+}
+
 }

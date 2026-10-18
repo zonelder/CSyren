@@ -7,6 +7,7 @@
 
 #include "debug_rotator.h"
 #include "core/transform.h"
+#include "core/transform_hierarchy.h"
 #include "math/math.h"
 #include "core/time.h"
 
@@ -54,9 +55,9 @@ namespace csyren
 					}
 					auto cubeMat = render::Primitives::getDefaultMaterial();
 					auto cubeMesh = render::Primitives::getCube();
-					auto world = camTr->world();
+					auto world = core::worldMatrix(*scene,cameraEntity);
 					Vector3 spawnOffset = world.forward() * 1.0f;
-					Vector3 spawnPos = camTr->position + spawnOffset;
+					Vector3 spawnPos = world.translation() + spawnOffset;
 					Vector3 shootDir = world.forward();
 					Vector3 velocity = shootDir * 15.0f;
 
@@ -64,7 +65,7 @@ namespace csyren
 					auto tr = scene->addComponent<Transform>(cube);
 
 					tr->position = spawnPos;
-					tr->rotation = camTr->rotation;
+					tr->rotation = core::worldRotation(*scene,cameraEntity);
 					tr->scale = Vector3(0.3f, 0.3f, 0.3f);
 
 					auto collider = scene->addComponent<BoxCollider>(cube);

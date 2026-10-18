@@ -154,7 +154,7 @@ struct GizmoMouseFixture
     void frame(GizmoMode mode)
     {
         ImGui::NewFrame();
-        const auto vp = DirectX::XMMatrixMultiply(DirectX::XMMatrixInverse(nullptr,view.transform.world()),view.camera.projectionMatrix());
+        const auto vp = DirectX::XMMatrixMultiply(DirectX::XMMatrixInverse(nullptr,view.transform.localMatrix()),view.camera.projectionMatrix());
         gizmo.render(session,id,view.camera,vp,{0,0},{800,600},true,mode);
         if (!gizmo.active()) session.finishEdit();
         ImGui::Render();

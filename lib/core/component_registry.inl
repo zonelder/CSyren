@@ -42,6 +42,7 @@ namespace csyren::core::reflection
             {
                 scene->template removeComponent<T>(id);
             };
+        meta.patch = [](Scene* scene, Entity::ID id) { return scene->template patch<T>(id); };
         meta.destroy = [](Scene* scene, Entity::ID id) -> bool
             {
                return scene->template destroy<T>(id);

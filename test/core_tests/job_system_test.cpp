@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "cstdmf/job_system2.hpp"
+#include "cstdmf/job_graph.hpp"
 #include <atomic>
 #include <chrono>
 #include <thread>
@@ -210,6 +211,33 @@ TEST_F(JobSystemTest, AsyncBurstsSurviveOutOfOrderCleanupAndSlotReuse) {
         previous = std::move(handles);
     }
     EXPECT_EQ(executed, 256u);
+}
+
+TEST_F(JobSystemTest, CompiledGraphReusesFanInAndPinnedTasksAcrossFailures) {
+    int frame=0; std::atomic<unsigned> bits{0}; unsigned completed=0;
+    const auto main=std::this_thread::get_id();
+    auto af=[&](uint32_t,uint32_t,uint32_t) { bits.fetch_or(1); if(frame==123) throw std::runtime_error("compiled failure"); };
+    auto bf=[&](uint32_t,uint32_t,uint32_t) { bits.fetch_or(2); };
+    auto cf=[&](uint32_t,uint32_t,uint32_t) { EXPECT_EQ(bits.load(),3u); EXPECT_EQ(std::this_thread::get_id(),main); ++completed; };
+    LambdaJob a(std::move(af)); LambdaJob b(std::move(bf)); LambdaJob c(std::move(cf));
+    JobGraph graph({{&a,{}},{&b,{}},{&c,{0,1},0}});
+    for(;frame<3000;++frame) {
+        bits=0;
+        if(frame==123) EXPECT_THROW(graph.execute(jobs),std::runtime_error);
+        else EXPECT_NO_THROW(graph.execute(jobs));
+        jobs.clear(); // compiled tasks are independent of transient frame storage
+    }
+    EXPECT_EQ(completed,3000u);
+    JobGraph empty({}); EXPECT_NO_THROW(empty.execute(jobs));
+}
+TEST_F(JobSystemTest, CompiledGraphValidatesBeforeSubmittingAnyWork) {
+    auto fn=[](uint32_t,uint32_t,uint32_t) {};
+    LambdaJob job(std::move(fn));
+    EXPECT_THROW((JobGraph({{&job,{1}}})),std::invalid_argument);
+    EXPECT_THROW((JobGraph({{&job,{0}}})),std::invalid_argument);
+    JobGraph invalidThread({{&job,{},30000}});
+    EXPECT_THROW(invalidThread.execute(jobs),std::invalid_argument);
+    JobGraph graph({{&job,{}}}); EXPECT_NO_THROW(graph.execute(jobs));
 }
 
 }
