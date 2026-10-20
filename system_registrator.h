@@ -24,3 +24,14 @@
 #include "dx12_graphic/lighting/light_pass_system.h"
 #include "dx12_graphic/lighting/tonemap_system.h"
 #include "forward_render_system.h"
+
+// Titanfall-style movement / shooter prototype.
+#include "game/game_materials.h"
+#include "game/player_input_system.h"
+#include "game/pilot_movement_system.h"
+#include "game/camera_rig_system.h"
+#include "game/view_model_system.h"
+#include "game/weapon_system.h"
+#include "game/projectile_system.h"
+#include "game/bot_system.h"
+#include "game/game_hud.h"

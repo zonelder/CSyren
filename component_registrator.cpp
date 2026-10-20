@@ -19,6 +19,8 @@
 #include "meta_common.h"
 
 #include "serializer.h"
+
+#include "game/game_components.h"
 #include "animation.h"
 
 namespace csyren
@@ -62,6 +64,20 @@ namespace csyren
 		{
 			using namespace csyren;
 			REGISTER_COMPONENT(Animator);
+		}
+
+		{
+			using namespace csyren::game;
+			REGISTER_COMPONENT(PlayerTag);
+			REGISTER_COMPONENT(PilotConfig);
+			REGISTER_COMPONENT(PilotState);
+			REGISTER_COMPONENT(WeaponInventory);
+			REGISTER_COMPONENT(Projectile);
+			REGISTER_COMPONENT(Health);
+			REGISTER_COMPONENT(Bot);
+			REGISTER_COMPONENT(Lifetime);
+			REGISTER_COMPONENT(ViewModel);
+			REGISTER_COMPONENT(ViewModelSlot);
 		}
 	}
 }

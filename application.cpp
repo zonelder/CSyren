@@ -56,6 +56,8 @@
 
 #include "component_registrator.h"
 #include "editor_overlays.h"
+#include "game/player_input.h"
+#include "game/game_hud.h"
 
 namespace csyren
 {
@@ -128,6 +130,9 @@ namespace csyren
 		core::details::ServiceRegistry::create<editor::EditorSelection>();
 		core::details::ServiceRegistry::create<StatisticMonitor>();
 		core::details::ServiceRegistry::create<editor::EditorOverlays>();
+		core::details::ServiceRegistry::create<game::PlayerInput>();
+		core::details::ServiceRegistry::create<game::GameHud>();
+		core::details::ServiceRegistry::create<game::ViewModelState>();
 
 
 

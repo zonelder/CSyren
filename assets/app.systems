@@ -4,6 +4,15 @@
             "class": "InputDispatchSystem"
         },
         {
+            "class": "PlayerInputSystem"
+        },
+        {
+            "class": "GameSetupSystem"
+        },
+        {
+            "class": "PilotMovementSystem"
+        },
+        {
             "class": "PhysicsSystem"
         },
         {
@@ -11,6 +20,27 @@
         },
         {
             "class": "AnimationSystem"
+        },
+        {
+            "class": "CameraRigSystem"
+        },
+        {
+            "class": "ViewModelSystem"
+        },
+        {
+            "class": "WeaponSystem"
+        },
+        {
+            "class": "ProjectileSystem"
+        },
+        {
+            "class": "BotSystem"
+        },
+        {
+            "class": "LifetimeSystem"
+        },
+        {
+            "class": "GameHudSystem"
         },
         {
             "class": "RenderEnvironmentSystem"

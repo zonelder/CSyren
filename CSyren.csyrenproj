@@ -5,5 +5,5 @@
     "assetsPath": "assets",
     "editorSystems": "assets/editor.systems",
     "appSystems": "assets/app.systems",
-    "startScene": "assets/test_scene.scene"
+    "startScene": "assets/movement_polygon.scene"
 }
