@@ -42,6 +42,15 @@
     <ClInclude Include="spring_join_system.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="character_controller.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="physics_query.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="physics_layers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="physics.cpp">
@@ -53,10 +62,16 @@
     <ClCompile Include="physic_system.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="physics_layers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="rigid_body.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="colliders.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="character_controller.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

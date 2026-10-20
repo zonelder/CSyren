@@ -100,6 +100,7 @@ namespace csyren
 
 		core::details::ServiceRegistry::create<core::Window>(1200, 786, L"csyren engine");
 		core::details::ServiceRegistry::create<core::Time>();
+		core::Services::get<core::Time>()->fixedDeltaTime = 1.0f / 120.0f; // physics + character step
 		core::details::ServiceRegistry::create<core::CameraContextService>([]() {
             auto* session = core::Services::get<editor::SceneSession>();
             auto id = core::Entity::invalidID;
@@ -112,6 +113,7 @@ namespace csyren
         core::details::ServiceRegistry::create<ArchiveSceneStorage>(*core::Services::get<Serializer>());
         core::details::ServiceRegistry::create<editor::SceneSession>(*core::Services::get<ArchiveSceneStorage>());
         core::details::ServiceRegistry::create<editor::EditorViewportState>();
+		core::details::ServiceRegistry::create<physics::PhysicsLayers>(); // layer names and collision rules are defined by the project
 		core::details::ServiceRegistry::create<physics::PhysicsEngine>();
 		core::details::ServiceRegistry::create<core::Devices>();
 		core::details::ServiceRegistry::create<core::SystemManager>();

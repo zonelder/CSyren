@@ -9,6 +9,7 @@
 
 #include "physics/colliders.h"
 #include "physics/rigid_body.h"
+#include "physics/character_controller.h"
 
 #include "mesh_filter.h"
 #include "dx12_graphic/resource_handle_meta.h"
@@ -45,6 +46,7 @@ namespace csyren
 			REGISTER_COMPONENT(SphereCollider);
 			REGISTER_COMPONENT(CapsuleCollider);
 			REGISTER_COMPONENT(RigidBody);
+			REGISTER_COMPONENT(CharacterController);
 		}
 
 		{

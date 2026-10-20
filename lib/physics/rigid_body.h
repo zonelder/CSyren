@@ -1,15 +1,13 @@
 #pragma once
 #include <cstdint>
+#include <string>
 #include "math/math.h"
+#include "core/reflected_enum.h"
+#include "physics_layers.h"
 
 namespace csyren::physics
 {
-	enum class BodyType
-	{
-		Static,
-		Kinematic,
-		Dynamic,
-	};
+	CS_ENUM(BodyType, int, Static, Kinematic, Dynamic)
 
 	struct RigidBody
 	{
@@ -20,6 +18,10 @@ namespace csyren::physics
 		float restitution = 1.0f;
 		math::Vector3 linearVelocity = math::Vector3::zero;
 		math::Vector3 angularVelocity = math::Vector3::zero;
+		// Collision layer (PhysicsLayers); unknown names behave like "Default".
+		CollisionLayer layer;
+		// Continuous collision (Jolt LinearCast) for fast dynamic bodies (bullets, grenades).
+		bool continuousCollision = false;
 
 		static void describe();
 	};

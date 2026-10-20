@@ -8,16 +8,17 @@ namespace csyren::physics
 {
 	void RigidBody::describe()
 	{
-        core::reflection::MetaFactory<RigidBody>{}.type("RigidBody"_hs)
-            .data<&RigidBody::type>("type"_hs)
-            .data<&RigidBody::mass>("mass"_hs)
-            .data<&RigidBody::useGravity>("useGravity"_hs)
-            .data<&RigidBody::friction>("friction"_hs)
-            .data<&RigidBody::restitution>("restitution"_hs)
-            .data<&RigidBody::linearVelocity>("linearVelocity"_hs)
-			.data<&RigidBody::angularVelocity>("angularVelocity"_hs);
-
-        core::reflection::MetaFactory<BodyType>{}.primitiveType("BodyType"_hs).archive(core::reflection::scalarArchive<BodyType>());
+		CollisionLayer::describe();
+		core::reflection::MetaFactory<RigidBody>{}.type("RigidBody"_hs)
+			.data<&RigidBody::type>("type"_hs)
+			.data<&RigidBody::mass>("mass"_hs)
+			.data<&RigidBody::useGravity>("useGravity"_hs)
+			.data<&RigidBody::friction>("friction"_hs)
+			.data<&RigidBody::restitution>("restitution"_hs)
+			.data<&RigidBody::linearVelocity>("linearVelocity"_hs)
+			.data<&RigidBody::angularVelocity>("angularVelocity"_hs)
+			.data<&RigidBody::layer>("layer"_hs)
+			.data<&RigidBody::continuousCollision>("continuousCollision"_hs);
 	}
 
 }
