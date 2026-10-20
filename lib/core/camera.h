@@ -1,16 +1,13 @@
 #pragma once
 
 #include "math/vector4.h"
+#include "reflected_enum.h"
 #include <algorithm>
 
 namespace csyren::core
 {
-    enum class CameraRenderType { EachFrame, Once };
-	enum ProjectionType
-	{
-		Perspective,
-		Orthographic
-	};
+    CS_ENUM(CameraRenderType, int, EachFrame, Once)
+    CS_ENUM(ProjectionType, int, Perspective, Orthographic)
 
 	struct ViewportRect
 	{
@@ -29,7 +26,7 @@ namespace csyren::core
 		float fov{ 60.0f };
 
 		int priority{ 0 };
-		ProjectionType projection = Perspective;
+		ProjectionType projection = ProjectionType::Perspective;
 		math::Vector4 background{ 0.1f, 0.1f, 0.1f, 1.0f };
 		ViewportRect viewportRect;//unused
 
@@ -39,7 +36,7 @@ namespace csyren::core
             // volume, but make the depth convention explicit: near=1, far=0.
             const float nearDistance = (std::min)(near, far);
             const float farDistance = (std::max)(near, far);
-            if (projection == Perspective)
+            if (projection == ProjectionType::Perspective)
                 return DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(fov),
                     aspectRatio, farDistance, nearDistance);
             // For orthographic cameras FOV is the vertical view volume height.

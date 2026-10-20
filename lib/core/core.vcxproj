@@ -137,6 +137,8 @@
     <ClInclude Include="input_event.h" />
     <ClInclude Include="input_enums.h" />
     <ClInclude Include="meta.h" />
+    <ClInclude Include="meta_enum.h" />
+    <ClInclude Include="reflected_enum.h" />
     <ClInclude Include="archive.h" />
     <ClInclude Include="meta_archive.h" />
     <ClInclude Include="meta_json.h" />

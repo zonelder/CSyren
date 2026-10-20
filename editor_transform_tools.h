@@ -27,7 +27,7 @@ namespace csyren::editor
         const float nearDistance = std::min(view.camera.near, view.camera.far);
         const float farDistance = std::max(view.camera.near, view.camera.far);
         float distance;
-        if (view.camera.projection == core::Orthographic)
+        if (view.camera.projection == core::ProjectionType::Orthographic)
         {
             view.camera.fov = 2.4f * radius / std::min(1.f, view.camera.aspectRatio);
             distance = 2 * radius + nearDistance;

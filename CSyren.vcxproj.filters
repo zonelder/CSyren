@@ -135,5 +135,6 @@
     <None Include="CSyren.csyrenproj"><Filter>Resource Files</Filter></None>
     <None Include="assets\app.systems"><Filter>Resource Files</Filter></None>
     <None Include="assets\editor.systems"><Filter>Resource Files</Filter></None>
+    <None Include="docs\reflection.md"><Filter>Resource Files</Filter></None>
   </ItemGroup>
 </Project>

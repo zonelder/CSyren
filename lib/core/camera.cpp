@@ -25,7 +25,6 @@ namespace csyren::core
 			.data<&Camera::background>("background"_hs)
 			.data<&Camera::viewportRect>("viewportRect"_hs);
 
-		reflection::MetaFactory<ProjectionType>{}.primitiveType("ProjectionType"_hs).archive(reflection::scalarArchive<ProjectionType>());
-        reflection::MetaFactory<CameraRenderType>{}.primitiveType("CameraRenderType"_hs).archive(reflection::scalarArchive<CameraRenderType>());
+		// ProjectionType / CameraRenderType are CS_ENUMs: registered by the fields above.
 	}
 }

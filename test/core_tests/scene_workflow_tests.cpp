@@ -795,7 +795,7 @@ void reverseDepthProjection()
 {
     Camera camera;
     CHECK(camera.near == 0.1f && camera.far == 1000.0f);
-    for (auto type : { Perspective, Orthographic })
+    for (auto type : { ProjectionType::Perspective, ProjectionType::Orthographic })
     {
         camera.projection = type;
         for (bool legacy : { false, true })
@@ -910,7 +910,7 @@ static void viewportPicking()
     const auto bounds = builder.build().bounds;
     CHECK(bounds.valid && bounds.min.y == -2 && bounds.max.z == 3);
     CHECK(!render::MeshBuilder{}.build().bounds.valid);
-    for (auto projection : { Perspective, Orthographic })
+    for (auto projection : { ProjectionType::Perspective, ProjectionType::Orthographic })
     {
         Camera camera; camera.projection = projection;
         const auto ray = viewportRay(0, 0, camera.projectionMatrix());
@@ -1177,7 +1177,7 @@ TEST_F(SceneWorkflow, FocusFitsBoundsAndPreservesCameraOrientation)
     const auto bounds = transformedBounds(local, XMMatrixScaling(-2, 3, .5f) *
         XMMatrixRotationRollPitchYaw(.3f, .7f, 0) * XMMatrixTranslation(30, 12, -20));
     for (const float aspect : { .4f, 1.f, 2.f })
-        for (const auto projection : { Perspective, Orthographic })
+        for (const auto projection : { ProjectionType::Perspective, ProjectionType::Orthographic })
         {
             SCOPED_TRACE(aspect);
             SCOPED_TRACE(static_cast<int>(projection));

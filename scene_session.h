@@ -59,6 +59,21 @@ namespace csyren::editor
             else edit->after = after;
             if (finished) finishEdit();
         }
+        // Same as preview() for editors that only know the reflected type.
+        void previewArchived(EntityKey key, size_t family, const FieldPath& path, const core::reflection::MetaType& type,
+            nlohmann::json before, nlohmann::json after, bool finished)
+        {
+            if (playing()) return;
+            editorScene().patch(resolve(key), family);
+            auto* edit = dynamic_cast<ArchivedFieldEdit*>(_edit.get());
+            if (!edit || edit->key != key || edit->family != family || edit->path != path || edit->type != &type)
+            {
+                finishEdit();
+                _edit = std::make_unique<ArchivedFieldEdit>(key, family, path, &type, std::move(before), std::move(after));
+            }
+            else edit->after = std::move(after);
+            if (finished) finishEdit();
+        }
     private:
         using Keys = std::vector<EntityKey>;
         struct Snapshot { std::string archive; Keys keys; };

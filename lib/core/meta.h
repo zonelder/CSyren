@@ -22,6 +22,7 @@ namespace csyren::core::reflection
     constexpr bool hasFlag(FieldFlags value, FieldFlags flag) noexcept { return (static_cast<uint32_t>(value) & static_cast<uint32_t>(flag)) != 0; }
 
     struct MetaType;
+    struct MetaEnum; // core/meta_enum.h
     struct MetaArchiveOps
     {
         using Save = bool (*)(ArchiveWriter&, SerializationContext&, const MetaType&, const void*);
@@ -53,6 +54,8 @@ namespace csyren::core::reflection
         uint32_t version{ 1 };
         MetaArchiveOps archive{};
         cstdmf::StaticVector<MetaData, MAX_FIELD_COUNT> data;
+        // Set for reflected enums (a single value) and MaskOf<E> (a set of values).
+        const MetaEnum* enumInfo{ nullptr };
     };
 }
 
@@ -92,6 +95,8 @@ namespace csyren::core::reflection::details
         std::unordered_map<LiteralID, MetaType*, cstdmf::LiteralIDHash> _types;
         MetaMap _typesByCompID;
     };
+    // Registers types a field depends on (CS_ENUM enums, MaskOf<E>). Defined in meta_enum.h.
+    template<class T> void autoRegister();
     template<typename> struct MemberType;
     template<typename T, typename M> struct MemberType<M T::*> { using type = M; };
     template<typename T> using MemberType_t = typename MemberType<T>::type;
@@ -122,6 +127,7 @@ namespace csyren::core::reflection
             using Owner = typename details::MemberOwner<decltype(Member)>::type;
             using MemberType = details::MemberType_t<decltype(Member)>;
             for (const auto& existing : _type->data) if (existing.id == id) return *this;
+            details::autoRegister<std::remove_cvref_t<MemberType>>();
             MetaData field;
             field.id = id; field.name = name.empty() ? id.str : name; field.size = sizeof(MemberType);
             field.type = &details::MetaLink<std::remove_cvref_t<MemberType>>::type; field.flags = flags;
@@ -174,3 +180,6 @@ namespace csyren::core::reflection
 
 namespace csyren::core::reflection::details { template<class Type> void tryDescribe() { if constexpr (requires { Type::describe(); }) Type::describe(); } }
 #define REFLECT(Type) ::csyren::core::reflection::details::tryDescribe<Type>();
+
+// Reflected enums / masks (needs the declarations above).
+#include "meta_enum.h"

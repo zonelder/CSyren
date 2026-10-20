@@ -3,8 +3,9 @@ using namespace csyren::math;
 
 namespace csyren::editor
 {
-    using core::CameraRenderType;
-    REGISTER_EDITOR(CameraRenderType, CameraRenderTypeEditor);
+    // Enums (CS_ENUM) and MaskOf<E> use the generic EnumEditor (editor_base.h).
+    using String = std::string;
+    REGISTER_EDITOR(String, StringEditor);
 	REGISTER_EDITOR(float, FloatEditor);
 	REGISTER_EDITOR(int, IntEditor);
 	REGISTER_EDITOR(bool, BoolEditor);

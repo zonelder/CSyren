@@ -25,6 +25,18 @@ namespace csyren::editor
                 session.cancelEdit();
             else if (ImGui::IsItemDeactivated() || (changed && !ImGui::IsItemActive())) session.finishEdit();
         }
+        // For editors that only know the reflected type: the value is captured
+        // through its archive before the widget runs.
+        template<class Widget> void drawArchived(core::reflection::MetaAny& value, Widget widget)
+        {
+            const auto* type = value.type();
+            auto before = ArchivedFieldEdit::capture(*type, value.raw());
+            const bool changed = widget();
+            if (changed) session.previewArchived(entity, family, path, *type, std::move(before), ArchivedFieldEdit::capture(*type, value.raw()), false);
+            if (ImGui::IsKeyPressed(ImGuiKey_Escape, false) && (ImGui::IsItemActive() || ImGui::IsItemDeactivated()))
+                session.cancelEdit();
+            else if (ImGui::IsItemDeactivated() || (changed && !ImGui::IsItemActive())) session.finishEdit();
+        }
     };
 	class IEditor
 	{
@@ -51,7 +63,9 @@ namespace csyren::editor
         static IEditor* get(core::reflection::MetaType* type)
         {
             auto it = _metaMap.find(type);
-            return it == _metaMap.end() ? _defaultEditor : it->second;
+            if (it != _metaMap.end()) return it->second;
+            // Every reflected enum / mask / named enum gets the generic editor.
+            return type && type->enumInfo ? _enumEditor : _defaultEditor;
         }
 
         static void addPending(void(*resolveFn)())
@@ -72,6 +86,7 @@ namespace csyren::editor
             return pending;
         }
         static IEditor* _defaultEditor;
+        static IEditor* _enumEditor;
         static std::unordered_map<core::reflection::MetaType*, IEditor*> _metaMap;
     };
 }
@@ -106,6 +121,52 @@ namespace csyren::editor::details
     };
 }
 
+
+namespace csyren::editor::details
+{
+    // Combo for a single value, checkbox list for MaskOf<E>.
+    class EnumEditor : public IEditor
+    {
+    public:
+        void draw(core::reflection::MetaAny& any, const char* label, ValueEditContext& context) override
+        {
+            using namespace core::reflection;
+            if (!any || !any.type()->enumInfo) return;
+            const MetaEnum& info = *any.type()->enumInfo;
+            void* raw = any.raw();
+            const auto entries = info.list();
+            const auto current = info.label(raw);
+            context.drawArchived(any, [&] {
+                bool changed = false;
+                if (!ImGui::BeginCombo(label, current.c_str())) return false;
+                if (info.isMask())
+                {
+                    for (const auto& entry : entries)
+                    {
+                        bool on = info.isSelected(raw, entry);
+                        if (ImGui::Checkbox(entry.name.c_str(), &on)) { info.setFlag(raw, entry, on); changed = true; }
+                    }
+                    ImGui::Separator();
+                    if (ImGui::SmallButton("All")) { info.setValue(raw, static_cast<int64_t>(info.allBits())); changed = true; }
+                    ImGui::SameLine();
+                    if (ImGui::SmallButton("None")) { info.setValue(raw, 0); changed = true; }
+                }
+                else
+                {
+                    if (entries.empty()) ImGui::TextDisabled("(no values registered)");
+                    for (const auto& entry : entries)
+                    {
+                        const bool selected = info.isSelected(raw, entry);
+                        if (ImGui::Selectable(entry.name.c_str(), selected) && !selected) { info.select(raw, entry); changed = true; }
+                        if (selected) ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+                return changed;
+            });
+        }
+    };
+}
 
 #define REGISTER_EDITOR(Type, EditorClass)                                      \
     static EditorClass _editor_instance_##Type;                                 \

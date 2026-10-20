@@ -10,6 +10,9 @@ namespace csyren::core
     {
     public:
         virtual ~ArchiveWriter() = default;
+        // Compact (binary) formats store stable ids instead of names (enum
+        // values are written as name hashes). Text formats keep names.
+        virtual bool compact() const { return false; }
         virtual bool object() = 0;
         virtual bool beginField(uint64_t id, std::string_view name) = 0;
         virtual bool endField() = 0;
@@ -28,6 +31,7 @@ namespace csyren::core
     {
     public:
         virtual ~ArchiveReader() = default;
+        virtual bool compact() const { return false; }
         virtual bool object(uint32_t& version) = 0;
         // Missing fields are distinct from errors and retain the object's defaults.
         virtual bool beginField(uint64_t id, std::string_view name, bool& present) = 0;

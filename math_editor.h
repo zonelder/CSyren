@@ -1,20 +1,23 @@
 #pragma once
 #include "editor_base.h"
 #include "math/math.h"
-#include "core/camera.h"
+#include <algorithm>
+#include <string>
 
 namespace csyren::editor
 {
-    class CameraRenderTypeEditor : public IEditor
+    class StringEditor : public IEditor
     {
     public:
-        void draw(core::reflection::MetaAny& any,const char* label,ValueEditContext& context) override
+        void draw(core::reflection::MetaAny& any, const char* label, ValueEditContext& context) override
         {
-            auto& value = any.get<core::CameraRenderType>();
-            context.draw(value,[&] {
-                int selected = static_cast<int>(value);
-                if (!ImGui::Combo(label,&selected,"Each frame\0Once\0")) return false;
-                value = static_cast<core::CameraRenderType>(selected); return true;
+            auto& v = any.get<std::string>();
+            context.draw(v, [&] {
+                char buffer[256]{};
+                const auto length = (std::min)(v.size(), sizeof(buffer) - 1);
+                std::copy_n(v.data(), length, buffer);
+                if (!ImGui::InputText(label, buffer, sizeof(buffer))) return false;
+                v = buffer; return true;
             });
         }
     };

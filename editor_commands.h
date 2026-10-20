@@ -1,5 +1,6 @@
 #pragma once
 #include "core/scene.h"
+#include "core/meta_json.h"
 #include <functional>
 #include <memory>
 #include <string>
@@ -21,10 +22,11 @@ namespace csyren::editor
             auto it = entities.find(key);
             return it == entities.end() ? core::Entity::invalidID : it->second;
         }
-        template<class T> T* field(EntityKey key, size_t family, const FieldPath& path) const
+        // Field addressed by `path` inside a component, with its reflected type.
+        void* fieldRaw(EntityKey key, size_t family, const FieldPath& path, const core::reflection::MetaType** fieldType) const
         {
             auto* info = core::reflection::ComponentRegistry::get(family);
-            auto* type = info ? info->metaType : nullptr;
+            const core::reflection::MetaType* type = info ? info->metaType : nullptr;
             void* value = scene.getComponentRaw(resolve(key), family);
             for (auto id : path)
             {
@@ -34,7 +36,14 @@ namespace csyren::editor
                 if (!found || !found->get) return nullptr;
                 value = found->get(value); type = found->type;
             }
-            return type == core::reflection::resolve<T>() ? static_cast<T*>(value) : nullptr;
+            if (fieldType) *fieldType = type;
+            return value;
+        }
+        template<class T> T* field(EntityKey key, size_t family, const FieldPath& path) const
+        {
+            const core::reflection::MetaType* type{};
+            void* value = fieldRaw(key, family, path, &type);
+            return value && type == core::reflection::resolve<T>() ? static_cast<T*>(value) : nullptr;
         }
     };
     class EditorCommand
@@ -89,6 +98,40 @@ namespace csyren::editor
             auto* destination = context.field<T>(key, family, path);
             if (!destination) return false;
             *destination = value;
+            return context.scene.patch(context.resolve(key), family);
+        }
+    };
+    // Type-erased field edit: before/after are stored through the field type's
+    // reflection archive. Used by editors that do not know the C++ type
+    // (reflected enums, masks, named enums).
+    class ArchivedFieldEdit final : public PendingFieldEdit
+    {
+    public:
+        const core::reflection::MetaType* type{};
+        nlohmann::json before, after;
+        ArchivedFieldEdit(EntityKey target, size_t component, FieldPath field, const core::reflection::MetaType* fieldType, nlohmann::json previous, nlohmann::json next)
+            : type(fieldType), before(std::move(previous)), after(std::move(next))
+        { key = target; family = component; path = std::move(field); }
+        bool changed() const override { return before != after; }
+        bool execute(EditContext& context) override { return apply(context, after); }
+        bool undo(EditContext& context) override { return apply(context, before); }
+        static nlohmann::json capture(const core::reflection::MetaType& fieldType, const void* value)
+        {
+            nlohmann::json result;
+            core::JsonArchiveWriter writer(result);
+            core::SerializationContext serialization;
+            core::reflection::save(writer, serialization, fieldType, value);
+            return result;
+        }
+    private:
+        bool apply(EditContext& context, const nlohmann::json& value)
+        {
+            const core::reflection::MetaType* fieldType{};
+            void* destination = context.fieldRaw(key, family, path, &fieldType);
+            if (!destination || fieldType != type) return false;
+            core::JsonArchiveReader reader(value);
+            core::SerializationContext serialization;
+            if (!core::reflection::load(reader, serialization, *type, destination)) return false;
             return context.scene.patch(context.resolve(key), family);
         }
     };

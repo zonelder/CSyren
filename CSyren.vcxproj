@@ -30,6 +30,7 @@
     <None Include="CSyren.csyrenproj" />
     <None Include="assets\app.systems" />
     <None Include="assets\editor.systems" />
+    <None Include="docs\reflection.md" />
     <None Include="CSyren.paths.props" />
   </ItemGroup>
   <ItemGroup>
