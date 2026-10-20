@@ -177,7 +177,7 @@ TEST_F(SceneWorkflow, SceneCameraFrameUsesInheritedWorldPose)
     Transform c; c.position=math::Vector3{0,0,-3};
     scene.addComponent<Transform>(parent,p); scene.addComponent<Transform>(camera,c);
     const auto world=worldMatrix(scene,camera);
-    const auto frame=render::details::cameraFrame(Camera{},world,800,600,0);
+    const auto frame=render::details::cameraFrame(Camera{},world,800,600,0,render::RenderEnvironment{});
     const auto expected=world.translation();
     EXPECT_NEAR(frame.cameraPosition.x,expected.x,1e-4f);
     EXPECT_NEAR(frame.cameraPosition.y,expected.y,1e-4f);

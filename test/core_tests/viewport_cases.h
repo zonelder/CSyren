@@ -123,8 +123,8 @@ TEST_F(SceneWorkflow, CameraFramesKeepTheirOwnMatricesAspectAndRenderSchedule)
     Camera camera; camera.aspectRatio = 3.f;
     Transform editor,game; editor.position = math::Vector3{1,2,3}; game.position = math::Vector3{10,20,30};
     render::details::CameraRenderView first,second;
-    first.engine = render::details::cameraFrame(camera,editor,800,400,1);
-    second.engine = render::details::cameraFrame(camera,game,400,400,1);
+    first.engine = render::details::cameraFrame(camera,editor,800,400,1,render::RenderEnvironment{});
+    second.engine = render::details::cameraFrame(camera,game,400,400,1,render::RenderEnvironment{});
     EXPECT_NE(first.id,second.id); EXPECT_NE(first.target,second.target);
     EXPECT_FLOAT_EQ(first.engine.cameraPosition.x,1); EXPECT_FLOAT_EQ(second.engine.cameraPosition.x,10);
     EXPECT_FLOAT_EQ(first.engine.invViewMatrix._42,2); EXPECT_FLOAT_EQ(second.engine.invViewMatrix._42,20);
