@@ -58,6 +58,7 @@
     <ClInclude Include="editor_layout.h" />
     <ClInclude Include="editor_toolbar_layout.h" />
     <ClInclude Include="editor_viewport_state.h" />
+    <ClInclude Include="editor_overlays.h" />
     <ClInclude Include="editor_transform_tools.h" />
     <ClInclude Include="scene_gizmo.h" />
     <ClInclude Include="scene_workflow_window.h" />

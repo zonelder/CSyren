@@ -54,6 +54,7 @@
 #include "math_editor.h"
 
 #include "component_registrator.h"
+#include "editor_overlays.h"
 
 namespace csyren
 {
@@ -124,6 +125,7 @@ namespace csyren
 		core::details::ServiceRegistry::create<render::details::PSOFactory>();
 		core::details::ServiceRegistry::create<editor::EditorSelection>();
 		core::details::ServiceRegistry::create<StatisticMonitor>();
+		core::details::ServiceRegistry::create<editor::EditorOverlays>();
 
 
 

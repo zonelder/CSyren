@@ -130,6 +130,7 @@
     <ClInclude Include="project_settings.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="startup_options.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="render_environment_system.h"><Filter>system</Filter></ClInclude>
+    <ClInclude Include="editor_overlays.h"><Filter>Header Files</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="CSyren.csyrenproj"><Filter>Resource Files</Filter></None>

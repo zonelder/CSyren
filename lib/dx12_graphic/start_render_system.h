@@ -27,6 +27,7 @@
 #include "scene_workflow_window.h"
 #include "scene_viewport.h"
 #include "editor_layout.h"
+#include "editor_overlays.h"
 
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -188,6 +189,7 @@ namespace csyren::editor
 			}
             _viewport.render(&_viewportOpen);
             _gameViewport.render(&_gameOpen,ViewportCamera::Game);
+            if (core::Services::has<EditorOverlays>()) core::Services::get<EditorOverlays>()->draw();
             if (!ImGui::IsAnyItemActive() && !_viewport.manipulating()) core::Services::get<SceneSession>()->finishEdit();
 			auto* renderer = core::Services::get<render::Renderer>();
 			ID3D12GraphicsCommandList* cmdList = renderer->commandList();
