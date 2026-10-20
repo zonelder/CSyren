@@ -4,6 +4,7 @@
 #include "core/time.h"
 #include "dx12_graphic/primitives.h"
 #include "dx12_graphic/renderer.h"
+#include "core/registration.h"
 
 namespace csyren::render
 {
@@ -25,5 +26,5 @@ namespace csyren::render
                 throw std::runtime_error("Failed to register primitive resource factories");
         }
     };
-    REGISTER_SYSTEM(RenderEnvironmentSystem)
+    CS_SYSTEM(RenderEnvironmentSystem);
 }

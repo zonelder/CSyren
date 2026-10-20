@@ -10,6 +10,7 @@
 #include "dx12_graphic/compute_shader.h"
 #include "dx12_graphic/camera_render_target.h"
 #include "dx12_graphic/lighting/scene_lights.h"
+#include "core/registration.h"
 
 namespace csyren::render
 {
@@ -80,5 +81,5 @@ namespace csyren::render
         ComputeShaderHandle _shader;
         bool _warned = false;
     };
-    REGISTER_SYSTEM(LightClusterSystem)
+    CS_SYSTEM(LightClusterSystem);
 }

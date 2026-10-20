@@ -46,6 +46,8 @@ namespace csyren::editor
 	};
 
 
+    namespace details { void registerBuiltinEditors(); } // math_editor.cpp
+
     class EditorRegistry
     {
         struct PendingRegistration
@@ -73,8 +75,12 @@ namespace csyren::editor
             getPending().push_back({ resolveFn });
         }
 
+        // Installs the built-in value editors (once), then the pending ones
+        // (CS_EDITOR markers, registered by the generated registry).
         static void resolveAll()
         {
+            static const bool builtins = (details::registerBuiltinEditors(), true);
+            (void)builtins;
             for (auto& reg : getPending())
                 reg.resolveAndRegister();
             getPending().clear();
@@ -167,16 +173,3 @@ namespace csyren::editor::details
         }
     };
 }
-
-#define REGISTER_EDITOR(Type, EditorClass)                                      \
-    static EditorClass _editor_instance_##Type;                                 \
-    static void _editor_resolve_##Type() {                                      \
-        auto* meta = ::csyren::core::reflection::resolve<Type>();               \
-        ::csyren::editor::EditorRegistry::add(                                  \
-            meta, &_editor_instance_##Type);                                    \
-    }                                                                           \
-    static struct _EditorRegistrar_##Type {                                     \
-        _EditorRegistrar_##Type() {                                             \
-            ::csyren::editor::EditorRegistry::addPending(&_editor_resolve_##Type); \
-        }                                                                       \
-    } _editor_registrar_##Type##_instance;

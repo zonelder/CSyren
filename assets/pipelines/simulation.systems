@@ -1,0 +1,13 @@
+{
+    "systems": [
+        {
+            "class": "PhysicsSystem"
+        },
+        {
+            "class": "SpringJoinSystem"
+        },
+        {
+            "class": "AnimationSystem"
+        }
+    ]
+}

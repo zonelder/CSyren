@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Import after Microsoft.Cpp.targets (see CSyren.project.props). -->
+  <ItemGroup>
+    <ClCompile Include="$(CSyrenRegistryFile)" />
+    <ProjectReference Include="$(CSyrenRoot)source\csyren_host.vcxproj">
+      <Project>{7e2b4c61-3f5a-4d8e-9b1c-2a6d5e8f0c13}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(CSyrenRoot)lib\core\core.vcxproj">
+      <Project>{c2d419d8-5a36-4905-bf2f-7fbc3cd025e9}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(CSyrenRoot)lib\cstdmf\cstdmf.vcxproj">
+      <Project>{0a840a4e-eebd-4693-bb62-de598c61096e}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(CSyrenRoot)lib\math\math.vcxproj">
+      <Project>{0d2c554d-745f-4404-b4b1-e0673e01b7db}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(CSyrenRoot)lib\dx12_graphic\dx12_graphic.vcxproj">
+      <Project>{02615bfc-b339-45ba-bf9f-22820d9e80a2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(CSyrenRoot)lib\physics\physics.vcxproj">
+      <Project>{996e7bff-0176-4769-ad10-d9f68d3f755b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(CSyrenRoot)lib\imGui\imGui.vcxproj">
+      <Project>{98210ad8-65f1-42db-825c-e4cac78084d0}</Project>
+    </ProjectReference>
+  </ItemGroup>
+
+  <!-- Registry of CS_* markers (tools/csyren_registry.py). The file is rewritten only when
+       its content changes, so an unchanged registry does not recompile anything. -->
+  <Target Name="CSyrenGenerateRegistry" BeforeTargets="ClCompile;BuildGenerateSources">
+    <Exec Command="$(CSyrenPython) &quot;$(CSyrenRoot)tools\csyren_registry.py&quot; --out &quot;$(CSyrenRegistryFile)&quot; --roots &quot;$(CSyrenRegistryRoots)&quot; --include-dirs &quot;$(CSyrenIncludeDirs)&quot;"
+          CustomErrorRegularExpression="error CSR\d+" />
+  </Target>
+
+  <!-- DirectXTex / DirectXTK12 come from the engine's NuGet packages (restored by building CSyren.sln). -->
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(CSyrenRoot)packages\directxtex_uwp.2025.7.10.1\build\native\directxtex_uwp.targets" Condition="Exists('$(CSyrenRoot)packages\directxtex_uwp.2025.7.10.1\build\native\directxtex_uwp.targets')" />
+    <Import Project="$(CSyrenRoot)packages\directxtk12_uwp.2025.7.10.1\build\native\directxtk12_uwp.targets" Condition="Exists('$(CSyrenRoot)packages\directxtk12_uwp.2025.7.10.1\build\native\directxtk12_uwp.targets')" />
+  </ImportGroup>
+  <Target Name="CSyrenCheckPackages" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('$(CSyrenRoot)packages\directxtex_uwp.2025.7.10.1\build\native\directxtex_uwp.targets') Or !Exists('$(CSyrenRoot)packages\directxtk12_uwp.2025.7.10.1\build\native\directxtk12_uwp.targets')"
+           Text="CSyren NuGet packages are missing in $(CSyrenRoot)packages. Restore them by building $(CSyrenRoot)CSyren.sln once." />
+  </Target>
+</Project>

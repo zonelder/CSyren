@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include "scene_storage.h"
+#include "core/registration.h"
 
 namespace csyren::core
 {
@@ -49,6 +50,7 @@ namespace csyren
         RequestType type;
         std::string path;
     };
+    CS_COMPONENT(SceneLoaderRequest);
 
     class Serializer
     {

@@ -10,6 +10,7 @@
 #include "dx12_graphic/renderer.h"
 #include "dx12_graphic/lighting/light_components.h"
 #include "dx12_graphic/lighting/scene_lights.h"
+#include "core/registration.h"
 
 namespace csyren::render
 {
@@ -93,5 +94,5 @@ namespace csyren::render
     private:
         core::WorldTransforms _worlds;
     };
-    REGISTER_SYSTEM(LightCollectSystem)
+    CS_SYSTEM(LightCollectSystem);
 }

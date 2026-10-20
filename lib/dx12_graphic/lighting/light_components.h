@@ -4,6 +4,7 @@
 // the direction light travels (directional lights).
 #include "math/math.h"
 #include "core/reflected_enum.h"
+#include "core/registration.h"
 
 namespace csyren::render
 {
@@ -17,6 +18,7 @@ namespace csyren::render
         bool enabled = true;
         static void describe();
     };
+    CS_COMPONENT(DirectionalLight);
 
     struct PointLight
     {
@@ -26,6 +28,7 @@ namespace csyren::render
         bool enabled = true;
         static void describe();
     };
+    CS_COMPONENT(PointLight);
 
     // Scene-wide lighting/post-processing settings. Put one on any entity;
     // the first one found is used, defaults apply when none exists.
@@ -38,4 +41,5 @@ namespace csyren::render
         LightingDebugView debugView = LightingDebugView::Lit;
         static void describe();
     };
+    CS_COMPONENT(LightingSettings);
 }

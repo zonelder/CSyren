@@ -1,5 +1,6 @@
 #pragma once
 #include "core/system_base.h"
+#include "core/registration.h"
 
 namespace csyren::render
 {
@@ -17,7 +18,7 @@ namespace csyren::render
         void updateCamera();
         std::shared_ptr<details::PresentationState> _state;
     };
-    REGISTER_SYSTEM(FrameAcquireSystem)
+    CS_SYSTEM(FrameAcquireSystem);
 
     class FramePrepareSystem : public core::System
     {
@@ -31,5 +32,5 @@ namespace csyren::render
         std::shared_ptr<details::PresentationState> _state;
     };
 
-    REGISTER_SYSTEM(FramePrepareSystem)
+    CS_SYSTEM(FramePrepareSystem);
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "math/math.h"
+#include "registration.h"
 
 
 namespace csyren::core
@@ -17,6 +18,7 @@ namespace csyren::core
 
         static void describe();
     };
+    CS_COMPONENT(Transform);
 
 
 }

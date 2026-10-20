@@ -8,6 +8,7 @@
 #include "physics_layers.h"
 
 #include <vector>
+#include "core/registration.h"
 
 namespace csyren::physics
 {
@@ -61,6 +62,6 @@ namespace csyren::physics
         Impl* _pImpl;
     };
 
-    REGISTER_SYSTEM(PhysicsSystem);
+    CS_SYSTEM(PhysicsSystem);
 
 }

@@ -22,19 +22,23 @@ args = [str(msvc/'bin/Hostx64/x64/cl.exe'), '/nologo', '/std:c++20', '/EHsc', '/
     '/Ipackages/directxtex_uwp.2025.7.10.1/include', '/Ipackages/directxtk12_uwp.2025.7.10.1/include',
     '/Ipackages/Microsoft.Direct3D.D3D12.1.616.1/build/native/include',
     'test/render_tests/frame_graph_smoke.cpp', '/FoBuild/frame_graph_smoke.obj', '/FeBuild/Debug/frame_graph_smoke.exe',
-    '/link', '/SUBSYSTEM:CONSOLE', 'Build/CSyren/Intermediate/Debug/resource_manager.obj',
+    '/link', '/SUBSYSTEM:CONSOLE', 'Build/csyren_host/Intermediate/Debug/resource_manager.obj',
     'Build/Debug/core.lib', 'Build/Debug/math.lib', 'Build/Debug/dx12_graphic.lib',
     'packages/directxtex_uwp.2025.7.10.1/native/lib/x64/Debug/DirectXTex.lib',
     'packages/directxtk12_uwp.2025.7.10.1/native/lib/x64/Debug/DirectXTK12.lib',
     'd3d12.lib','dxgi.lib','dxguid.lib','d3dcompiler.lib','user32.lib','gdi32.lib','ole32.lib','windowscodecs.lib']
 executable = root/'Build/Debug/frame_graph_smoke.exe'
 if '--application' in sys.argv:
-    args.insert(args.index('/Ilib'), '/I.')
+    for include in ('/Isource/host', '/Isource/editor', '/Isource/runtime', '/I.'):
+        args.insert(args.index('/Ilib'), include)
     args[args.index('test/render_tests/frame_graph_smoke.cpp')] = 'test/render_tests/application_graph_smoke.cpp'
     args[args.index('/FoBuild/frame_graph_smoke.obj')] = '/FoBuild/application_graph_smoke.obj'
     args[args.index('/FeBuild/Debug/frame_graph_smoke.exe')] = '/FeBuild/Debug/application_graph_smoke.exe'
-    args.remove('Build/CSyren/Intermediate/Debug/resource_manager.obj')
-    args += [str(p.relative_to(root)) for p in (root/'Build/CSyren/Intermediate/Debug').glob('*.obj') if p.stem.lower() != 'winmain']
+    args.remove('Build/csyren_host/Intermediate/Debug/resource_manager.obj')
+    # Engine host objects (without WinMain) + the executable's own objects: the generated registry
+    # and game/. Listed by name: Build/CSyren may still hold objects of files that moved to source/.
+    args += [str(p.relative_to(root)) for p in (root/'Build/csyren_host/Intermediate/Debug').glob('*.obj') if p.stem.lower() != 'winmain']
+    args += ['Build/CSyren/Intermediate/Debug/registry.gen.obj', 'Build/CSyren/Intermediate/Debug/game_components.obj']
     args += ['Build/Debug/physics.lib', 'Build/Debug/Jolt.lib', 'Build/Debug/imGui.lib', 'Build/Debug/cstdmf.lib']
     executable = root/'Build/Debug/application_graph_smoke.exe'
 log = root/'Build/frame_graph_smoke_build.log'

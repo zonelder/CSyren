@@ -27,19 +27,19 @@
 #include "core/transform.h"
 #include "core/camera_service.h"
 
-#include "core/input_dispatch_system.h"
-#include "mesh_render_system.h"
-#include "editor_camera_controller_system.h"
-#include "scene_loader.h"
+#include "core/registration.h"
+#include "core/devices.h"
+#include "cstdmf/file_system.h"
+#include "dx12_graphic/renderer.h"
+#include <limits>
 #include "scene_session.h"
 #include "editor_viewport_state.h"
+#include "editor_selection.h"
+#include "editor_base.h"
 
 
-#include "physics/rigid_body.h"
-#include "physics/colliders.h"
-#include "physics/spring_join.h"
-
-#include "physics/spring_join_system.h"
+#include "physics/physic_system.h"
+#include "physics/physics_layers.h"
 
 #include "dx12_graphic/texture.h"
 
@@ -48,16 +48,10 @@
 #include "dx12_graphic/pso_factory.h"
 
 
-#include "system_registrator.h"
 #include "dx12_graphic/lighting/scene_lights.h"
 #include "statistic_monitor.h"
-
-#include "math_editor.h"
-
-#include "component_registrator.h"
 #include "editor_overlays.h"
-#include "game/player_input.h"
-#include "game/game_hud.h"
+#include "scene_storage.h"
 
 namespace csyren
 {
@@ -96,7 +90,7 @@ namespace csyren
 		using namespace core;
 		
 		core::details::ServiceRegistry::create<core::ProjectPaths>(_project.paths());
-        registerAllComponents();
+		generated::registerTypes(); // build/generated/registry.gen.cpp (tools/csyren_registry.py)
 		editor::EditorRegistry::resolveAll();
 		core::details::TimeHandler timeHandler;
 
@@ -130,9 +124,7 @@ namespace csyren
 		core::details::ServiceRegistry::create<editor::EditorSelection>();
 		core::details::ServiceRegistry::create<StatisticMonitor>();
 		core::details::ServiceRegistry::create<editor::EditorOverlays>();
-		core::details::ServiceRegistry::create<game::PlayerInput>();
-		core::details::ServiceRegistry::create<game::GameHud>();
-		core::details::ServiceRegistry::create<game::ViewModelState>();
+		generated::createServices(); // CS_SERVICE entries of the engine and the project
 
 
 

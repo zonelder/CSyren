@@ -1,0 +1,54 @@
+{
+    "phases": [
+        {
+            "name": "input"
+        },
+        {
+            "name": "scene",
+            "after": [
+                "input"
+            ]
+        },
+        {
+            "name": "simulation",
+            "after": [
+                "scene"
+            ]
+        },
+        {
+            "name": "acquire",
+            "after": [
+                "simulation"
+            ]
+        },
+        {
+            "name": "prepare",
+            "after": [
+                "acquire"
+            ]
+        },
+        {
+            "name": "render",
+            "after": [
+                "prepare"
+            ]
+        },
+        {
+            "name": "submit",
+            "after": [
+                "render"
+            ]
+        },
+        {
+            "name": "events",
+            "after": [
+                "submit"
+            ]
+        }
+    ],
+    "systems": [
+        {
+            "class": "InputDispatchSystem"
+        }
+    ]
+}

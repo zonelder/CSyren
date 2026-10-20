@@ -121,6 +121,9 @@
     <ClInclude Include="reflected_enum.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="registration.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="archive.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="meta_archive.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="meta_json.h"><Filter>Header Files</Filter></ClInclude>

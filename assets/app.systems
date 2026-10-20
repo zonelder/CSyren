@@ -1,7 +1,7 @@
 {
     "systems": [
         {
-            "class": "InputDispatchSystem"
+            "include": "engine:/pipelines/begin.systems"
         },
         {
             "class": "PlayerInputSystem"
@@ -13,13 +13,7 @@
             "class": "PilotMovementSystem"
         },
         {
-            "class": "PhysicsSystem"
-        },
-        {
-            "class": "SpringJoinSystem"
-        },
-        {
-            "class": "AnimationSystem"
+            "include": "engine:/pipelines/simulation.systems"
         },
         {
             "class": "CameraRigSystem"
@@ -43,84 +37,7 @@
             "class": "GameHudSystem"
         },
         {
-            "class": "RenderEnvironmentSystem"
-        },
-        {
-            "class": "LightCollectSystem"
-        },
-        {
-            "class": "FrameAcquireSystem"
-        },
-        {
-            "class": "FramePrepareSystem"
-        },
-        {
-            "class": "MeshRenderSystem"
-        },
-        {
-            "class": "LightClusterSystem"
-        },
-        {
-            "class": "LightPassSystem"
-        },
-        {
-            "class": "ForwardRenderSystem"
-        },
-        {
-            "class": "TonemapSystem"
-        },
-        {
-            "class": "PresentationSystem"
-        },
-        {
-            "class": "SceneEventsSystem"
-        }
-    ],
-    "phases": [
-        {
-            "name": "input"
-        },
-        {
-            "name": "scene",
-            "after": [
-                "input"
-            ]
-        },
-        {
-            "name": "simulation",
-            "after": [
-                "scene"
-            ]
-        },
-        {
-            "name": "acquire",
-            "after": [
-                "simulation"
-            ]
-        },
-        {
-            "name": "prepare",
-            "after": [
-                "acquire"
-            ]
-        },
-        {
-            "name": "render",
-            "after": [
-                "prepare"
-            ]
-        },
-        {
-            "name": "submit",
-            "after": [
-                "render"
-            ]
-        },
-        {
-            "name": "events",
-            "after": [
-                "submit"
-            ]
+            "include": "engine:/pipelines/render.systems"
         }
     ]
 }

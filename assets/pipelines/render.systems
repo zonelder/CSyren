@@ -1,0 +1,37 @@
+{
+    "systems": [
+        {
+            "class": "RenderEnvironmentSystem"
+        },
+        {
+            "class": "LightCollectSystem"
+        },
+        {
+            "class": "FrameAcquireSystem"
+        },
+        {
+            "class": "FramePrepareSystem"
+        },
+        {
+            "class": "MeshRenderSystem"
+        },
+        {
+            "class": "LightClusterSystem"
+        },
+        {
+            "class": "LightPassSystem"
+        },
+        {
+            "class": "ForwardRenderSystem"
+        },
+        {
+            "class": "TonemapSystem"
+        },
+        {
+            "class": "PresentationSystem"
+        },
+        {
+            "class": "SceneEventsSystem"
+        }
+    ]
+}

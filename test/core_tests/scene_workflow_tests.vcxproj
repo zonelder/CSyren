@@ -25,7 +25,7 @@
     <ClCompile>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions><LanguageStandard>stdcpp20</LanguageStandard><WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)lib;$(SolutionDir);$(SolutionDir)lib\imGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)lib;$(SolutionDir)source\runtime;$(SolutionDir)source\editor;$(SolutionDir)source\host;$(SolutionDir);$(SolutionDir)lib\imGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary Condition="'$(Configuration)'=='Debug'">MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeLibrary Condition="'$(Configuration)'!='Debug'">MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
@@ -34,13 +34,13 @@
   <ItemGroup>
     <ClCompile Include="$(WorkflowTestSource)" />
     <ClCompile Include="resource_upload_tests.cpp" />
-    <ClCompile Include="..\..\scene_session.cpp" />
-    <ClCompile Include="..\..\serializer_scene.cpp" />
-    <ClCompile Include="..\..\meta_common.cpp" />
-    <ClCompile Include="..\..\serializer.cpp" />
-    <ClCompile Include="..\..\editor_base.cpp" />
-    <ClCompile Include="..\..\math_editor.cpp" />
-    <ClCompile Include="..\..\inspector_window.cpp" />
+    <ClCompile Include="..\..\source\editor\scene_session.cpp" />
+    <ClCompile Include="..\..\source\runtime\serializer_scene.cpp" />
+    <ClCompile Include="..\..\source\runtime\meta_common.cpp" />
+    <ClCompile Include="..\..\source\runtime\serializer.cpp" />
+    <ClCompile Include="..\..\source\editor\editor_base.cpp" />
+    <ClCompile Include="..\..\source\editor\math_editor.cpp" />
+    <ClCompile Include="..\..\source\editor\inspector_window.cpp" />
     <ClCompile Include="..\..\lib\dx12_graphic\resource_manager.cpp" />
   </ItemGroup>
   <ItemGroup>

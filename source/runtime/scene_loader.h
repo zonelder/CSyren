@@ -3,6 +3,7 @@
 #include "core/services.h"
 #include "scene_session.h"
 #include "serializer.h"
+#include "core/registration.h"
 
 namespace csyren
 {
@@ -55,5 +56,5 @@ namespace csyren
     private:
         std::vector<core::SubscriberToken> _tokens;
     };
-    REGISTER_SYSTEM(SceneLoaderSystem)
+    CS_SYSTEM(SceneLoaderSystem);
 }

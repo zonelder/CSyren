@@ -72,6 +72,14 @@ void buffer(ID3D12Device* device, D3D12_HEAP_TYPE heapType, D3D12_RESOURCE_STATE
         throw std::runtime_error("Create test buffer failed");
 }
 }
+// Engine systems are registered by the generated registry of an executable; this test
+// links only the libraries, so it registers the ones it uses itself.
+namespace csyren::render
+{
+    REGISTER_SYSTEM(FrameAcquireSystem)
+    REGISTER_SYSTEM(FramePrepareSystem)
+    REGISTER_SYSTEM(PresentationSystem)
+}
 int main() {
     REGISTER_COMPONENT(Camera); REGISTER_COMPONENT(Transform);
     details::ServiceRegistry::create<Window>(640, 480, L"FrameGraph integration test (hidden)");

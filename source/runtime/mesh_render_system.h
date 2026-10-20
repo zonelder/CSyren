@@ -10,6 +10,7 @@
 #include "core/transform_hierarchy.h"
 #include "mesh_filter.h"
 #include "math/math.h"
+#include "core/registration.h"
 
 namespace csyren
 {
@@ -85,7 +86,7 @@ namespace csyren
 
     };
 
-    REGISTER_SYSTEM(MeshRenderSystem)
+    CS_SYSTEM(MeshRenderSystem);
 }
 
 #endif

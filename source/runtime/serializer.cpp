@@ -1,4 +1,5 @@
 #include "serializer.h"
+#include <functional>
 #include "core/scene.h"
 #include "core/system_manager.h"
 #include "core/meta_json.h"
@@ -109,8 +110,15 @@ namespace csyren
     {
         try {
             std::vector<core::PhaseDescription> phases;
-            auto read = [&phases](const std::string& path) {
-                std::ifstream file(scenePath(path));
+            // A "systems" entry is {"class": ...} or {"include": "<systems file>"}; an include
+            // is replaced by that file's systems (in place) and its phases are merged.
+            std::vector<std::filesystem::path> stack;
+            std::function<nlohmann::json(const std::string&)> read = [&](const std::string& path) {
+                const auto resolved = scenePath(path).lexically_normal();
+                if (std::find(stack.begin(), stack.end(), resolved) != stack.end())
+                    throw std::runtime_error("Systems include cycle: " + path);
+                if (stack.size() >= 16) throw std::runtime_error("Systems includes nested too deep: " + path);
+                std::ifstream file(resolved);
                 if (!file) throw std::runtime_error("Cannot open systems configuration: " + path);
                 auto data = nlohmann::json::parse(file);
                 if (!data.contains("systems") || !data["systems"].is_array())
@@ -122,7 +130,16 @@ namespace csyren
                     description.before = phase.value("before", std::vector<std::string>{});
                     if (std::none_of(phases.begin(), phases.end(), [&](const auto& p) { return p.name == description.name; })) phases.push_back(std::move(description));
                 }
-                return data["systems"];
+                stack.push_back(resolved);
+                auto systems = nlohmann::json::array();
+                for (const auto& entry : data["systems"]) {
+                    if (!entry.contains("include")) { systems.push_back(entry); continue; }
+                    if (entry.size() != 1 || !entry["include"].is_string())
+                        throw std::runtime_error("An include entry must be {\"include\": \"<file>\"}: " + path);
+                    for (const auto& included : read(entry["include"].get<std::string>())) systems.push_back(included);
+                }
+                stack.pop_back();
+                return systems;
             };
             core::SystemConfiguration configuration;
             auto validate = [](const std::string& name) {

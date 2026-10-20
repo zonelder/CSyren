@@ -11,7 +11,7 @@
 #include "core/camera_service.h"
 #include "core/time.h"
 #include "core/camera.h"
-#include "renderer.h"
+#include "dx12_graphic/renderer.h"
 #include "math/matrix4x4.h"
 
 #include "imGui/imgui.h"
@@ -28,6 +28,7 @@
 #include "scene_viewport.h"
 #include "editor_layout.h"
 #include "editor_overlays.h"
+#include "core/registration.h"
 
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -231,10 +232,9 @@ namespace csyren::editor
         SceneViewport _gameViewport;
         std::unique_ptr<SceneWorkflowWindow> _workflow;
 		std::vector<std::unique_ptr<BaseEditorWindow>> _windows;
-		static std::vector<render::DescriptorAllocation> s_imguiAllocations;
+		inline static std::vector<render::DescriptorAllocation> s_imguiAllocations;
 	};
 
-	std::vector<render::DescriptorAllocation> EditorSystem::s_imguiAllocations{};
-	REGISTER_SYSTEM(EditorSystem)
+	CS_SYSTEM(EditorSystem);
 }
 

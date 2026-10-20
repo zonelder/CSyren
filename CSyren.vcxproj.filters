@@ -1,185 +1,176 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
-    <Filter Include="component">
-      <UniqueIdentifier>{e5f2edb3-e8f7-4600-9d51-e975f6cd2e85}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="system">
-      <UniqueIdentifier>{06ed759e-1b66-45fb-825b-fa2d9d3914a8}</UniqueIdentifier>
-    </Filter>
     <Filter Include="game">
-      <UniqueIdentifier>{7a1d3c42-5b0e-4f7a-9c21-2f6d8e9b4a10}</UniqueIdentifier>
+      <UniqueIdentifier>{8f1c2d3e-4a5b-4c6d-9e7f-0a1b2c3d4e5f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="transitional">
+      <UniqueIdentifier>{9a2d3e4f-5b6c-4d7e-8f90-1b2c3d4e5f60}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="assets">
+      <UniqueIdentifier>{0b3e4f50-6c7d-4e8f-9a01-2c3d4e5f6071}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tools">
+      <UniqueIdentifier>{1c4f5061-7d8e-4f90-ab12-3d4e5f607182}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="docs">
+      <UniqueIdentifier>{2d506172-8e9f-40a1-bc23-4e5f60718293}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="project">
+      <UniqueIdentifier>{3e617283-9fa0-41b2-cd34-5f60718293a4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="WinMain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="application.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="serializer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="serializer_scene.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="scene_session.cpp"><Filter>Source Files</Filter></ClCompile>
-    <ClCompile Include="lib\dx12_graphic\resource_manager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="meta_common.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="math_editor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="editor_base.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="inspector_window.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="mesh_filter.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="editor_camera_controller.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="component_registrator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="game\game_components.cpp">
       <Filter>game</Filter>
     </ClCompile>
-    <ClCompile Include="animation.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
+    <ClInclude Include="game_registration.h">
+      <Filter>game</Filter>
+    </ClInclude>
     <ClInclude Include="mesh_filter.h">
-      <Filter>component</Filter>
+      <Filter>transitional</Filter>
     </ClInclude>
-    <ClInclude Include="mesh_render_system.h">
-      <Filter>system</Filter>
+    <ClInclude Include="animation.h">
+      <Filter>transitional</Filter>
     </ClInclude>
-    <ClInclude Include="forward_render_system.h">
-      <Filter>system</Filter>
+    <ClInclude Include="editor_overlays.h">
+      <Filter>transitional</Filter>
     </ClInclude>
-    <ClInclude Include="application.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="editor_camera_controller_system.h">
-      <Filter>system</Filter>
-    </ClInclude>
-    <ClInclude Include="editor_camera_controller.h">
-      <Filter>component</Filter>
+    <ClInclude Include="editor_viewport_state.h">
+      <Filter>transitional</Filter>
     </ClInclude>
     <ClInclude Include="todo.h">
-      <Filter>component</Filter>
+      <Filter>transitional</Filter>
     </ClInclude>
-    <ClInclude Include="scene_loader.h">
-      <Filter>system</Filter>
+    <ClInclude Include="game\bot_system.h">
+      <Filter>game</Filter>
     </ClInclude>
-    <ClInclude Include="serializer.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="game\camera_rig_system.h">
+      <Filter>game</Filter>
     </ClInclude>
-    <ClInclude Include="system_registrator.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="game\game_components.h">
+      <Filter>game</Filter>
     </ClInclude>
-    <ClInclude Include="scene_hierarchy.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="game\game_hud.h">
+      <Filter>game</Filter>
     </ClInclude>
-    <ClInclude Include="base_editor_window.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="game\game_materials.h">
+      <Filter>game</Filter>
     </ClInclude>
-    <ClInclude Include="inspector_window.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="game\game_physics.h">
+      <Filter>game</Filter>
     </ClInclude>
-    <ClInclude Include="editor_selection.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="game\pilot_movement_system.h">
+      <Filter>game</Filter>
     </ClInclude>
-    <ClInclude Include="system_window.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="game\player_input.h">
+      <Filter>game</Filter>
     </ClInclude>
-    <ClInclude Include="statistic_window.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="game\player_input_system.h">
+      <Filter>game</Filter>
     </ClInclude>
-    <ClInclude Include="statistic_monitor.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="game\projectile_system.h">
+      <Filter>game</Filter>
     </ClInclude>
-    <ClInclude Include="meta_common.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="game\view_model_system.h">
+      <Filter>game</Filter>
     </ClInclude>
-    <ClInclude Include="editor_base.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="game\weapon_system.h">
+      <Filter>game</Filter>
     </ClInclude>
-    <ClInclude Include="math_editor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="component_registrator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="scene_session.h"><Filter>Header Files</Filter></ClInclude>
-    <ClInclude Include="scene_storage.h"><Filter>Header Files</Filter></ClInclude>
-    <ClInclude Include="editor_commands.h"><Filter>Header Files</Filter></ClInclude>
-    <ClInclude Include="scene_workflow_window.h"><Filter>Header Files</Filter></ClInclude>
-    <ClInclude Include="project_settings.h"><Filter>Header Files</Filter></ClInclude>
-    <ClInclude Include="startup_options.h"><Filter>Header Files</Filter></ClInclude>
-    <ClInclude Include="render_environment_system.h"><Filter>system</Filter></ClInclude>
-    <ClInclude Include="editor_overlays.h"><Filter>Header Files</Filter></ClInclude>
-    <ClInclude Include="game\game_components.h"><Filter>game</Filter></ClInclude>
-    <ClInclude Include="game\game_materials.h"><Filter>game</Filter></ClInclude>
-    <ClInclude Include="game\game_physics.h"><Filter>game</Filter></ClInclude>
-    <ClInclude Include="game\player_input.h"><Filter>game</Filter></ClInclude>
-    <ClInclude Include="game\player_input_system.h"><Filter>game</Filter></ClInclude>
-    <ClInclude Include="game\pilot_movement_system.h"><Filter>game</Filter></ClInclude>
-    <ClInclude Include="game\camera_rig_system.h"><Filter>game</Filter></ClInclude>
-    <ClInclude Include="game\weapon_system.h"><Filter>game</Filter></ClInclude>
-    <ClInclude Include="game\projectile_system.h"><Filter>game</Filter></ClInclude>
-    <ClInclude Include="game\bot_system.h"><Filter>game</Filter></ClInclude>
-    <ClInclude Include="game\game_hud.h"><Filter>game</Filter></ClInclude>
-    <ClInclude Include="game\view_model_system.h"><Filter>game</Filter></ClInclude>
-    <ClInclude Include="animation.h"><Filter>component</Filter></ClInclude>
-    <ClInclude Include="animation_system.h"><Filter>system</Filter></ClInclude>
-    <ClInclude Include="model_instantiator.h"><Filter>Header Files</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="CSyren.csyrenproj"><Filter>Resource Files</Filter></None>
-    <None Include="assets\app.systems"><Filter>Resource Files</Filter></None>
-    <None Include="assets\editor.systems"><Filter>Resource Files</Filter></None>
-    <None Include="assets\movement_polygon.scene"><Filter>Resource Files</Filter></None>
-    <None Include="tools\gen_polygon_scene.py"><Filter>Resource Files</Filter></None>
-    <None Include="docs\game_prototype.md"><Filter>Resource Files</Filter></None>
-    <None Include="docs\asset_pipeline.md"><Filter>Resource Files</Filter></None>
-    <None Include="tools\make_weapon_models.py"><Filter>Resource Files</Filter></None>
-    <None Include="assets\models\rifle.glb"><Filter>Resource Files</Filter></None>
-    <None Include="assets\models\launcher.glb"><Filter>Resource Files</Filter></None>
-    <None Include="assets\shaders\lit.shader"><Filter>Resource Files</Filter></None>
-    <None Include="assets\shaders\lit_texture.shader"><Filter>Resource Files</Filter></None>
-    <None Include="assets\shaders\lighting.hlsli"><Filter>Resource Files</Filter></None>
-    <None Include="assets\shaders\gbuffer.hlsli"><Filter>Resource Files</Filter></None>
-    <None Include="assets\shaders\forward_lit.shader"><Filter>Resource Files</Filter></None>
-    <None Include="assets\shaders\light_pass.shader"><Filter>Resource Files</Filter></None>
-    <None Include="assets\shaders\tonemap.shader"><Filter>Resource Files</Filter></None>
-    <None Include="assets\shaders\light_cluster.coshader"><Filter>Resource Files</Filter></None>
-    <None Include="docs\rendering.md"><Filter>Resource Files</Filter></None>
-    <None Include="docs\physics_layers.md"><Filter>Resource Files</Filter></None>
-    <None Include="docs\reflection.md"><Filter>Resource Files</Filter></None>
+    <None Include="packages.config">
+      <Filter>project</Filter>
+    </None>
+    <None Include="CSyren.csyrenproj">
+      <Filter>project</Filter>
+    </None>
+    <None Include="CSyren.paths.props">
+      <Filter>project</Filter>
+    </None>
+    <None Include="CSyren.project.props">
+      <Filter>project</Filter>
+    </None>
+    <None Include="CSyren.project.targets">
+      <Filter>project</Filter>
+    </None>
+    <None Include="assets\app.systems">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="assets\editor.systems">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="assets\pipelines\begin.systems">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="assets\pipelines\simulation.systems">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="assets\pipelines\render.systems">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="assets\pipelines\editor.systems">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="assets\movement_polygon.scene">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="assets\models\rifle.glb">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="assets\models\launcher.glb">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="assets\shaders\lit.shader">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="assets\shaders\lit_texture.shader">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="assets\shaders\lighting.hlsli">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="assets\shaders\gbuffer.hlsli">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="assets\shaders\forward_lit.shader">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="assets\shaders\light_pass.shader">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="assets\shaders\tonemap.shader">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="assets\shaders\light_cluster.coshader">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="tools\csyren_registry.py">
+      <Filter>tools</Filter>
+    </None>
+    <None Include="tools\gen_polygon_scene.py">
+      <Filter>tools</Filter>
+    </None>
+    <None Include="tools\make_weapon_models.py">
+      <Filter>tools</Filter>
+    </None>
+    <None Include="docs\game_prototype.md">
+      <Filter>docs</Filter>
+    </None>
+    <None Include="docs\asset_pipeline.md">
+      <Filter>docs</Filter>
+    </None>
+    <None Include="docs\rendering.md">
+      <Filter>docs</Filter>
+    </None>
+    <None Include="docs\physics_layers.md">
+      <Filter>docs</Filter>
+    </None>
+    <None Include="docs\reflection.md">
+      <Filter>docs</Filter>
+    </None>
   </ItemGroup>
 </Project>

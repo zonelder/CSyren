@@ -8,6 +8,7 @@
 #include "rigid_body.h"
 #include "spring_join.h"
 #include "physic_system.h"
+#include "core/registration.h"
 
 namespace csyren::physics
 {
@@ -56,5 +57,5 @@ namespace csyren::physics
 		}
 	};
 
-	REGISTER_SYSTEM(SpringJoinSystem)
+	CS_SYSTEM(SpringJoinSystem);
 }

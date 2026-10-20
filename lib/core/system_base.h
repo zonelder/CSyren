@@ -85,6 +85,9 @@ namespace csyren::core
 	}
 }
 
+// Static self-registration for systems defined in a .cpp that is compiled
+// straight into an executable (tests, the transitional game/ code). Engine and
+// project systems use the CS_SYSTEM marker (core/registration.h) instead.
 #define REGISTER_SYSTEM(SystemClass) \
     namespace { \
         struct SystemClass##_Registrar { \

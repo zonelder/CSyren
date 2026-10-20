@@ -353,6 +353,38 @@ void systemsConfiguration()
     registry.registerSystem("ConfigShared", [shared] { return shared; });
 }
 
+void systemsIncludes()
+{
+    auto& registry = core::details::SystemRegistry::instance();
+    for (const auto* name : { "IncludeFirst", "IncludeInner", "IncludeLast", "IncludeEditor" })
+        registry.registerSystem(name, [] { return std::make_shared<Probe>(); });
+    const auto directory = std::filesystem::temp_directory_path() / (L"CSyren-include-" + std::to_wstring(GetCurrentProcessId()));
+    std::filesystem::create_directories(directory);
+    struct Cleanup { std::filesystem::path directory; ~Cleanup() { std::error_code ignored; std::filesystem::remove_all(directory, ignored); } } cleanup{ directory };
+    // Generic form ("C:/...") so the paths can be pasted into JSON strings without escaping.
+    auto utf8 = [](const auto& file) { auto path = file.generic_u8string(); return std::string(reinterpret_cast<const char*>(path.data()), path.size()); };
+    const auto file = [&](const wchar_t* name, const std::string& text) { std::ofstream(directory / name) << text; return utf8(directory / name); };
+    const auto inner = file(L"inner.systems", R"({"phases":[{"name":"simulation"}],"systems":[{"class":"IncludeInner"}]})");
+    const auto app = file(L"app.systems", R"({"systems":[{"class":"IncludeFirst"},{"include":")" + inner + R"("},{"class":"IncludeLast"}]})");
+    const auto editorInner = file(L"editor_inner.systems", R"({"systems":[{"class":"IncludeEditor","scene":"active"}]})");
+    const auto editor = file(L"editor.systems", R"({"systems":[{"include":")" + editorInner + R"("}]})");
+    MemoryStorage storage; SceneSession session(storage); SystemManager manager; Serializer serializer;
+    session.setBind([&](auto document, auto active, bool playing) { manager.bind(document, active, playing); });
+    CHECK(serializer.loadSystems(app, editor, manager));
+    const auto& configuration = manager.configuration();
+    CHECK((configuration.app == std::vector<std::string>{ "IncludeFirst", "IncludeInner", "IncludeLast" }));
+    CHECK(configuration.editor.size() == 1 && configuration.editor[0].name == "IncludeEditor");
+    CHECK(configuration.editor[0].scene == core::EditorSystemScene::Active);
+    CHECK(manager.phases().size() == 1 && manager.phases()[0].name == "simulation");
+    // Cycles and malformed include entries are rejected without changing the configuration.
+    const auto cycle = file(L"cycle.systems", R"({"systems":[{"include":")" + utf8(directory / L"cycle.systems") + R"("}]})");
+    CHECK(!serializer.loadSystems(cycle, editor, manager));
+    const auto malformed = file(L"malformed.systems", R"({"systems":[{"include":")" + inner + R"(","class":"IncludeLast"}]})");
+    CHECK(!serializer.loadSystems(malformed, editor, manager));
+    CHECK(manager.configuration().app.size() == 3);
+    manager.unbind(); manager.shutdown();
+}
+
 void systemGraphPreviews()
 {
     class PlanProbe final : public Probe {
@@ -1128,6 +1160,10 @@ protected:
         REGISTER_COMPONENT(BoxCollider);
         REGISTER_COMPONENT(ComponentResource);
         REGISTER_COMPONENT(Camera);
+        // Engine systems used by these tests (the executable's registry is generated; tests
+        // register what they need, like the components above).
+        core::details::SystemRegistry::instance().registerSystem("PhysicsSystem",
+            []() -> std::shared_ptr<System> { return std::make_shared<physics::PhysicsSystem>(); });
     }
     void TearDown() override
     {
@@ -1150,6 +1186,7 @@ TEST_F(SceneWorkflow, document_save_reload_play_history) { ASSERT_NO_THROW(docum
 TEST_F(SceneWorkflow, import_is_not_replace) { ASSERT_NO_THROW(importWorkflow()); }
 TEST_F(SceneWorkflow, system_lifecycle) { ASSERT_NO_THROW(systemLifecycle()); }
 TEST_F(SceneWorkflow, systems_configuration) { ASSERT_NO_THROW(systemsConfiguration()); }
+TEST_F(SceneWorkflow, systems_includes) { ASSERT_NO_THROW(systemsIncludes()); }
 TEST_F(SceneWorkflow, system_graph_previews) { ASSERT_NO_THROW(systemGraphPreviews()); }
 TEST_F(SceneWorkflow, physics_play_stop) { ASSERT_NO_THROW(physicsLifecycle()); }
 TEST_F(SceneWorkflow, atomic_file_save) { ASSERT_NO_THROW(fileStorage()); }

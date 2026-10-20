@@ -7,6 +7,7 @@
 #include "dx12_graphic/resource_manager.h"
 #include "dx12_graphic/camera_render_target.h"
 #include "dx12_graphic/lighting/fullscreen_pass.h"
+#include "core/registration.h"
 
 namespace csyren::render
 {
@@ -42,5 +43,5 @@ namespace csyren::render
     private:
         FullscreenPass _pass;
     };
-    REGISTER_SYSTEM(TonemapSystem)
+    CS_SYSTEM(TonemapSystem);
 }

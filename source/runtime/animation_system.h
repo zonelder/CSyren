@@ -15,6 +15,7 @@
 #include "dx12_graphic/resource_manager.h"
 #include "dx12_graphic/animation_clip.h"
 #include "animation.h"
+#include "core/registration.h"
 
 namespace csyren
 {
@@ -94,5 +95,5 @@ namespace csyren
         std::unordered_map<core::Entity::ID, std::unordered_map<std::string, core::Entity::ID>> _targets;
     };
 
-    REGISTER_SYSTEM(AnimationSystem)
+    CS_SYSTEM(AnimationSystem);
 }

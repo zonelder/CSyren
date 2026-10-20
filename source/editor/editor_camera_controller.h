@@ -1,4 +1,5 @@
 #pragma once
+#include "core/registration.h"
 
 
 namespace csyren
@@ -10,4 +11,5 @@ namespace csyren
 
 		static void describe();
 	};
+	CS_COMPONENT(EditorCameraController);
 }

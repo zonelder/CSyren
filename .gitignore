@@ -89,3 +89,7 @@ bld/
 *packages
 # Per-user editor layout
 imgui.ini
+
+# Generated registry and per-project build output
+/build/
+__pycache__/

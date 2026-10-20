@@ -12,6 +12,7 @@
 
 #include "editor_camera_controller.h"
 #include "editor_viewport_state.h"
+#include "core/registration.h"
 
 namespace csyren
 {
@@ -108,5 +109,5 @@ namespace csyren
 
     };
 
-	REGISTER_SYSTEM(EditorCameraControllerSystem);
+	CS_SYSTEM(EditorCameraControllerSystem);
 }

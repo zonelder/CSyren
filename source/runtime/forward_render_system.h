@@ -17,6 +17,7 @@
 #include "dx12_graphic/mesh.h"
 #include "dx12_graphic/lighting/scene_lights.h"
 #include "mesh_filter.h"
+#include "core/registration.h"
 
 namespace csyren::render
 {
@@ -106,5 +107,5 @@ namespace csyren::render
             for (const auto& item : transparent) draw(item);
         }
     };
-    REGISTER_SYSTEM(ForwardRenderSystem)
+    CS_SYSTEM(ForwardRenderSystem);
 }

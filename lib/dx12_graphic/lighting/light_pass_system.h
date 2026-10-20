@@ -9,6 +9,7 @@
 #include "dx12_graphic/camera_render_target.h"
 #include "dx12_graphic/lighting/scene_lights.h"
 #include "dx12_graphic/lighting/fullscreen_pass.h"
+#include "core/registration.h"
 
 namespace csyren::render
 {
@@ -56,5 +57,5 @@ namespace csyren::render
     private:
         FullscreenPass _pass;
     };
-    REGISTER_SYSTEM(LightPassSystem)
+    CS_SYSTEM(LightPassSystem);
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include "resource_handle.h"
 #include "core/meta.h"
+#include "core/registration.h"
 #include <optional>
 #include <unordered_map>
 #include <vector>
@@ -33,4 +34,11 @@ namespace csyren::render
     };
     void describeResourceHandleMeta();
     void attachResources(core::SerializationContext&, ResourceManager&);
+
+    // Reflection of the resource handle types (MeshHandle, MaterialHandle, ...).
+    struct ResourceHandleMetaDescriber
+    {
+        static void describe() { describeResourceHandleMeta(); }
+    };
+    CS_REFLECT(ResourceHandleMetaDescriber);
 }

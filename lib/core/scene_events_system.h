@@ -1,6 +1,7 @@
 #pragma once
 #include "system_base.h"
 #include "scene.h"
+#include "registration.h"
 namespace csyren::core {
 class SceneEventsSystem final : public System {
 public:
@@ -11,5 +12,5 @@ public:
     }
     void execute() override { Services::get<EventBus2>()->commit_batch(); }
 };
-REGISTER_SYSTEM(SceneEventsSystem)
+CS_SYSTEM(SceneEventsSystem);
 }

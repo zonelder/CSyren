@@ -3,7 +3,7 @@
 #include "core/meta_archive.h"
 #include "core/meta_json.h"
 #include "core/scene_serialization_context.h"
-#include "../../serializer.h"
+#include "serializer.h"
 #include <cassert>
 #include <iostream>
 

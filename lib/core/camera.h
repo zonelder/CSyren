@@ -3,6 +3,7 @@
 #include "math/vector4.h"
 #include "reflected_enum.h"
 #include <algorithm>
+#include "registration.h"
 
 namespace csyren::core
 {
@@ -45,5 +46,6 @@ namespace csyren::core
 
 		static void describe();
 	};
+	CS_COMPONENT(Camera);
 
 }

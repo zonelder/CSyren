@@ -4,6 +4,7 @@
 #include "math/math.h"
 #include "core/reflected_enum.h"
 #include "physics_layers.h"
+#include "core/registration.h"
 
 namespace csyren::physics
 {
@@ -25,4 +26,5 @@ namespace csyren::physics
 
 		static void describe();
 	};
+	CS_COMPONENT(RigidBody);
 }

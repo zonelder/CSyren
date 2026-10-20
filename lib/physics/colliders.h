@@ -1,5 +1,6 @@
 #pragma once
 #include "math/math.h"
+#include "core/registration.h"
 
 
 namespace csyren::physics
@@ -13,6 +14,7 @@ namespace csyren::physics
 
 		static void describe();
 	};
+	CS_COMPONENT(BoxCollider);
 
 	struct SphereCollider
 	{
@@ -22,6 +24,7 @@ namespace csyren::physics
 
 		static void describe();
 	};
+	CS_COMPONENT(SphereCollider);
 
 	struct CapsuleCollider
 	{
@@ -33,4 +36,5 @@ namespace csyren::physics
 
 		static void describe();
 	};
+	CS_COMPONENT(CapsuleCollider);
 }

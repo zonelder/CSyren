@@ -1,5 +1,6 @@
 #pragma once
 #include "core/system_base.h"
+#include "core/registration.h"
 
 namespace csyren::render
 {
@@ -17,5 +18,5 @@ namespace csyren::render
         std::shared_ptr<details::PresentationState> _state;
     };
 
-    REGISTER_SYSTEM(PresentationSystem)
+    CS_SYSTEM(PresentationSystem);
 }

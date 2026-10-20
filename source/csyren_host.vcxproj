@@ -1,0 +1,152 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Engine host: Application, WinMain, editor and runtime code (source/runtime, source/editor,
+       source/host). Linked into every project executable together with the generated registry
+       (see CSyren.project.props / .targets). -->
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <CSyrenRoot Condition="'$(CSyrenRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\'))</CSyrenRoot>
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{7E2B4C61-3F5A-4D8E-9B1C-2A6D5E8F0C13}</ProjectGuid>
+    <RootNamespace>csyren_host</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.22621.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <OutDir>$(CSyrenRoot)Build\$(Configuration)\</OutDir>
+    <IntDir>$(CSyrenRoot)Build\$(ProjectName)\Intermediate\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);NOMINMAX</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <AdditionalIncludeDirectories>$(CSyrenRoot)lib;$(CSyrenRoot)lib\imGui\;$(CSyrenRoot)lib\imGui\backends;$(CSyrenRoot)source\runtime;$(CSyrenRoot)source\editor;$(CSyrenRoot)source\host;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Lib />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);NOMINMAX</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <AdditionalIncludeDirectories>$(CSyrenRoot)lib;$(CSyrenRoot)lib\imGui\;$(CSyrenRoot)lib\imGui\backends;$(CSyrenRoot)source\runtime;$(CSyrenRoot)source\editor;$(CSyrenRoot)source\host;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Lib />
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="editor\editor_base.cpp" />
+    <ClCompile Include="editor\editor_camera_controller.cpp" />
+    <ClCompile Include="editor\inspector_window.cpp" />
+    <ClCompile Include="editor\math_editor.cpp" />
+    <ClCompile Include="editor\scene_session.cpp" />
+    <ClCompile Include="host\WinMain.cpp" />
+    <ClCompile Include="host\application.cpp" />
+    <ClCompile Include="runtime\animation.cpp" />
+    <ClCompile Include="runtime\mesh_filter.cpp" />
+    <ClCompile Include="runtime\meta_common.cpp" />
+    <ClCompile Include="runtime\serializer.cpp" />
+    <ClCompile Include="runtime\serializer_scene.cpp" />
+    <ClCompile Include="..\lib\dx12_graphic\resource_manager.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="editor\base_editor_window.h" />
+    <ClInclude Include="editor\editor_base.h" />
+    <ClInclude Include="editor\editor_camera_controller.h" />
+    <ClInclude Include="editor\editor_camera_controller_system.h" />
+    <ClInclude Include="editor\editor_commands.h" />
+    <ClInclude Include="editor\editor_layout.h" />
+    <ClInclude Include="editor\editor_overlays.h" />
+    <ClInclude Include="editor\editor_selection.h" />
+    <ClInclude Include="editor\editor_toolbar_layout.h" />
+    <ClInclude Include="editor\editor_transform_tools.h" />
+    <ClInclude Include="editor\editor_viewport_state.h" />
+    <ClInclude Include="editor\inspector_window.h" />
+    <ClInclude Include="editor\math_editor.h" />
+    <ClInclude Include="editor\scene_gizmo.h" />
+    <ClInclude Include="editor\scene_hierarchy.h" />
+    <ClInclude Include="editor\scene_picking.h" />
+    <ClInclude Include="editor\scene_session.h" />
+    <ClInclude Include="editor\scene_storage.h" />
+    <ClInclude Include="editor\scene_viewport.h" />
+    <ClInclude Include="editor\scene_workflow_window.h" />
+    <ClInclude Include="editor\start_render_system.h" />
+    <ClInclude Include="editor\statistic_window.h" />
+    <ClInclude Include="editor\system_window.h" />
+    <ClInclude Include="host\application.h" />
+    <ClInclude Include="host\project_settings.h" />
+    <ClInclude Include="host\startup_options.h" />
+    <ClInclude Include="runtime\animation.h" />
+    <ClInclude Include="runtime\animation_system.h" />
+    <ClInclude Include="runtime\forward_render_system.h" />
+    <ClInclude Include="runtime\mesh_filter.h" />
+    <ClInclude Include="runtime\mesh_render_system.h" />
+    <ClInclude Include="runtime\meta_common.h" />
+    <ClInclude Include="runtime\model_instantiator.h" />
+    <ClInclude Include="runtime\render_environment_system.h" />
+    <ClInclude Include="runtime\scene_loader.h" />
+    <ClInclude Include="runtime\serializer.h" />
+    <ClInclude Include="runtime\statistic_monitor.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\lib\core\core.vcxproj">
+      <Project>{c2d419d8-5a36-4905-bf2f-7fbc3cd025e9}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\lib\dx12_graphic\dx12_graphic.vcxproj">
+      <Project>{02615bfc-b339-45ba-bf9f-22820d9e80a2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\lib\physics\physics.vcxproj">
+      <Project>{996e7bff-0176-4769-ad10-d9f68d3f755b}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="..\CSyren.paths.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <!-- DirectXTex / DirectXTK12 headers (dx12_graphic/renderer.h, upload_context.h) from the
+       engine's NuGet packages, restored by building CSyren.sln. -->
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(CSyrenRoot)packages\directxtex_uwp.2025.7.10.1\build\native\directxtex_uwp.targets" Condition="Exists('$(CSyrenRoot)packages\directxtex_uwp.2025.7.10.1\build\native\directxtex_uwp.targets')" />
+    <Import Project="$(CSyrenRoot)packages\directxtk12_uwp.2025.7.10.1\build\native\directxtk12_uwp.targets" Condition="Exists('$(CSyrenRoot)packages\directxtk12_uwp.2025.7.10.1\build\native\directxtk12_uwp.targets')" />
+  </ImportGroup>
+  <Target Name="CSyrenHostCheckPackages" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('$(CSyrenRoot)packages\directxtex_uwp.2025.7.10.1\build\native\directxtex_uwp.targets') Or !Exists('$(CSyrenRoot)packages\directxtk12_uwp.2025.7.10.1\build\native\directxtk12_uwp.targets')"
+           Text="CSyren NuGet packages are missing in $(CSyrenRoot)packages. Restore them by building $(CSyrenRoot)CSyren.sln once." />
+  </Target>
+</Project>

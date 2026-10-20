@@ -11,6 +11,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
+    <!-- Engine root: projects may be built from another solution (see CSyren.project.props). -->
+    <CSyrenRoot Condition="'$(CSyrenRoot)'==''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\'))</CSyrenRoot>
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{c2d419d8-5a36-4905-bf2f-7fbc3cd025e9}</ProjectGuid>
@@ -47,12 +49,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)\Build\$(ProjectName)\Intermediate\$(Configuration)\</IntDir>
+    <OutDir>$(CSyrenRoot)Build\$(Configuration)\</OutDir>
+    <IntDir>$(CSyrenRoot)\Build\$(ProjectName)\Intermediate\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)\Build\$(ProjectName)\Intermediate\$(Configuration)\</IntDir>
+    <OutDir>$(CSyrenRoot)Build\$(Configuration)\</OutDir>
+    <IntDir>$(CSyrenRoot)\Build\$(ProjectName)\Intermediate\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -139,6 +141,7 @@
     <ClInclude Include="meta.h" />
     <ClInclude Include="meta_enum.h" />
     <ClInclude Include="reflected_enum.h" />
+    <ClInclude Include="registration.h" />
     <ClInclude Include="archive.h" />
     <ClInclude Include="meta_archive.h" />
     <ClInclude Include="meta_json.h" />

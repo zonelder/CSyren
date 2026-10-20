@@ -2,6 +2,7 @@
 #include <string>
 #include "math/math.h"
 #include "physics_layers.h"
+#include "core/registration.h"
 
 namespace csyren::physics
 {
@@ -44,4 +45,5 @@ namespace csyren::physics
 
 		static void describe();
 	};
+	CS_COMPONENT(CharacterController);
 }

@@ -7,6 +7,7 @@
 #include "dispatch_handle.h"
 
 #include <unordered_map>
+#include "registration.h"
 
 //todo make class a sender of
 // InputEvent
@@ -35,7 +36,7 @@ namespace csyren::core
 
 	};
 
-	REGISTER_SYSTEM(InputDispatchSystem)
+	CS_SYSTEM(InputDispatchSystem);
 }
 
 
