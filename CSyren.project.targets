@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Import after Microsoft.Cpp.targets (see CSyren.project.props). -->
+  <!-- core, dx12_graphic, physics and csyren_host are linked object by object
+       (UseLibraryDependencyInputs, CSyren.project.props) so their static initializers stay;
+       cstdmf, math and imGui do not need that and are linked as .lib files. -->
   <ItemGroup>
     <ClCompile Include="$(CSyrenRegistryFile)" />
     <ProjectReference Include="$(CSyrenRoot)source\csyren_host.vcxproj">
@@ -11,9 +14,11 @@
     </ProjectReference>
     <ProjectReference Include="$(CSyrenRoot)lib\cstdmf\cstdmf.vcxproj">
       <Project>{0a840a4e-eebd-4693-bb62-de598c61096e}</Project>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
     </ProjectReference>
     <ProjectReference Include="$(CSyrenRoot)lib\math\math.vcxproj">
       <Project>{0d2c554d-745f-4404-b4b1-e0673e01b7db}</Project>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
     </ProjectReference>
     <ProjectReference Include="$(CSyrenRoot)lib\dx12_graphic\dx12_graphic.vcxproj">
       <Project>{02615bfc-b339-45ba-bf9f-22820d9e80a2}</Project>
@@ -23,6 +28,7 @@
     </ProjectReference>
     <ProjectReference Include="$(CSyrenRoot)lib\imGui\imGui.vcxproj">
       <Project>{98210ad8-65f1-42db-825c-e4cac78084d0}</Project>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
     </ProjectReference>
   </ItemGroup>
 
