@@ -30,7 +30,6 @@
 #include "core/input_dispatch_system.h"
 #include "mesh_render_system.h"
 #include "editor_camera_controller_system.h"
-#include "debug_rotator_system.h"
 #include "scene_loader.h"
 #include "scene_session.h"
 #include "editor_viewport_state.h"

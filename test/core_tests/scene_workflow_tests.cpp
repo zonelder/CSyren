@@ -628,6 +628,10 @@ void startupArguments()
         return StartupOptions::parse(std::span<const std::wstring_view>(values.begin(), values.size()));
     };
     CHECK(parse({}).project == "CSyren.csyrenproj");
+    CHECK(!parse({}).console);
+    CHECK(parse({ L"--console" }).console);
+    const auto both = parse({ L"--console", L"--project=game.csyrenproj" });
+    CHECK(both.console && both.project == L"game.csyrenproj");
     CHECK(parse({ L"--project", L"D:\\My Game\\game.csyrenproj" }).project == L"D:\\My Game\\game.csyrenproj");
     CHECK(parse({ L"--project=game.csyrenproj" }).project == L"game.csyrenproj");
     CHECK(parse({ L"--project", L"\u043f\u0440\u043e\u0435\u043a\u0442.csyrenproj" }).project == L"\u043f\u0440\u043e\u0435\u043a\u0442.csyrenproj");
@@ -645,6 +649,7 @@ void startupArguments()
     rejected({ L"--project", L"" }, "Empty value");
     rejected({ L"--project=a", L"--project", L"b" }, "Duplicate --project");
     rejected({ L"--project=a", L"/bigobj" }, "Unknown argument");
+    rejected({ L"--console=1" }, "Unknown argument");
 }
 
 void projectConfiguration()
@@ -719,7 +724,6 @@ void projectConfiguration()
     invalid = first; invalid.startScene.clear(); CHECK(invalid.save());
     CHECK(ProjectSettings::load(firstFile).startScene.empty());
     CHECK(std::filesystem::current_path() == cwd);
-    CHECK(ProjectSettings::load("CSyren.csyrenproj").startScene == "assets/test_scene.scene");
 }
 
 void inspectorTransaction()

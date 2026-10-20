@@ -168,7 +168,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="base_resource.h" />
     <ClInclude Include="camera_render_target.h" />
     <ClInclude Include="camera_render_registry.h" />
     <ClInclude Include="camera_render_view.h" />
@@ -178,7 +177,6 @@
     <ClInclude Include="command_list.ipp" />
     <ClInclude Include="compute_shader.h" />
     <ClInclude Include="constant_buffer.h" />
-    <ClInclude Include="constant_buffer_manager.h" />
     <ClInclude Include="descriptor_allocation.h" />
     <ClInclude Include="descriptor_heap.h" />
     <ClInclude Include="descriptors.h" />
@@ -193,7 +191,6 @@
     <ClInclude Include="material.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="mesh_builder.h" />
-    <ClInclude Include="pass_data_manager.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="gpu_resources.h" />
 
@@ -205,13 +202,11 @@
     <ClInclude Include="primitives.h" />
     <ClInclude Include="renderer.h" />
     <ClInclude Include="render_queue.h" />
-    <ClInclude Include="resources.h" />
     <ClInclude Include="resource_handle.h" />
     <ClInclude Include="resource_handle_meta.h" />
     <ClInclude Include="resource_manager.h" />
     <ClInclude Include="resource_upload_pipeline.h" />
     <ClInclude Include="sampler_manager.h" />
-    <ClInclude Include="semantic_provider.h" />
     <ClInclude Include="serialize_base.h" />
     <ClInclude Include="serialize_common.h" />
     <ClInclude Include="shader.h" />
@@ -221,7 +216,6 @@
     <ClInclude Include="shader_parameter_binder.h" />
     <ClInclude Include="swap_chain.h" />
     <ClInclude Include="texture.h" />
-    <ClInclude Include="texture_creation_task.h" />
     <ClInclude Include="texture_upload_task.h" />
     <ClInclude Include="upload_context.h" />
     <ClInclude Include="upload_ring_buffer.h" />
@@ -233,7 +227,6 @@
     <ClCompile Include="command_list.cpp" />
     <ClCompile Include="constant_buffer.cpp" />
     <ClCompile Include="descriptors.cpp" />
-    <ClCompile Include="descriptor_heap_manager.cpp" />
     <ClCompile Include="material.cpp" />
     <ClCompile Include="mesh.cpp" />
     <ClCompile Include="pch.cpp">
@@ -260,7 +253,6 @@
     <ClCompile Include="shader_parameter_binder.cpp" />
     <ClCompile Include="swap_chain.cpp" />
     <ClCompile Include="texture.cpp" />
-    <ClCompile Include="texture_creation_task.cpp" />
     <ClCompile Include="texture_upload_task.cpp" />
     <ClCompile Include="upload_context.cpp" />
     <ClCompile Include="upload_ring_buffer.cpp" />

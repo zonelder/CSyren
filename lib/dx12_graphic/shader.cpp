@@ -149,7 +149,6 @@ namespace csyren::render
         return true;
     }
 
-    #pragma optimize("",off)
     void GraphicShader::linkSemantics()
     {
         _linkedBuffers.clear();

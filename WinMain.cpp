@@ -1,5 +1,3 @@
-#define CONSOLE_ENABLE
-
 #include <iostream>
 #include "cstdmf/window_clean.h"
 #include "application.h"
@@ -8,18 +6,22 @@
 #include "cstdmf/log.h"
 #pragma comment(lib, "shell32.lib")
 
+namespace
+{
+    // Console window for the log (std::cout). Enabled with --console.
+    void openConsole()
+    {
+        if (!AllocConsole()) return;
+        FILE* stream = nullptr;
+        freopen_s(&stream, "CONOUT$", "w", stdout);
+        freopen_s(&stream, "CONOUT$", "w", stderr);
+        std::cout.clear();
+        std::cerr.clear();
+    }
+}
 
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE pPrevInstance, LPSTR plCmdLine, INT nCmdShow)
 {
-
-#ifdef CONSOLE_ENABLE
-	FILE* conout = stdout;
-	AllocConsole();
-	AttachConsole(GetCurrentProcessId());
-	freopen_s(&conout, "CON", "w", stdout);
-	std::cout.sync_with_stdio(true);
-#endif
-
     std::filesystem::path logPath = "csyren.log";
     auto showFailure = [&](const std::string& reason) {
         const std::string message = reason + "\n\nLog: " + csyren::core::pathToUtf8(logPath);
@@ -48,6 +50,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE pPrevInstance, LPSTR plCmdLi
         std::vector<std::wstring_view> values;
         for (int i = 1; i < count; ++i) values.emplace_back(arguments[i]);
         const auto options = csyren::StartupOptions::parse(values);
+        if (options.console) openConsole();
         csyren::Application app;
         if (!app.init(options.project)) throw std::runtime_error("Application::init returned false");
         return app.run();

@@ -6,7 +6,6 @@
 
 #include "core/transform.h"
 #include "core/camera.h"
-#include "debug_rotator.h"
 
 #include "physics/colliders.h"
 #include "physics/rigid_body.h"
@@ -28,7 +27,6 @@ namespace csyren
 
 			REFLECT(MetaCommonDescriber);
 			render::describeResourceHandleMeta();
-			REGISTER_COMPONENT(DebugRotator);
 			REGISTER_COMPONENT(EditorCameraController);
 			REGISTER_COMPONENT(SceneLoaderRequest);
 		}
@@ -44,7 +42,7 @@ namespace csyren
 		{
 			using namespace csyren::physics;
 			REGISTER_COMPONENT(BoxCollider);
-			REGISTER_COMPONENT(SphereCollider);;
+			REGISTER_COMPONENT(SphereCollider);
 			REGISTER_COMPONENT(CapsuleCollider);
 			REGISTER_COMPONENT(RigidBody);
 		}

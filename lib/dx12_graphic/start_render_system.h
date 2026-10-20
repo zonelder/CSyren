@@ -59,7 +59,7 @@ namespace csyren::editor
             io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
             io.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
 			ImGui::StyleColorsDark();
-			auto window = core::Services::get<Window>();
+			auto window = core::Services::get<core::Window>();
 			HWND hwnd = window->hwnd();
 			ImGui_ImplWin32_Init(hwnd);
 
@@ -144,7 +144,7 @@ namespace csyren::editor
 		}
 		void execute() override
 		{
-            if (IsIconic(core::Services::get<Window>()->hwnd())) {
+            if (IsIconic(core::Services::get<core::Window>()->hwnd())) {
                 const float background[]{.08f,.08f,.09f,1};
                 core::Services::get<render::Renderer>()->clearColor(background);
                 auto& view = *core::Services::get<EditorViewportState>();

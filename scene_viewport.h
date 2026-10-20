@@ -51,7 +51,7 @@ namespace csyren::editor
             return result;
         }
         struct Hit { core::Entity::ID entity = core::Entity::invalidID; float distance = 0; };
-        static Hit raycast(core::Scene& scene, render::ResourceManager& resources, const PickRay& ray, bool trace = false)
+        static Hit raycast(core::Scene& scene, render::ResourceManager& resources, const PickRay& ray)
         {
             Hit result{ core::Entity::invalidID, ray.length };
             core::WorldTransforms worlds; worlds.update(scene);
@@ -60,14 +60,9 @@ namespace csyren::editor
                 const auto* mesh = resources.getMesh(filter.mesh);
                 float distance;
                 if (!mesh || !resources.getMaterial(renderer.material)) continue;
-                if (intersectMesh(ray, mesh->bounds(), mesh->positions(), mesh->indices(), worlds.matrix(id), distance))
-                {
-                    if (trace) log::info("Viewport ray hit entity={} distance={}", id, distance);
-                    if (distance < result.distance || result.entity == core::Entity::invalidID) result = { id, distance };
-                }
-                else if (trace && intersectBounds(ray, mesh->bounds(), worlds.matrix(id), distance))
-                    log::info("Viewport ray bounds only entity={} distance={} vertices={} indices={}",
-                        id, distance, mesh->positions().size(), mesh->indices().size());
+                if (intersectMesh(ray, mesh->bounds(), mesh->positions(), mesh->indices(), worlds.matrix(id), distance)
+                    && (distance < result.distance || result.entity == core::Entity::invalidID))
+                    result = { id, distance };
             }
             return result;
         }
@@ -155,13 +150,10 @@ namespace csyren::editor
                 auto ray = viewportRay(ndc.x,ndc.y,vp);
                 constexpr float creationRayDistance = 100.f;
                 ray.length = std::min(ray.length, creationRayDistance);
-                const auto hit = raycast(session.editorScene(), resources, ray, true);
+                const auto hit = raycast(session.editorScene(), resources, ray);
                 _position = hit.entity != core::Entity::invalidID ?
                     ray.origin + ray.direction * hit.distance : creationPosition(ray);
                 _document = session.documentId();
-                log::info("Viewport creation entity={} distance={} point=({}, {}, {}) ray=({}, {}, {}) direction=({}, {}, {})",
-                    hit.entity, hit.distance, _position.x, _position.y, _position.z,
-                    ray.origin.x, ray.origin.y, ray.origin.z, ray.direction.x, ray.direction.y, ray.direction.z);
                 ImGui::OpenPopup("Viewport object");
             }
             _rightClick = false;

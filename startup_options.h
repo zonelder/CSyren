@@ -9,6 +9,7 @@ namespace csyren
     struct StartupOptions
     {
         std::filesystem::path project = "CSyren.csyrenproj";
+        bool console = false; // --console: attach a console window that mirrors the log
 
         // Arguments exclude argv[0]. Only named options select a project.
         static StartupOptions parse(std::span<const std::wstring_view> arguments)
@@ -18,6 +19,11 @@ namespace csyren
             for (size_t i = 0; i < arguments.size(); ++i)
             {
                 const auto argument = arguments[i];
+                if (argument == L"--console")
+                {
+                    options.console = true;
+                    continue;
+                }
                 std::wstring_view value;
                 if (argument == L"--project")
                 {

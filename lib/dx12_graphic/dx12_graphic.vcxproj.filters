@@ -75,22 +75,10 @@
     <ClInclude Include="shader_meta.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="resources.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="pso_factory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="pass_data_manager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="constant_buffer_manager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="shader_parameter_binder.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="semantic_provider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="vertex_formats.h">
@@ -126,9 +114,6 @@
     <ClInclude Include="forward_decl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="texture_creation_task.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="shader_base.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -159,9 +144,6 @@
     <ClInclude Include="presentation_system.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="base_resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="descriptors.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -189,9 +171,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="texture.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="descriptor_heap_manager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="constant_buffer.cpp">
@@ -228,9 +207,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="upload_context.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="texture_creation_task.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="shader_base.cpp">

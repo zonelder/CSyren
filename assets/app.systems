@@ -10,12 +10,6 @@
             "class": "SpringJoinSystem"
         },
         {
-            "class": "DebugRotatorSystem"
-        },
-        {
-            "class": "CubeShooterSystem"
-        },
-        {
             "class": "RenderEnvironmentSystem"
         },
         {

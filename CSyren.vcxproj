@@ -38,16 +38,11 @@
     <ClInclude Include="startup_options.h" />
     <ClInclude Include="render_environment_system.h" />
     <ClInclude Include="base_editor_window.h" />
-    <ClInclude Include="common_editor.h" />
-    <ClInclude Include="component_editor.h" />
     <ClInclude Include="component_registrator.h" />
-    <ClInclude Include="debug_rotator.h" />
-    <ClInclude Include="debug_rotator_system.h" />
     <ClInclude Include="editor_base.h" />
     <ClInclude Include="editor_camera_controller.h" />
     <ClInclude Include="editor_camera_controller_system.h" />
     <ClInclude Include="editor_selection.h" />
-    <ClInclude Include="empty_editor.h" />
     <ClInclude Include="inspector_window.h" />
     <ClInclude Include="math_editor.h" />
     <ClInclude Include="mesh_render_system.h" />

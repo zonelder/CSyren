@@ -1,7 +1,6 @@
 #ifndef __CSYREN_MESH_FILTER__
 #define __CSYREN_MESH_FILTER__
 #include <DirectXMath.h>
-#include "core/renderer.h"
 #include "dx12_graphic/resource_handle.h"
 
 namespace csyren::render

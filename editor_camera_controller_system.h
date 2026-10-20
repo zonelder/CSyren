@@ -13,10 +13,6 @@
 #include "editor_camera_controller.h"
 #include "editor_viewport_state.h"
 
-
-using namespace csyren::core;
-using namespace csyren::math;
-
 namespace csyren
 {
     class EditorCameraControllerSystem : public core::System
@@ -33,6 +29,8 @@ namespace csyren
 
         void execute() override
         {
+			using namespace csyren::core;
+			using namespace csyren::math;
 			using ctx = core::Services;
 			auto devices = ctx::get<const core::Devices>();
 			auto editorView = ctx::get<editor::EditorViewportState>();
@@ -94,7 +92,7 @@ namespace csyren
 					// Get camera's local axes
 					const auto& rotation = cameraTransform.rotation;
 
-					Vector3 forward = rotation * Vector3::forward;;
+					Vector3 forward = rotation * Vector3::forward;
 					Vector3 right = rotation * Vector3::right;
 					Vector3 up = rotation * Vector3::up;
 

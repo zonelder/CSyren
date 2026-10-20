@@ -150,7 +150,6 @@
     <ClInclude Include="gpu_execution_plan.h" />
 
     <ClInclude Include="keyboard_device.h" />
-    <ClInclude Include="renderer.h" />
     <ClInclude Include="scene.h" />
     <ClInclude Include="scene_context.h" />
     <ClInclude Include="serialize_base.h" />

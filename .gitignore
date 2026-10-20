@@ -87,3 +87,5 @@ bld/
 *Intermediate
 *Build
 *packages
+# Per-user editor layout
+imgui.ini
