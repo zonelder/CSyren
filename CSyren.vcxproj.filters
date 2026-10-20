@@ -58,6 +58,9 @@
     <ClCompile Include="component_registrator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="animation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -134,11 +137,18 @@
     <ClInclude Include="startup_options.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="render_environment_system.h"><Filter>system</Filter></ClInclude>
     <ClInclude Include="editor_overlays.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="animation.h"><Filter>component</Filter></ClInclude>
+    <ClInclude Include="animation_system.h"><Filter>system</Filter></ClInclude>
+    <ClInclude Include="model_instantiator.h"><Filter>Header Files</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="CSyren.csyrenproj"><Filter>Resource Files</Filter></None>
     <None Include="assets\app.systems"><Filter>Resource Files</Filter></None>
     <None Include="assets\editor.systems"><Filter>Resource Files</Filter></None>
+    <None Include="docs\asset_pipeline.md"><Filter>Resource Files</Filter></None>
+    <None Include="tools\make_weapon_models.py"><Filter>Resource Files</Filter></None>
+    <None Include="assets\models\rifle.glb"><Filter>Resource Files</Filter></None>
+    <None Include="assets\models\launcher.glb"><Filter>Resource Files</Filter></None>
     <None Include="assets\shaders\lit.shader"><Filter>Resource Files</Filter></None>
     <None Include="assets\shaders\lit_texture.shader"><Filter>Resource Files</Filter></None>
     <None Include="assets\shaders\lighting.hlsli"><Filter>Resource Files</Filter></None>

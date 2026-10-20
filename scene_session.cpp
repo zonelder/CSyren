@@ -3,6 +3,8 @@
 #include "core/meta_json.h"
 #include "core/scene_serialization_context.h"
 #include <stdexcept>
+#include "model_instantiator.h"
+#include "core/services.h"
 
 namespace csyren::editor
 {
@@ -126,6 +128,46 @@ namespace csyren::editor
         auto command = std::make_unique<FunctionCommand>("Import scene",
             [this, after](EditContext&) { return restore(*after); },
             [this, before](EditContext&) { return restore(*before); });
+        auto context = editContext();
+        return _history.execute(std::move(command), context);
+    }
+
+    bool SceneSession::importModel(const std::string& path)
+    {
+        std::string error;
+        auto model = render::assets::ModelImporterRegistry::instance().load(path, &error);
+        if (!model) { _error = "Cannot import model '" + path + "': " + error; return false; }
+        if (!core::Services::has<render::ResourceManager>()) { _error = "No resource manager."; return false; }
+        auto* resources = core::Services::get<render::ResourceManager>();
+        // Keys are allocated on the first execute and reused by redo.
+        auto keys = std::make_shared<std::vector<EntityKey>>();
+        auto command = std::make_unique<FunctionCommand>("Import model",
+            [this, model, resources, keys](EditContext& context)
+            {
+                auto batch = context.scene.stageEntities(modelEntityCount(*model));
+                ModelInstance instance;
+                if (!instantiateModel(batch, *model, *resources, instance)) return false;
+                if (keys->empty()) for (size_t i = 0; i < instance.entities.size(); ++i) keys->push_back(++_nextKey);
+                if (keys->size() != instance.entities.size()) return false;
+                context.entities.reserve(context.entities.size() + keys->size());
+                for (size_t i = 0; i < keys->size(); ++i) context.entities[(*keys)[i]] = instance.entities[i];
+                try
+                {
+                    if (!context.scene.append(std::move(batch))) { for (auto key : *keys) context.entities.erase(key); return false; }
+                }
+                catch (...) { for (auto key : *keys) context.entities.erase(key); throw; }
+                _createdKey = keys->front();
+                return true;
+            },
+            [keys](EditContext& context)
+            {
+                if (keys->empty()) return false;
+                const auto root = context.resolve(keys->front());
+                if (!context.scene.entities().contains(root)) return false;
+                context.scene.destroyEntity(root); context.scene.flush();
+                for (auto key : *keys) context.entities.erase(key);
+                return true;
+            });
         auto context = editContext();
         return _history.execute(std::move(command), context);
     }
@@ -354,6 +396,7 @@ namespace csyren::editor
         case SceneOperation::Open: return open(request.path, request.discardChanges);
         case SceneOperation::Reload: return open(_path, request.discardChanges);
         case SceneOperation::Import: return import(request.path);
+        case SceneOperation::ImportModel: return importModel(request.path);
         case SceneOperation::Save: return save(_path);
         case SceneOperation::SaveAs: return save(request.path);
         case SceneOperation::Play: return play();

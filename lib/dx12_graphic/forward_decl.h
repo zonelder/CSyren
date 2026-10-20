@@ -10,6 +10,7 @@ namespace csyren::render
 	class GraphicShader;
     class ComputeShader;
 	class Material;
+	class AnimationClip;
 
 	template<typename T> class ResourceStorage;
 	//</resources>

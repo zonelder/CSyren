@@ -75,11 +75,13 @@ namespace csyren::render
         _proceduralShaderFactories.clear();
         _proceduralComputeShaderFactories.clear();
         _proceduralMaterialFactories.clear();
+        _proceduralAnimationFactories.clear();
         _meshStorage.unloadAll();
         _textureStorage.unloadAll();
         _materialStorage.unloadAll();
         _shaderStorage.unloadAll();
         _computeShaderStorage.unloadAll();
+        _animationStorage.unloadAll();
         log::debug("All resources unloaded.");
     }
 }

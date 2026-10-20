@@ -95,5 +95,6 @@ namespace csyren::render
         meta::MetaFactory<MeshHandle>{}.primitiveType("MeshHandle"_hs, "mesh").archive(referenceArchive<Mesh, &ResourceManager::getMeshName>());
         meta::MetaFactory<MaterialHandle>{}.primitiveType("MaterialHandle"_hs, "material").archive(referenceArchive<Material, &ResourceManager::getMaterialName>());
         meta::MetaFactory<ShaderHandle>{}.primitiveType("ShaderHandle"_hs, "shader").archive(referenceArchive<GraphicShader, &ResourceManager::getShaderName>());
+        meta::MetaFactory<AnimationClipHandle>{}.primitiveType("AnimationClipHandle"_hs, "animation").archive(referenceArchive<AnimationClip, &ResourceManager::getAnimationClipName>());
     }
 }

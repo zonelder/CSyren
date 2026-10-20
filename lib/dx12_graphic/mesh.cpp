@@ -3,6 +3,8 @@
 #include "material.h"
 #include "resource_manager.h"
 #include "renderer.h"
+#include "import/model_importer.h"
+#include <limits>
 
 using Microsoft::WRL::ComPtr;
 
@@ -44,8 +46,32 @@ namespace csyren::render
 
     bool Mesh::init(const std::string& filepath)
     {
-        log::error("Mesh: attempt to load mesh from file but its not implemented. file = {}", filepath);
-        return false;
+        // "<model asset>#<mesh selector>" (see import/model_importer.h). Imported
+        // meshes use the upload heap so they can be created at any time, not only
+        // inside the startup resource-upload window.
+        const auto reference = assets::ModelReference::parse(filepath);
+        if (!reference.valid || reference.kind != assets::ModelReference::Kind::Mesh)
+        {
+            log::error("Mesh: '{}' is not a model mesh reference (expected <model>#<mesh>)", filepath);
+            return false;
+        }
+        const auto model = assets::ModelImporterRegistry::instance().load(reference.asset);
+        if (!model) return false;
+        const auto* primitive = assets::resolvePrimitive(*model, reference);
+        if (!primitive) return false;
+        if (primitive->positions.size() > std::numeric_limits<vertex_meta::index_type>::max())
+        {
+            log::error("Mesh: '{}' has {} vertices; the limit is {} (16-bit indices)", filepath,
+                primitive->positions.size(), size_t(std::numeric_limits<vertex_meta::index_type>::max()));
+            return false;
+        }
+        MeshBuilder builder;
+        builder.addVertices(primitive->positions).addNormals(primitive->normals).addUVs(0, primitive->uvs);
+        if (primitive->colors.size() == primitive->positions.size())
+            for (const auto& color : primitive->colors)
+                builder.addColor(vertex_meta::color_type(color.x, color.y, color.z, color.w));
+        for (auto index : primitive->indices) builder.addIndex(static_cast<vertex_meta::index_type>(index));
+        return init(builder, Usage::Dynamic);
     }
 
     bool Mesh::init(const MeshBuilder& builder, Usage usage)
@@ -63,6 +89,13 @@ namespace csyren::render
         auto& r = *core::Services::get<Renderer>();
         auto* device =  r.device();
         auto* cmdList = r.commandList();
+        if (usage == Usage::Static && !r.canUploadNow())
+        {
+            // No open upload command list (e.g. created while playing or from the
+            // editor): keep the mesh in the upload heap instead of recording a copy
+            // into a closed list, which would silently leave the buffers empty.
+            usage = Usage::Dynamic;
+        }
 
         const size_t vertexDataSize = raw.vertexBuffer.size();
         const size_t indexDataSize = raw.indices.size() * sizeof(vertex_meta::index_type);

@@ -12,6 +12,9 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
+    <Filter Include="import">
+      <UniqueIdentifier>{3b9f2c7e-6d41-4f0b-8a52-1c7e9d2b5a66}</UniqueIdentifier>
+    </Filter>
     <Filter Include="lighting">
       <UniqueIdentifier>{7b3f1c2e-4d5a-4e6b-9c8d-1a2b3c4d5e6f}</UniqueIdentifier>
     </Filter>
@@ -35,6 +38,18 @@
     </ClInclude>
     <ClInclude Include="mesh.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="animation_clip.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="import\model_data.h">
+      <Filter>import</Filter>
+    </ClInclude>
+    <ClInclude Include="import\model_importer.h">
+      <Filter>import</Filter>
+    </ClInclude>
+    <ClInclude Include="import\gltf_importer.h">
+      <Filter>import</Filter>
     </ClInclude>
     <ClInclude Include="lighting\light_components.h">
       <Filter>lighting</Filter>
@@ -187,6 +202,15 @@
     </ClCompile>
     <ClCompile Include="mesh.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="animation_clip.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="import\model_importer.cpp">
+      <Filter>import</Filter>
+    </ClCompile>
+    <ClCompile Include="import\gltf_importer.cpp">
+      <Filter>import</Filter>
     </ClCompile>
     <ClCompile Include="lighting\light_components.cpp">
       <Filter>lighting</Filter>

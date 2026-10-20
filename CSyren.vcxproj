@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="animation.cpp" />
     <ClCompile Include="application.cpp" />
     <ClCompile Include="component_registrator.cpp" />
     <ClCompile Include="editor_base.cpp" />
@@ -30,9 +31,13 @@
     <None Include="CSyren.csyrenproj" />
     <None Include="assets\app.systems" />
     <None Include="assets\editor.systems" />
+    <None Include="docs\asset_pipeline.md" />
     <None Include="docs\rendering.md" />
     <None Include="docs\physics_layers.md" />
     <None Include="docs\reflection.md" />
+    <None Include="tools\make_weapon_models.py" />
+    <None Include="assets\models\rifle.glb" />
+    <None Include="assets\models\launcher.glb" />
     <None Include="assets\shaders\lit.shader" />
     <None Include="assets\shaders\lit_texture.shader" />
     <None Include="assets\shaders\lighting.hlsli" />
@@ -44,7 +49,10 @@
     <None Include="CSyren.paths.props" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="animation.h" />
+    <ClInclude Include="animation_system.h" />
     <ClInclude Include="application.h" />
+    <ClInclude Include="model_instantiator.h" />
     <ClInclude Include="project_settings.h" />
     <ClInclude Include="startup_options.h" />
     <ClInclude Include="render_environment_system.h" />

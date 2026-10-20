@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "material.h"
 #include "resource_manager.h"
+#include "primitives.h"
+#include "import/model_importer.h"
 
 #include <d3dcompiler.h>
 
@@ -63,8 +65,32 @@ namespace csyren::render
 
     bool Material::init(const std::string& filepath)
     {
-        log::error("Material: material loading from file not implemented. file = {}", filepath);
-        return false;
+        // "<model asset>#mat:<index|name>": a lit material with the model's base
+        // color factor and (when present) its base color texture.
+        const auto reference = assets::ModelReference::parse(filepath);
+        if (!reference.valid || reference.kind != assets::ModelReference::Kind::Material)
+        {
+            log::error("Material: '{}' is not a model material reference (expected <model>#mat:<name|index>)", filepath);
+            return false;
+        }
+        const auto model = assets::ModelImporterRegistry::instance().load(reference.asset);
+        if (!model) return false;
+        const auto* source = assets::resolveMaterial(*model, reference);
+        if (!source) return false;
+        auto& resources = *core::Services::get<ResourceManager>();
+        const bool textured = !source->baseColorTexture.empty();
+        const ShaderHandle shader = textured ? Primitives::getLitTextureShader() : Primitives::getLitShader();
+        MaterialStateDesc states = {};
+        if (!init(shader, states)) return false;
+        Primitives::initializeMaterialDefaults(*this);
+        setVector("tint", DirectX::XMFLOAT4(source->baseColor.x, source->baseColor.y, source->baseColor.z, source->baseColor.w));
+        // glTF defaults to a fully metallic rough surface; untextured placeholder
+        // models look better as dielectrics, so only honor explicit values.
+        setFloat("roughness", source->roughness);
+        setFloat("metallic", source->metallic >= 0.999f && source->roughness >= 0.999f ? 0.0f : source->metallic);
+        setVector("emissive", DirectX::XMFLOAT4(source->emissive.x, source->emissive.y, source->emissive.z, 1.0f));
+        if (textured) setTexture("diffuseTexture", resources.get<Texture>(source->baseColorTexture));
+        return true;
     }
 
     bool Material::init(ShaderHandle shaderHandle, const MaterialStateDesc& states)

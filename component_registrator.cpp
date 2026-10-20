@@ -19,6 +19,7 @@
 #include "meta_common.h"
 
 #include "serializer.h"
+#include "animation.h"
 
 namespace csyren
 {
@@ -57,6 +58,10 @@ namespace csyren
 			REGISTER_COMPONENT(DirectionalLight);
 			REGISTER_COMPONENT(PointLight);
 			REGISTER_COMPONENT(LightingSettings);
+		}
+		{
+			using namespace csyren;
+			REGISTER_COMPONENT(Animator);
 		}
 	}
 }

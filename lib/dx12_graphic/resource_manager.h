@@ -7,6 +7,7 @@
 #include "material.h"
 #include "shader.h"
 #include "compute_shader.h"
+#include "animation_clip.h"
 #include "resource_upload_pipeline.h"
 #include "texture_upload_task.h"
 #include "renderer.h"
@@ -168,7 +169,8 @@ namespace csyren::render
             _textureStorage(*this),
             _materialStorage(*this),
             _shaderStorage(*this),
-            _computeShaderStorage(*this)
+            _computeShaderStorage(*this),
+            _animationStorage(*this)
         {
         }
 
@@ -261,12 +263,14 @@ namespace csyren::render
         Material* getMaterial(MaterialHandle handle) { return _materialStorage.get(handle); }
         GraphicShader* getShader(ShaderHandle handle) { return _shaderStorage.get(handle); }
         ComputeShader* getComputeShader(ComputeShaderHandle handle) { return _computeShaderStorage.get(handle); }
+        AnimationClip* getAnimationClip(AnimationClipHandle handle) { return _animationStorage.get(handle); }
 
         const Mesh* getMesh(MeshHandle handle) const { return _meshStorage.get(handle); }
         const Texture* getTexture(TextureHandle handle) const { return _textureStorage.get(handle); }
         const Material* getMaterial(MaterialHandle handle) const { return _materialStorage.get(handle); }
         const GraphicShader* getShader(ShaderHandle handle) const { return _shaderStorage.get(handle); }
         const ComputeShader* getComputeShader(ComputeShaderHandle handle) const { return _computeShaderStorage.get(handle); }
+        const AnimationClip* getAnimationClip(AnimationClipHandle handle) const { return _animationStorage.get(handle); }
 
         LoadStatus status(TextureHandle handle) const {
             const auto* texture = getTexture(handle);
@@ -283,6 +287,7 @@ namespace csyren::render
         const std::string& getMaterialName(MaterialHandle handle) const { return _materialStorage.getName(handle); }
         const std::string& getShaderName(ShaderHandle handle) const { return _shaderStorage.getName(handle); }
         const std::string& getComputeShaderName(ComputeShaderHandle handle) const { return _computeShaderStorage.getName(handle); }
+        const std::string& getAnimationClipName(AnimationClipHandle handle) const { return _animationStorage.getName(handle); }
 
         // --- Unloading Resources ---
         template<typename TResource>
@@ -313,6 +318,7 @@ namespace csyren::render
         ResourceStorage<Material> _materialStorage;
         ResourceStorage<GraphicShader> _shaderStorage;
         ResourceStorage<ComputeShader> _computeShaderStorage;
+        ResourceStorage<AnimationClip> _animationStorage;
 
         // Maps for procedural resource factories
         std::unordered_map<std::string, ProceduralResourceFactory<Mesh>> _proceduralMeshFactories;
@@ -320,6 +326,7 @@ namespace csyren::render
         std::unordered_map<std::string, ProceduralResourceFactory<Material>> _proceduralMaterialFactories;
         std::unordered_map<std::string, ProceduralResourceFactory<GraphicShader>> _proceduralShaderFactories;
         std::unordered_map<std::string, ProceduralResourceFactory<ComputeShader>> _proceduralComputeShaderFactories;
+        std::unordered_map<std::string, ProceduralResourceFactory<AnimationClip>> _proceduralAnimationFactories;
 
         // Helper to get the correct storage based on type
         template<typename T> ResourceStorage<T>& getStorage();
@@ -328,6 +335,7 @@ namespace csyren::render
         template<> ResourceStorage<Material>& getStorage<Material>() { return _materialStorage; }
         template<> ResourceStorage<GraphicShader>& getStorage<GraphicShader>() { return _shaderStorage; }
         template<> ResourceStorage<ComputeShader>& getStorage<ComputeShader>() { return _computeShaderStorage; }
+        template<> ResourceStorage<AnimationClip>& getStorage<AnimationClip>() { return _animationStorage; }
 
         // Helper to get the correct factory map based on type
         template<typename T> std::unordered_map<std::string, ProceduralResourceFactory<T>>& getFactoryMap();
@@ -336,5 +344,6 @@ namespace csyren::render
         template<> std::unordered_map<std::string, ProceduralResourceFactory<Material>>& getFactoryMap<Material>() { return _proceduralMaterialFactories; }
         template<> std::unordered_map<std::string, ProceduralResourceFactory<GraphicShader>>& getFactoryMap<GraphicShader>() { return _proceduralShaderFactories; }
         template<> std::unordered_map<std::string, ProceduralResourceFactory<ComputeShader>>& getFactoryMap<ComputeShader>() { return _proceduralComputeShaderFactories; }
+        template<> std::unordered_map<std::string, ProceduralResourceFactory<AnimationClip>>& getFactoryMap<AnimationClip>() { return _proceduralAnimationFactories; }
     };
 }

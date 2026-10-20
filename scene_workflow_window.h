@@ -45,6 +45,7 @@ namespace csyren::editor
             {
                 if (ImGui::MenuItem("Open / Replace...", nullptr, false, editable)) file(SceneOperation::Open);
                 if (ImGui::MenuItem("Import...", nullptr, false, editable)) file(SceneOperation::Import);
+                if (ImGui::MenuItem("Import model...", nullptr, false, editable)) file(SceneOperation::ImportModel);
                 if (ImGui::MenuItem("Reload", nullptr, false, editable && !session.path().empty())) replace(session, SceneOperation::Reload);
                 ImGui::Separator();
                 if (ImGui::MenuItem("Save", "Ctrl+S", false, editable)) save(session);
@@ -117,7 +118,8 @@ namespace csyren::editor
             {
                 const auto operation = *_fileOperation;
                 ImGui::TextUnformatted(operation == SceneOperation::Open ? "Replace the current scene" :
-                    operation == SceneOperation::Import ? "Import into the current scene" : "Save scene as");
+                    operation == SceneOperation::Import ? "Import into the current scene" :
+                    operation == SceneOperation::ImportModel ? "Import a model (.glb / .gltf) as entities" : "Save scene as");
                 ImGui::SetNextItemWidth(480);
                 ImGui::InputText("Path", _path, sizeof(_path));
                 ImGui::TextDisabled("Relative to project assets, or an absolute path");
