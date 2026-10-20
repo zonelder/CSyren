@@ -108,8 +108,10 @@
     <None Include="assets\shaders\tonemap.shader" />
     <None Include="assets\shaders\light_cluster.coshader" />
     <None Include="tools\csyren_registry.py" />
+    <None Include="tools\new_project.py" />
     <None Include="tools\gen_polygon_scene.py" />
     <None Include="tools\make_weapon_models.py" />
+    <None Include="docs\project_structure.md" />
     <None Include="docs\game_prototype.md" />
     <None Include="docs\asset_pipeline.md" />
     <None Include="docs\rendering.md" />

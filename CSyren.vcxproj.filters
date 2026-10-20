@@ -151,11 +151,17 @@
     <None Include="tools\csyren_registry.py">
       <Filter>tools</Filter>
     </None>
+    <None Include="tools\new_project.py">
+      <Filter>tools</Filter>
+    </None>
     <None Include="tools\gen_polygon_scene.py">
       <Filter>tools</Filter>
     </None>
     <None Include="tools\make_weapon_models.py">
       <Filter>tools</Filter>
+    </None>
+    <None Include="docs\project_structure.md">
+      <Filter>docs</Filter>
     </None>
     <None Include="docs\game_prototype.md">
       <Filter>docs</Filter>
