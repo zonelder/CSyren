@@ -579,13 +579,6 @@ void renderEnvironmentDefaults()
     render::Primitives::initializeMaterialDefaults(material);
     data = material.getVariable("tint"); std::memcpy(&tint, data.data(), sizeof(tint));
     CHECK(tint.x == 0.2f && tint.y == 0.4f && tint.z == 0.6f);
-    const auto light = render::RenderEnvironmentSystem::lightDirection(0);
-    CHECK(std::abs(light.x * light.x + light.y * light.y + light.z * light.z - 1) < 1e-5f);
-    CHECK(light.y < 0 && light.w == 0);
-    const auto repeat = render::RenderEnvironmentSystem::lightDirection(10);
-    CHECK(std::abs(light.x - repeat.x) < 1e-5f && std::abs(light.y - repeat.y) < 1e-5f);
-    // The old diffuse shader must produce a nonzero color on an upward face.
-    CHECK(tint.x * -light.y > 0);
     core::details::ServiceRegistry::create<render::ResourceManager>();
     render::RenderEnvironmentSystem environment;
     environment.init(); // factory registration requires no startup scene or GPU

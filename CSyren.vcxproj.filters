@@ -69,6 +69,9 @@
     <ClInclude Include="mesh_render_system.h">
       <Filter>system</Filter>
     </ClInclude>
+    <ClInclude Include="forward_render_system.h">
+      <Filter>system</Filter>
+    </ClInclude>
     <ClInclude Include="application.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -136,6 +139,15 @@
     <None Include="CSyren.csyrenproj"><Filter>Resource Files</Filter></None>
     <None Include="assets\app.systems"><Filter>Resource Files</Filter></None>
     <None Include="assets\editor.systems"><Filter>Resource Files</Filter></None>
+    <None Include="assets\shaders\lit.shader"><Filter>Resource Files</Filter></None>
+    <None Include="assets\shaders\lit_texture.shader"><Filter>Resource Files</Filter></None>
+    <None Include="assets\shaders\lighting.hlsli"><Filter>Resource Files</Filter></None>
+    <None Include="assets\shaders\gbuffer.hlsli"><Filter>Resource Files</Filter></None>
+    <None Include="assets\shaders\forward_lit.shader"><Filter>Resource Files</Filter></None>
+    <None Include="assets\shaders\light_pass.shader"><Filter>Resource Files</Filter></None>
+    <None Include="assets\shaders\tonemap.shader"><Filter>Resource Files</Filter></None>
+    <None Include="assets\shaders\light_cluster.coshader"><Filter>Resource Files</Filter></None>
+    <None Include="docs\rendering.md"><Filter>Resource Files</Filter></None>
     <None Include="docs\physics_layers.md"><Filter>Resource Files</Filter></None>
     <None Include="docs\reflection.md"><Filter>Resource Files</Filter></None>
   </ItemGroup>

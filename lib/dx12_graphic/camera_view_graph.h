@@ -16,6 +16,8 @@ namespace csyren::render::details
     inline CameraViewGraph expandCameraViews(const std::vector<core::GraphTask>& tasks,const std::vector<CameraViewBranch>& views)
     {
         CameraViewGraph result;
+        // Without camera views only the legacy frame color/depth pair exists.
+        const auto frameFallback = [](const std::string& suffix) { return suffix == "color" || suffix == "depth"; };
         for (const auto& task : tasks) {
             if (task.description.gpuAccesses.empty()) continue;
             auto& recordings = result.recordings[task.name];
@@ -29,10 +31,14 @@ namespace csyren::render::details
                 }
             } else {
                 auto pass = task; pass.description.gpuAccesses.clear();
+                bool skip = false;
                 for (auto usage : task.description.gpuAccesses) {
                     if (!usage.resource.starts_with("scene.")) pass.description.gpuAccesses.push_back(usage);
                     else if (views.empty()) {
-                        usage.resource = "frame."+usage.resource.substr(6); pass.description.gpuAccesses.push_back(usage);
+                        const auto suffix = usage.resource.substr(6);
+                        // A pass using deferred attachments has nothing to render into without a camera.
+                        if (!frameFallback(suffix)) { skip = true; break; }
+                        usage.resource = "frame."+suffix; pass.description.gpuAccesses.push_back(usage);
                     } else {
                         if (usage.mode != core::AccessMode::Read) throw std::invalid_argument("Frame pass cannot write all camera views");
                         for (const auto& view : views) {
@@ -41,6 +47,7 @@ namespace csyren::render::details
                         }
                     }
                 }
+                if (skip) continue;
                 recordings.push_back(pass.name); result.tasks.push_back(std::move(pass));
             }
         }

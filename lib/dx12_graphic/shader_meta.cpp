@@ -11,6 +11,8 @@ namespace csyren::render::details
         registry.registerAttribute("semantic");
         registry.registerAttribute("tooltip");
         registry.registerAttribute("update");
+        registry.registerAttribute("editable"); // material parameter shown in the inspector
+        registry.registerAttribute("range");    // "min max" hint for editable parameters
     }
 
     const AttributeRegistry& AttributeRegistry::instance()

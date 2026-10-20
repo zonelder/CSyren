@@ -13,6 +13,7 @@
 
 #include "mesh_filter.h"
 #include "dx12_graphic/resource_handle_meta.h"
+#include "dx12_graphic/lighting/light_components.h"
 #include "editor_camera_controller.h"
 
 #include "meta_common.h"
@@ -53,6 +54,9 @@ namespace csyren
 			using namespace csyren::render;
 			REGISTER_COMPONENT(MeshFilter);
 			REGISTER_COMPONENT(MeshRenderer);
+			REGISTER_COMPONENT(DirectionalLight);
+			REGISTER_COMPONENT(PointLight);
+			REGISTER_COMPONENT(LightingSettings);
 		}
 	}
 }

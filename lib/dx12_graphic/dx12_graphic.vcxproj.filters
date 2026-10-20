@@ -12,6 +12,9 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
+    <Filter Include="lighting">
+      <UniqueIdentifier>{7b3f1c2e-4d5a-4e6b-9c8d-1a2b3c4d5e6f}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
@@ -32,6 +35,27 @@
     </ClInclude>
     <ClInclude Include="mesh.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lighting\light_components.h">
+      <Filter>lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="lighting\scene_lights.h">
+      <Filter>lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="lighting\fullscreen_pass.h">
+      <Filter>lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="lighting\light_collect_system.h">
+      <Filter>lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="lighting\light_cluster_system.h">
+      <Filter>lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="lighting\light_pass_system.h">
+      <Filter>lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="lighting\tonemap_system.h">
+      <Filter>lighting</Filter>
     </ClInclude>
     <ClInclude Include="material.h">
       <Filter>Header Files</Filter>
@@ -163,6 +187,9 @@
     </ClCompile>
     <ClCompile Include="mesh.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lighting\light_components.cpp">
+      <Filter>lighting</Filter>
     </ClCompile>
     <ClCompile Include="material.cpp">
       <Filter>Source Files</Filter>

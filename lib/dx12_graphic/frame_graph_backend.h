@@ -23,7 +23,10 @@ public:
 private:
     using RecordingData = Renderer::RecordingData;
     struct Storage { std::string queue; std::array<RecordingData, Renderer::FramesInFlight> frames; };
+    struct TargetView { D3D12_CPU_DESCRIPTOR_HANDLE handle{}; DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN; };
     ID3D12Resource* resource(const std::string& name) const;
+    TargetView colorTarget(const std::string& name) const;
+    TargetView depthTarget(const std::string& name) const;
     void barriers(CommandList& commands, const std::vector<core::GpuExecutionPlan::Barrier>& barriers);
     RenderQueue& queueFor(const std::string& name) const;
     void recordPass(size_t pass,const std::function<void()>& callback);
@@ -32,7 +35,10 @@ private:
         Storage* storage;
         size_t queue;
         std::shared_ptr<CameraRenderView> view;
-        bool color, depth, viewColor, viewDepth, frameWait;
+        // Logical names bound as render targets (slot order = declaration order) and as the depth target.
+        std::vector<std::string> colors;
+        std::string depth;
+        bool frameWait;
     };
     std::vector<CameraViewBranch> _branches;
     uint64_t _outputView = 0, _planRevision = 0;
@@ -46,7 +52,8 @@ private:
     std::vector<bool> _frameWaited;
     std::vector<size_t> _pending;
     std::vector<core::GraphTask> _templates;
-    std::unordered_map<std::string,std::shared_ptr<CameraRenderView>> _resources;
+    struct ViewResource { std::shared_ptr<CameraRenderView> view; ViewAttachment attachment; };
+    std::unordered_map<std::string,ViewResource> _resources;
     bool _copyOutput = false;
     PresentationState& _state;
     core::GpuExecutionPlan _plan;

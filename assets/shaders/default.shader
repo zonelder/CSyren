@@ -1,4 +1,5 @@
-
+// Unlit flat color (forward pass). Colors are authored in sRGB; the value is
+// written as linear radiance so it survives the tonemap/gamma pass.
 //@update frame
 cbuffer perFrame
 {
@@ -16,7 +17,7 @@ cbuffer perEntity
 //@update material
 cbuffer material
 {
-    //@editable 
+    //@editable
     float4 tint;
 }
 
@@ -28,7 +29,6 @@ struct VS_Input
 struct PS_Input
 {
     float4 position : SV_POSITION;
-    float4 color    : COLOR;
 };
 
 // --- Vertex GraphicShader ---
@@ -46,6 +46,5 @@ PS_Input VSMain(VS_Input input)
 // --- Pixel GraphicShader ---
 float4 PSMain(PS_Input input) : SV_TARGET
 {
-    return tint;
+    return float4(pow(max(tint.rgb, 0.0f), 2.2f), tint.a);
 }
-

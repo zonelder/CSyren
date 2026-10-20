@@ -21,11 +21,31 @@ namespace csyren::render
 
         linkSemantics();
         buildSemanticLayout();
+        countRenderTargets();
         log::info("GraphicShader : initialized successfully.");
 
         return true;
 
 	}
+
+    void GraphicShader::countRenderTargets()
+    {
+        _renderTargetCount = 1;
+        auto* blob = stageBlob(ShaderStage::Pixel);
+        if (!blob) { _renderTargetCount = 0; return; }
+        Microsoft::WRL::ComPtr<ID3D12ShaderReflection> reflection;
+        if (DX_FAILED(D3DReflect(blob->GetBufferPointer(), blob->GetBufferSize(), IID_PPV_ARGS(&reflection)))) return;
+        D3D12_SHADER_DESC desc;
+        reflection->GetDesc(&desc);
+        UINT count = 0;
+        for (UINT i = 0; i < desc.OutputParameters; ++i)
+        {
+            D3D12_SIGNATURE_PARAMETER_DESC parameter;
+            reflection->GetOutputParameterDesc(i, &parameter);
+            if (parameter.SystemValueType == D3D_NAME_TARGET) count = (std::max)(count, parameter.SemanticIndex + 1);
+        }
+        _renderTargetCount = count;
+    }
 
     bool GraphicShader::buildInputLayoutFromReflection()
     {

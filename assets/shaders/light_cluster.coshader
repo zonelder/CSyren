@@ -1,0 +1,76 @@
+// Clustered light assignment. One thread per froxel: tests every point light
+// sphere against the froxel's view-space AABB and writes the index list.
+// Dispatched by LightClusterSystem; read by lighting.hlsli (clusterIndexOf).
+#define MAX_LIGHTS_PER_CLUSTER 64
+
+struct Light
+{
+    float3 position;
+    float  radius;
+    float3 color;
+    uint   type;
+    float3 direction;
+    float  invRadiusSq;
+    float4 extra;
+};
+
+cbuffer params : register(b0)
+{
+    row_major float4x4 view;    // world -> view (row vectors, like the engine)
+    float4 screenParams;        // width, height, 1/width, 1/height
+    float4 clusterParams;       // grid x, y, z, max lights per cluster
+    float4 clusterDepthParams;  // slice scale, slice bias, log2(far/near)
+    float4 cameraParams;        // near, far, projection[0][0], projection[1][1]
+    uint lightOffset;           // first point light in the list
+    uint lightCount;            // number of point lights
+    uint2 pad;
+};
+
+StructuredBuffer<Light>  lights         : register(t0);
+RWStructuredBuffer<uint> clusterGrid    : register(u0);
+RWStructuredBuffer<uint> clusterIndices : register(u1);
+
+[numthreads(64, 1, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    const uint gx = uint(clusterParams.x), gy = uint(clusterParams.y), gz = uint(clusterParams.z);
+    const uint cluster = id.x;
+    if (cluster >= gx * gy * gz) return;
+    const uint x = cluster % gx;
+    const uint y = (cluster / gx) % gy;
+    const uint z = cluster / (gx * gy);
+
+    // depth slice bounds (exponential between near and far)
+    const float near = cameraParams.x;
+    const float range = clusterDepthParams.z;
+    const float zMin = near * exp2(range * float(z) / float(gz));
+    const float zMax = near * exp2(range * float(z + 1) / float(gz));
+
+    // tile bounds in NDC (row 0 is the top of the screen)
+    const float nx0 = (float(x) / float(gx)) * 2.0f - 1.0f;
+    const float nx1 = (float(x + 1) / float(gx)) * 2.0f - 1.0f;
+    const float ny0 = 1.0f - (float(y + 1) / float(gy)) * 2.0f;
+    const float ny1 = 1.0f - (float(y) / float(gy)) * 2.0f;
+
+    // view-space extents: x = ndc.x * z / P00, y = ndc.y * z / P11
+    const float invP00 = 1.0f / cameraParams.z;
+    const float invP11 = 1.0f / cameraParams.w;
+    float3 aabbMin = float3(min(nx0 * zMin, nx0 * zMax) * invP00, min(ny0 * zMin, ny0 * zMax) * invP11, zMin);
+    float3 aabbMax = float3(max(nx1 * zMin, nx1 * zMax) * invP00, max(ny1 * zMin, ny1 * zMax) * invP11, zMax);
+
+    uint count = 0;
+    const uint base = cluster * MAX_LIGHTS_PER_CLUSTER;
+    for (uint i = 0; i < lightCount && count < MAX_LIGHTS_PER_CLUSTER; ++i)
+    {
+        Light light = lights[lightOffset + i];
+        float3 p = mul(float4(light.position, 1.0f), view).xyz;
+        float3 closest = clamp(p, aabbMin, aabbMax);
+        float3 d = closest - p;
+        if (dot(d, d) <= light.radius * light.radius)
+        {
+            clusterIndices[base + count] = lightOffset + i;
+            ++count;
+        }
+    }
+    clusterGrid[cluster] = count;
+}

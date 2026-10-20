@@ -16,6 +16,11 @@ namespace csyren::render
         constexpr char TEXTURE_MATERIAL_NAME[]      = "__primitive_texture_material__";
 
         constexpr char DEFAULT_SHADER_NAME[]        = "__csyren_default_shader__";
+        constexpr char LIT_SHADER_NAME[]            = "__csyren_lit_shader__";
+        constexpr char LIT_TEXTURE_SHADER_NAME[]    = "__csyren_lit_texture_shader__";
+        constexpr char LIT_MATERIAL_NAME[]          = "__primitive_lit_material__";
+        constexpr char FORWARD_LIT_SHADER_NAME[]    = "__csyren_forward_lit_shader__";
+        constexpr char GLASS_MATERIAL_NAME[]        = "__primitive_glass_material__";
         constexpr char DEFAULT_MATERIAL_NAME[]      = "__primitive_default_material__";
 
         constexpr char RAINBOW_SHADER_NAME[]        = "__csyren_rainbow_shader__";
@@ -201,6 +206,34 @@ namespace csyren::render
         rm.registerProcedural(TEXTURE_MATERIAL_NAME, textureMaterialFabric);
 
         rm.registerProcedural(DEFAULT_SHADER_NAME, defaultShaderFabric);
+        ResourceManager::ProceduralResourceFactory<GraphicShader> litShaderFabric = [](ResourceManager& rm) { return rm.createShader(LIT_SHADER_NAME, "shaders/lit.shader"); };
+        ResourceManager::ProceduralResourceFactory<GraphicShader> litTextureShaderFabric = [](ResourceManager& rm) { return rm.createShader(LIT_TEXTURE_SHADER_NAME, "shaders/lit_texture.shader"); };
+        ResourceManager::ProceduralResourceFactory<Material> litMaterialFabric = [](ResourceManager& rm)
+            {
+                auto shader = rm.get<GraphicShader>(LIT_SHADER_NAME);
+                MaterialStateDesc states = {};
+                const auto handle = rm.createMaterial(LIT_MATERIAL_NAME, shader, states);
+                if (auto* material = rm.getMaterial(handle)) initializeMaterialDefaults(*material);
+                return handle;
+            };
+        ResourceManager::ProceduralResourceFactory<GraphicShader> forwardLitShaderFabric = [](ResourceManager& rm) { return rm.createShader(FORWARD_LIT_SHADER_NAME, "shaders/forward_lit.shader"); };
+        ResourceManager::ProceduralResourceFactory<Material> glassMaterialFabric = [](ResourceManager& rm)
+            {
+                auto shader = rm.get<GraphicShader>(FORWARD_LIT_SHADER_NAME);
+                const auto handle = rm.createMaterial(GLASS_MATERIAL_NAME, shader, transparentStates());
+                if (auto* material = rm.getMaterial(handle))
+                {
+                    initializeMaterialDefaults(*material);
+                    material->setVector("tint", DirectX::XMFLOAT4(0.6f, 0.8f, 1.0f, 0.35f));
+                    material->setFloat("roughness", 0.15f);
+                }
+                return handle;
+            };
+        rm.registerProcedural(LIT_SHADER_NAME, litShaderFabric);
+        rm.registerProcedural(LIT_TEXTURE_SHADER_NAME, litTextureShaderFabric);
+        rm.registerProcedural(LIT_MATERIAL_NAME, litMaterialFabric);
+        rm.registerProcedural(FORWARD_LIT_SHADER_NAME, forwardLitShaderFabric);
+        rm.registerProcedural(GLASS_MATERIAL_NAME, glassMaterialFabric);
         rm.registerProcedural(DEFAULT_MATERIAL_NAME, defaultMaterialFabric);
 
         rm.registerProcedural(LINE_MESH_NAME, lineMeshFabric);
@@ -226,6 +259,46 @@ namespace csyren::render
     {
         return core::Services::get<ResourceManager>()->get<Material>(
             TEXTURE_MATERIAL_NAME);
+    }
+
+    ShaderHandle Primitives::getLitShader()
+    {
+        return core::Services::get<ResourceManager>()->get<GraphicShader>(LIT_SHADER_NAME);
+    }
+
+    ShaderHandle Primitives::getLitTextureShader()
+    {
+        return core::Services::get<ResourceManager>()->get<GraphicShader>(LIT_TEXTURE_SHADER_NAME);
+    }
+
+    MaterialHandle Primitives::getLitMaterial()
+    {
+        return core::Services::get<ResourceManager>()->get<Material>(LIT_MATERIAL_NAME);
+    }
+
+    ShaderHandle Primitives::getForwardLitShader()
+    {
+        return core::Services::get<ResourceManager>()->get<GraphicShader>(FORWARD_LIT_SHADER_NAME);
+    }
+
+    MaterialHandle Primitives::getGlassMaterial()
+    {
+        return core::Services::get<ResourceManager>()->get<Material>(GLASS_MATERIAL_NAME);
+    }
+
+    MaterialStateDesc Primitives::transparentStates()
+    {
+        MaterialStateDesc states = {};
+        auto& blend = states.blendState.RenderTarget[0];
+        blend.BlendEnable = TRUE;
+        blend.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+        blend.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+        blend.BlendOp = D3D12_BLEND_OP_ADD;
+        blend.SrcBlendAlpha = D3D12_BLEND_ONE;
+        blend.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
+        blend.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+        states.depthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; // test only
+        return states;
     }
 
     ShaderHandle Primitives::getDefaultShader()

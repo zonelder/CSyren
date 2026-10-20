@@ -3,6 +3,7 @@
 #include "texture.h"
 #include "renderer.h"
 #include "camera_render_target.h"
+#include "compute_shader.h"
 #include "core/time.h"
 #include "core/transform_hierarchy.h"
 
@@ -67,7 +68,7 @@ namespace csyren::render
 
         constexpr size_t MB = 1024 * 1024;
         constexpr size_t perEntitySize = 2* MB; // Size for world matrix + other per-object data for whole scene render.
-        
+
         if (!_perEntityCB.init(_device.Get(), perEntitySize, FramesInFlight))
         {
             return false;
@@ -84,6 +85,11 @@ namespace csyren::render
         if (std::this_thread::get_id() != _ownerThread)
             throw std::logic_error("GPU commands require a declared GPU system task");
         return nullptr;
+    }
+    Renderer::RecordingData& Renderer::requireRecording(const char* what) const {
+        auto* data = recording();
+        if (!data) throw std::logic_error(std::string(what) + " requires a recording GPU task");
+        return *data;
     }
     ID3D12GraphicsCommandList* Renderer::commandList() const {
         auto* data = recording(); return data ? data->commands.raw() : _uploadCommands.raw();
@@ -134,7 +140,7 @@ namespace csyren::render
             view.target->prepare(*this);
             if (view.render) {
                 view.background = source.camera->background;
-                view.engine = details::cameraFrame(*source.camera,source.world,view.target->width(),view.target->height(),time);
+                view.engine = details::cameraFrame(*source.camera,source.world,view.target->width(),view.target->height(),time,_environment);
             }
             _views.push_back(source.view);
         }
@@ -164,13 +170,15 @@ namespace csyren::render
     {
         auto* data = recording();
         if (!data) throw std::logic_error("Camera clear requires a render pass");
-        clearDepth(); clearColor(&data->background.x);
+        if (data->depthTarget.ptr) clearDepth();
+        if (data->colorCount) clearColor(&data->background.x);
     }
     void Renderer::clearColor(const float color[4])
     {
         auto* data = recording();
-        if (!data || !data->colorTarget.ptr) throw std::logic_error("Clear requires a declared color target");
-        data->commands.raw()->ClearRenderTargetView(data->colorTarget,color,0,nullptr);
+        if (!data || !data->colorCount) throw std::logic_error("Clear requires a declared color target");
+        for (UINT i = 0; i < data->colorCount; ++i)
+            data->commands.raw()->ClearRenderTargetView(data->colorTargets[i],color,0,nullptr);
     }
     void Renderer::clearDepth()
     {
@@ -183,6 +191,22 @@ namespace csyren::render
         _mainQueue.signal();
         _mainQueue.syncAwaitLastComplete();
     }
+
+    MaterialStateDesc Renderer::passStates(MaterialStateDesc states) const
+    {
+        auto* data = recording();
+        if (!data) return states;
+        states.numRenderTargets = data->colorCount;
+        for (UINT i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
+            states.rtvFormats[i] = i < data->colorCount ? data->colorFormats[i] : DXGI_FORMAT_UNKNOWN;
+        states.dsvFormat = data->depthFormat;
+        if (!data->depthTarget.ptr) { states.depthStencilState.DepthEnable = FALSE; states.depthStencilState.StencilEnable = FALSE; }
+        return states;
+    }
+
+    const CameraRenderTarget* Renderer::currentTarget() const { return requireRecording("Camera attachments").target; }
+    UINT Renderer::currentWidth() const { return requireRecording("Pass size").width; }
+    UINT Renderer::currentHeight() const { return requireRecording("Pass size").height; }
 
     //TODO CHANGE API
     bool Renderer::bindMaterial(const ResourceManager& rm, MaterialHandle mathandle,const VertexLayout& vertexLayout)
@@ -198,7 +222,9 @@ namespace csyren::render
         if (!shader)
             return false;
 
-        auto pso = core::Services::get < details::PSOFactory > ()->get(shaderHandle, shader, material->getStates(), vertexLayout);
+        // The pass decides the attachment formats; the material only carries blend/raster/depth state.
+        auto pso = core::Services::get < details::PSOFactory > ()->get(shaderHandle, shader, passStates(material->getStates()), vertexLayout);
+        if (!pso) return false;
         cmdList.setPipelineState(pso);
         cmdList.setRootSignature(shader->getRootSignature());
 
@@ -218,6 +244,7 @@ namespace csyren::render
             auto gpuHandle = tex->getGpuSrvHandle();
             // assume rootParameterIndex is known by shader reflection
             UINT rootIndex = shader->getRootParameterIndex(name);
+            if (rootIndex == UINT_MAX) continue;
             cmdList.setGraphicsRootDescriptorTable(rootIndex, gpuHandle);
         }
 
@@ -239,12 +266,101 @@ namespace csyren::render
         return binder.updateEntityBuffer(cmdList.raw(), *getEntityVariableBuffer(), layout, *getUploadBuffer());
     }
 
+    bool Renderer::bindShader(const ResourceManager& rm, ShaderHandle handle, const MaterialStateDesc& states, const VertexLayout& vertexLayout)
+    {
+        auto& data = requireRecording("bindShader");
+        auto* shader = rm.getShader(handle);
+        if (!shader) return false;
+        auto pso = core::Services::get<details::PSOFactory>()->get(handle, shader, passStates(states), vertexLayout);
+        if (!pso) return false;
+        data.commands.setPipelineState(pso);
+        data.commands.setRootSignature(shader->getRootSignature());
+        return data.binder.updateFrameBuffer(data.commands.raw(), data.engine, shader->getSemanticBuffer(details::CBufferUpdateType::Pass), data.upload);
+    }
+
+    bool Renderer::bindComputeShader(const ResourceManager& rm, ComputeShaderHandle handle)
+    {
+        auto& data = requireRecording("bindComputeShader");
+        auto* shader = rm.getComputeShader(handle);
+        if (!shader) return false;
+        auto pso = core::Services::get<details::PSOFactory>()->getCompute(handle, shader);
+        if (!pso) return false;
+        data.commands.raw()->SetComputeRootSignature(shader->getRootSignature());
+        data.commands.setPipelineState(pso);
+        return true;
+    }
+
+    bool Renderer::setShaderTexture(const ShaderBase& shader, const std::string& name, D3D12_GPU_DESCRIPTOR_HANDLE srv)
+    {
+        auto& data = requireRecording("setShaderTexture");
+        const UINT slot = shader.getRootParameterIndex(name);
+        if (slot == UINT_MAX || !srv.ptr) return false;
+        if (shader.getType() == ShaderType::Compute) data.commands.raw()->SetComputeRootDescriptorTable(slot, srv);
+        else data.commands.raw()->SetGraphicsRootDescriptorTable(slot, srv);
+        return true;
+    }
+
+    bool Renderer::setShaderBuffer(const ShaderBase& shader, const std::string& name, D3D12_GPU_VIRTUAL_ADDRESS address)
+    {
+        auto& data = requireRecording("setShaderBuffer");
+        const UINT slot = shader.getRootParameterIndex(name);
+        if (slot == UINT_MAX || !address) return false;
+        if (shader.getType() == ShaderType::Compute) data.commands.raw()->SetComputeRootShaderResourceView(slot, address);
+        else data.commands.raw()->SetGraphicsRootShaderResourceView(slot, address);
+        return true;
+    }
+
+    bool Renderer::setShaderRWBuffer(const ShaderBase& shader, const std::string& name, D3D12_GPU_VIRTUAL_ADDRESS address)
+    {
+        auto& data = requireRecording("setShaderRWBuffer");
+        const UINT slot = shader.getRootParameterIndex(name);
+        if (slot == UINT_MAX || !address) return false;
+        if (shader.getType() == ShaderType::Compute) data.commands.raw()->SetComputeRootUnorderedAccessView(slot, address);
+        else data.commands.raw()->SetGraphicsRootUnorderedAccessView(slot, address);
+        return true;
+    }
+
+    bool Renderer::setShaderConstants(const ShaderBase& shader, const std::string& name, const void* constants, size_t size)
+    {
+        auto& data = requireRecording("setShaderConstants");
+        const UINT slot = shader.getRootParameterIndex(name);
+        if (slot == UINT_MAX) return false;
+        D3D12_GPU_VIRTUAL_ADDRESS address = 0;
+        if (data.upload.update(constants, size, &address) == size_t(-1)) return false;
+        if (shader.getType() == ShaderType::Compute) data.commands.raw()->SetComputeRootConstantBufferView(slot, address);
+        else data.commands.raw()->SetGraphicsRootConstantBufferView(slot, address);
+        return true;
+    }
+
+    bool Renderer::allocateUpload(size_t size, void** cpu, D3D12_GPU_VIRTUAL_ADDRESS* gpu)
+    {
+        auto& data = requireRecording("allocateUpload");
+        return data.upload.allocate(size, cpu, gpu) != size_t(-1);
+    }
+
+    void Renderer::drawFullscreen()
+    {
+        auto& data = requireRecording("drawFullscreen");
+        auto* commands = data.commands.raw();
+        commands->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        commands->IASetVertexBuffers(0, 0, nullptr);
+        commands->IASetIndexBuffer(nullptr);
+        commands->DrawInstanced(3, 1, 0, 0);
+    }
+
+    void Renderer::dispatch(UINT x, UINT y, UINT z)
+    {
+        auto& data = requireRecording("dispatch");
+        data.commands.raw()->Dispatch(x, y, z);
+    }
+
 
     void Renderer::beginResourceUpload()
     {
         auto* data = recording();
         CommandList& cmdList = data ? data->commands : _uploadCommands;
         cmdList.reset();
+        if (!data) _uploadOpen = true;
     }
 
 
@@ -256,6 +372,7 @@ namespace csyren::render
         _mainQueue.addCommands(&cmdList);
         _mainQueue.execute();
         waitForGpu();
+        if (!data) _uploadOpen = false;
     }
 
 }

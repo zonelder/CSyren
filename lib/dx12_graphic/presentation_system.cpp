@@ -30,7 +30,11 @@ namespace csyren::render
     core::TaskDescription FramePrepareSystem::describe() const {
         core::TaskDescription d; d.phase = "prepare";
         d.gpuScope = core::GpuTaskScope::View;
-        d.gpu("scene.color", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
+        // Clears the deferred geometry targets. scene.hdr / scene.color are
+        // fully written by the light pass and the tonemap pass.
+        d.gpu("scene.gbuffer0", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
+        d.gpu("scene.gbuffer1", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
+        d.gpu("scene.gbuffer2", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
         d.gpu("scene.depth", D3D12_RESOURCE_STATE_DEPTH_WRITE, core::AccessMode::Write);
         return d;
     }
@@ -143,7 +147,10 @@ namespace csyren::render
 
     void FramePrepareSystem::execute() {
         auto* renderer = core::Services::get<Renderer>();
-        renderer->clearCamera();
+        // GBuffer contents outside geometry are ignored (depth == 0 marks the sky).
+        const float zero[4]{ 0, 0, 0, 0 };
+        renderer->clearColor(zero);
+        renderer->clearDepth();
     }
 
     void PresentationSystem::execute()

@@ -66,6 +66,10 @@ namespace csyren::render
         D3D12_SHADER_BYTECODE getDSBytecode() const noexcept { return getBytecode(ShaderStage::Domain); }
 
 		const LinkedBuffer* getConstantBuffer(details::CBufferUpdateType updateType) const noexcept;
+		// Number of SV_TARGET outputs of the pixel shader. Deferred (GBuffer)
+		// materials write 3 targets, forward materials write 1.
+		UINT renderTargetCount() const noexcept { return _renderTargetCount; }
+		bool isDeferred() const noexcept { return _renderTargetCount >= 3; }
 
 		const SemanticBufferLayout* getSemanticBuffer(details::CBufferUpdateType updateType) const noexcept;
 	private:
@@ -74,11 +78,13 @@ namespace csyren::render
         bool finalizeInit(ID3D12Device* device) override;
         void linkSemantics();
         void buildSemanticLayout();
+        void countRenderTargets();
 
 		std::vector<LinkedBuffer>								_linkedBuffers;
 		std::vector<SemanticBufferLayout>						_semanticLayouts;
 
 		std::vector<std::string>								_InputLayoutSemantic;
+		UINT													_renderTargetCount = 1;
 		std::vector< D3D12_INPUT_ELEMENT_DESC>					_inputLayout;
 	};
 }

@@ -13,6 +13,10 @@
 
 namespace csyren
 {
+    // Geometry (GBuffer) pass of the deferred pipeline: draws every entity whose
+    // material shader writes the three GBuffer targets (see shaders/gbuffer.hlsli).
+    // Single-target (forward/unlit/transparent) materials are drawn later by
+    // ForwardRenderSystem on top of the lit HDR image.
     class MeshRenderSystem : public core::System
     {
     public:
@@ -21,7 +25,9 @@ namespace csyren
             d.gpuScope = core::GpuTaskScope::View;
             d.read<core::Transform>().read<render::MeshFilter>().read<render::MeshRenderer>();
             d.readResource<render::ResourceManager>().readResource<core::SceneEntities>();
-            d.gpu("scene.color", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
+            d.gpu("scene.gbuffer0", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
+            d.gpu("scene.gbuffer1", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
+            d.gpu("scene.gbuffer2", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
             d.gpu("scene.depth", D3D12_RESOURCE_STATE_DEPTH_WRITE, core::AccessMode::Write); return d;
         }
 
@@ -53,7 +59,7 @@ namespace csyren
                 if (!mat) continue;
 
                 auto* shader = resources.getShader(mat->getShader());
-                if (!shader) continue;
+                if (!shader || !shader->isDeferred()) continue; // forward materials: ForwardRenderSystem
                 auto* cb = shader->getSemanticBuffer(render::details::CBufferUpdateType::Entity);
 
                 for (auto& [meshID, entities] : meshGroups)

@@ -190,6 +190,13 @@
     <ClInclude Include="load_status.h" />
     <ClInclude Include="material.h" />
     <ClInclude Include="mesh.h" />
+    <ClInclude Include="lighting\light_components.h" />
+    <ClInclude Include="lighting\scene_lights.h" />
+    <ClInclude Include="lighting\fullscreen_pass.h" />
+    <ClInclude Include="lighting\light_collect_system.h" />
+    <ClInclude Include="lighting\light_cluster_system.h" />
+    <ClInclude Include="lighting\light_pass_system.h" />
+    <ClInclude Include="lighting\tonemap_system.h" />
     <ClInclude Include="mesh_builder.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="gpu_resources.h" />
@@ -229,6 +236,12 @@
     <ClCompile Include="descriptors.cpp" />
     <ClCompile Include="material.cpp" />
     <ClCompile Include="mesh.cpp" />
+    <ClCompile Include="lighting\light_components.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

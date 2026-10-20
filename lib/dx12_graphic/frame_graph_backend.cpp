@@ -84,10 +84,14 @@ void FrameGraphBackend::prepareViews() {
     _resources.clear();
     for (const auto& view : renderer.cameraViews()) {
         branches.push_back({view->id,view->render}); viewsById.emplace(view->id,view);
-        const auto color = viewResource(view->id,"color"),depth = viewResource(view->id,"depth");
-        resources.push_back({color,D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE});
-        resources.push_back({depth,D3D12_RESOURCE_STATE_DEPTH_WRITE,D3D12_RESOURCE_STATE_DEPTH_WRITE});
-        _resources.emplace(color,view); _resources.emplace(depth,view);
+        // Every per-camera attachment is a logical resource resting in its own state.
+        for (size_t i = 0; i < size_t(ViewAttachment::Count); ++i) {
+            const auto attachment = ViewAttachment(i);
+            const auto name = viewResource(view->id,CameraRenderTarget::suffix(attachment));
+            const auto resting = static_cast<uint32_t>(CameraRenderTarget::restingState(attachment));
+            resources.push_back({name,resting,resting});
+            _resources.emplace(name,ViewResource{view,attachment});
+        }
     }
     if (core::Services::has<GpuResources>())
         for (const auto& [name,imported] : core::Services::get<GpuResources>()->_resources)
@@ -138,19 +142,28 @@ void FrameGraphBackend::prepareViews() {
         std::shared_ptr<CameraRenderView> view;
         if (auto binding = expanded.bindings.find(pass.name); binding != expanded.bindings.end()) view = viewsById.at(binding->second);
         const auto& usages = *usagesByPass.at(pass.name);
-        const auto uses = [&](const std::string& name, bool depth) {
-            return std::any_of(usages.begin(),usages.end(),[&](const auto& u) {
-                return u.resource == name && (depth ?
-                    u.requiredState == D3D12_RESOURCE_STATE_DEPTH_WRITE || u.requiredState == D3D12_RESOURCE_STATE_DEPTH_READ :
-                    u.requiredState == D3D12_RESOURCE_STATE_RENDER_TARGET);
-            });
-        };
-        const bool frameWait = queue != &_graphics && std::any_of(usages.begin(),usages.end(),[&](const auto& u) {
+        PassBinding binding{_storage.at(pass.name).get(),queueIndex,view,{},{},false};
+        for (const auto& usage : usages) {
+            const bool frameTarget = usage.resource == "frame.color" || usage.resource == "frame.depth";
+            const auto viewIt = _resources.find(usage.resource);
+            if (!frameTarget && viewIt == _resources.end()) continue; // imported resources are bound by the system
+            const bool depthResource = usage.resource == "frame.depth" ||
+                (viewIt != _resources.end() && CameraRenderTarget::isDepth(viewIt->second.attachment));
+            const bool buffer = viewIt != _resources.end() && CameraRenderTarget::isBuffer(viewIt->second.attachment);
+            if (buffer) continue;
+            if (depthResource) {
+                if (usage.requiredState == D3D12_RESOURCE_STATE_DEPTH_WRITE || usage.requiredState == D3D12_RESOURCE_STATE_DEPTH_READ)
+                    binding.depth = usage.resource;
+            } else if (usage.requiredState == D3D12_RESOURCE_STATE_RENDER_TARGET) {
+                if (binding.colors.size() >= D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT)
+                    throw std::invalid_argument("Too many render targets in pass " + pass.name);
+                binding.colors.push_back(usage.resource);
+            }
+        }
+        binding.frameWait = queue != &_graphics && std::any_of(usages.begin(),usages.end(),[&](const auto& u) {
             return mutableResources.contains(u.resource);
         });
-        _passes.push_back({_storage.at(pass.name).get(),queueIndex,view,
-            uses("frame.color",false),uses("frame.depth",true),
-            view && uses(viewResource(view->id,"color"),false),view && uses(viewResource(view->id,"depth"),true),frameWait});
+        _passes.push_back(std::move(binding));
     }
     for (const auto& [name, recordings] : expanded.recordings)
         for (const auto& pass : recordings) _recordings[name].push_back(indices.at(pass));
@@ -176,7 +189,7 @@ void FrameGraphBackend::collectRetired() {
 }
 ID3D12Resource* FrameGraphBackend::resource(const std::string& name) const {
     if (auto found = _resources.find(name); found != _resources.end())
-        return name.ends_with(".color") ? found->second->target->color() : found->second->target->depth();
+        return found->second.view->target->resource(found->second.attachment);
     if (name == "frame.color") return _state.frames[_state.frameIndex].color.Get();
     if (name == "frame.depth") return _state.depth.Get();
     if (core::Services::has<GpuResources>()) {
@@ -185,6 +198,16 @@ ID3D12Resource* FrameGraphBackend::resource(const std::string& name) const {
         if (found != imports.end()) return found->second.resource.Get();
     }
     throw std::invalid_argument("Unknown GPU resource: " + name);
+}
+FrameGraphBackend::TargetView FrameGraphBackend::colorTarget(const std::string& name) const {
+    if (name == "frame.color") return {_state.frames[_state.frameIndex].rtv.cpu,DXGI_FORMAT_R8G8B8A8_UNORM};
+    const auto& entry = _resources.at(name);
+    return {entry.view->target->rtv(entry.attachment),CameraRenderTarget::targetFormat(entry.attachment)};
+}
+FrameGraphBackend::TargetView FrameGraphBackend::depthTarget(const std::string& name) const {
+    if (name == "frame.depth") return {_state.dsv.cpu,DXGI_FORMAT_D32_FLOAT};
+    const auto& entry = _resources.at(name);
+    return {entry.view->target->dsv(),CameraRenderTarget::targetFormat(entry.attachment)};
 }
 void FrameGraphBackend::barriers(CommandList& commands, const std::vector<core::GpuExecutionPlan::Barrier>& list) {
     for (const auto& planned : list) {
@@ -220,16 +243,30 @@ void FrameGraphBackend::recordPass(size_t index,const std::function<void()>& cal
     const auto& view = bindingData.view;
     data.engine = view ? view->engine : renderer._engineVariableBuffer;
     data.background = view ? view->background : math::Vector4{_state.background[0],_state.background[1],_state.background[2],_state.background[3]};
+    data.target = view ? view->target.get() : nullptr;
     data.commands.reset();
     barriers(data.commands, pass.barriers);
     const auto target = view ? view->target : nullptr;
-    data.colorTarget = bindingData.viewColor ? target->rtv() : bindingData.color ? _state.frames[_state.frameIndex].rtv.cpu : D3D12_CPU_DESCRIPTOR_HANDLE{};
-    data.depthTarget = bindingData.viewDepth ? target->dsv() : bindingData.depth ? _state.dsv.cpu : D3D12_CPU_DESCRIPTOR_HANDLE{};
-    if (data.colorTarget.ptr) data.commands.setRenderTarget(0,data.colorTarget);
+    data.colorCount = 0;
+    for (auto& handle : data.colorTargets) handle = {};
+    for (auto& format : data.colorFormats) format = DXGI_FORMAT_UNKNOWN;
+    for (const auto& name : bindingData.colors) {
+        const auto color = colorTarget(name);
+        data.colorTargets[data.colorCount] = color.handle;
+        data.colorFormats[data.colorCount] = color.format;
+        data.commands.setRenderTarget(static_cast<uint8_t>(data.colorCount), color.handle);
+        ++data.colorCount;
+    }
+    data.colorTarget = data.colorCount ? data.colorTargets[0] : D3D12_CPU_DESCRIPTOR_HANDLE{};
+    if (!bindingData.depth.empty()) {
+        const auto depth = depthTarget(bindingData.depth);
+        data.depthTarget = depth.handle; data.depthFormat = depth.format;
+    } else { data.depthTarget = {}; data.depthFormat = DXGI_FORMAT_UNKNOWN; }
     if (data.depthTarget.ptr) data.commands.setDepthStencil(data.depthTarget);
-    if (data.colorTarget.ptr || data.depthTarget.ptr) data.commands.submitRenderTargets();
+    if (data.colorCount || data.depthTarget.ptr) data.commands.submitRenderTargets();
     const auto width = target ? target->width() : _state.width;
     const auto height = target ? target->height() : _state.height;
+    data.width = width; data.height = height;
     data.commands.setViewport({0,0,float(width),float(height),0,1});
     data.commands.setScissorRect({0,0,LONG(width),LONG(height)});
     ID3D12DescriptorHeap* heaps[]{core::Services::get<DescriptorManager>()->shaderHeap()};

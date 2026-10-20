@@ -17,6 +17,10 @@
             "scene": "active"
         },
         {
+            "class": "LightCollectSystem",
+            "scene": "active"
+        },
+        {
             "class": "FrameAcquireSystem",
             "scene": "active"
         },
@@ -26,6 +30,22 @@
         },
         {
             "class": "MeshRenderSystem",
+            "scene": "active"
+        },
+        {
+            "class": "LightClusterSystem",
+            "scene": "active"
+        },
+        {
+            "class": "LightPassSystem",
+            "scene": "active"
+        },
+        {
+            "class": "ForwardRenderSystem",
+            "scene": "active"
+        },
+        {
+            "class": "TonemapSystem",
             "scene": "active"
         },
         {

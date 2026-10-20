@@ -53,6 +53,8 @@ namespace csyren::render
 	};
 	class Texture;
     class CameraRenderTarget;
+    class ShaderBase;
+    class ComputeShader;
 
 	class Renderer
 	{
@@ -70,6 +72,10 @@ namespace csyren::render
 
 		void beginResourceUpload();
 		void endResourceUpload();
+        // True while GPU uploads can be recorded: inside the startup upload window
+        // or while a frame task is recording. Otherwise resources must use
+        // CPU-visible (upload heap) storage.
+        bool canUploadNow() const noexcept { return recording() != nullptr || _uploadOpen; }
 
 		ID3D12GraphicsCommandList* commandList() const;
 		ID3D12Device* device() const noexcept { return _device.Get(); }
@@ -82,6 +88,29 @@ namespace csyren::render
 		bool bindMaterial(const ResourceManager& rm, MaterialHandle material,const VertexLayout& vertexLayout);
 
 		bool bindEntity(const SemanticBufferLayout* layout);
+
+        // ---- Pass-level drawing API (valid while a GPU task records) ----
+        // Pipeline for a shader that is not wrapped in a material (fullscreen
+        // passes). Render target formats always come from the pass; the frame
+        // semantic cbuffer is bound.
+        bool bindShader(const ResourceManager& rm, ShaderHandle shader, const MaterialStateDesc& states, const VertexLayout& vertexLayout);
+        bool bindComputeShader(const ResourceManager& rm, ComputeShaderHandle shader);
+        // Resource binding by the shader's variable name (root parameter lookup).
+        bool setShaderTexture(const ShaderBase& shader, const std::string& name, D3D12_GPU_DESCRIPTOR_HANDLE srv);
+        bool setShaderBuffer(const ShaderBase& shader, const std::string& name, D3D12_GPU_VIRTUAL_ADDRESS address);   // StructuredBuffer / ByteAddressBuffer (root SRV)
+        bool setShaderRWBuffer(const ShaderBase& shader, const std::string& name, D3D12_GPU_VIRTUAL_ADDRESS address); // RWStructuredBuffer (root UAV)
+        bool setShaderConstants(const ShaderBase& shader, const std::string& name, const void* data, size_t size);    // cbuffer (root CBV, transient upload)
+        // Transient upload memory that lives until the pass's command list retires.
+        bool allocateUpload(size_t size, void** cpu, D3D12_GPU_VIRTUAL_ADDRESS* gpu);
+        void drawFullscreen();
+        void dispatch(UINT x, UINT y = 1, UINT z = 1);
+        // Attachments of the camera view being recorded (nullptr for frame passes).
+        const CameraRenderTarget* currentTarget() const;
+        UINT currentWidth() const;
+        UINT currentHeight() const;
+        // Material states with the render target formats of the current pass.
+        MaterialStateDesc passStates(MaterialStateDesc states) const;
+
         using CameraSource = std::function<std::pair<const core::Camera*,const core::Transform*>()>;
         std::shared_ptr<details::CameraRenderView> addCameraView(CameraSource source);
         void removeCameraView(const std::shared_ptr<details::CameraRenderView>& view);
@@ -97,6 +126,9 @@ namespace csyren::render
         bool requestCameraRender(core::Entity::ID id) { return _cameraViews.request(id); }
         void requestPrimaryCameraRender() { if (_primaryView) _primaryView->schedule.request(); }
         void completeCameraViews() { for (auto& view : _views) if (view->render) view->schedule.submitted(view->ticket); }
+        // Scene lighting inputs for the next prepared camera views (written before FrameAcquireSystem).
+        RenderEnvironment& environment() noexcept { return _environment; }
+        const RenderEnvironment& environment() const noexcept { return _environment; }
         // Owner-thread API: resources retired while recording get this frame's final fence.
         void deferRelease(std::shared_ptr<void> resource);
         void collectDeferredReleases();
@@ -121,11 +153,18 @@ namespace csyren::render
             EntityVariableBuffer entity;
             ShaderParameterBinder binder;
             D3D12_CPU_DESCRIPTOR_HANDLE colorTarget{},depthTarget{};
+            D3D12_CPU_DESCRIPTOR_HANDLE colorTargets[D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT]{};
+            DXGI_FORMAT colorFormats[D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT]{};
+            DXGI_FORMAT depthFormat = DXGI_FORMAT_UNKNOWN;
+            UINT colorCount = 0;
+            UINT width = 0, height = 0;
+            CameraRenderTarget* target = nullptr;
             math::Vector4 background{};
         };
         struct RecordingBinding { Renderer* renderer; RecordingData* data; };
         inline static thread_local RecordingBinding* _recording = nullptr;
         RecordingData* recording() const;
+        RecordingData& requireRecording(const char* what) const;
 		void waitForGpu();
 		void enableDebugLayer();
 		void createDevice();
@@ -142,9 +181,11 @@ namespace csyren::render
 		ShaderParameterBinder					_parameterBinder;
         details::CameraRenderRegistry _cameraViews;
         core::WorldTransforms _worldTransforms;
+        RenderEnvironment _environment;
         struct ExternalCamera { CameraSource source; std::shared_ptr<details::CameraRenderView> view; };
         std::vector<ExternalCamera> _externalCameras;
         bool _presentCameraOutput = true;
+        bool _uploadOpen = false;
         std::shared_ptr<details::CameraRenderView> _primaryView;
         std::vector<std::shared_ptr<details::CameraRenderView>> _views;
 

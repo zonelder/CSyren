@@ -24,7 +24,8 @@ namespace csyren::render
 		CS_ASSERT(slot <= state_.rtvCount);
 
 		state_.rtvs[slot] = rtv;
-		state_.rtvCount = std::max(slot, state_.rtvCount);
+		// rtvCount is the number of bound slots (slots are bound in order 0..n-1).
+		state_.rtvCount = std::max<uint8_t>(static_cast<uint8_t>(slot + 1), state_.rtvCount);
 
 	}
 

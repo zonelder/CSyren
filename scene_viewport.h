@@ -1,4 +1,5 @@
 #pragma once
+#include <cmath>
 #include "scene_picking.h"
 #include "editor_selection.h"
 #include "editor_viewport_state.h"
@@ -10,6 +11,7 @@
 #include "imGui/imgui.h"
 #include "scene_gizmo.h"
 #include "dx12_graphic/camera_render_target.h"
+#include "dx12_graphic/lighting/light_components.h"
 
 namespace csyren::editor
 {
@@ -177,6 +179,7 @@ namespace csyren::editor
             session.finishEdit(); selection.select(hit.entity);
         }
         auto& scene = session.editorScene();
+        drawLightGizmos(scene, vp, image, selection.selected());
         if (!scene.hasComponent<core::Transform>(selection.selected())) return;
         const auto bounds = selectionBounds(localBounds(scene, resources, selection.selected()));
         XMFLOAT4 corners[8];
@@ -195,6 +198,62 @@ namespace csyren::editor
                 auto a = corners[i], b = corners[i|bit];
                 if (clipBoundsEdge(a, b)) draw->AddLine(project(a), project(b), IM_COL32(255, 190, 50, 255), 2.f);
             }
+        draw->PopClipRect();
+    }
+    // Light markers: a dot per point light (wire sphere of its radius when
+    // selected) and an arrow per directional light along the light direction.
+    static void drawLightGizmos(core::Scene& scene, DirectX::CXMMATRIX vp, const ViewportImage& image, core::Entity::ID selected)
+    {
+        using namespace DirectX;
+        auto* draw = ImGui::GetWindowDrawList();
+        draw->PushClipRect(ImVec2(image.x,image.y),ImVec2(image.x+image.width,image.y+image.height),true);
+        const auto project = [&](const math::Vector3& p, ImVec2& out) {
+            XMFLOAT4 c; XMStoreFloat4(&c, XMVector4Transform(XMVectorSet(p.x, p.y, p.z, 1), vp));
+            if (c.w <= 1e-4f) return false;
+            out = ImVec2(image.x + (c.x / c.w + 1) * .5f * image.width, image.y + (1 - c.y / c.w) * .5f * image.height);
+            return true;
+        };
+        const auto circle = [&](const math::Vector3& center, float radius, const math::Vector3& a, const math::Vector3& b, ImU32 color) {
+            ImVec2 previous{}; bool hasPrevious = false;
+            for (int i = 0; i <= 48; ++i) {
+                const float t = float(i) / 48 * 6.2831853f;
+                const math::Vector3 p = center + a * (std::cos(t) * radius) + b * (std::sin(t) * radius);
+                ImVec2 current;
+                if (!project(p, current)) { hasPrevious = false; continue; }
+                if (hasPrevious) draw->AddLine(previous, current, color, 1.f);
+                previous = current; hasPrevious = true;
+            }
+        };
+        for (auto [id, transform, light] : scene.view<const core::Transform, const render::PointLight>())
+        {
+            const auto position = core::worldMatrix(scene, id).translation();
+            ImVec2 center;
+            if (!project(position, center)) continue;
+            XMFLOAT4 rgb; XMStoreFloat4(&rgb, light.color);
+            const ImU32 color = IM_COL32(int(rgb.x * 255), int(rgb.y * 255), int(rgb.z * 255), light.enabled ? 255 : 90);
+            draw->AddCircleFilled(center, 5.f, color);
+            draw->AddCircle(center, 7.f, IM_COL32(0, 0, 0, 160), 0, 1.5f);
+            if (id == selected) {
+                circle(position, light.radius, math::Vector3::right, math::Vector3::up, color);
+                circle(position, light.radius, math::Vector3::right, math::Vector3::forward, color);
+                circle(position, light.radius, math::Vector3::up, math::Vector3::forward, color);
+            }
+        }
+        for (auto [id, transform, light] : scene.view<const core::Transform, const render::DirectionalLight>())
+        {
+            const auto world = core::worldMatrix(scene, id);
+            const auto position = world.translation();
+            auto direction = world.multiplyVector(math::Vector3::forward);
+            if (direction.sqrMagnitude() < 1e-8f) continue;
+            direction.normalize();
+            ImVec2 from, to;
+            if (!project(position, from) || !project(position + direction * 3.f, to)) continue;
+            XMFLOAT4 rgb; XMStoreFloat4(&rgb, light.color);
+            const ImU32 color = IM_COL32(int(rgb.x * 255), int(rgb.y * 255), int(rgb.z * 255), light.enabled ? 255 : 90);
+            draw->AddLine(from, to, color, id == selected ? 3.f : 2.f);
+            draw->AddCircleFilled(to, 4.f, color);
+            draw->AddCircle(from, 8.f, color, 0, 2.f);
+        }
         draw->PopClipRect();
     }
     private:

@@ -40,7 +40,7 @@ namespace csyren::editor
         core::TaskDescription describe() const override {
             core::TaskDescription d; d.phase = "render"; d.affinity = core::TaskAffinity::MainThread;
             d.exclusiveScene = true; d.dynamicResources = true; d.structuralChanges = true;
-            d.after = {"MeshRenderSystem"};
+            d.after = {"TonemapSystem"}; // scene.color is final after the tonemap pass
             d.writeResource<render::ResourceManager>();
             d.gpu("frame.color", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
             d.gpu("scene.color", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, core::AccessMode::Read); return d;

@@ -63,12 +63,16 @@ namespace
                 it->second = D3D12_SHADER_VISIBILITY_ALL;
         }
 
-        /* ----- 2. constant-buffer introspection (kept for your editor) ----- */
+        /* ----- 2. constant-buffer introspection (kept for the editor) ----- */
         for (UINT i = 0; i < desc.ConstantBuffers; ++i)
         {
             auto* cb = refl->GetConstantBufferByIndex(i);
             D3D12_SHADER_BUFFER_DESC cbDesc;
             cb->GetDesc(&cbDesc);
+
+            // Structured buffers are also reported as "constant buffers" (resource
+            // bind type) by the reflection API; only real cbuffers have a layout we bind.
+            if (cbDesc.Type != D3D_CT_CBUFFER) continue;
 
             cbSizes[cbDesc.Name] = cbDesc.Size;
 
@@ -215,6 +219,12 @@ namespace csyren::render
             });
 
         /* ---------- build root parameters ---------- */
+        // Layout per resource:
+        //   cbuffer                         -> root CBV
+        //   Texture*                        -> descriptor table (1 SRV)
+        //   (RW)StructuredBuffer / (RW)ByteAddressBuffer -> root SRV / root UAV (GPU address, no descriptor)
+        //   RWTexture*                      -> descriptor table (1 UAV)
+        //   SamplerState                    -> static sampler (anisotropic, wrap)
         std::vector<D3D12_ROOT_PARAMETER1>   rootParams;
         std::vector<D3D12_STATIC_SAMPLER_DESC> staticSamplers;
         std::vector<D3D12_DESCRIPTOR_RANGE1>   ranges;
@@ -232,10 +242,9 @@ namespace csyren::render
             info.shaderRegister = key.reg;
             info.registerSpace = key.space;
             info.rootParameterIndex = static_cast<UINT>(rootParams.size());
-            _resourceMap[info.name] = std::move(info);
 
-            switch (key.type)        // crude but fast way to know the type
-            {                           // (you can store the real type in key)
+            switch (key.type)
+            {
             case D3D_SIT_CBUFFER:                   // b = CBV
                 p.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
                 p.Descriptor.ShaderRegister = key.reg;
@@ -243,9 +252,7 @@ namespace csyren::render
                 p.Descriptor.Flags = D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC;
                 break;
 
-            case D3D_SIT_TEXTURE:            // обычные SRV
-            case D3D_SIT_STRUCTURED:         // structured buffer (через SRV)
-            case D3D_SIT_BYTEADDRESS:        // RAW buffer (через SRV)
+            case D3D_SIT_TEXTURE:            // texture SRV
             {
                 ranges.emplace_back();
                 auto& r = ranges.back();
@@ -260,6 +267,13 @@ namespace csyren::render
                 p.DescriptorTable.pDescriptorRanges = &r;
                 break;
             }
+            case D3D_SIT_STRUCTURED:         // StructuredBuffer (root SRV)
+            case D3D_SIT_BYTEADDRESS:        // ByteAddressBuffer (root SRV)
+                p.ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+                p.Descriptor.ShaderRegister = key.reg;
+                p.Descriptor.RegisterSpace = key.space;
+                p.Descriptor.Flags = D3D12_ROOT_DESCRIPTOR_FLAG_NONE;
+                break;
             case D3D_SIT_SAMPLER:
             {
                 D3D12_STATIC_SAMPLER_DESC s = {};
@@ -273,11 +287,16 @@ namespace csyren::render
                 s.RegisterSpace = key.space;
                 s.ShaderVisibility = vis;
                 staticSamplers.push_back(s);
-                continue; // sampler не добавляет root param
+                continue; // samplers are not root parameters
             }
-            case D3D_SIT_UAV_RWTYPED:
             case D3D_SIT_UAV_RWSTRUCTURED:
             case D3D_SIT_UAV_RWBYTEADDRESS:
+                p.ParameterType = D3D12_ROOT_PARAMETER_TYPE_UAV;
+                p.Descriptor.ShaderRegister = key.reg;
+                p.Descriptor.RegisterSpace = key.space;
+                p.Descriptor.Flags = D3D12_ROOT_DESCRIPTOR_FLAG_DATA_VOLATILE;
+                break;
+            case D3D_SIT_UAV_RWTYPED:
             case D3D_SIT_UAV_APPEND_STRUCTURED:
             case D3D_SIT_UAV_CONSUME_STRUCTURED:
             case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
@@ -297,6 +316,7 @@ namespace csyren::render
             }
             default: continue;
             }
+            _resourceMap[info.name] = std::move(info);
             rootParams.push_back(p);
         }
 
@@ -306,7 +326,8 @@ namespace csyren::render
         desc.Desc_1_1.pParameters = rootParams.data();
         desc.Desc_1_1.NumStaticSamplers = static_cast<UINT>(staticSamplers.size());
         desc.Desc_1_1.pStaticSamplers = staticSamplers.data();
-        desc.Desc_1_1.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+        desc.Desc_1_1.Flags = _type == ShaderType::Compute ? D3D12_ROOT_SIGNATURE_FLAG_NONE
+            : D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
         Microsoft::WRL::ComPtr<ID3DBlob> blob, err;
         if (DX_FAILED(D3D12SerializeVersionedRootSignature(&desc, &blob, &err)))

@@ -30,8 +30,17 @@
     <None Include="CSyren.csyrenproj" />
     <None Include="assets\app.systems" />
     <None Include="assets\editor.systems" />
+    <None Include="docs\rendering.md" />
     <None Include="docs\physics_layers.md" />
     <None Include="docs\reflection.md" />
+    <None Include="assets\shaders\lit.shader" />
+    <None Include="assets\shaders\lit_texture.shader" />
+    <None Include="assets\shaders\lighting.hlsli" />
+    <None Include="assets\shaders\gbuffer.hlsli" />
+    <None Include="assets\shaders\forward_lit.shader" />
+    <None Include="assets\shaders\light_pass.shader" />
+    <None Include="assets\shaders\tonemap.shader" />
+    <None Include="assets\shaders\light_cluster.coshader" />
     <None Include="CSyren.paths.props" />
   </ItemGroup>
   <ItemGroup>
@@ -48,6 +57,7 @@
     <ClInclude Include="inspector_window.h" />
     <ClInclude Include="math_editor.h" />
     <ClInclude Include="mesh_render_system.h" />
+    <ClInclude Include="forward_render_system.h" />
     <ClInclude Include="mesh_filter.h" />
     <ClInclude Include="statistic_window.h" />
     <ClInclude Include="scene_hierarchy.h" />

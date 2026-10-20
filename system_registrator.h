@@ -16,3 +16,10 @@
 #include "dx12_graphic/frame_prepare_system.h"
 
 #include "core/scene_events_system.h"
+
+// Deferred + forward lighting pipeline.
+#include "dx12_graphic/lighting/light_collect_system.h"
+#include "dx12_graphic/lighting/light_cluster_system.h"
+#include "dx12_graphic/lighting/light_pass_system.h"
+#include "dx12_graphic/lighting/tonemap_system.h"
+#include "forward_render_system.h"

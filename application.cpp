@@ -49,6 +49,7 @@
 
 
 #include "system_registrator.h"
+#include "dx12_graphic/lighting/scene_lights.h"
 #include "statistic_monitor.h"
 
 #include "math_editor.h"
@@ -121,6 +122,7 @@ namespace csyren
 		core::details::ServiceRegistry::create<render::DescriptorManager>();
 		core::details::ServiceRegistry::create<render::Renderer>();
         core::details::ServiceRegistry::create<render::GpuResources>();
+		core::details::ServiceRegistry::create<render::SceneLights>();
 		core::details::ServiceRegistry::create<render::ResourceManager>();
 		core::details::ServiceRegistry::create<render::details::PSOFactory>();
 		core::details::ServiceRegistry::create<editor::EditorSelection>();

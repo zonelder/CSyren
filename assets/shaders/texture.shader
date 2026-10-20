@@ -1,4 +1,4 @@
-
+// Unlit textured (forward pass). Texture data is sRGB; written as linear radiance.
 //@update frame
 cbuffer perFrame
 {
@@ -46,6 +46,5 @@ PS_Input VSMain(VS_Input input)
 float4 PSMain(PS_Input input) : SV_TARGET
 {
     float4 color = diffuseTexture.Sample(samplerLinear, input.uv);
-    return color;
+    return float4(pow(max(color.rgb, 0.0f), 2.2f), color.a);
 }
-

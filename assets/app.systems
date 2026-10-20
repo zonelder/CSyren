@@ -13,6 +13,9 @@
             "class": "RenderEnvironmentSystem"
         },
         {
+            "class": "LightCollectSystem"
+        },
+        {
             "class": "FrameAcquireSystem"
         },
         {
@@ -20,6 +23,18 @@
         },
         {
             "class": "MeshRenderSystem"
+        },
+        {
+            "class": "LightClusterSystem"
+        },
+        {
+            "class": "LightPassSystem"
+        },
+        {
+            "class": "ForwardRenderSystem"
+        },
+        {
+            "class": "TonemapSystem"
         },
         {
             "class": "PresentationSystem"
