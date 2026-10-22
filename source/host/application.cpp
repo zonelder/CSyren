@@ -4,6 +4,8 @@
 #include "core/system_manager.h"
 #include "core/window.h"
 #include "serializer.h"
+#include "prefab_file.h"
+#include "core/prefab.h"
 
 #include <cassert>
 #include <format>
@@ -109,6 +111,11 @@ namespace csyren
         });
 		core::details::ServiceRegistry::create<Serializer>();
         core::details::ServiceRegistry::create<ArchiveSceneStorage>(*core::Services::get<Serializer>());
+        // Prefabs (core::Spawn, editor "Instantiate prefab") are read with the scene archive's sections.
+        core::details::ServiceRegistry::create<core::PrefabLibrary>().setLoader(
+            prefabFileLoader([storage = core::Services::get<ArchiveSceneStorage>()](core::SerializationContext& context) {
+                storage->configureComponentArchive(context);
+            }));
         core::details::ServiceRegistry::create<editor::SceneSession>(*core::Services::get<ArchiveSceneStorage>());
         core::details::ServiceRegistry::create<editor::EditorViewportState>();
 		core::details::ServiceRegistry::create<physics::PhysicsLayers>(); // layer names and collision rules are defined by the project

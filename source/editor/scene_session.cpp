@@ -4,6 +4,8 @@
 #include "core/scene_serialization_context.h"
 #include <stdexcept>
 #include "model_instantiator.h"
+#include "prefab_file.h"
+#include "core/prefab.h"
 #include "core/services.h"
 
 namespace csyren::editor
@@ -172,6 +174,61 @@ namespace csyren::editor
         return _history.execute(std::move(command), context);
     }
 
+    bool SceneSession::savePrefab(EntityKey key, const std::string& path)
+    {
+        const auto id = resolve(key);
+        if (!key || id == core::EntityManager::ROOT_PARENT || !editorScene().entities().contains(id))
+        { _error = "Select an object to save as a prefab."; return false; }
+        std::string error;
+        if (!savePrefabFile(editorScene(), id, path, [this](core::SerializationContext& context) { _storage.configureComponentArchive(context); }, error))
+        { _error = "Cannot save prefab '" + path + "': " + error; return false; }
+        if (core::Services::has<core::PrefabLibrary>())
+        {
+            auto* library = core::Services::get<core::PrefabLibrary>();
+            library->invalidate(path);
+        }
+        log::info("Saved prefab '{}'", core::normalizePrefabPath(path));
+        return true;
+    }
+
+    bool SceneSession::instantiatePrefab(const std::string& path, const math::Vector3& position)
+    {
+        if (!core::Services::has<core::PrefabLibrary>()) { _error = "No prefab library."; return false; }
+        auto* library = core::Services::get<core::PrefabLibrary>();
+        library->invalidate(path); // pick up a file changed outside the editor
+        auto prefab = library->load(path);
+        if (!prefab) { _error = "Cannot load prefab '" + path + "' (see the log)."; return false; }
+        // Keys are allocated on the first execute and reused by redo.
+        auto keys = std::make_shared<std::vector<EntityKey>>();
+        auto command = std::make_unique<FunctionCommand>("Instantiate prefab",
+            [this, prefab, keys, position](EditContext& context)
+            {
+                core::SpawnPose pose;
+                pose.position = position;
+                const auto root = prefab->instantiate(context.scene, pose);
+                if (root == core::Entity::invalidID) return false;
+                const auto created = BranchArchive::collect(context.scene, root);
+                if (keys->empty()) for (size_t i = 0; i < created.size(); ++i) keys->push_back(++_nextKey);
+                if (keys->size() != created.size())
+                { context.scene.destroyEntity(root); context.scene.flush(); return false; }
+                context.entities.reserve(context.entities.size() + keys->size());
+                for (size_t i = 0; i < keys->size(); ++i) context.entities[(*keys)[i]] = created[i];
+                _createdKey = keys->front();
+                return true;
+            },
+            [keys](EditContext& context)
+            {
+                if (keys->empty()) return false;
+                const auto root = context.resolve(keys->front());
+                if (!context.scene.entities().contains(root)) return false;
+                context.scene.destroyEntity(root); context.scene.flush();
+                for (auto key : *keys) context.entities.erase(key);
+                return true;
+            });
+        auto context = editContext();
+        return _history.execute(std::move(command), context);
+    }
+
     bool SceneSession::create(const math::Vector3& position)
     {
         const auto key = ++_nextKey;
@@ -272,64 +329,38 @@ namespace csyren::editor
         EntityKey copyKey = 0;
         if (duplicate)
         {
-            std::vector<core::Entity::ID> branch{ root };
-            for (size_t i = 0; i < branch.size(); ++i)
-            {
-                const auto* entity = scene.entities().try_get(branch[i]);
-                branch.insert(branch.end(), entity->children.begin(), entity->children.end());
-            }
+            const auto branch = BranchArchive::collect(scene, root);
+            if (branch.empty()) return false;
             core::SerializationContext saving;
             _storage.configureComponentArchive(saving);
             auto& savedRefs = saving.emplaceService<core::SceneEntityReferences>();
             for (const auto& [entityKey, id] : keys) savedRefs.saved.emplace(id, entityKey);
-            struct Component { size_t family; nlohmann::json value; };
-            std::vector<std::vector<Component>> components(branch.size());
-            for (size_t i = 0; i < branch.size(); ++i)
-                for (const auto family : scene.entities().try_get(branch[i])->componentView())
-                {
-                    const auto* info = core::reflection::ComponentRegistry::get(family);
-                    if (!info || !info->metaType) return false;
-                    Component component{ family, {} };
-                    core::JsonArchiveWriter writer(component.value);
-                    if (!core::reflection::save(writer, saving, *info->metaType, info->getRaw(&scene, branch[i]))) return false;
-                    components[i].push_back(std::move(component));
-                }
-            nlohmann::json sections;
-            core::JsonArchiveWriter sectionWriter(sections);
-            if (!sectionWriter.object() || !saving.saveSections(sectionWriter) || !sectionWriter.endObject()) return false;
+            BranchArchive archive;
+            std::string error;
+            if (!archive.save(scene, branch, saving, error)) { _error = "Cannot duplicate: " + error; return false; }
+            archive.entities.front().name += " (Copy)";
+            // References inside the branch resolve to the copies, references leaving it to the originals.
             core::SerializationContext loading;
             _storage.configureComponentArchive(loading);
             auto& loadedRefs = loading.emplaceService<core::SceneEntityReferences>();
             for (const auto& [entityKey, id] : keys) loadedRefs.loaded.emplace(entityKey, id);
+            if (!archive.loadSections(loading, error)) { _error = "Cannot duplicate: " + error; return false; }
             auto batch = scene.stageEntities(branch.size());
-            auto scope = loading.scopedService(batch);
-            std::unordered_map<core::Entity::ID, core::Entity::ID> copies;
-            for (size_t i = 0; i < branch.size(); ++i)
+            std::vector<core::Entity::ID> copies;
             {
-                const auto* entity = scene.entities().try_get(branch[i]);
-                const auto copy = batch.createEntity(entity->name + (i == 0 ? " (Copy)" : ""));
-                copies.emplace(branch[i], copy);
-                loadedRefs.loaded[savedRefs.saved.at(branch[i])] = copy;
+                auto scope = loading.scopedService(batch);
+                copies = archive.create(batch, loadedRefs);
+                if (!archive.load(batch, copies, loading, error) || !loading.finishLoad())
+                { _error = "Cannot duplicate: " + error; return false; }
+            }
+            for (size_t i = 0; i < copies.size(); ++i)
+            {
                 const auto newKey = ++_nextKey;
-                keys.emplace(newKey, copy);
+                keys.emplace(newKey, copies[i]);
                 if (i == 0) copyKey = newKey;
             }
-            core::JsonArchiveReader sectionReader(sections);
-            uint32_t version{};
-            if (!sectionReader.object(version) || !loading.loadSections(sectionReader) || !sectionReader.endObject()) return false;
-            for (size_t i = 0; i < branch.size(); ++i)
-            {
-                const auto copy = copies.at(branch[i]);
-                if (i && !batch.setParent(copy, copies.at(scene.entities().try_get(branch[i])->parent))) return false;
-                for (const auto& component : components[i])
-                {
-                    const auto* info = core::reflection::ComponentRegistry::get(component.family);
-                    core::JsonArchiveReader reader(component.value);
-                    if (!core::reflection::load(reader, loading, *info->metaType, batch.addComponent(copy, component.family))) return false;
-                }
-            }
             const auto parent = scene.entities().try_get(root)->parent;
-            if (!loading.finishLoad() || !scene.append(std::move(batch)) || !scene.setParent(copies.at(root), parent)) return false;
+            if (!scene.append(std::move(batch)) || !scene.setParent(copies.front(), parent)) return false;
         }
         else
         {
@@ -397,6 +428,8 @@ namespace csyren::editor
         case SceneOperation::Reload: return open(_path, request.discardChanges);
         case SceneOperation::Import: return import(request.path);
         case SceneOperation::ImportModel: return importModel(request.path);
+        case SceneOperation::SavePrefab: return savePrefab(request.entity, request.path);
+        case SceneOperation::InstantiatePrefab: return instantiatePrefab(request.path, request.position);
         case SceneOperation::Save: return save(_path);
         case SceneOperation::SaveAs: return save(request.path);
         case SceneOperation::Play: return play();

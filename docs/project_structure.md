@@ -35,7 +35,7 @@ MyGame/
   MyGame.sln          engine projects (solution folder "CSyren") + MyGame.vcxproj
   MyGame.vcxproj      imports CSyren.project.props / .targets, compiles source\**\*.cpp
   source/             components, systems, services (any subfolders)
-  assets/             "project:" mount — scenes, models, app.systems, editor.systems
+  assets/             "project:" mount — scenes, models, prefabs, app.systems, editor.systems
   build/              generated registry, binaries, cache (not in source control)
 ```
 

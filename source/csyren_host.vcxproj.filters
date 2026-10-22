@@ -48,6 +48,9 @@
     <ClCompile Include="runtime\serializer_scene.cpp">
       <Filter>runtime</Filter>
     </ClCompile>
+    <ClCompile Include="runtime\prefab_file.cpp">
+      <Filter>runtime</Filter>
+    </ClCompile>
     <ClCompile Include="..\lib\dx12_graphic\resource_manager.cpp">
       <Filter>runtime</Filter>
     </ClCompile>
@@ -122,6 +125,9 @@
     <ClInclude Include="editor\system_window.h">
       <Filter>editor</Filter>
     </ClInclude>
+    <ClInclude Include="editor\prefab_editor.h">
+      <Filter>editor</Filter>
+    </ClInclude>
     <ClInclude Include="host\application.h">
       <Filter>host</Filter>
     </ClInclude>
@@ -162,6 +168,9 @@
       <Filter>runtime</Filter>
     </ClInclude>
     <ClInclude Include="runtime\statistic_monitor.h">
+      <Filter>runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="runtime\prefab_file.h">
       <Filter>runtime</Filter>
     </ClInclude>
   </ItemGroup>

@@ -81,6 +81,9 @@ editor scene to keep the values).
 ### Editor
 
 * **File → Import model…** instantiates a `.glb`/`.gltf` as an entity tree (undoable).
+* **Edit → Save object as prefab…** writes the selected object and its children
+  to a `.prefab` file; **File → Instantiate prefab…** places a copy (undoable).
+  `PrefabRef` fields show the path and whether the file exists.
 * `editor::EditorOverlays` service: named ImGui callbacks drawn by `EditorSystem`
   after its windows. The game HUD (crosshair, speed, state, ammo) uses it.
 

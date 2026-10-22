@@ -5,7 +5,9 @@
 #include "editor_viewport_state.h"
 #include "editor_toolbar_layout.h"
 #include "core/services.h"
+#include <cstdio>
 #include <optional>
+#include <string>
 
 // The bundled ImGui viewport sidebar reserves space below the main menu.
 namespace ImGui
@@ -46,6 +48,7 @@ namespace csyren::editor
                 if (ImGui::MenuItem("Open / Replace...", nullptr, false, editable)) file(SceneOperation::Open);
                 if (ImGui::MenuItem("Import...", nullptr, false, editable)) file(SceneOperation::Import);
                 if (ImGui::MenuItem("Import model...", nullptr, false, editable)) file(SceneOperation::ImportModel);
+                if (ImGui::MenuItem("Instantiate prefab...", nullptr, false, editable)) file(SceneOperation::InstantiatePrefab);
                 if (ImGui::MenuItem("Reload", nullptr, false, editable && !session.path().empty())) replace(session, SceneOperation::Reload);
                 ImGui::Separator();
                 if (ImGui::MenuItem("Save", "Ctrl+S", false, editable)) save(session);
@@ -61,6 +64,8 @@ namespace csyren::editor
                 { session.finishEdit(); session.enqueue(SceneOperation::CreateEntity); }
                 if (ImGui::MenuItem("Duplicate object", "Ctrl+D", false, editable && selectedKey(session))) entityAction(session, SceneOperation::DuplicateEntity);
                 if (ImGui::MenuItem("Delete object", "Delete", false, editable && selectedKey(session))) entityAction(session, SceneOperation::DeleteEntity);
+                ImGui::Separator();
+                if (ImGui::MenuItem("Save object as prefab...", nullptr, false, editable && selectedKey(session))) savePrefab(session);
                 ImGui::EndMenu();
             }
         }
@@ -117,18 +122,28 @@ namespace csyren::editor
             if (ImGui::BeginPopupModal("Scene file", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
             {
                 const auto operation = *_fileOperation;
+                const bool prefab = operation == SceneOperation::SavePrefab || operation == SceneOperation::InstantiatePrefab;
+                char* path = prefab ? _prefabPath : _path;
                 ImGui::TextUnformatted(operation == SceneOperation::Open ? "Replace the current scene" :
                     operation == SceneOperation::Import ? "Import into the current scene" :
-                    operation == SceneOperation::ImportModel ? "Import a model (.glb / .gltf) as entities" : "Save scene as");
+                    operation == SceneOperation::ImportModel ? "Import a model (.glb / .gltf) as entities" :
+                    operation == SceneOperation::SavePrefab ? "Save the selected object and its children as a prefab" :
+                    operation == SceneOperation::InstantiatePrefab ? "Create a copy of a prefab in the scene" : "Save scene as");
                 ImGui::SetNextItemWidth(480);
-                ImGui::InputText("Path", _path, sizeof(_path));
-                ImGui::TextDisabled("Relative to project assets, or an absolute path");
-                ImGui::BeginDisabled(_path[0] == '\0');
+                ImGui::InputText("Path", path, prefab ? sizeof(_prefabPath) : sizeof(_path));
+                ImGui::TextDisabled(prefab ? "Relative to project assets, e.g. prefabs/crate.prefab" : "Relative to project assets, or an absolute path");
+                ImGui::BeginDisabled(path[0] == '\0');
                 if (ImGui::Button("Confirm"))
                 {
                     _fileOperation.reset();
                     if (operation == SceneOperation::Open) replace(session, operation);
-                    else session.enqueue(operation, _path);
+                    else if (operation == SceneOperation::SavePrefab)
+                    {
+                        SceneRequest request{ operation, session.documentId(), path };
+                        request.entity = _prefabEntity;
+                        session.enqueue(std::move(request));
+                    }
+                    else session.enqueue(operation, path);
                     if (_saveBeforeReplace) { continueReplace(session); _saveBeforeReplace = false; }
                     ImGui::CloseCurrentPopup();
                 }
@@ -172,6 +187,19 @@ namespace csyren::editor
             session.enqueue(std::move(request));
         }
         bool busy() const { return _pending.has_value() || _fileOperation.has_value(); }
+        void savePrefab(SceneSession& session)
+        {
+            _prefabEntity = selectedKey(session);
+            if (!_prefabEntity) return;
+            session.finishEdit();
+            // Suggest prefabs/<object name>.prefab.
+            std::string name = "object";
+            if (const auto* entity = session.editorScene().entities().try_get(session.resolve(_prefabEntity)); entity && !entity->name.empty())
+                name = entity->name;
+            for (auto& c : name) if (c == '/' || c == '\\' || c == ':' || c == ' ') c = '_';
+            std::snprintf(_prefabPath, sizeof(_prefabPath), "prefabs/%s.prefab", name.c_str());
+            file(SceneOperation::SavePrefab);
+        }
         void file(SceneOperation operation) { _fileOperation = operation; _openFile = true; }
         void save(SceneSession& session)
         {
@@ -191,6 +219,8 @@ namespace csyren::editor
             else session.enqueue(std::move(request));
         }
         char _path[1024] = "test_scene.scene";
+        char _prefabPath[1024] = "prefabs/";
+        EntityKey _prefabEntity = 0;
         std::optional<SceneRequest> _pending;
         std::optional<SceneOperation> _fileOperation;
         bool _openFile = false;

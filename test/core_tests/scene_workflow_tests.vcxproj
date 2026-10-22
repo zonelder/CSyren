@@ -38,6 +38,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="scene_pipeline_cases.h" />
+    <ClInclude Include="prefab_cases.h" />
     <ClInclude Include="gizmo_transform_cases.h" />
     <ClInclude Include="viewport_cases.h" />
   </ItemGroup>

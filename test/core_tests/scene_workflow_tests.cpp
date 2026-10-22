@@ -1145,6 +1145,7 @@ static void completeEditingWorkflow()
 }
 
 #include "scene_pipeline_cases.h"
+#include "prefab_cases.h"
 
 class SceneWorkflow : public ::testing::Test
 {
@@ -1178,6 +1179,11 @@ TEST_F(SceneWorkflow, pipeline_invalid_and_play_requests) { ASSERT_NO_THROW(pipe
 TEST_F(SceneWorkflow, pipeline_disk_roundtrip) { ASSERT_NO_THROW(pipelineDiskRoundtrip()); }
 TEST_F(SceneWorkflow, pipeline_nested_reference_cycles) { ASSERT_NO_THROW(pipelineNestedReferences()); }
 TEST_F(SceneWorkflow, pipeline_pending_edits_and_redo_branch) { ASSERT_NO_THROW(pipelinePendingEdits()); }
+TEST_F(SceneWorkflow, prefab_file_roundtrip) { ASSERT_NO_THROW(prefabFileRoundtrip()); }
+TEST_F(SceneWorkflow, prefab_document_rules) { ASSERT_NO_THROW(prefabDocumentRules()); }
+TEST_F(SceneWorkflow, prefab_missing_and_broken_files) { ASSERT_NO_THROW(prefabMissingAndBrokenFiles()); }
+TEST_F(SceneWorkflow, prefab_references_are_loaded_together) { ASSERT_NO_THROW(prefabReferencesAreLoadedTogether()); }
+TEST_F(SceneWorkflow, prefab_editor_save_and_instantiate) { ASSERT_NO_THROW(prefabEditorWorkflow()); }
 TEST_F(SceneWorkflow, complete_editing_workflow) { ASSERT_NO_THROW(completeEditingWorkflow()); }
 TEST_F(SceneWorkflow, component_add_remove) { ASSERT_NO_THROW(componentWorkflow()); }
 TEST_F(SceneWorkflow, component_resource_references) { ASSERT_NO_THROW(componentResourceWorkflow()); }

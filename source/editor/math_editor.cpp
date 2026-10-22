@@ -1,4 +1,5 @@
 #include "math_editor.h"
+#include "prefab_editor.h"
 using namespace csyren::math;
 
 namespace csyren::editor::details
@@ -16,6 +17,7 @@ namespace csyren::editor::details
         static Vector4Editor vector4Editor;
         static ColorEditor colorEditor;
         static QuaternionEditor quaternionEditor;
+        static PrefabRefEditor prefabEditor;
         using core::reflection::resolve;
         EditorRegistry::add(resolve<std::string>(), &stringEditor);
         EditorRegistry::add(resolve<float>(), &floatEditor);
@@ -26,5 +28,6 @@ namespace csyren::editor::details
         EditorRegistry::add(resolve<Vector4>(), &vector4Editor);
         EditorRegistry::add(resolve<Color>(), &colorEditor);
         EditorRegistry::add(resolve<Quaternion>(), &quaternionEditor);
+        EditorRegistry::add(resolve<core::PrefabRef>(), &prefabEditor);
     }
 }
