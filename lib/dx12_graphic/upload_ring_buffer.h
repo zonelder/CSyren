@@ -1,5 +1,6 @@
 #pragma once
 #include "renderer.h"
+#include "cstdmf/assert_helpler.h"
 
 namespace csyren::render
 {

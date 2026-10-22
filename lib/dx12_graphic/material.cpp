@@ -53,7 +53,7 @@ namespace csyren::render
         depthStencilState.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
         depthStencilState.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK; 
 
-        // --- Остальные параметры PSO ---
+        // --- РћСЃС‚Р°Р»СЊРЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹ PSO ---
         primitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
         numRenderTargets = 1;
         rtvFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;

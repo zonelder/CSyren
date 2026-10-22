@@ -145,7 +145,7 @@ TEST_F(SceneTest, LazyDestroyWithNewChildren) {
     auto parent = scene.createEntity();
     auto child1 = scene.createEntity("child1", parent);
 
-    // Помечаем parent на удаление
+    // РџРѕРјРµС‡Р°РµРј parent РЅР° СѓРґР°Р»РµРЅРёРµ
     scene.destroyEntity(parent);
 
     auto child2 = scene.createEntity("child2", parent);
@@ -241,19 +241,19 @@ TEST_F(SceneTest, NonTrivialAccess) {
         scene.addComponent<SecondComponent>(child);
     }
 
-    // Удаление промежуточного компонента
+    // РЈРґР°Р»РµРЅРёРµ РїСЂРѕРјРµР¶СѓС‚РѕС‡РЅРѕРіРѕ РєРѕРјРїРѕРЅРµРЅС‚Р°
     for (auto id : children) {
         scene.removeComponent<TestComponent>(id);
     }
     flush();
 
-    // Проверка состояния
+    // РџСЂРѕРІРµСЂРєР° СЃРѕСЃС‚РѕСЏРЅРёСЏ
     for (auto id : children) {
         EXPECT_EQ(scene.getComponent<TestComponent>(id), nullptr);
         EXPECT_NE(scene.getComponent<SecondComponent>(id), nullptr);
     }
 
-    // Удаление корня
+    // РЈРґР°Р»РµРЅРёРµ РєРѕСЂРЅСЏ
     scene.destroyEntity(root);
     flush();
     EXPECT_FALSE(scene.entities().contains(root));
@@ -282,14 +282,14 @@ TEST_F(SceneTest, StressCreateEntityOnly) {
 TEST_F(SceneTest, StressAddSingleComponent) {
     constexpr int N = 1000;
 
-    // Сначала создаём все entity
+    // РЎРЅР°С‡Р°Р»Р° СЃРѕР·РґР°С‘Рј РІСЃРµ entity
     std::vector<Entity::ID> ids;
     ids.reserve(N);
     for (int i = 0; i < N; ++i) {
         ids.push_back(scene.createEntity());
     }
 
-    // Теперь замеряем только addComponent
+    // РўРµРїРµСЂСЊ Р·Р°РјРµСЂСЏРµРј С‚РѕР»СЊРєРѕ addComponent
     auto start = std::chrono::high_resolution_clock::now();
 
     for (auto id : ids) {
@@ -378,7 +378,7 @@ TEST_F(SceneViewTest, IteratorAccess) {
 }
 
 TEST_F(SceneViewTest, PartialComponentRemoval) {
-    // Удаляем компонент у одной сущности
+    // РЈРґР°Р»СЏРµРј РєРѕРјРїРѕРЅРµРЅС‚ Сѓ РѕРґРЅРѕР№ СЃСѓС‰РЅРѕСЃС‚Рё
     auto view = scene.view<Position>();
     Entity::ID target = Entity::invalidID;
 
@@ -388,14 +388,14 @@ TEST_F(SceneViewTest, PartialComponentRemoval) {
             target = id;
         }
         });
-    flush(); // Применяем изменения
+    flush(); // РџСЂРёРјРµРЅСЏРµРј РёР·РјРµРЅРµРЅРёСЏ
 
-    // Проверяем обновленное состояние
+    // РџСЂРѕРІРµСЂСЏРµРј РѕР±РЅРѕРІР»РµРЅРЅРѕРµ СЃРѕСЃС‚РѕСЏРЅРёРµ
     int count = 0;
     scene.view<Position>().each([&](auto...) { count++; });
     EXPECT_EQ(count, 2);
 
-    // Должны получить nullptr для удаленного компонента
+    // Р”РѕР»Р¶РЅС‹ РїРѕР»СѓС‡РёС‚СЊ nullptr РґР»СЏ СѓРґР°Р»РµРЅРЅРѕРіРѕ РєРѕРјРїРѕРЅРµРЅС‚Р°
     EXPECT_EQ(scene.getComponent<Position>(target), nullptr);
 }
 
@@ -430,7 +430,7 @@ TEST_F(SceneViewPerformanceTest, PerformanceTest)
 
 class SceneViewHardcoreTest : public SceneTest {
 protected:
-    // Вспомогательная функция для создания сущностей с разным набором компонентов
+    // Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅР°СЏ С„СѓРЅРєС†РёСЏ РґР»СЏ СЃРѕР·РґР°РЅРёСЏ СЃСѓС‰РЅРѕСЃС‚РµР№ СЃ СЂР°Р·РЅС‹Рј РЅР°Р±РѕСЂРѕРј РєРѕРјРїРѕРЅРµРЅС‚РѕРІ
     void createEntityWithComponents(const std::vector<int>& componentTypes) {
         auto id = scene.createEntity();
         for (int type : componentTypes) {

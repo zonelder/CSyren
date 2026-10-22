@@ -178,14 +178,12 @@
     <ClInclude Include="command_list.h" />
     <ClInclude Include="command_list.ipp" />
     <ClInclude Include="compute_shader.h" />
-    <ClInclude Include="constant_buffer.h" />
     <ClInclude Include="descriptor_allocation.h" />
     <ClInclude Include="descriptor_heap.h" />
     <ClInclude Include="descriptors.h" />
     <ClInclude Include="dx_log.h" />
     <ClInclude Include="dx_main.h" />
     <ClInclude Include="engine_semantics.h" />
-    <ClInclude Include="fence.h" />
     <ClInclude Include="forward_decl.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="load_status.h" />
@@ -218,9 +216,6 @@
     <ClInclude Include="resource_handle_meta.h" />
     <ClInclude Include="resource_manager.h" />
     <ClInclude Include="resource_upload_pipeline.h" />
-    <ClInclude Include="sampler_manager.h" />
-    <ClInclude Include="serialize_base.h" />
-    <ClInclude Include="serialize_common.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="shader_file.h" />
     <ClInclude Include="shader_base.h" />
@@ -237,7 +232,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="command_list.cpp" />
-    <ClCompile Include="constant_buffer.cpp" />
     <ClCompile Include="descriptors.cpp" />
     <ClCompile Include="material.cpp" />
     <ClCompile Include="mesh.cpp" />

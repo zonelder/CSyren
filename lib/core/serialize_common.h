@@ -144,7 +144,7 @@ namespace nlohmann
 		{
 			DirectX::XMFLOAT4X4 stored;
 			DirectX::XMStoreFloat4x4(&stored, m);
-			// Сохраняем как плоский массив из 16 чисел
+			// РЎРѕС…СЂР°РЅСЏРµРј РєР°Рє РїР»РѕСЃРєРёР№ РјР°СЃСЃРёРІ РёР· 16 С‡РёСЃРµР»
 			j = {
 				stored._11, stored._12, stored._13, stored._14,
 				stored._21, stored._22, stored._23, stored._24,

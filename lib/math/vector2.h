@@ -40,7 +40,7 @@ namespace csyren::math
             return DirectX::XMLoadFloat2(this);
         }
 
-        // Доступ по индексу
+        // Р”РѕСЃС‚СѓРї РїРѕ РёРЅРґРµРєСЃСѓ
         float operator[](size_t index) const noexcept
         {
             assert(index < 2 && "Vector2 index out of bounds.");

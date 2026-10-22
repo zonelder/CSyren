@@ -75,14 +75,14 @@ TEST(FixedHashMapTest, ExtremeCollisions)
 }
 
 // ============================================================================
-// 3. ИТЕРАЦИЯ И ПЛОТНОСТЬ ДАННЫХ (DENSE PACKING)
+// 3. РРўР•Р РђР¦РРЇ Р РџР›РћРўРќРћРЎРўР¬ Р”РђРќРќР«РҐ (DENSE PACKING)
 // ============================================================================
 
 TEST(FixedHashMapTest, DenseIterationOrder)
 {
     FixedHashMap<int, float, 32> map;
 
-    // Вставляем в "случайном" порядке
+    // Р’СЃС‚Р°РІР»СЏРµРј РІ "СЃР»СѓС‡Р°Р№РЅРѕРј" РїРѕСЂСЏРґРєРµ
     map.insertOrAssign(5, 5.5f);
     map.insertOrAssign(1, 1.1f);
     map.insertOrAssign(9, 9.9f);

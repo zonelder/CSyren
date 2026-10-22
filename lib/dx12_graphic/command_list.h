@@ -45,7 +45,7 @@ namespace csyren::render
 								  primitives + other.primitives };
 			}
 
-			// добавление другой статистики к текущей
+			// РґРѕР±Р°РІР»РµРЅРёРµ РґСЂСѓРіРѕР№ СЃС‚Р°С‚РёСЃС‚РёРєРё Рє С‚РµРєСѓС‰РµР№
 			Statistic& operator+=(const Statistic& other) noexcept
 			{
 				drawCalls += other.drawCalls;
@@ -156,8 +156,8 @@ namespace csyren::render
 		D3D12_COMMAND_LIST_TYPE type_;
 		details::ComPtr< ID3D12CommandAllocator > pAllocator_;
 		details::ComPtr< ID3D12GraphicsCommandList > pCmdList_;
-		// TODO(dx12) небезопастно использовать это так. может такое случиться что fence выставлет QueueA а мы пытаемся его
-		// execute в QueueB. неявный баг синхронизации будет, лучше шифровать еще и queue_id и ругаться\явно падать при несоответсвии.
+		// TODO(dx12) РЅРµР±РµР·РѕРїР°СЃС‚РЅРѕ РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ СЌС‚Рѕ С‚Р°Рє. РјРѕР¶РµС‚ С‚Р°РєРѕРµ СЃР»СѓС‡РёС‚СЊСЃСЏ С‡С‚Рѕ fence РІС‹СЃС‚Р°РІР»РµС‚ QueueA Р° РјС‹ РїС‹С‚Р°РµРјСЃСЏ РµРіРѕ
+		// execute РІ QueueB. РЅРµСЏРІРЅС‹Р№ Р±Р°Рі СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёРё Р±СѓРґРµС‚, Р»СѓС‡С€Рµ С€РёС„СЂРѕРІР°С‚СЊ РµС‰Рµ Рё queue_id Рё СЂСѓРіР°С‚СЊСЃСЏ\СЏРІРЅРѕ РїР°РґР°С‚СЊ РїСЂРё РЅРµСЃРѕРѕС‚РІРµС‚СЃРІРёРё.
 		uint64_t fenceValue_{ 0 };
 	};
 }

@@ -107,7 +107,7 @@ namespace csyren::render
             DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN;
             if (semanticNameUpper.find("POSITION") != std::string::npos) {
                 if (componentCount == 3) format = DXGI_FORMAT_R32G32B32_FLOAT;
-                else if (componentCount == 4) format = DXGI_FORMAT_R32G32B32A32_FLOAT; // Например, для гомогенных координат
+                else if (componentCount == 4) format = DXGI_FORMAT_R32G32B32A32_FLOAT; // РќР°РїСЂРёРјРµСЂ, РґР»СЏ РіРѕРјРѕРіРµРЅРЅС‹С… РєРѕРѕСЂРґРёРЅР°С‚
             }
             else if (semanticNameUpper.find("NORMAL") != std::string::npos || semanticNameUpper.find("TANGENT") != std::string::npos) {
                 if (componentCount == 4) format = DXGI_FORMAT_R10G10B10A2_UNORM;

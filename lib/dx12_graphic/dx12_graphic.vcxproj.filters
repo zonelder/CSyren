@@ -96,12 +96,6 @@
     <ClInclude Include="resource_handle_meta.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="constant_buffer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="sampler_manager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -121,12 +115,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="vertex_formats.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="serialize_common.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="serialize_base.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="mesh_builder.h">
@@ -160,9 +148,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="dx_main.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="fence.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="render_queue.h">
@@ -219,9 +204,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="texture.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="constant_buffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="shader.cpp">

@@ -15,7 +15,7 @@
 #include "meta_common.h"
 
 #include "core/serialize_common.h"
-#include "dx12_graphic/serialize_common.h"
+#include "dx12_graphic/resource_handle_meta.h"
 
 #include "dx12_graphic/primitives.h"
 #include "dx12_graphic/mesh.h"

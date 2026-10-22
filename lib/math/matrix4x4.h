@@ -207,10 +207,10 @@ namespace csyren::math
 
 	inline Matrix4x4 Matrix4x4::perspective(float fov, float aspect, float zNear, float zFar) noexcept
 	{
-		// Конвертируем градусы в радианы
+		// РљРѕРЅРІРµСЂС‚РёСЂСѓРµРј РіСЂР°РґСѓСЃС‹ РІ СЂР°РґРёР°РЅС‹
 		float fovRadians = DirectX::XMConvertToRadians(fov);
 
-		// Создаем матрицу для right-handed системы координат
+		// РЎРѕР·РґР°РµРј РјР°С‚СЂРёС†Сѓ РґР»СЏ right-handed СЃРёСЃС‚РµРјС‹ РєРѕРѕСЂРґРёРЅР°С‚
 		return Matrix4x4(DirectX::XMMatrixPerspectiveFovLH(
 			fovRadians,
 			aspect,
@@ -268,7 +268,7 @@ namespace csyren::math
 			return false;
 		}
 
-		// Проверяем, что детерминант не равен нулю
+		// РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ РґРµС‚РµСЂРјРёРЅР°РЅС‚ РЅРµ СЂР°РІРµРЅ РЅСѓР»СЋ
 		DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(*this);
 		if (DirectX::XMVector4NearEqual(det, DirectX::XMVectorZero(), DirectX::XMVectorReplicate(1e-6f)))
 		{

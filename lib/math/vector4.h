@@ -36,7 +36,7 @@ namespace csyren::math
             return DirectX::XMLoadFloat4(this);
         }
 
-        // Доступ по индексу
+        // Р”РѕСЃС‚СѓРї РїРѕ РёРЅРґРµРєСЃСѓ
         float operator[](size_t index) const noexcept
         {
             assert(index < 4 && "Vector4 index out of bounds.");

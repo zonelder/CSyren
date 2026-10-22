@@ -35,8 +35,8 @@ namespace csyren::render
 
 	struct SemanticCopyCommand
 	{
-		uint32_t srcOffset; // offset â EngineVariableBuffer
-		uint32_t dstOffset; // offset â GPU CBuffer
+		uint32_t srcOffset; // offset Ð² EngineVariableBuffer
+		uint32_t dstOffset; // offset Ð² GPU CBuffer
 		uint32_t size;		// size of copying
 		bool transpose{ false };
 	};

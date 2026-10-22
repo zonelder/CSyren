@@ -6,7 +6,6 @@
 #include <unordered_map>
 #include <memory>
 #include "resource_handle.h"
-#include "constant_buffer.h"
 #include "resource_manager.h"
 #include "upload_ring_buffer.h"
 

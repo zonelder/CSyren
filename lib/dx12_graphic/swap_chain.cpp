@@ -100,7 +100,7 @@ namespace csyren::render
 		if (DX_FAILED(_pSwapChain->ResizeBuffers(_backBuffers.size(),
 			width,
 			height,
-			_meta.format,	// DXGI_FORMAT_UNKNOWN = «оставить текущий формат»
+			_meta.format,	// DXGI_FORMAT_UNKNOWN = В«РѕСЃС‚Р°РІРёС‚СЊ С‚РµРєСѓС‰РёР№ С„РѕСЂРјР°С‚В»
 			resizeFlags)))
 		{
 			return false;

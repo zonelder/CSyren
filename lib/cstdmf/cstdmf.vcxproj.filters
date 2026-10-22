@@ -39,9 +39,6 @@
     <ClInclude Include="string_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="rectangle.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="assert_helpler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -54,19 +51,13 @@
     <ClInclude Include="static_vector.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="tree_algorithms.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="window_clean.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="fixed_hash_map.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="runtime_shader_params.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="tag_string.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="xxhash.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

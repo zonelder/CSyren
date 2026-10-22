@@ -55,7 +55,7 @@ float4 PSMain(PS_Input input) : SV_TARGET
     // diffuse
     float NdotL = max(dot(N, L), 0.0f);
 
-    // базовый цвет
+    // Р±Р°Р·РѕРІС‹Р№ С†РІРµС‚
     float3 c = tint.rgb * NdotL;
 
     return float4(c, 1.0f);

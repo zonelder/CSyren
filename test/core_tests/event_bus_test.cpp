@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "core/event_bus.h" // Заголовочный файл с EventBus2
+#include "core/event_bus.h" // Р—Р°РіРѕР»РѕРІРѕС‡РЅС‹Р№ С„Р°Р№Р» СЃ EventBus2
 #include <memory>
 #include <vector>
 #include <atomic>
@@ -35,7 +35,7 @@ public:
 
 
 // =================================================================================
-// БАЗОВЫЕ ТЕСТЫ (В основном без изменений)
+// Р‘РђР—РћР’Р«Р• РўР•РЎРўР« (Р’ РѕСЃРЅРѕРІРЅРѕРј Р±РµР· РёР·РјРµРЅРµРЅРёР№)
 // =================================================================================
 
 TEST_F(EventBusTest, BasicPublishSubscribe) {
@@ -111,7 +111,7 @@ TEST_F(EventBusTest, UnregisterPublisher)
 
     bus->unregister_publisher(pub_token);
 
-    bus->publish(pub_token, TestEvent{}); // Эта публикация не должна пройти
+    bus->publish(pub_token, TestEvent{}); // Р­С‚Р° РїСѓР±Р»РёРєР°С†РёСЏ РЅРµ РґРѕР»Р¶РЅР° РїСЂРѕР№С‚Рё
     bus->commit_batch();
     EXPECT_EQ(tracker.testEventCount, 1);
 }
@@ -126,13 +126,13 @@ TEST_F(EventBusTest, CommitAfterUnregisterPublisher)
 
     bus->unregister_publisher(pub_token);
 
-    bus->publish(pub_token, TestEvent{}); // Эта публикация не должна пройти
+    bus->publish(pub_token, TestEvent{}); // Р­С‚Р° РїСѓР±Р»РёРєР°С†РёСЏ РЅРµ РґРѕР»Р¶РЅР° РїСЂРѕР№С‚Рё
     bus->commit_batch();
     EXPECT_EQ(tracker.testEventCount, 1);
 }
 
 // =================================================================================
-// ТЕСТЫ НА ОТПИСКУ И СИНХРОНИЗАЦИЮ (Проверяют ключевые исправления)
+// РўР•РЎРўР« РќРђ РћРўРџРРЎРљРЈ Р РЎРРќРҐР РћРќРР—РђР¦РР® (РџСЂРѕРІРµСЂСЏСЋС‚ РєР»СЋС‡РµРІС‹Рµ РёСЃРїСЂР°РІР»РµРЅРёСЏ)
 // =================================================================================
 
 TEST_F(EventBusTest, UnsubscribeDuringCommit) {
@@ -152,7 +152,7 @@ TEST_F(EventBusTest, UnsubscribeDuringCommit) {
 }
 
 TEST_F(EventBusTest, MassiveUnsubscribeDuringProcessing) {
-    // Этот тест теперь проходит благодаря copy-on-write
+    // Р­С‚РѕС‚ С‚РµСЃС‚ С‚РµРїРµСЂСЊ РїСЂРѕС…РѕРґРёС‚ Р±Р»Р°РіРѕРґР°СЂСЏ copy-on-write
     constexpr int NUM_SUBSCRIBERS = 1000;
     std::atomic<int> active_count{ 0 };
     std::vector<SubscriberToken> tokens;
@@ -170,18 +170,18 @@ TEST_F(EventBusTest, MassiveUnsubscribeDuringProcessing) {
     bus->commit_batch();
     EXPECT_EQ(active_count, NUM_SUBSCRIBERS);
 
-    // Вторая публикация - никто не должен получить
+    // Р’С‚РѕСЂР°СЏ РїСѓР±Р»РёРєР°С†РёСЏ - РЅРёРєС‚Рѕ РЅРµ РґРѕР»Р¶РµРЅ РїРѕР»СѓС‡РёС‚СЊ
     bus->publish(pub_token, TestEvent{});
     bus->commit_batch();
     EXPECT_EQ(active_count, NUM_SUBSCRIBERS);
 }
 
 // =================================================================================
-// ТЕСТЫ ЛОГИКИ МАРКЕРОВ (Адаптированы под новую логику)
+// РўР•РЎРўР« Р›РћР“РРљР РњРђР РљР•Р РћР’ (РђРґР°РїС‚РёСЂРѕРІР°РЅС‹ РїРѕРґ РЅРѕРІСѓСЋ Р»РѕРіРёРєСѓ)
 // =================================================================================
 
 TEST_F(EventBusTest, MarkedEvents) {
-    // Проверяет базовую фильтрацию: подписчик с маркером А получает событие с маркером А, но не Б.
+    // РџСЂРѕРІРµСЂСЏРµС‚ Р±Р°Р·РѕРІСѓСЋ С„РёР»СЊС‚СЂР°С†РёСЋ: РїРѕРґРїРёСЃС‡РёРє СЃ РјР°СЂРєРµСЂРѕРј Рђ РїРѕР»СѓС‡Р°РµС‚ СЃРѕР±С‹С‚РёРµ СЃ РјР°СЂРєРµСЂРѕРј Рђ, РЅРѕ РЅРµ Р‘.
     EventTracker tracker;
     const EventMarker MARK_A = 1, MARK_B = 2;
     auto pub_a = bus->register_publisher<MarkedEvent>(MARK_A);
@@ -196,30 +196,30 @@ TEST_F(EventBusTest, MarkedEvents) {
 }
 
 TEST_F(EventBusTest, UniversalSubscriberReceivesAll) {
-    // ИЗМЕНЕНО: Этот тест заменяет старый UniversalPublisher.
-    // Он проверяет, что универсальный подписчик получает ВСЕ события своего типа.
+    // РР—РњР•РќР•РќРћ: Р­С‚РѕС‚ С‚РµСЃС‚ Р·Р°РјРµРЅСЏРµС‚ СЃС‚Р°СЂС‹Р№ UniversalPublisher.
+    // РћРЅ РїСЂРѕРІРµСЂСЏРµС‚, С‡С‚Рѕ СѓРЅРёРІРµСЂСЃР°Р»СЊРЅС‹Р№ РїРѕРґРїРёСЃС‡РёРє РїРѕР»СѓС‡Р°РµС‚ Р’РЎР• СЃРѕР±С‹С‚РёСЏ СЃРІРѕРµРіРѕ С‚РёРїР°.
     EventTracker tracker;
     const EventMarker MARK_A = 123;
     auto universal_pub = bus->register_publisher<TestEvent>();
     auto marked_pub = bus->register_publisher<TestEvent>(MARK_A);
 
-    // Универсальный подписчик
+    // РЈРЅРёРІРµСЂСЃР°Р»СЊРЅС‹Р№ РїРѕРґРїРёСЃС‡РёРє
     bus->subscribe<TestEvent>([&](auto&) { tracker.testEventCount++; });
 
-    // 1. Публикация от универсального издателя
+    // 1. РџСѓР±Р»РёРєР°С†РёСЏ РѕС‚ СѓРЅРёРІРµСЂСЃР°Р»СЊРЅРѕРіРѕ РёР·РґР°С‚РµР»СЏ
     bus->publish(universal_pub, TestEvent{});
     bus->commit_batch();
-    EXPECT_EQ(tracker.testEventCount, 1); // Получил
+    EXPECT_EQ(tracker.testEventCount, 1); // РџРѕР»СѓС‡РёР»
 
-    // 2. Публикация от маркированного издателя
+    // 2. РџСѓР±Р»РёРєР°С†РёСЏ РѕС‚ РјР°СЂРєРёСЂРѕРІР°РЅРЅРѕРіРѕ РёР·РґР°С‚РµР»СЏ
     bus->publish(marked_pub, TestEvent{});
     bus->commit_batch();
-    EXPECT_EQ(tracker.testEventCount, 2); // Тоже получил
+    EXPECT_EQ(tracker.testEventCount, 2); // РўРѕР¶Рµ РїРѕР»СѓС‡РёР»
 }
 
 
 // =================================================================================
-// ПРОЧИЕ И СТРЕСС-ТЕСТЫ (В основном без изменений)
+// РџР РћР§РР• Р РЎРўР Р•РЎРЎ-РўР•РЎРўР« (Р’ РѕСЃРЅРѕРІРЅРѕРј Р±РµР· РёР·РјРµРЅРµРЅРёР№)
 // =================================================================================
 
 TEST_F(EventBusTest, HighLoadStressTest) {
@@ -276,26 +276,26 @@ TEST_F(EventBusTest, RapidSubscribeUnsubscribe) {
 }
 
 // =================================================================================
-// НОВЫЕ ТЕСТЫ
+// РќРћР’Р«Р• РўР•РЎРўР«
 // =================================================================================
 
 TEST_F(EventBusTest, NOP_UnsubscribeInvalidToken) {
-    // НОВЫЙ ТЕСТ: Проверяет, что отписка по невалидному токену ничего не ломает.
+    // РќРћР’Р«Р™ РўР•РЎРў: РџСЂРѕРІРµСЂСЏРµС‚, С‡С‚Рѕ РѕС‚РїРёСЃРєР° РїРѕ РЅРµРІР°Р»РёРґРЅРѕРјСѓ С‚РѕРєРµРЅСѓ РЅРёС‡РµРіРѕ РЅРµ Р»РѕРјР°РµС‚.
     EventTracker tracker;
     auto pub_token = bus->register_publisher<TestEvent>();
     auto sub_token = bus->subscribe<TestEvent>([&](auto&) { tracker.testEventCount++; });
 
-    bus->unsubscribe(SubscriberToken{}); // Невалидный токен
-    bus->unsubscribe(SubscriberToken{});      // Несуществующий токен
+    bus->unsubscribe(SubscriberToken{}); // РќРµРІР°Р»РёРґРЅС‹Р№ С‚РѕРєРµРЅ
+    bus->unsubscribe(SubscriberToken{});      // РќРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ С‚РѕРєРµРЅ
 
     bus->publish(pub_token, TestEvent{});
     bus->commit_batch();
 
-    EXPECT_EQ(tracker.testEventCount, 1); // Подписка должна остаться активной
+    EXPECT_EQ(tracker.testEventCount, 1); // РџРѕРґРїРёСЃРєР° РґРѕР»Р¶РЅР° РѕСЃС‚Р°С‚СЊСЃСЏ Р°РєС‚РёРІРЅРѕР№
 }
 
 TEST_F(EventBusTest, NOP_PublishWithInvalidToken) {
-    // НОВЫЙ ТЕСТ: Проверяет, что публикация с невалидным токеном ничего не делает.
+    // РќРћР’Р«Р™ РўР•РЎРў: РџСЂРѕРІРµСЂСЏРµС‚, С‡С‚Рѕ РїСѓР±Р»РёРєР°С†РёСЏ СЃ РЅРµРІР°Р»РёРґРЅС‹Рј С‚РѕРєРµРЅРѕРј РЅРёС‡РµРіРѕ РЅРµ РґРµР»Р°РµС‚.
     EventTracker tracker;
     bus->subscribe<TestEvent>([&](auto&) { tracker.testEventCount++; });
 
@@ -306,10 +306,10 @@ TEST_F(EventBusTest, NOP_PublishWithInvalidToken) {
 }
 
 TEST_F(EventBusTest, NoSubscribers) {
-    // НОВЫЙ ТЕСТ: Проверяет, что система не падает, если нет подписчиков.
+    // РќРћР’Р«Р™ РўР•РЎРў: РџСЂРѕРІРµСЂСЏРµС‚, С‡С‚Рѕ СЃРёСЃС‚РµРјР° РЅРµ РїР°РґР°РµС‚, РµСЃР»Рё РЅРµС‚ РїРѕРґРїРёСЃС‡РёРєРѕРІ.
     auto pub_token = bus->register_publisher<TestEvent>();
 
-    // Ожидаем, что эти вызовы просто ничего не сделают и не вызовут крэш
+    // РћР¶РёРґР°РµРј, С‡С‚Рѕ СЌС‚Рё РІС‹Р·РѕРІС‹ РїСЂРѕСЃС‚Рѕ РЅРёС‡РµРіРѕ РЅРµ СЃРґРµР»Р°СЋС‚ Рё РЅРµ РІС‹Р·РѕРІСѓС‚ РєСЂСЌС€
     ASSERT_NO_THROW({
         bus->publish(pub_token, TestEvent{});
         bus->commit_batch();

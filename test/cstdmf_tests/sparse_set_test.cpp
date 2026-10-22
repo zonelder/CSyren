@@ -24,9 +24,9 @@ struct ThrowOnCtor {
 struct RefCount {
     static inline int alive = 0;
     RefCount() { ++alive; }
-    RefCount(RefCount&&) noexcept { ++alive; }  // Перемещение = новый объект
+    RefCount(RefCount&&) noexcept { ++alive; }  // РџРµСЂРµРјРµС‰РµРЅРёРµ = РЅРѕРІС‹Р№ РѕР±СЉРµРєС‚
     ~RefCount() { --alive; }
-    // Оператор присваивания не меняет счётчик
+    // РћРїРµСЂР°С‚РѕСЂ РїСЂРёСЃРІР°РёРІР°РЅРёСЏ РЅРµ РјРµРЅСЏРµС‚ СЃС‡С‘С‚С‡РёРє
     RefCount& operator=(RefCount&&) noexcept { return *this; }
 };
 
@@ -56,7 +56,7 @@ TEST(SparseSet, Erase) {
     EXPECT_TRUE(s.erase(e));
     EXPECT_FALSE(s.contains(e));
     EXPECT_EQ(s.size(), 0u);
-    EXPECT_FALSE(s.erase(e));   // второй раз
+    EXPECT_FALSE(s.erase(e));   // РІС‚РѕСЂРѕР№ СЂР°Р·
 }
 
 TEST(SparseSet, DoubleEmplaceThrows) {
@@ -104,7 +104,7 @@ TEST(SparseSet, MoveAssignment) {
     EXPECT_EQ(s2[1], "hello");
 }
 
-/* ---------- move-only компонент ---------- */
+/* ---------- move-only РєРѕРјРїРѕРЅРµРЅС‚ ---------- */
 TEST(SparseSet, MoveOnlyComponent) {
     SparseSet<MoveOnly> s;
     s.emplace(1, MoveOnly{ 99 });
@@ -117,10 +117,10 @@ TEST(SparseSet, EmplaceThrowsStrongGuarantee) {
     EXPECT_NO_THROW(s.emplace(1, 1));
     EXPECT_EQ(s.size(), 1u);
     EXPECT_THROW(s.emplace(2, -1), std::runtime_error);
-    EXPECT_EQ(s.size(), 1u);   // строгая гарантия
+    EXPECT_EQ(s.size(), 1u);   // СЃС‚СЂРѕРіР°СЏ РіР°СЂР°РЅС‚РёСЏ
 }
 
-/* ---------- граничные значения ---------- */
+/* ---------- РіСЂР°РЅРёС‡РЅС‹Рµ Р·РЅР°С‡РµРЅРёСЏ ---------- */
 TEST(SparseSet, MaxEntity) {
     SparseSet<int> s;
     EntityID e = std::numeric_limits<EntityID>::max();
@@ -129,19 +129,19 @@ TEST(SparseSet, MaxEntity) {
     EXPECT_EQ(s.size(), 1u);
 }
 
-/* ---------- большое количество элементов ---------- */
+/* ---------- Р±РѕР»СЊС€РѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ СЌР»РµРјРµРЅС‚РѕРІ ---------- */
 TEST(SparseSet, Stress) {
     constexpr std::size_t N = 100'000;
     SparseSet<int> s;
     for (EntityID i = 0; i < N; ++i) {
-        s.emplace(i * 97, static_cast<int>(i)); // разреженный
+        s.emplace(i * 97, static_cast<int>(i)); // СЂР°Р·СЂРµР¶РµРЅРЅС‹Р№
     }
     EXPECT_EQ(s.size(), N);
     for (EntityID i = 0; i < N; ++i) {
         EntityID e = i * 97;
         EXPECT_EQ(*s.try_get(e), static_cast<int>(i));
     }
-    // удалим каждый второй
+    // СѓРґР°Р»РёРј РєР°Р¶РґС‹Р№ РІС‚РѕСЂРѕР№
     for (EntityID i = 0; i < N; i += 2) {
         EXPECT_TRUE(s.erase(i * 97));
     }
@@ -160,7 +160,7 @@ TEST(SparseSet, NoLeak) {
     EXPECT_EQ(RefCount::alive, 0);
 }
 
-/* ---------- итераторы после erase ---------- */
+/* ---------- РёС‚РµСЂР°С‚РѕСЂС‹ РїРѕСЃР»Рµ erase ---------- */
 TEST(SparseSet, IteratorStability) {
     SparseSet<int> s;
     s.emplace(1, 1);

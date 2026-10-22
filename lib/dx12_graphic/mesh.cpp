@@ -147,7 +147,7 @@ namespace csyren::render
             barriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
             barriers[0].Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
 
-            barriers[1] = barriers[0]; // Êîïèðóåì îáùèå ïîëÿ
+            barriers[1] = barriers[0]; // ÐšÐ¾Ð¿Ð¸Ñ€ÑƒÐµÐ¼ Ð¾Ð±Ñ‰Ð¸Ðµ Ð¿Ð¾Ð»Ñ
             barriers[1].Transition.pResource = _indexBuffer.Get();
             cmdList->ResourceBarrier(2, barriers);
 
@@ -186,7 +186,7 @@ namespace csyren::render
         D3D12_RANGE readRange{ 0, 0 };
         void* mappedData = nullptr;
 
-        // Îáíîâëÿåì âåðøèííûé áóôåð
+        // ÐžÐ±Ð½Ð¾Ð²Ð»ÑÐµÐ¼ Ð²ÐµÑ€ÑˆÐ¸Ð½Ð½Ñ‹Ð¹ Ð±ÑƒÑ„ÐµÑ€
         if (SUCCEEDED(_vertexBuffer->Map(0, &readRange, &mappedData)))
         {
             memcpy(mappedData, raw.vertexBuffer.data(), raw.vertexBuffer.size());
@@ -194,7 +194,7 @@ namespace csyren::render
         }
         else return false;
 
-        // Îáíîâëÿåì èíäåêñíûé áóôåð
+        // ÐžÐ±Ð½Ð¾Ð²Ð»ÑÐµÐ¼ Ð¸Ð½Ð´ÐµÐºÑÐ½Ñ‹Ð¹ Ð±ÑƒÑ„ÐµÑ€
         if (SUCCEEDED(_indexBuffer->Map(0, &readRange, &mappedData)))
         {
             memcpy(mappedData, raw.indices.data(), raw.indices.size()*sizeof(vertex_meta::index_type));

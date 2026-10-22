@@ -157,7 +157,6 @@
     <ClInclude Include="keyboard_device.h" />
     <ClInclude Include="scene.h" />
     <ClInclude Include="scene_context.h" />
-    <ClInclude Include="serialize_base.h" />
     <ClInclude Include="serialize_common.h" />
     <ClInclude Include="services.h" />
     <ClInclude Include="system_base.h" />
@@ -168,7 +167,6 @@
     <ClInclude Include="time.h" />
     <ClInclude Include="transform.h" />
     <ClInclude Include="window.h" />
-    <ClInclude Include="win_exeption.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\third_party\enkiTS\src\TaskScheduler.cpp">
@@ -177,7 +175,6 @@
     <ClCompile Include="camera.cpp" />
     <ClCompile Include="dispatch_handle.cpp" />
     <ClCompile Include="input_dispatch_system.cpp" />
-    <ClCompile Include="meta.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>

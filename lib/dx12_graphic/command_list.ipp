@@ -38,7 +38,7 @@ namespace csyren::render
 
 	CS_FORCE_INLINE void CommandList::submitRenderTargets()
 	{
-		//TODO(dx12) не нравиться мне это. но может и не плохо.
+		//TODO(dx12) РЅРµ РЅСЂР°РІРёС‚СЊСЃСЏ РјРЅРµ СЌС‚Рѕ. РЅРѕ РјРѕР¶РµС‚ Рё РЅРµ РїР»РѕС…Рѕ.
 
 		uint32_t mask = 0;
 
@@ -205,7 +205,7 @@ namespace csyren::render
 		pCmdList_->IASetVertexBuffers(
 			static_cast<UINT>(startSlot),
 			static_cast<UINT>(views.size()),
-			reinterpret_cast<const D3D12_VERTEX_BUFFER_VIEW*>(views.begin())  // через приватное dx_ внутри
+			reinterpret_cast<const D3D12_VERTEX_BUFFER_VIEW*>(views.begin())  // С‡РµСЂРµР· РїСЂРёРІР°С‚РЅРѕРµ dx_ РІРЅСѓС‚СЂРё
 		);
 	}
 
@@ -331,7 +331,7 @@ namespace csyren::render
 			prims = vertexCount > 2 ? vertexCount - 2 : 0;
 			break;
 		default:
-			prims = 0;	// остальные патчи/adjacency топологии можно добавить при необходимости
+			prims = 0;	// РѕСЃС‚Р°Р»СЊРЅС‹Рµ РїР°С‚С‡Рё/adjacency С‚РѕРїРѕР»РѕРіРёРё РјРѕР¶РЅРѕ РґРѕР±Р°РІРёС‚СЊ РїСЂРё РЅРµРѕР±С…РѕРґРёРјРѕСЃС‚Рё
 		}
 
 		return prims * instanceCount;

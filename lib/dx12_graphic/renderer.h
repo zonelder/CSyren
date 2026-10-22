@@ -17,8 +17,6 @@
 
 #include "dx_main.h"
 
-#include "sampler_manager.h"
-#include "constant_buffer.h"
 #include "upload_ring_buffer.h"
 #include "engine_semantics.h"
 #include "pso_factory.h"

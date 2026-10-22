@@ -47,7 +47,6 @@
     <ClInclude Include="scene_pipeline_cases.h" />
     <ClInclude Include="gizmo_transform_cases.h" />
     <ClInclude Include="viewport_cases.h" />
-    <None Include="SCENE_WORKFLOW_TESTS.md" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\lib\core\core.vcxproj"><Project>{c2d419d8-5a36-4905-bf2f-7fbc3cd025e9}</Project></ProjectReference>

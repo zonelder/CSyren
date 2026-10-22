@@ -245,7 +245,7 @@ namespace csyren::math
             rollX = atan2(mat._12, mat._22); // m[0][1], m[1][1]
         }
 
-        // Конвертируем радианы в градусы
+        // РљРѕРЅРІРµСЂС‚РёСЂСѓРµРј СЂР°РґРёР°РЅС‹ РІ РіСЂР°РґСѓСЃС‹
         rollX = XMConvertToDegrees(rollX);
         pitchY = XMConvertToDegrees(pitchY);
         yawZ = XMConvertToDegrees(yawZ);

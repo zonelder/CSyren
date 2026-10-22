@@ -70,7 +70,6 @@
     <ClInclude Include="animation.h" />
     <ClInclude Include="editor_overlays.h" />
     <ClInclude Include="editor_viewport_state.h" />
-    <ClInclude Include="todo.h" />
     <ClInclude Include="game\bot_system.h" />
     <ClInclude Include="game\camera_rig_system.h" />
     <ClInclude Include="game\game_components.h" />

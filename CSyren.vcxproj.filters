@@ -41,9 +41,6 @@
     <ClInclude Include="editor_viewport_state.h">
       <Filter>transitional</Filter>
     </ClInclude>
-    <ClInclude Include="todo.h">
-      <Filter>transitional</Filter>
-    </ClInclude>
     <ClInclude Include="game\bot_system.h">
       <Filter>game</Filter>
     </ClInclude>

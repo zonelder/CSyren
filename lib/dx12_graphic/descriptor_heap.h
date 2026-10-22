@@ -56,7 +56,7 @@ namespace csyren::render
 				freeList_.pop_back();
 				return idx;
 			}
-			// Èíà÷å bump-àëëîêàöèÿ ñ êîíöà.
+			// Ð˜Ð½Ð°Ñ‡Ðµ bump-Ð°Ð»Ð»Ð¾ÐºÐ°Ñ†Ð¸Ñ Ñ ÐºÐ¾Ð½Ñ†Ð°.
 			if (used_ >= capacity_)
 			{
 				log::error("DescriptorHeap::allocate: heap type %d is full "

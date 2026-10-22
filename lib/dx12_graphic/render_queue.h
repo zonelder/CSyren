@@ -61,7 +61,7 @@ namespace csyren::render
 			if (fenceValueToWait == EMPTY_CMD_QUEUE)
 				return;
 
-			// Æä¸ì íà ñâîåé î÷åðåäè, ïîêà äðóãàÿ î÷åðåäü íå çàêîí÷èò
+			// Ð–Ð´Ñ‘Ð¼ Ð½Ð° ÑÐ²Ð¾ÐµÐ¹ Ð¾Ñ‡ÐµÑ€ÐµÐ´Ð¸, Ð¿Ð¾ÐºÐ° Ð´Ñ€ÑƒÐ³Ð°Ñ Ð¾Ñ‡ÐµÑ€ÐµÐ´ÑŒ Ð½Ðµ Ð·Ð°ÐºÐ¾Ð½Ñ‡Ð¸Ñ‚
 			_pQueue->Wait(other.fence_.Get(), fenceValueToWait);
 		}
 

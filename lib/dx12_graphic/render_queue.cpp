@@ -18,7 +18,7 @@ namespace csyren::render
 			_pQueue->ExecuteCommandLists(static_cast<UINT>(cmdLists.size()), cmdLists.data());
 		}
 		//*
-		// Сигналим fence и раскидываем значение в кадры
+		// РЎРёРіРЅР°Р»РёРј fence Рё СЂР°СЃРєРёРґС‹РІР°РµРј Р·РЅР°С‡РµРЅРёРµ РІ РєР°РґСЂС‹
 		UINT64 fenceValue = signal();
 		for (auto* frame : frameContexts_)
 		{

@@ -1,0 +1,7 @@
+# Sources are UTF-8 without a BOM: the engine compiles with /utf-8 (CSyren.engine.props)
+# and tools/tests/test_source_encoding.py rejects other encodings. Visual Studio applies
+# charset when it saves a file. lib/imGui keeps its own .editorconfig.
+root = true
+
+[*.{h,hpp,inl,ipp,c,cc,cpp,hlsl,hlsli,shader,coshader}]
+charset = utf-8
