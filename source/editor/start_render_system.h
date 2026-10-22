@@ -13,6 +13,7 @@
 #include "core/camera.h"
 #include "dx12_graphic/renderer.h"
 #include "dx12_graphic/recorder.h"
+#include "cstdmf/profiler.h"
 #include "math/matrix4x4.h"
 #include <array>
 
@@ -26,6 +27,7 @@
 #include "inspector_window.h"
 #include "system_window.h"
 #include "statistic_window.h"
+#include "profiler_window.h"
 #include "scene_workflow_window.h"
 #include "scene_viewport.h"
 #include "editor_layout.h"
@@ -147,6 +149,7 @@ namespace csyren::editor
 			_windows.push_back(std::make_unique<InspectorWindow>());
 			_windows.push_back(std::make_unique<SystemWindow>());
 			_windows.push_back(std::make_unique<StatisticWindow>());
+			_windows.push_back(std::make_unique<ProfilerWindow>());
 			ImGui_ImplDX12_Init(&init_info);
 		}
 		void execute(core::Exclusive, render::Recorder renderer)
@@ -156,16 +159,22 @@ namespace csyren::editor
                 renderer->clearColor(background);
                 auto& view = *core::Services::get<EditorViewportState>();
                 view.viewport = {}; view.gameViewport = {}; view.navigation = {};
+                // Nothing is shown while minimized: the views render again once visible.
+                _viewport.show(false,ViewportCamera::Scene); _gameViewport.show(false,ViewportCamera::Game);
                 return;
             }
-			ImGui_ImplDX12_NewFrame();
-			ImGui_ImplWin32_NewFrame();
-			ImGui::NewFrame();
+            {
+                CS_PROFILE_SCOPE("ImGui new frame");
+                ImGui_ImplDX12_NewFrame();
+                ImGui_ImplWin32_NewFrame();
+                ImGui::NewFrame();
+            }
             const float background[]{.08f,.08f,.09f,1};
             renderer->clearColor(background);
             synchronizeSelection();
             if (!_viewport.manipulating()) _workflow->shortcuts();
 
+            CS_PROFILE_SCOPE("Editor UI");
 			if (ImGui::BeginMainMenuBar()) 
 			{
                 _workflow->menus();
@@ -186,19 +195,35 @@ namespace csyren::editor
 				ImGui::EndMainMenuBar();
 			}
 
-            _workflow->render();
-            dockspace();
-			// Рендерим все окна
+            {
+                CS_PROFILE_SCOPE("Scene workflow");
+                _workflow->render();
+            }
+            {
+                CS_PROFILE_SCOPE("Dockspace");
+                dockspace();
+            }
+			// Рендерим все окна (each window marks itself: "Window: <title>")
 			for (auto& window : _windows) 
 			{
 				window->render();
 			}
-            _viewport.render(&_viewportOpen);
-            _gameViewport.render(&_gameOpen,ViewportCamera::Game);
-            if (core::Services::has<EditorOverlays>()) core::Services::get<EditorOverlays>()->draw();
+            {
+                CS_PROFILE_SCOPE("Window: Scene");
+                _viewport.render(&_viewportOpen);
+            }
+            {
+                CS_PROFILE_SCOPE("Window: Game");
+                _gameViewport.render(&_gameOpen,ViewportCamera::Game);
+            }
+            if (core::Services::has<EditorOverlays>()) {
+                CS_PROFILE_SCOPE("Editor overlays");
+                core::Services::get<EditorOverlays>()->draw();
+            }
             if (!ImGui::IsAnyItemActive() && !_viewport.manipulating()) core::Services::get<SceneSession>()->finishEdit();
 			ID3D12GraphicsCommandList* cmdList = renderer->commandList();
 
+			CS_PROFILE_SCOPE("ImGui draw");
 			ImGui::Render();
 
 			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), cmdList);
@@ -221,6 +246,7 @@ namespace csyren::editor
             auto* renderer = core::Services::get<render::Renderer>();
             renderer->removeCameraView(_cameraView);
             renderer->presentCameraOutput(true);
+            renderer->showPrimaryCamera(true);
             _viewport.cameraView({}); _cameraView.reset();
             _windows.clear(); _workflow = nullptr;
 		}

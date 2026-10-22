@@ -126,6 +126,9 @@ namespace csyren::render
         const auto& outputView() const { return _primaryView; }
         bool requestCameraRender(core::Entity::ID id) { return _cameraViews.request(id); }
         void requestPrimaryCameraRender() { if (_primaryView) _primaryView->schedule.request(); }
+        // Whether the primary camera's output is shown while it is not presented
+        // (the editor's Game view). Not shown: the primary camera is not rendered.
+        void showPrimaryCamera(bool shown) { _primaryShown = shown; }
         void completeCameraViews() { for (auto& view : _views) if (view->render) view->schedule.submitted(view->ticket); }
         // Scene lighting inputs for the next prepared camera views (written before FrameAcquireSystem).
         RenderEnvironment& environment() noexcept { return _environment; }
@@ -186,6 +189,7 @@ namespace csyren::render
         struct ExternalCamera { CameraSource source; std::shared_ptr<details::CameraRenderView> view; };
         std::vector<ExternalCamera> _externalCameras;
         bool _presentCameraOutput = true;
+        bool _primaryShown = true;
         bool _uploadOpen = false;
         std::shared_ptr<details::CameraRenderView> _primaryView;
         std::vector<std::shared_ptr<details::CameraRenderView>> _views;

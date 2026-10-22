@@ -2,7 +2,10 @@
 #include "base_editor_window.h"
 #include "core/services.h"
 #include "core/system_manager.h"
+#include "cstdmf/profiler.h"
+#include <cstdio>
 #include <cmath>
+#include <unordered_map>
 #include <vector>
 
 namespace csyren::editor
@@ -135,8 +138,12 @@ namespace csyren::editor
                 draw->AddRect(a, b, task.name == _selected ? IM_COL32(255, 195, 80, 255) : IM_COL32(110, 130, 150, 255), 5.0f);
                 draw->PushClipRect(a, b, true);
                 draw->AddText(font, fontSize, snap(ImVec2(a.x + 8 * _zoom, a.y + 6 * _zoom)), IM_COL32_WHITE, task.name.c_str());
-                draw->AddText(font, fontSize, snap(ImVec2(a.x + 8 * _zoom, a.y + 10 * _zoom + fontSize)), IM_COL32(185, 200, 215, 255),
-                    commit ? "Structural commit" : task.description.affinity == core::TaskAffinity::MainThread ? "Main thread" : "Worker");
+                const char* kind = commit ? "Structural commit" : task.description.affinity == core::TaskAffinity::MainThread ? "Main thread" : "Worker";
+                char line[96];
+                // Current schedule: the task's CPU time per frame from the profiler.
+                if (const auto ms = taskMs(task.name); _graphMode == 0 && ms >= 0.0) std::snprintf(line, sizeof(line), "%s  %.2f ms", kind, ms);
+                else std::snprintf(line, sizeof(line), "%s", kind);
+                draw->AddText(font, fontSize, snap(ImVec2(a.x + 8 * _zoom, a.y + 10 * _zoom + fontSize)), IM_COL32(185, 200, 215, 255), line);
                 draw->PopClipRect();
                 ImGui::SetCursorScreenPos(a);
                 ImGui::PushID(static_cast<int>(i));
@@ -155,6 +162,10 @@ namespace csyren::editor
                 ImGui::Text("%s | phase: %s", node.task.name.c_str(), d.phase.c_str());
                 ImGui::BeginChild("TaskDetails", ImVec2(0, 0));
                 ImGui::Text("Affinity: %s", d.affinity == core::TaskAffinity::MainThread ? "Main thread" : "Worker");
+                if (_graphMode == 0 && profiler::enabled()) {
+                    const auto& stat = profiler::Collector::instance().stat(markOf(node.task.name));
+                    ImGui::Text("CPU: %.3f ms per frame, longest call %.3f ms", stat.msPerFrame, stat.maxMs);
+                }
                 if (d.exclusiveScene) ImGui::TextUnformatted("Exclusive scene access");
                 if (d.dynamicResources) ImGui::TextUnformatted("Dynamic resources");
                 if (!d.structuralCommitFor.empty()) ImGui::Text("Commit for: %s", d.structuralCommitFor.c_str());
@@ -174,8 +185,24 @@ namespace csyren::editor
             }
         }
     private:
+        // The task's profiler mark, looked up once (0 while it has none yet).
+        uint32_t markOf(const std::string& task)
+        {
+            auto& mark = _marks[task];
+            if (!mark) mark = profiler::find(task);
+            return mark;
+        }
+        // -1 when the profiler is off or the task has no mark yet.
+        double taskMs(const std::string& name)
+        {
+            if (!profiler::enabled()) return -1.0;
+            const auto mark = markOf(name);
+            return mark ? profiler::Collector::instance().stat(mark).msPerFrame : -1.0;
+        }
+
         int _graphMode = 0;
         float _zoom = 1.0f;
         std::string _selected;
+        std::unordered_map<std::string, uint32_t> _marks;
     };
 }

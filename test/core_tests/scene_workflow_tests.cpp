@@ -590,13 +590,13 @@ void startupDiagnostics()
     CHECK(csyren::log::init(file)); // reinitialization must not poison the stream
     const auto missingProject = file.parent_path() / (file.stem().wstring() + L".csyrenproj");
     try { ProjectSettings::load(missingProject); CHECK(false); }
-    catch (const std::exception& error) { csyren::log::exception(error); }
+    catch (const std::exception&) { csyren::log::exception(); }
     try
     {
         try { throw std::runtime_error("inner diagnostic cause"); }
         catch (...) { std::throw_with_nested(std::runtime_error("outer diagnostic context")); }
     }
-    catch (const std::exception& error) { csyren::log::exception("startup nested failure", error); }
+    catch (const std::exception&) { csyren::log::exception("startup nested failure"); }
     struct FailingStartupService
     {
         void init() { throw std::runtime_error("Injected service init failure"); }
@@ -616,7 +616,7 @@ void startupDiagnostics()
     std::ifstream input(file);
     const std::string contents{ std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>() };
     CHECK(contents.find("Startup log opened") != std::string::npos);
-    CHECK(contents.find("Exception [") != std::string::npos);
+    CHECK(contents.find("Exception: ") != std::string::npos);
     CHECK(contents.find("Cannot open project: " + core::pathToUtf8(missingProject)) != std::string::npos);
     CHECK(contents.find("outer diagnostic context") != std::string::npos);
     CHECK(contents.find("inner diagnostic cause") != std::string::npos);

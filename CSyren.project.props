@@ -16,6 +16,8 @@
     <CSyrenRegistryFile Condition="'$(CSyrenRegistryFile)'==''">$(CSyrenGeneratedDir)\registry.gen.cpp</CSyrenRegistryFile>
     <!-- Headers scanned for CS_* markers: the engine, then the project. Files are allowed too. -->
     <CSyrenRegistryRoots Condition="'$(CSyrenRegistryRoots)'==''">$(CSyrenRoot)lib;$(CSyrenRoot)source;$(CSyrenProjectSource)</CSyrenRegistryRoots>
+    <!-- Sources checked for C++ RTTI (typeid, dynamic_cast, std::any...): an error, the engine builds with /GR-. -->
+    <CSyrenRttiRoots Condition="'$(CSyrenRttiRoots)'==''">$(CSyrenRoot)lib;$(CSyrenRoot)source;$(CSyrenProjectSource)</CSyrenRttiRoots>
     <CSyrenIncludeDirs>$(CSyrenRoot)lib;$(CSyrenRoot)lib\imGui;$(CSyrenRoot)lib\imGui\backends;$(CSyrenRoot)source\runtime;$(CSyrenRoot)source\editor;$(CSyrenRoot)source\host;$(CSyrenProjectSource)</CSyrenIncludeDirs>
     <!-- Interpreter for tools/csyren_registry.py, e.g. "py -3" when python is not on PATH. -->
     <CSyrenPython Condition="'$(CSyrenPython)'==''">python</CSyrenPython>

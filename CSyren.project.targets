@@ -35,7 +35,7 @@
   <!-- Registry of CS_* markers (tools/csyren_registry.py). The file is rewritten only when
        its content changes, so an unchanged registry does not recompile anything. -->
   <Target Name="CSyrenGenerateRegistry" BeforeTargets="ClCompile;BuildGenerateSources">
-    <Exec Command="$(CSyrenPython) &quot;$(CSyrenRoot)tools\csyren_registry.py&quot; --out &quot;$(CSyrenRegistryFile)&quot; --roots &quot;$(CSyrenRegistryRoots)&quot; --include-dirs &quot;$(CSyrenIncludeDirs)&quot;"
+    <Exec Command="$(CSyrenPython) &quot;$(CSyrenRoot)tools\csyren_registry.py&quot; --out &quot;$(CSyrenRegistryFile)&quot; --roots &quot;$(CSyrenRegistryRoots)&quot; --include-dirs &quot;$(CSyrenIncludeDirs)&quot; --rtti-roots &quot;$(CSyrenRttiRoots)&quot;"
           CustomErrorRegularExpression="error CSR\d+" />
   </Target>
 

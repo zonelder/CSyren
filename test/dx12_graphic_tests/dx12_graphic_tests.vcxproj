@@ -5,6 +5,8 @@
     <ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
+    <!-- googletest is prebuilt with RTTI; the engine itself builds with /GR- (CSyren.engine.props). -->
+    <CSyrenRuntimeTypeInfo>true</CSyrenRuntimeTypeInfo>
     <ProjectGuid>{80F45382-8AF5-42CC-B40B-067FC2942E75}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>

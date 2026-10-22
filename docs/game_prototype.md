@@ -91,6 +91,7 @@ editor scene to keep the values).
 * **Edit → Save object as prefab…** writes the selected object and its children
   to a `.prefab` file; **File → Instantiate prefab…** places a copy (undoable).
   `PrefabRef` fields show the path and whether the file exists.
+* **profiler** window: per-thread timeline and per-system times, see `docs/profiler.md`.
 * `editor::EditorOverlays` service: named ImGui callbacks drawn by `EditorSystem`
   after its windows. The game HUD (crosshair, speed, state, ammo) uses it.
 

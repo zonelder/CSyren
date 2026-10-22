@@ -31,6 +31,7 @@ namespace csyren::editor
                 ImGui::DockBuilderDockWindow("Scene Hierarchy",left);
                 ImGui::DockBuilderDockWindow("inspector",right);
                 ImGui::DockBuilderDockWindow("systems",bottom); ImGui::DockBuilderDockWindow("statistic",bottom);
+                ImGui::DockBuilderDockWindow("profiler",bottom);
                 ImGui::DockBuilderDockWindow("Scene",center); ImGui::DockBuilderDockWindow("Game",center);
                 ImGui::DockBuilderFinish(id);
                 root = ImGui::DockBuilderGetNode(id);
@@ -45,6 +46,15 @@ namespace csyren::editor
                     _migrated = true;
                 }
             }
+            // Layouts saved before the profiler window: dock it next to "systems" once.
+            if (!_profilerDocked) {
+                const auto* settings = ImGui::FindWindowSettingsByID(ImHashStr("profiler"));
+                const auto* systems = ImGui::FindWindowByName("systems");
+                const auto* systemsSettings = ImGui::FindWindowSettingsByID(ImHashStr("systems"));
+                const auto dock = systems && systems->DockId ? systems->DockId : systemsSettings ? systemsSettings->DockId : 0;
+                if (!settings && dock && ImGui::DockBuilderGetNode(dock)) ImGui::DockBuilderDockWindow("profiler", dock);
+                _profilerDocked = true;
+            }
             ImGui::SetNextWindowPos(work.Min); ImGui::SetNextWindowSize(size); ImGui::SetNextWindowViewport(viewport->ID);
             const auto flags = ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoCollapse|ImGuiWindowFlags_NoResize|
                 ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoDocking|ImGuiWindowFlags_NoBringToFrontOnFocus|
@@ -58,6 +68,7 @@ namespace csyren::editor
         }
     private:
         bool _migrated = false;
+        bool _profilerDocked = false;
         static ImGuiDockNode* central(ImGuiDockNode* node)
         {
             if (node->IsCentralNode()) return node;

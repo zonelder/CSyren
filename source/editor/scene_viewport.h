@@ -71,6 +71,13 @@ namespace csyren::editor
     public:
     void cameraView(std::shared_ptr<render::details::CameraRenderView> view) { _cameraView = std::move(view); }
     bool manipulating() const { return _gizmo.active(); }
+    // Whether the view's camera is rendered: only while its window is visible (not
+    // closed, collapsed or a hidden tab). Applies from the next frame.
+    void show(bool shown, ViewportCamera mode)
+    {
+        if (mode == ViewportCamera::Game) core::Services::get<render::Renderer>()->showPrimaryCamera(shown);
+        else if (_cameraView) _cameraView->shown = shown;
+    }
     void render(bool* open = nullptr,ViewportCamera mode = ViewportCamera::Scene)
     {
         auto& session = *core::Services::get<SceneSession>();
@@ -78,9 +85,10 @@ namespace csyren::editor
         const bool game = mode == ViewportCamera::Game;
         auto& viewport = game ? view.gameViewport : view.viewport;
         viewport = {};
-        if (open && !*open) { if (!game) view.navigation = {}; _gizmo.cancel(session); return; }
+        if (open && !*open) { show(false,mode); if (!game) view.navigation = {}; _gizmo.cancel(session); return; }
         const bool visible = ImGui::Begin(game ? "Game" : "Scene",open,ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse);
         struct EndWindow { ~EndWindow() { ImGui::End(); } } endWindow;
+        show(visible,mode);
         if (!visible) { if (!game) view.navigation = {}; _gizmo.cancel(session); return; }
         auto* renderer = core::Services::get<render::Renderer>();
         const auto target = game ? renderer->primaryCameraTarget() : (_cameraView ? _cameraView->target : nullptr);

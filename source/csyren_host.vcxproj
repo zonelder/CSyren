@@ -74,6 +74,7 @@
     <Lib />
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="csyren_host_headers.cpp" />
     <ClCompile Include="editor\editor_base.cpp" />
     <ClCompile Include="editor\editor_camera_controller.cpp" />
     <ClCompile Include="editor\inspector_window.cpp" />
@@ -113,6 +114,7 @@
     <ClInclude Include="editor\start_render_system.h" />
     <ClInclude Include="editor\statistic_window.h" />
     <ClInclude Include="editor\system_window.h" />
+    <ClInclude Include="editor\profiler_window.h" />
     <ClInclude Include="editor\prefab_editor.h" />
     <ClInclude Include="host\application.h" />
     <ClInclude Include="host\project_settings.h" />

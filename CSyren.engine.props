@@ -10,6 +10,12 @@
        The compiler and IntelliSense then see the same macro set in every file, whatever
        the include order or the translation unit a header is parsed in.
 
+       The engine builds without RTTI (/GR-): types are identified with core::TypeKey
+       and core::typeName (lib/core/type_key.h), and tools/csyren_registry.py fails the
+       build on typeid / type_info / type_index / dynamic_cast / std::any in engine code.
+       A project that needs RTTI (the tests: googletest is prebuilt with it) sets
+       <CSyrenRuntimeTypeInfo>true</CSyrenRuntimeTypeInfo>.
+
        /utf-8: sources are UTF-8 (without a BOM; .editorconfig sets it for new files) and
        are compiled as UTF-8, string literals included. Without it cl reads a file without
        a BOM in the system code page, while IntelliSense reads it as UTF-8: a Windows-1251
@@ -18,6 +24,7 @@
        rejects sources that are not UTF-8. -->
   <ItemDefinitionGroup>
     <ClCompile>
+      <RuntimeTypeInfo Condition="'$(CSyrenRuntimeTypeInfo)'!='true'">false</RuntimeTypeInfo>
       <ForcedIncludeFiles>$(MSBuildThisFileDirectory)lib\cstdmf\window_clean.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <PreprocessorDefinitions>NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>

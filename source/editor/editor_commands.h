@@ -1,5 +1,6 @@
 #pragma once
 #include "core/scene.h"
+#include "core/type_key.h"
 #include "core/meta_json.h"
 #include <functional>
 #include <memory>
@@ -75,13 +76,20 @@ namespace csyren::editor
         FieldPath path;
         virtual bool changed() const = 0;
         const char* label() const override { return "Edit component"; }
+        // Downcast without RTTI: every concrete edit records its own type key.
+        template<class Edit> Edit* as() noexcept
+        { return _kind == core::TypeKey::of<Edit>() ? static_cast<Edit*>(this) : nullptr; }
+    protected:
+        explicit PendingFieldEdit(core::TypeKey kind) : _kind(kind) {}
+    private:
+        core::TypeKey _kind;
     };
     template<class T> class FieldEdit final : public PendingFieldEdit
     {
     public:
         T before, after;
         FieldEdit(EntityKey target, size_t component, FieldPath field, T previous, T next)
-            : before(std::move(previous)), after(std::move(next))
+            : PendingFieldEdit(core::TypeKey::of<FieldEdit>()), before(std::move(previous)), after(std::move(next))
         { key = target; family = component; path = std::move(field); }
         bool changed() const override
         {
@@ -110,7 +118,7 @@ namespace csyren::editor
         const core::reflection::MetaType* type{};
         nlohmann::json before, after;
         ArchivedFieldEdit(EntityKey target, size_t component, FieldPath field, const core::reflection::MetaType* fieldType, nlohmann::json previous, nlohmann::json next)
-            : type(fieldType), before(std::move(previous)), after(std::move(next))
+            : PendingFieldEdit(core::TypeKey::of<ArchivedFieldEdit>()), type(fieldType), before(std::move(previous)), after(std::move(next))
         { key = target; family = component; path = std::move(field); }
         bool changed() const override { return before != after; }
         bool execute(EditContext& context) override { return apply(context, after); }

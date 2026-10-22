@@ -57,7 +57,7 @@ namespace csyren::core
             if constexpr (std::is_same_v<std::remove_const_t<T>, Scene>) { if (_scene) return _scene; }
             if constexpr (std::is_same_v<std::remove_const_t<T>, EventBus2>) { if (_bus) return _bus; }
             auto it = _services.find(reflection::ServiceFamily::getID<std::remove_const_t<T>>());
-            if (it == _services.end()) throw std::logic_error("Service not registered: " + std::string(typeid(T).name()));
+            if (it == _services.end()) throw std::logic_error("Service not registered: " + std::string(typeName<std::remove_const_t<T>>()));
             return reinterpret_cast<T*>(it->second);
         }
 
@@ -171,9 +171,7 @@ namespace csyren::core
                 if constexpr (concepts::HasInit<T>)
                 {
                     try { get().init(); }
-                    catch (const std::exception& error)
-                    { log::exception(std::format("service '{}' init", typeid(T).name()), error); throw; }
-                    catch (...) { log::error("Non-standard exception initializing service '{}'", typeid(T).name()); throw; }
+                    catch (...) { log::exception(std::format("service '{}' init", typeName<T>())); throw; }
                 }
             }
 

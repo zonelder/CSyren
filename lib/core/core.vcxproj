@@ -180,6 +180,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="camera.cpp" />
+    <ClCompile Include="core_headers.cpp" />
     <ClCompile Include="dispatch_handle.cpp" />
     <ClCompile Include="input_dispatch_system.cpp" />
     <ClCompile Include="pch.cpp">

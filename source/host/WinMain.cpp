@@ -57,7 +57,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE pPrevInstance, LPSTR plCmdLi
     }
     catch (const std::exception& error)
     {
-        csyren::log::exception(error);
+        csyren::log::exception(); // includes nested causes
         showFailure(error.what());
         return -1;
     }

@@ -18,10 +18,17 @@ Application calls them at startup. The output is rewritten only when it
 changes, so an unchanged registry does not trigger a rebuild. Problems are
 reported as "file(line): error CSRxxx: ..." and fail the build.
 
+With --rtti-roots the script also checks that engine and project code does not
+use C++ RTTI (the engine builds with /GR-): typeid, std::type_info,
+std::type_index, dynamic_cast, std::dynamic_pointer_cast, std::any, any_cast,
+make_any and <typeinfo>/<typeindex>/<any> are errors (CSR030), also inside
+macro definitions. Use core::TypeKey and core::typeName (lib/core/type_key.h).
+
 Usage (normally run by CSyren.project.targets before ClCompile):
     python csyren_registry.py --out build/generated/registry.gen.cpp
         --roots "C:/CSyren/lib;C:/CSyren/source;C:/MyGame/source"
         --include-dirs "C:/CSyren/lib;C:/CSyren/source/runtime;..."
+        [--rtti-roots "C:/CSyren/lib;C:/CSyren/source;C:/MyGame/source"]
 """
 import argparse
 import os
@@ -30,6 +37,12 @@ import sys
 
 MARKERS = ('CS_REFLECT', 'CS_COMPONENT', 'CS_SYSTEM', 'CS_EDITOR', 'CS_SERVICE')
 HEADER_EXTENSIONS = ('.h', '.hpp', '.hh', '.hxx')
+SOURCE_EXTENSIONS = HEADER_EXTENSIONS + ('.inl', '.ipp', '.cpp', '.cc', '.cxx')
+# type_info / type_index only std::-qualified: any use of them needs typeid anyway,
+# and plain identifiers with these names (a member "type_index") are fine.
+RTTI_TOKENS = re.compile(r'\b(?:typeid|dynamic_cast|dynamic_pointer_cast|any_cast|make_any)\b'
+                         r'|\bstd\s*::\s*(?:any|type_info|type_index)\b')
+RTTI_INCLUDES = re.compile(r'^\s*#\s*include\s*<(typeinfo|typeindex|any)>', re.MULTILINE)
 SKIP_DIRECTORIES = {'third_party', 'imgui', 'joltsolution', 'build', 'x64', 'packages', 'generated'}
 IDENTIFIER = r'[A-Za-z_]\w*'
 QUALIFIED = re.compile(rf'^(?:::)?{IDENTIFIER}(?:\s*::\s*{IDENTIFIER})*$')
@@ -64,8 +77,9 @@ class Marker:
 RAW_STRING = re.compile(r'(?:u8|u|U|L)?R"([^()\\\s]{0,16})\(')
 
 
-def strip_source(text):
-    """Blanks comments, string/char literals and preprocessor lines; keeps line breaks."""
+def strip_source(text, keep_directives=False):
+    """Blanks comments, string/char literals and (unless keep_directives) preprocessor
+    lines; keeps line breaks."""
     out = []
     i, n = 0, len(text)
     while i < n:
@@ -98,6 +112,8 @@ def strip_source(text):
             continue
         out.append(c)
         i += 1
+    if keep_directives:
+        return ''.join(out)
     lines = ''.join(out).split('\n')
     continuation = False
     for index, line in enumerate(lines):
@@ -185,8 +201,8 @@ def scan_header(path, display):
     return markers
 
 
-def collect(roots):
-    """Header files under the roots in a stable order (roots in order, then sorted paths)."""
+def collect(roots, extensions=HEADER_EXTENSIONS):
+    """Files under the roots in a stable order (roots in order, then sorted paths)."""
     seen, headers = set(), []
     for root in roots:
         root = os.path.normpath(os.path.abspath(root))
@@ -197,7 +213,7 @@ def collect(roots):
             for directory, subdirectories, files in os.walk(root):
                 subdirectories[:] = sorted(d for d in subdirectories
                                            if d.lower() not in SKIP_DIRECTORIES and not d.startswith('.'))
-                candidates += [os.path.join(directory, f) for f in sorted(files) if f.lower().endswith(HEADER_EXTENSIONS)]
+                candidates += [os.path.join(directory, f) for f in sorted(files) if f.lower().endswith(extensions)]
         else:
             raise RegistryError(root, 1, 'CSR010', 'scan root does not exist')
         for candidate in candidates:
@@ -206,6 +222,23 @@ def collect(roots):
                 seen.add(key)
                 headers.append(candidate)
     return headers
+
+
+def check_rtti(path):
+    """CSR030 errors for RTTI use in one file. Comments and string literals are
+    ignored; macro definitions are checked like code."""
+    with open(path, encoding='utf-8', errors='replace') as handle:
+        raw = handle.read()
+    errors = []
+    text = strip_source(raw, keep_directives=True)
+    for match in RTTI_INCLUDES.finditer(text):
+        line = text.count('\n', 0, match.start()) + 1
+        errors.append(RegistryError(path, line, 'CSR030', f'<{match.group(1)}> is not allowed: the engine builds without RTTI (use core::TypeKey / core::typeName)'))
+    for match in RTTI_TOKENS.finditer(text):
+        line = text.count('\n', 0, match.start()) + 1
+        token = re.sub(r'\s+', '', match.group(0))
+        errors.append(RegistryError(path, line, 'CSR030', f'"{token}" is not allowed: the engine builds without RTTI (use core::TypeKey / core::typeName)'))
+    return errors
 
 
 # ---------------------------------------------------------------------------
@@ -364,6 +397,7 @@ def main(argv=None):
     parser.add_argument('--roots', action='append', help='scan roots (files or directories), ";"-separated')
     parser.add_argument('--include-dirs', action='append', help='compiler include directories, ";"-separated')
     parser.add_argument('--list', action='store_true', help='print the markers that were found')
+    parser.add_argument('--rtti-roots', action='append', help='files or directories that must not use C++ RTTI, ";"-separated')
     args = parser.parse_args(argv)
     out = os.path.normpath(os.path.abspath(args.out))
     try:
@@ -375,8 +409,15 @@ def main(argv=None):
         for header in headers:
             markers += scan_header(header, header)
         text = generate(markers, headers, split_list(args.include_dirs), os.path.dirname(out))
+        rtti_errors = []
+        for source in collect(split_list(args.rtti_roots), SOURCE_EXTENSIONS):
+            rtti_errors += check_rtti(source)
     except RegistryError as error:
         print(error, file=sys.stderr)
+        return 1
+    if rtti_errors:
+        for error in rtti_errors:
+            print(error, file=sys.stderr)
         return 1
     if args.list:
         for marker in markers:

@@ -50,7 +50,7 @@ namespace csyren::editor
         {
             if (playing()) return;
             editorScene().patch(resolve(key), family);
-            auto* edit = dynamic_cast<FieldEdit<T>*>(_edit.get());
+            auto* edit = _edit ? _edit->as<FieldEdit<T>>() : nullptr;
             if (!edit || edit->key != key || edit->family != family || edit->path != path)
             {
                 finishEdit();
@@ -65,7 +65,7 @@ namespace csyren::editor
         {
             if (playing()) return;
             editorScene().patch(resolve(key), family);
-            auto* edit = dynamic_cast<ArchivedFieldEdit*>(_edit.get());
+            auto* edit = _edit ? _edit->as<ArchivedFieldEdit>() : nullptr;
             if (!edit || edit->key != key || edit->family != family || edit->path != path || edit->type != &type)
             {
                 finishEdit();

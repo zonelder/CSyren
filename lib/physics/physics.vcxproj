@@ -192,6 +192,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="physics_headers.cpp" />
     <ClCompile Include="physic_system.cpp" />
     <ClCompile Include="physics_layers.cpp" />
     <ClCompile Include="rigid_body.cpp" />

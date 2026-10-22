@@ -1,6 +1,6 @@
 #pragma once
 
-#include <typeindex>
+#include "type_key.h"
 #include <unordered_map>
 #include <memory>
 #include <vector>
@@ -35,7 +35,7 @@ namespace csyren::core
             ScopedService(const ScopedService&) = delete;
             ~ScopedService() {
                 if (previous) context.provide(*previous);
-                else context._services.erase(std::type_index(typeid(Service)));
+                else context._services.erase(TypeKey::of<Service>());
             }
         };
         template<class Service> ScopedService<Service> scopedService(Service& service) { return { *this, service }; }
@@ -43,7 +43,7 @@ namespace csyren::core
         {
             auto service = std::make_shared<Service>(std::forward<Args>(args)...);
             auto* raw = service.get();
-            _ownedServices.insert_or_assign(std::type_index(typeid(Service)), std::move(service));
+            _ownedServices.insert_or_assign(TypeKey::of<Service>(), std::move(service));
             provide(*raw);
             return *raw;
         }
@@ -78,16 +78,16 @@ namespace csyren::core
         bool finishLoad() { for (auto& section : _sections) if (!section->finishLoad(*this)) return false; return true; }
         template<class Service> void provide(Service& service)
         {
-            _services.insert_or_assign(std::type_index(typeid(Service)), &service);
+            _services.insert_or_assign(TypeKey::of<Service>(), &service);
         }
         template<class Service> Service* tryGet() const noexcept
         {
-            const auto it = _services.find(std::type_index(typeid(Service)));
+            const auto it = _services.find(TypeKey::of<Service>());
             return it == _services.end() ? nullptr : static_cast<Service*>(it->second);
         }
     private:
-        std::unordered_map<std::type_index, void*> _services;
+        std::unordered_map<TypeKey, void*> _services;
         std::vector<std::shared_ptr<SerializationSection>> _sections;
-        std::unordered_map<std::type_index, std::shared_ptr<void>> _ownedServices;
+        std::unordered_map<TypeKey, std::shared_ptr<void>> _ownedServices;
     };
 }

@@ -50,6 +50,9 @@
     <ClCompile Include="color.cpp">
       <Filter>Файлы ресурсов</Filter>
     </ClCompile>
+    <ClCompile Include="math_headers.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
     <ClCompile Include="matrix4x4.cpp">
       <Filter>Файлы ресурсов</Filter>
     </ClCompile>

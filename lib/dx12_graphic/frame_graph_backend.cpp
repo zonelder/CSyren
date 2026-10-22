@@ -1,10 +1,12 @@
 #include "pch.h"
+#include "cstdmf/profiler.h"
 #include "frame_graph_backend.h"
 #include "presentation_state.h"
 #include "descriptor_allocation.h"
 #include "gpu_resources.h"
 #include "camera_render_target.h"
 #include "core/services.h"
+#include <cstdlib>
 
 namespace csyren::render::details {
 FrameGraphBackend::~FrameGraphBackend() {
@@ -115,9 +117,17 @@ void FrameGraphBackend::prepareViews() {
     for (const auto& barrier : _plan.finalBarriers()) mutableResources.insert(barrier.resource);
     std::unordered_set<std::string> alive;
     for (const auto& pass : _plan.passes()) alive.insert(pass.name);
+    // Passes of a view that is only hidden (an editor tab behind another one) keep
+    // their recording storage: they are recorded again as soon as it is shown.
+    const auto hiddenView = [&](const std::string& pass) {
+        const auto at = pass.rfind('@');
+        if (at == std::string::npos) return false;
+        const auto found = viewsById.find(std::strtoull(pass.c_str() + at + 1, nullptr, 10));
+        return found != viewsById.end() && found->second->hidden;
+    };
     _retired.clear();
     for (const auto& [name, storage] : _storage)
-        if (!alive.contains(name)) _retired.push_back(name);
+        if (!alive.contains(name) && !hiddenView(name)) _retired.push_back(name);
     collectRetired();
     for (const auto& pass : _plan.passes()) if (!_storage.contains(pass.name)) {
         auto storage = std::make_unique<Storage>();
@@ -143,6 +153,8 @@ void FrameGraphBackend::prepareViews() {
         if (auto binding = expanded.bindings.find(pass.name); binding != expanded.bindings.end()) view = viewsById.at(binding->second);
         const auto& usages = *usagesByPass.at(pass.name);
         PassBinding binding{_storage.at(pass.name).get(),queueIndex,view,{},{},false};
+        // Per-view passes ("Task@view") are profiler marks inside their task's mark.
+        if (pass.name.find('@') != std::string::npos) binding.mark = profiler::name(pass.name);
         for (const auto& usage : usages) {
             const bool frameTarget = usage.resource == "frame.color" || usage.resource == "frame.depth";
             const auto viewIt = _resources.find(usage.resource);
@@ -236,6 +248,7 @@ void FrameGraphBackend::record(const std::string& task, const std::function<void
 void FrameGraphBackend::recordPass(size_t index,const std::function<void()>& callback) {
     auto& renderer = *core::Services::get<Renderer>();
     const auto& bindingData = _passes.at(index);
+    const profiler::Scope profile(bindingData.mark);
     auto& data = bindingData.storage->frames[_state.commandIndex];
     const auto& pass = _plan.passes()[index];
     _usedQueues[bindingData.queue]->syncAwaitComplete(data.commands.lastFenceValue());

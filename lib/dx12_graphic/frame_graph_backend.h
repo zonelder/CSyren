@@ -39,6 +39,7 @@ private:
         std::vector<std::string> colors;
         std::string depth;
         bool frameWait;
+        uint32_t mark = 0; // profiler mark of a per-view pass, 0: covered by the task's mark
     };
     std::vector<CameraViewBranch> _branches;
     uint64_t _outputView = 0, _planRevision = 0;

@@ -49,8 +49,6 @@ namespace csyren
         float getCurrentFps() const noexcept { return _currentFps; }
         float getMinFpsLastMinute() const noexcept { return _minFps; }
         float getMaxFpsLastMinute() const noexcept { return _maxFps; }
-        void addDrawCalls(uint64_t newCalls) { _drawCalls += newCalls; }
-        uint32_t getDrawCalls() const noexcept { return _drawCalls; }
     private:
         float _accumulatedTime{ 0.0f };
         uint32_t _framesLastSecond{ 0 };
@@ -61,7 +59,6 @@ namespace csyren
         float _maxFps{ 0.0f };
         FrameRingBuffer_t _frameTimeHistory{};
         size_t _historyOffset{ 0 };
-        uint64_t _drawCalls;
     };
 
     inline float StatisticMonitorFrameTimeGetter(void* data, int idx)

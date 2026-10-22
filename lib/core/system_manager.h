@@ -258,18 +258,14 @@ namespace csyren::core
                 if (context && !entry->system->attached())
                 {
                     try { entry->system->attach(*context); entry->instance = context->instance; }
-                    catch (const std::exception& error)
-                    { log::exception(std::format("system '{}' attach to scene {}", entry->name, context->instance), error); throw; }
-                    catch (...) { log::error("Non-standard exception attaching system '{}'", entry->name); throw; }
+                    catch (...) { log::exception(std::format("system '{}' attach to scene {}", entry->name, context->instance)); throw; }
                 }
             }
         }
         static void initializeSystem(System& system, const std::string& name)
         {
             try { system.init(); }
-            catch (const std::exception& error)
-            { log::exception(std::format("system '{}' init", name), error); throw; }
-            catch (...) { log::error("Non-standard exception initializing system '{}'", name); throw; }
+            catch (...) { log::exception(std::format("system '{}' init", name)); throw; }
         }
         const SceneContext* desiredContext(const SystemEntry& entry) const
         {

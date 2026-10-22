@@ -233,6 +233,17 @@ generated from declarations. CPU completion does not imply GPU completion.
 Allocator/upload reuse waits for the corresponding retired frame slot only.
 Graph edits drain old GPU storage before replacing it.
 
+`View` passes run once per camera view that renders this frame (`TonemapSystem@2`
+for view 2). A view renders when it is due (every frame, or an on-demand render
+is pending) and shown. The editor shows a view only while its window is visible:
+the Scene view sets `CameraRenderView::shown`, the Game view
+`Renderer::showPrimaryCamera` (the primary camera, unless its output is
+presented). A hidden view records no passes, but its frame constants stay
+current (picking uses them) and a pending render waits until it is shown; its
+passes keep their recording storage, so switching tabs does not reallocate it.
+The change applies from the next frame: for one frame the window shows the last
+image.
+
 Use `GpuResources::import` during initialization for persistent resources, supplying
 their actual initial and exported final D3D12 states. The registry retains COM
 ownership. One-time initialization establishes the final state, and each frame's
@@ -250,6 +261,31 @@ The output worker retains the swap-chain-associated presentation queue and never
 moves backbuffer writes to another queue. ImGui and window systems use
 `TaskAffinity::MainThread`. Jolt currently retains its own four worker threads;
 the engine job pool reserves a bounded CPU budget alongside them.
+
+## Type identity without RTTI
+
+The engine builds with `/GR-` (`CSyren.engine.props`; the test projects set
+`<CSyrenRuntimeTypeInfo>true</CSyrenRuntimeTypeInfo>` because googletest is
+prebuilt with RTTI). Use `core::TypeKey::of<T>()` as a type key and
+`core::typeName<T>()` for logs and UI (`core/type_key.h`); keys identify types
+within one running image and must not be serialized. To downcast, store a
+`TypeKey` of the concrete type in the base (see `editor::PendingFieldEdit::as`).
+`tools/csyren_registry.py --rtti-roots` fails the build with CSR030 on
+`typeid`, `std::type_info`, `std::type_index`, `dynamic_cast`,
+`dynamic_pointer_cast`, `std::any`, `any_cast`, `make_any` and
+`<typeinfo>`/`<typeindex>`/`<any>` in `lib/`, `source/` and `game/`, including
+macro definitions (comments and string literals are ignored). This check is the
+real guard: under `/GR-` MSVC only warns (C4541) on `typeid`/`dynamic_cast` of a
+polymorphic type, which then fails at run time.
+
+## Profiling
+
+Every graph task is a profiler mark named like its node (`WeaponSystem`,
+`WeaponSystem/apply`, per-view GPU passes `TonemapSystem@2`), and the frame graph
+as a whole is `Frame graph`. Engine code adds marks with `CS_PROFILE_SCOPE` /
+`CS_PROFILE_VALUE` (`cstdmf/profiler.h`). The editor's *profiler* window shows the
+timeline of a frame per thread and the time of each mark; the *systems* window
+shows each task's time per frame. See [profiler.md](profiler.md).
 
 ## Completion and failures
 

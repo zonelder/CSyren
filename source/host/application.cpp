@@ -12,6 +12,7 @@
 #include <iostream>
 
 #include "cstdmf/log.h"
+#include "cstdmf/profiler.h"
 #include "math/math.h"
 
 #include "meta_common.h"
@@ -88,6 +89,7 @@ namespace csyren
 	{
 
 		log::info("-------------------------------------Init Application-------------------------------------");
+        profiler::setThreadName("Main");
 
 		using namespace core;
 		
@@ -161,17 +163,26 @@ namespace csyren
         };
         MSG msg{};
         while (true) {
-            window->preMessagePump();
-            while (PeekMessage(&msg,nullptr,0,0,PM_REMOVE)) {
-                if (msg.message == WM_QUIT) {
-                    log::info("-------------------------------Shutdown------------------------------------------------------");
-                    shutdown(); return static_cast<int>(msg.wParam);
+            profiler::beginFrame();
+            {
+                CS_PROFILE_SCOPE("Message pump");
+                window->preMessagePump();
+                while (PeekMessage(&msg,nullptr,0,0,PM_REMOVE)) {
+                    if (msg.message == WM_QUIT) {
+                        log::info("-------------------------------Shutdown------------------------------------------------------");
+                        shutdown(); return static_cast<int>(msg.wParam);
+                    }
+                    TranslateMessage(&msg); DispatchMessage(&msg);
                 }
-                TranslateMessage(&msg); DispatchMessage(&msg);
             }
             try {
                 timeHandler.update(*time); stats->update(*time);
-                systems->execute(); session->settle(); session->processRequests();
+                systems->execute();
+                {
+                    CS_PROFILE_SCOPE("Scene session");
+                    session->settle(); session->processRequests();
+                }
+                profiler::collect();
             }
             catch (...) { shutdown(); throw; }
         }

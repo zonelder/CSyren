@@ -235,6 +235,7 @@
   <ItemGroup>
     <ClCompile Include="command_list.cpp" />
     <ClCompile Include="descriptors.cpp" />
+    <ClCompile Include="dx12_graphic_headers.cpp" />
     <ClCompile Include="material.cpp" />
     <ClCompile Include="mesh.cpp" />
     <ClCompile Include="animation_clip.cpp" />

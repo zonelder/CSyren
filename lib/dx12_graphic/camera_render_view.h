@@ -83,7 +83,11 @@ namespace csyren::render::details
         CameraRenderSchedule schedule;
         EngineVariableBuffer engine{};
         math::Vector4 background{};
-        bool render = true;
+        bool render = true;      // recorded this frame (due and shown)
+        bool hidden = false;     // due but not recorded, because nobody shows it
+        // Set by whoever shows the output (the editor's Scene view): a view that is
+        // not shown is not rendered; a pending render waits until it is shown again.
+        bool shown = true;
         uint64_t ticket = 0;
     private:
         inline static std::atomic<uint64_t> _nextId{0};

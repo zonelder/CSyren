@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "resource_upload_pipeline.h"
 #include "resource_manager.h"
+#include "cstdmf/profiler.h"
 #include <chrono>
 #include <objbase.h>
 
@@ -65,6 +66,7 @@ void ResourceUploadPipeline::update(ResourceManager& manager) {
 }
 
 void ResourceUploadPipeline::Batch::execute(uint32_t, uint32_t, uint32_t) {
+    CS_PROFILE_SCOPE("Resource upload batch");
     const HRESULT com = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
     struct ComScope { bool initialized; ~ComScope() { if (initialized) CoUninitialize(); } } scope{SUCCEEDED(com)};
     try {

@@ -14,6 +14,7 @@
 
 #include "cstdmf/page_view.h"
 #include "cstdmf/log.h"
+#include "core/type_key.h"
 
 
 
@@ -148,7 +149,7 @@ namespace csyren::render
             _storage.clear();
             _nameToHandleMap.clear();
             _handleToNameMap.clear();
-            log::debug("All resources of type {} unloaded.", typeid(TResource).name());
+            log::debug("All resources of type {} unloaded.", core::typeName<TResource>());
         }
 
     private:

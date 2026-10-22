@@ -134,10 +134,15 @@ namespace csyren::render
         }
         for (auto& source : sources) {
             auto& view = *source.view;
-            view.render = view.schedule.due(source.camera->render_type,view.target->needsResize());
+            const bool due = view.schedule.due(source.camera->render_type,view.target->needsResize());
+            // A view nobody sees records no passes; its frame constants stay current
+            // (the editor picks with them), and a pending render waits until it is shown.
+            const bool shown = view.shown && (source.view != _primaryView || _presentCameraOutput || _primaryShown);
+            view.render = due && shown;
+            view.hidden = due && !shown;
             view.ticket = view.schedule.ticket();
             view.target->prepare(*this);
-            if (view.render) {
+            if (due) {
                 view.background = source.camera->background;
                 view.engine = details::cameraFrame(*source.camera,source.world,view.target->width(),view.target->height(),time,_environment);
             }

@@ -9,7 +9,6 @@
 #include <mutex>
 #include <filesystem>
 #include <exception>
-#include <typeinfo>
 #include "window_clean.h"
 
 
@@ -106,18 +105,36 @@ namespace csyren::log
         write(Level::Error, msg);
     }
 
-    inline void exception(std::string_view context, const std::exception& error, unsigned depth = 0)
+    // Logs an exception and its nested causes (std::throw_with_nested) without RTTI:
+    // the type tests are catch clauses, which work under /GR-.
+    inline void exception(std::string_view context, std::exception_ptr error, unsigned depth = 0)
     {
-        if (context.empty()) log::error("Exception [{}]: {}", typeid(error).name(), error.what());
-        else log::error("Exception in {} [{}]: {}", context, typeid(error).name(), error.what());
-        if (depth >= 16) return;
-        const auto* nested = dynamic_cast<const std::nested_exception*>(&error);
-        if (!nested || !nested->nested_ptr()) return;
-        try { std::rethrow_exception(nested->nested_ptr()); }
-        catch (const std::exception& cause) { exception("nested cause", cause, depth + 1); }
-        catch (...) { log::error("Nested cause is a non-standard exception"); }
+        if (!error) return;
+        std::exception_ptr cause;
+        auto line = [&](std::string_view what) {
+            if (context.empty()) log::error("Exception: {}", what);
+            else log::error("Exception in {}: {}", context, what);
+        };
+        try { std::rethrow_exception(error); }
+        catch (const std::exception& e)
+        {
+            line(e.what());
+            try { throw; }
+            catch (const std::nested_exception& nested) { cause = nested.nested_ptr(); }
+            catch (...) {}
+        }
+        catch (const std::nested_exception& nested) { line("non-standard exception"); cause = nested.nested_ptr(); }
+        catch (...) { line("non-standard exception"); }
+        if (cause && depth < 16) exception("nested cause", cause, depth + 1);
     }
-
+    // In a catch block: logs the exception being handled.
+    inline void exception(std::string_view context = {}) { exception(context, std::current_exception()); }
+    // Message only; call exception(context) inside the catch block to include nested causes.
+    inline void exception(std::string_view context, const std::exception& error)
+    {
+        if (context.empty()) log::error("Exception: {}", error.what());
+        else log::error("Exception in {}: {}", context, error.what());
+    }
     inline void exception(const std::exception& error) { exception({}, error); }
 
 }

@@ -12,6 +12,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="csyren_host_headers.cpp" />
     <ClCompile Include="editor\editor_base.cpp">
       <Filter>editor</Filter>
     </ClCompile>
@@ -123,6 +124,9 @@
       <Filter>editor</Filter>
     </ClInclude>
     <ClInclude Include="editor\system_window.h">
+      <Filter>editor</Filter>
+    </ClInclude>
+    <ClInclude Include="editor\profiler_window.h">
       <Filter>editor</Filter>
     </ClInclude>
     <ClInclude Include="editor\prefab_editor.h">
