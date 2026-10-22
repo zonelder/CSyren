@@ -5,9 +5,7 @@
 // velocity for the CharacterController; the physics system moves the capsule.
 #include <algorithm>
 #include <cmath>
-#include "core/system_base.h"
-#include "core/services.h"
-#include "core/scene.h"
+#include "core/typed_system.h"
 #include "core/transform.h"
 #include "core/transform_hierarchy.h"
 #include "core/camera.h"
@@ -20,29 +18,24 @@
 #include "game_physics.h"
 #include "player_input.h"
 
+CS_STRICT_SYSTEMS_BEGIN
 namespace csyren::game
 {
-	class PilotMovementSystem : public core::System
+	class PilotMovementSystem : public core::TypedSystem<PilotMovementSystem>
 	{
 	public:
-		core::TaskDescription describe() const override
-		{
-			core::TaskDescription d; d.phase = "simulation"; d.before = { "PhysicsSystem" };
-			d.read<PilotConfig>().write<PilotState>().write<physics::CharacterController>().write<core::Transform>().read<core::Camera>();
-			d.readResource<PlayerInput>().readResource<core::Time>().readResource<physics::PhysicsEngine>().readResource<core::SceneEntities>();
-			return d;
-		}
+		static constexpr auto phase = "simulation";
+		static constexpr auto before = "PhysicsSystem";
 
-		void execute() override
+		using Pilots = core::Update<const PilotConfig, PilotState, physics::CharacterController, core::Transform>;
+		using Cameras = core::Select<core::Camera>;
+
+		void execute(Pilots pilots, Cameras cameras, core::Res<const PlayerInput> input,
+			core::Res<const core::Time> time, core::Res<const physics::PhysicsEngine> engine)
 		{
-			using namespace math;
-			const auto& in = *core::Services::get<const PlayerInput>();
-			const auto* time = core::Services::get<const core::Time>();
-			const auto* engine = core::Services::get<const physics::PhysicsEngine>();
 			const float dt = std::clamp(time->deltaTime(), 0.0f, 0.05f);
-			auto& scene = this->scene();
-			for (auto [ent, config, state, cc, tr] : scene.view<const PilotConfig, PilotState, physics::CharacterController, core::Transform>())
-				update(scene, *engine, in, dt, ent, config, state, cc, tr);
+			for (auto [ent, config, state, cc, tr] : pilots)
+				update(pilots, cameras, *engine, *input, dt, ent, config, state, cc, tr);
 		}
 
 	private:
@@ -50,8 +43,8 @@ namespace csyren::game
 		static math::Vector3 flat(const math::Vector3& v) { return { v.x, 0.0f, v.z }; }
 		static float smoothstep(float t) { t = std::clamp(t, 0.0f, 1.0f); return t * t * (3.0f - 2.0f * t); }
 
-		void update(core::Scene& scene, const physics::PhysicsEngine& engine, const PlayerInput& in, float dt, core::Entity::ID ent,
-			const PilotConfig& config, PilotState& state, physics::CharacterController& cc, core::Transform& tr)
+		void update(const Pilots& pilots, const Cameras& cameras, const physics::PhysicsEngine& engine, const PlayerInput& in, float dt,
+			core::Entity::ID ent, const PilotConfig& config, PilotState& state, physics::CharacterController& cc, core::Transform& tr)
 		{
 			using namespace math;
 			const auto& g = config.ground; const auto& air = config.air; const auto& jump = config.jump;
@@ -62,9 +55,9 @@ namespace csyren::game
 				state.initialized = true;
 				state.spawnPoint = tr.position; state.spawnYaw = state.yaw;
 				state.cameraEntity = core::Entity::invalidID;
-				if (const auto* entity = scene.entities().try_get(ent))
+				if (const auto* entity = pilots.entities().try_get(ent))
 					for (auto child : entity->children)
-						if (scene.hasComponent<core::Camera>(child)) { state.cameraEntity = child; break; }
+						if (cameras.contains(child)) { state.cameraEntity = child; break; }
 				cc.height = slide.standHeight;
 			}
 			if (in.resetPressed || tr.position.y < -30.0f) // F5 or fell out of the level
@@ -72,7 +65,7 @@ namespace csyren::game
 				tr.position = state.spawnPoint; state.yaw = state.spawnYaw; state.pitch = 0.0f;
 				cc.velocity = Vector3::zero; state.move = PilotMove::Air; state.crouching = false;
 				state.lastWallValid = false; state.doubleJumpReady = true;
-				scene.patch<core::Transform>(ent);
+				pilots.patch<core::Transform>(ent);
 			}
 
 			//---------------------------------------------------------------- look
@@ -87,7 +80,7 @@ namespace csyren::game
 			while (state.yaw > 180.0f) state.yaw -= 360.0f;
 			while (state.yaw < -180.0f) state.yaw += 360.0f;
 			const Quaternion yawRotation = Quaternion::angleAxis(state.yaw, Vector3::up);
-			if (!tr.rotation.exactEqual(yawRotation)) { tr.rotation = yawRotation; scene.patch<core::Transform>(ent); }
+			if (!tr.rotation.exactEqual(yawRotation)) { tr.rotation = yawRotation; pilots.patch<core::Transform>(ent); }
 
 			const Vector3 forward = flat(yawRotation * Vector3::forward).normalized();
 			const Vector3 right = flat(yawRotation * Vector3::right).normalized();
@@ -109,7 +102,7 @@ namespace csyren::game
 			Vector3 velocity = cc.velocity;
 			Vector3 hv = flat(velocity);
 			float vy = velocity.y;
-			const Vector3 feet = core::worldMatrix(scene, ent).translation();
+			const Vector3 feet = core::worldMatrix(pilots, ent).translation();
 			const float radius = cc.radius;
 			const physics::QueryFilter worldFilter = layers::worldFilter();
 
@@ -407,7 +400,7 @@ namespace csyren::game
 				const float ph = smoothstep((p - 0.35f) / 0.65f);
 				const Vector3 target = state.mantleTarget, start = state.mantleStart;
 				const Vector3 pos(start.x + (target.x - start.x) * ph, start.y + (target.y - start.y) * pv, start.z + (target.z - start.z) * ph);
-				tr.position = pos; scene.patch<core::Transform>(ent);
+				tr.position = pos; pilots.patch<core::Transform>(ent);
 				hv = Vector3::zero; vy = 0.0f;
 				if (p >= 1.0f)
 				{
@@ -431,3 +424,4 @@ namespace csyren::game
 
 	REGISTER_SYSTEM(PilotMovementSystem)
 }
+CS_STRICT_SYSTEMS_END

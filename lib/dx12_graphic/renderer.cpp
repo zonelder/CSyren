@@ -115,13 +115,13 @@ namespace csyren::render
         std::erase_if(_externalCameras,[&](const auto& external) { return external.view == view; });
         std::erase(_views,view);
     }
-    void Renderer::prepareCameraViews(core::Scene& scene,UINT width,UINT height)
+    void Renderer::prepareCameraViews(const CameraQuery& cameras,float time,UINT width,UINT height)
     {
-        _worldTransforms.update(scene);
+        _worldTransforms.update(cameras);
         struct Source { const core::Camera* camera; math::Matrix4x4 world; std::shared_ptr<details::CameraRenderView> view; };
         std::vector<Source> sources; _views.clear(); _primaryView.reset();
         int priority = 0;
-        _cameraViews.each(scene,[&](auto id,const auto& camera,const auto& transform,auto view) {
+        _cameraViews.each(cameras,[&](auto id,const auto& camera,const auto& transform,auto view) {
             sources.push_back({&camera,_worldTransforms.matrix(id),view});
             if (!_primaryView || camera.priority > priority || (camera.priority == priority && view->id < _primaryView->id)) {
                 priority = camera.priority; _primaryView = view;
@@ -132,7 +132,6 @@ namespace csyren::render
             auto [camera,transform] = external.source();
             if (camera && transform) sources.push_back({camera,transform->localMatrix(),external.view});
         }
-        const auto time = core::Services::get<const core::Time>()->totalTime();
         for (auto& source : sources) {
             auto& view = *source.view;
             view.render = view.schedule.due(source.camera->render_type,view.target->needsResize());

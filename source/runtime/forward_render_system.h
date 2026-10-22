@@ -5,13 +5,13 @@
 // depth test only. Lit forward shaders read the same light/cluster buffers as
 // the deferred light pass (see lighting.hlsli).
 #include <algorithm>
+#include <array>
 #include <unordered_map>
 #include <vector>
-#include "core/system_base.h"
-#include "core/services.h"
-#include "core/scene.h"
+#include "core/typed_system.h"
 #include "core/transform.h"
 #include "dx12_graphic/renderer.h"
+#include "dx12_graphic/recorder.h"
 #include "dx12_graphic/resource_manager.h"
 #include "dx12_graphic/camera_render_target.h"
 #include "dx12_graphic/mesh.h"
@@ -19,39 +19,38 @@
 #include "mesh_filter.h"
 #include "core/registration.h"
 
+CS_STRICT_SYSTEMS_BEGIN
 namespace csyren::render
 {
-    class ForwardRenderSystem : public core::System
+    class ForwardRenderSystem : public core::TypedSystem<ForwardRenderSystem>
     {
     public:
-        core::TaskDescription describe() const override
-        {
-            core::TaskDescription d; d.phase = "render";
-            d.after = { "LightPassSystem" };
-            d.gpuScope = core::GpuTaskScope::View;
-            d.read<core::Transform>().read<MeshFilter>().read<MeshRenderer>();
-            d.readResource<ResourceManager>().readResource<core::SceneEntities>().readResource<SceneLights>();
-            d.gpu("scene.hdr", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
-            d.gpu("scene.depth", D3D12_RESOURCE_STATE_DEPTH_WRITE, core::AccessMode::Write);
-            d.gpu("scene.clusterGrid", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, core::AccessMode::Read);
-            d.gpu("scene.clusterIndices", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, core::AccessMode::Read);
-            return d;
-        }
+        static constexpr auto phase = "render";
+        static constexpr std::array after{ "LightPassSystem" };
+        static constexpr core::GpuTaskScope gpuScope = core::GpuTaskScope::View;
+        static constexpr std::array gpu{
+            core::GpuUse{ "scene.hdr", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write },
+            core::GpuUse{ "scene.depth", D3D12_RESOURCE_STATE_DEPTH_WRITE, core::AccessMode::Write },
+            core::GpuUse{ "scene.clusterGrid", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, core::AccessMode::Read },
+            core::GpuUse{ "scene.clusterIndices", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, core::AccessMode::Read },
+        };
 
-        void execute() override
+        // World matrices come from the renderer's per-frame copy of the Transforms.
+        using Meshes = core::Select<core::Transform, MeshFilter, MeshRenderer>;
+
+        void execute(Recorder recorder, Meshes meshes, core::Res<const ResourceManager> resourceManager, core::Res<const SceneLights> sceneLights)
         {
-            auto& renderer = *core::Services::get<Renderer>();
-            auto& resources = *core::Services::get<const ResourceManager>();
-            const auto& lights = *core::Services::get<const SceneLights>();
+            auto& renderer = *recorder;
+            auto& resources = *resourceManager;
+            const auto& lights = *sceneLights;
             const auto* target = renderer.currentTarget();
-            auto& scene = this->scene();
             const auto& worlds = renderer.worldTransforms();
             const auto& engine = *renderer.getEngineVariableBuffer();
             const DirectX::XMVECTOR eye = DirectX::XMLoadFloat4(&engine.cameraPosition);
 
             struct Draw { core::Entity::ID entity; MaterialHandle material; MeshHandle mesh; float distance; };
             std::vector<Draw> opaque, transparent;
-            for (auto [id, transform, filter, meshRenderer] : scene.view<const core::Transform, const MeshFilter, const MeshRenderer>())
+            for (auto [id, transform, filter, meshRenderer] : meshes)
             {
                 const auto* material = resources.getMaterial(meshRenderer.material);
                 if (!material) continue;
@@ -109,3 +108,4 @@ namespace csyren::render
     };
     CS_SYSTEM(ForwardRenderSystem);
 }
+CS_STRICT_SYSTEMS_END

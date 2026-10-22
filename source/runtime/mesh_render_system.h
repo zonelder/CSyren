@@ -1,46 +1,47 @@
 #ifndef __CSYREN_MESH_RENDER_SYSTEM__
 #define __CSYREN_MESH_RENDER_SYSTEM__
 
+#include <array>
 #include "core/event_bus.h"
-#include "core/system_base.h"
-#include "core/scene.h"
-#include "core/services.h"
+#include "core/typed_system.h"
 
 #include "core/transform.h"
 #include "core/transform_hierarchy.h"
 #include "mesh_filter.h"
 #include "math/math.h"
 #include "core/registration.h"
+#include "dx12_graphic/renderer.h"
+#include "dx12_graphic/resource_manager.h"
+#include "dx12_graphic/recorder.h"
 
+CS_STRICT_SYSTEMS_BEGIN
 namespace csyren
 {
     // Geometry (GBuffer) pass of the deferred pipeline: draws every entity whose
     // material shader writes the three GBuffer targets (see shaders/gbuffer.hlsli).
     // Single-target (forward/unlit/transparent) materials are drawn later by
     // ForwardRenderSystem on top of the lit HDR image.
-    class MeshRenderSystem : public core::System
+    class MeshRenderSystem : public core::TypedSystem<MeshRenderSystem>
     {
     public:
-        core::TaskDescription describe() const override {
-            core::TaskDescription d; d.phase = "render";
-            d.gpuScope = core::GpuTaskScope::View;
-            d.read<core::Transform>().read<render::MeshFilter>().read<render::MeshRenderer>();
-            d.readResource<render::ResourceManager>().readResource<core::SceneEntities>();
-            d.gpu("scene.gbuffer0", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
-            d.gpu("scene.gbuffer1", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
-            d.gpu("scene.gbuffer2", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
-            d.gpu("scene.depth", D3D12_RESOURCE_STATE_DEPTH_WRITE, core::AccessMode::Write); return d;
-        }
+        static constexpr auto phase = "render";
+        static constexpr core::GpuTaskScope gpuScope = core::GpuTaskScope::View;
+        static constexpr std::array gpu{
+            core::GpuUse{ "scene.gbuffer0", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write },
+            core::GpuUse{ "scene.gbuffer1", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write },
+            core::GpuUse{ "scene.gbuffer2", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write },
+            core::GpuUse{ "scene.depth", D3D12_RESOURCE_STATE_DEPTH_WRITE, core::AccessMode::Write },
+        };
 
         explicit MeshRenderSystem() = default;
 
-        void execute() override
+        // World matrices come from the renderer's per-frame copy of the Transforms.
+        using Meshes = core::Select<core::Transform, render::MeshFilter, render::MeshRenderer>;
+
+        void execute(render::Recorder renderer, Meshes meshes, core::Res<const render::ResourceManager> resourceManager)
         {
-            using ctx = core::Services;
-            auto render = ctx::get<render::Renderer>();
-            auto scene = &this->scene();
-            auto& resources = *ctx::get<const render::ResourceManager>();
-            const auto& worlds = render->worldTransforms();
+            auto& resources = *resourceManager;
+            const auto& worlds = renderer->worldTransforms();
 
             struct EntityData { core::Entity::ID id; };
             using MeshGroups = std::unordered_map<render::MeshHandle,std::vector<EntityData>>;
@@ -48,8 +49,8 @@ namespace csyren
 
 
             MaterialGroups batches;
-            auto entityParams = render->getEntityVariableBuffer();
-            for (auto [entt, tr, mf, mr] : scene->view<const core::Transform, const render::MeshFilter, const render::MeshRenderer>())
+            auto entityParams = renderer->getEntityVariableBuffer();
+            for (auto [entt, tr, mf, mr] : meshes)
             {
                 batches[mr.material][mf.mesh].push_back({ entt });
             }
@@ -68,17 +69,17 @@ namespace csyren
                     auto* mesh = resources.getMesh(meshID);
                     if (!mesh) continue;
 
-                    if (!render->bindMaterial(resources, matID,mesh->getLayout())) continue;
+                    if (!renderer->bindMaterial(resources, matID,mesh->getLayout())) continue;
 
-                    mesh->bind(*render);
+                    mesh->bind(*renderer);
 
                     for (auto& data : entities)
                     {
                         //TODO instancing look pretty well here.
                         DirectX::XMStoreFloat4x4(&entityParams->worldMatrix, worlds.matrix(data.id));
                         entityParams->entityID = data.id;
-                        if (!render->bindEntity(cb)) continue;
-                        mesh->draw(*render);
+                        if (!renderer->bindEntity(cb)) continue;
+                        mesh->draw(*renderer);
                     }
                 }
             }
@@ -88,5 +89,6 @@ namespace csyren
 
     CS_SYSTEM(MeshRenderSystem);
 }
+CS_STRICT_SYSTEMS_END
 
 #endif

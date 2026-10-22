@@ -4,6 +4,9 @@
             "class": "PhysicsSystem"
         },
         {
+            "class": "PhysicsSyncSystem"
+        },
+        {
             "class": "SpringJoinSystem"
         },
         {

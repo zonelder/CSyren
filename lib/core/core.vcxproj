@@ -166,7 +166,10 @@
     <ClInclude Include="task_description.h" />
     <ClInclude Include="scene_events_system.h" />
     <ClInclude Include="system_manager.h" />
+    <ClInclude Include="typed_system.h" />
     <ClInclude Include="prefab.h" />
+    <ClInclude Include="spawn.h" />
+    <ClInclude Include="type_key.h" />
     <ClInclude Include="time.h" />
     <ClInclude Include="transform.h" />
     <ClInclude Include="transform_hierarchy.h" />

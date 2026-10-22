@@ -1,13 +1,16 @@
 #pragma once
 // Weapon handling for the pilot: hitscan rifle (raycast + impact marker) and a
-// physical grenade launcher (dynamic projectile entity). Spawns entities through
-// the scene transaction (structuralChanges), so new bodies appear next frame.
+// physical grenade launcher (dynamic projectile). Muzzle flash, impact marker and
+// projectile are prefabs of the weapon (WeaponDef::*Prefab), created with Spawn:
+// they join the scene in this system's commit, so ProjectileSystem (ordered
+// after it) sees a new grenade in the same frame; physics builds its body at
+// the end of the frame.
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <random>
-#include "core/system_base.h"
-#include "core/services.h"
-#include "core/scene.h"
+#include "core/typed_system.h"
+#include "core/spawn.h"
 #include "core/transform.h"
 #include "core/transform_hierarchy.h"
 #include "core/camera.h"
@@ -17,47 +20,39 @@
 #include "physics/rigid_body.h"
 #include "physics/colliders.h"
 #include "physics/character_controller.h"
-#include "dx12_graphic/primitives.h"
-#include "../mesh_filter.h"
-#include "../animation.h"
+#include "animation.h"
 #include "dx12_graphic/resource_manager.h"
 #include "dx12_graphic/animation_clip.h"
 
 #include "game_components.h"
 #include "game_physics.h"
-#include "game_materials.h"
 #include "player_input.h"
 
+CS_STRICT_SYSTEMS_BEGIN
 namespace csyren::game
 {
-	class WeaponSystem : public core::System
+	class WeaponSystem : public core::TypedSystem<WeaponSystem>
 	{
 	public:
-		core::TaskDescription describe() const override
-		{
-			core::TaskDescription d; d.phase = "simulation"; d.after = { "CameraRigSystem" };
-			d.structuralChanges = true;
-			d.read<PlayerTag>().write<PilotState>().write<WeaponInventory>().write<Health>().read<core::Camera>().read<physics::CharacterController>();
-			d.read<ViewModelSlot>().write<Animator>();
-			d.write<core::Transform>().write<physics::RigidBody>().write<physics::SphereCollider>().write<physics::BoxCollider>()
-				.write<render::MeshFilter>().write<render::MeshRenderer>().write<Projectile>().write<Lifetime>();
-			d.readResource<PlayerInput>().readResource<core::Time>().readResource<physics::PhysicsEngine>().readResource<core::SceneEntities>();
-			d.readResource<ViewModelState>();
-			d.after = { "ViewModelSystem" };
-			return d;
-		}
+		static constexpr auto phase = "simulation";
+		static constexpr std::array after{ "CameraRigSystem", "ViewModelSystem" };
 
-		void execute() override
+		using Players = core::Update<PilotState, WeaponInventory>::Where<PlayerTag>;
+		// Pilot velocity and the camera's world transform.
+		using Bodies = core::Select<physics::CharacterController, core::Transform>;
+		// Health of hit targets, Animator of the active view model slot.
+		using Targets = core::Update<Health, Animator>;
+
+		void execute(Players players, Bodies bodies, Targets targets, core::Spawn spawn,
+			core::Res<const PlayerInput> input, core::Res<const ViewModelState> viewModelState,
+			core::Res<const core::Time> time, core::Res<const physics::PhysicsEngine> engine)
 		{
 			using namespace math;
-			const auto& in = *core::Services::get<const PlayerInput>();
-			const auto& viewModel = *core::Services::get<const ViewModelState>();
-			const auto* time = core::Services::get<const core::Time>();
-			const auto* engine = core::Services::get<const physics::PhysicsEngine>();
+			const auto& in = *input;
+			const auto& viewModel = *viewModelState;
 			const float dt = std::clamp(time->deltaTime(), 0.0f, 0.05f);
-			auto& scene = this->scene();
 
-			for (auto [ent, tag, state, inventory] : scene.view<const PlayerTag, PilotState, WeaponInventory>())
+			for (auto [ent, state, inventory] : players)
 			{
 				if (inventory.ammoPrimary < 0) inventory.ammoPrimary = inventory.primary.magazine;
 				if (inventory.ammoSecondary < 0) inventory.ammoSecondary = inventory.secondary.magazine;
@@ -80,7 +75,7 @@ namespace csyren::game
 				if ((in.reloadPressed && ammo < weapon.magazine) || (ammo <= 0 && (in.firePressed || in.fireHeld)))
 				{
 					inventory.reloading = true; inventory.reloadTimer = weapon.reloadTime;
-					startReloadAnimation(scene, inventory.active, viewModel);
+					startReloadAnimation(targets, inventory.active, viewModel);
 					continue;
 				}
 				if (viewModel.switching) continue; // no firing while the weapon is raised
@@ -92,12 +87,12 @@ namespace csyren::game
 				inventory.cooldown = 60.0f / (std::max)(weapon.rpm, 1.0f);
 				--ammo;
 
-				const auto cameraWorld = core::worldMatrix(scene, state.cameraEntity);
-				const auto cameraRotation = core::worldRotation(scene, state.cameraEntity);
+				const auto cameraWorld = core::worldMatrix(bodies, state.cameraEntity);
+				const auto cameraRotation = core::worldRotation(bodies, state.cameraEntity);
 				const Vector3 origin = cameraWorld.translation();
 				Vector3 direction = (cameraRotation * Vector3::forward).normalized();
 
-				auto cc = scene.getComponent<const physics::CharacterController>(ent);
+				auto cc = bodies.get<physics::CharacterController>(ent);
 				const bool unstable = state.move != PilotMove::Ground || (cc && cc->velocity.sqrMagnitude() > 1.0f && state.move == PilotMove::Slide);
 				const float spread = unstable ? weapon.spreadMoving : weapon.spread;
 				direction = scatter(direction, cameraRotation, spread);
@@ -107,29 +102,28 @@ namespace csyren::game
 				inventory.viewKick = (std::min)(inventory.viewKick + weapon.recoilPitch * 1.5f, 3.0f);
 
 				const Vector3 muzzle = viewModel.hasMuzzle ? viewModel.muzzlePosition : origin + direction * 0.7f;
-				spawnMarker(scene, muzzle + direction * 0.05f, Vector3(0.16f, 0.16f, 0.28f), _flashMaterial, _cube, 0.05f, cameraRotation);
-				if (weapon.kind == WeaponKind::Hitscan) fireHitscan(scene, *engine, ent, inventory, weapon, origin, direction);
-				else fireProjectile(scene, ent, weapon, muzzle, direction, cc ? cc->velocity : Vector3::zero);
+				spawn(weapon.muzzleFlashPrefab, { muzzle + direction * 0.05f, cameraRotation });
+				if (weapon.kind == WeaponKind::Hitscan) fireHitscan(targets, spawn, *engine, ent, inventory, weapon, origin, direction);
+				else fireProjectile(spawn, ent, weapon, muzzle, direction, cc ? cc->velocity : Vector3::zero);
 			}
 		}
 
 	protected:
 		void onAttach() override
 		{
-			_impactMaterial = materials::get(materials::Impact);
-			_projectileMaterial = materials::get(materials::Projectile);
-			_flashMaterial = materials::get(materials::Explosion);
-			_cube = render::Primitives::getCube();
-			_sphere = render::Primitives::getSphere();
-			_defaultMaterial = render::Primitives::getDefaultMaterial();
 			// Resolve reload clips once (outside the task graph) and let the clip
-			// length define the reload time.
+			// length define the reload time. The weapons' prefabs (and the ones they
+			// refer to: trail, explosion) are loaded here too, so shots read no files.
 			auto& resources = *core::Services::get<render::ResourceManager>();
+			auto* prefabs = core::Services::find<core::PrefabLibrary>();
 			for (auto [ent, inventory] : scene().view<WeaponInventory>())
 			{
 				WeaponDef* defs[2] = { &inventory.primary, &inventory.secondary };
 				for (int slot = 0; slot < 2; ++slot)
 				{
+					if (prefabs)
+						for (const auto* prefab : { &defs[slot]->projectilePrefab, &defs[slot]->impactPrefab, &defs[slot]->muzzleFlashPrefab })
+							if (!prefab->empty()) (void)prefabs->load(prefab->path);
 					_reloadClips[slot] = {};
 					if (defs[slot]->reloadClip.empty()) continue;
 					_reloadClips[slot] = resources.get<render::AnimationClip>(defs[slot]->reloadClip);
@@ -140,10 +134,10 @@ namespace csyren::game
 			}
 		}
 
-		void startReloadAnimation(core::Scene& scene, int slot, const ViewModelState& viewModel)
+		void startReloadAnimation(const Targets& targets, int slot, const ViewModelState& viewModel)
 		{
 			if (slot < 0 || slot > 1 || !_reloadClips[slot] || viewModel.activeSlotEntity == core::Entity::invalidID) return;
-			auto animator = scene.getComponent<Animator>(viewModel.activeSlotEntity);
+			auto animator = targets.get<Animator>(viewModel.activeSlotEntity);
 			if (!animator) return;
 			playAnimation(*animator, _reloadClips[slot], false);
 		}
@@ -173,62 +167,45 @@ namespace csyren::game
 			return (direction + right * (std::cos(a) * r) + up * (std::sin(a) * r)).normalized();
 		}
 
-		void fireHitscan(core::Scene& scene, const physics::PhysicsEngine& engine, core::Entity::ID shooter, WeaponInventory& inventory,
-			const WeaponDef& weapon, const math::Vector3& origin, const math::Vector3& direction)
+		void fireHitscan(const Targets& targets, const core::Spawn& spawn, const physics::PhysicsEngine& engine, core::Entity::ID shooter,
+			WeaponInventory& inventory, const WeaponDef& weapon, const math::Vector3& origin, const math::Vector3& direction)
 		{
 			using namespace math;
 			const physics::QueryFilter filter = layers::filter(weapon.hitLayers, shooter);
 			const auto hit = engine.raycast(origin, direction, weapon.range, filter);
 			if (!hit.hit) return;
-			if (auto health = scene.getComponent<Health>(hit.entity); health && !health->dead)
+			if (auto health = targets.get<Health>(hit.entity); health && !health->dead)
 			{
 				damage(*health, weapon.damage);
 				inventory.hitMarker = 0.12f;
 			}
-			spawnMarker(scene, hit.point + hit.normal * 0.02f, Vector3(0.12f, 0.12f, 0.12f), _impactMaterial, _cube, 2.5f);
+			spawn(weapon.impactPrefab, { hit.point + hit.normal * 0.02f });
 		}
 
-		void fireProjectile(core::Scene& scene, core::Entity::ID shooter, const WeaponDef& weapon,
+		// The prefab gives the look and the body template; the weapon's tuning and
+		// the shot are applied to the copy. Edits run in the commit: capture values.
+		void fireProjectile(const core::Spawn& spawn, core::Entity::ID shooter, const WeaponDef& weapon,
 			const math::Vector3& origin, const math::Vector3& direction, const math::Vector3& inheritVelocity)
 		{
 			using namespace math;
 			using namespace physics;
-			const Vector3 spawnPos = origin + direction * 0.15f;
-			auto entity = scene.createEntity("projectile");
-			auto tr = scene.addComponent<core::Transform>(entity);
-			tr->position = spawnPos;
+			core::SpawnPose pose;
+			pose.position = origin + direction * 0.15f;
 			const float size = weapon.projectileRadius * 2.0f * 2.4f; // visual ball bigger than the collider
-			tr->scale = Vector3(size, size, size);
-			auto collider = scene.addComponent<SphereCollider>(entity);
-			collider->radius = weapon.projectileRadius;
-			RigidBody body;
-			body.type = BodyType::Dynamic;
-			body.mass = 0.5f;
-			body.useGravity = weapon.projectileGravity;
-			body.friction = 0.8f; body.restitution = 0.1f;
-			body.layer = layers::of(Layer::Projectile);
-			body.continuousCollision = true; // fast + small: no tunnelling through walls
-			body.linearVelocity = direction * weapon.projectileSpeed + inheritVelocity * 0.35f;
-			scene.addComponent<RigidBody>(entity, body);
-			auto filter = scene.addComponent<render::MeshFilter>(entity); filter->mesh = _sphere;
-			auto renderer = scene.addComponent<render::MeshRenderer>(entity); renderer->material = _projectileMaterial;
-			Projectile projectile;
-			projectile.damage = weapon.damage; projectile.explosionRadius = weapon.explosionRadius;
-			projectile.impulse = weapon.explosionImpulse; projectile.lifetime = weapon.projectileLifetime;
-			projectile.owner = shooter;
-			projectile.hitLayers = weapon.hitLayers;
-			scene.addComponent<Projectile>(entity, projectile);
-		}
-
-		void spawnMarker(core::Scene& scene, const math::Vector3& position, const math::Vector3& scale,
-			render::MaterialHandle material, render::MeshHandle mesh, float lifetime, const math::Quaternion& rotation = math::Quaternion::identity)
-		{
-			auto entity = scene.createEntity("impact");
-			auto tr = scene.addComponent<core::Transform>(entity);
-			tr->position = position; tr->scale = scale; tr->rotation = rotation;
-			auto filter = scene.addComponent<render::MeshFilter>(entity); filter->mesh = mesh;
-			auto renderer = scene.addComponent<render::MeshRenderer>(entity); renderer->material = material ? material : _defaultMaterial;
-			auto life = scene.addComponent<Lifetime>(entity); life->remaining = lifetime;
+			pose.scale = Vector3(size, size, size);
+			const Vector3 velocity = direction * weapon.projectileSpeed + inheritVelocity * 0.35f;
+			spawn(weapon.projectilePrefab, pose)
+				.edit<SphereCollider>([radius = weapon.projectileRadius](SphereCollider& collider) { collider.radius = radius; })
+				.edit<RigidBody>([gravity = weapon.projectileGravity, velocity](RigidBody& body) {
+					body.useGravity = gravity;
+					body.linearVelocity = velocity;
+				})
+				.edit<Projectile>([weapon, shooter](Projectile& projectile) {
+					projectile.damage = weapon.damage; projectile.explosionRadius = weapon.explosionRadius;
+					projectile.impulse = weapon.explosionImpulse; projectile.lifetime = weapon.projectileLifetime;
+					projectile.hitLayers = weapon.hitLayers;
+					projectile.owner = shooter;
+				});
 		}
 
 	public:
@@ -242,10 +219,9 @@ namespace csyren::game
 
 	private:
 		std::mt19937 _random{ 1337u };
-		render::MaterialHandle _impactMaterial, _projectileMaterial, _defaultMaterial, _flashMaterial;
-		render::MeshHandle _cube, _sphere;
 		render::AnimationClipHandle _reloadClips[2];
 	};
 
 	REGISTER_SYSTEM(WeaponSystem)
 }
+CS_STRICT_SYSTEMS_END

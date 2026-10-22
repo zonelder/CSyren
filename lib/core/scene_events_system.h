@@ -1,16 +1,16 @@
 #pragma once
-#include "system_base.h"
-#include "scene.h"
+#include "typed_system.h"
 #include "registration.h"
+CS_STRICT_SYSTEMS_BEGIN
 namespace csyren::core {
-class SceneEventsSystem final : public System {
+// Dispatches the frame's scene events. Exclusive: the handlers run arbitrary
+// code on types known only at run time.
+class SceneEventsSystem final : public TypedSystem<SceneEventsSystem> {
 public:
-    TaskDescription describe() const override {
-        TaskDescription d; d.phase = "events"; d.affinity = TaskAffinity::MainThread;
-        d.exclusiveScene = true; d.dynamicResources = true; d.structuralChanges = true;
-        d.writeResource<EventBus2>(); return d;
-    }
-    void execute() override { Services::get<EventBus2>()->commit_batch(); }
+    static constexpr auto phase = "events";
+    static constexpr TaskAffinity affinity = TaskAffinity::MainThread;
+    void execute(Exclusive world) { world.bus().commit_batch(); }
 };
 CS_SYSTEM(SceneEventsSystem);
 }
+CS_STRICT_SYSTEMS_END

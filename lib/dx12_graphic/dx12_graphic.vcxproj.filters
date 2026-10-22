@@ -3,6 +3,7 @@
   <ItemGroup>
     <ClInclude Include="presentation_state.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="frame_prepare_system.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="recorder.h"><Filter>Header Files</Filter></ClInclude>
     <ClCompile Include="presentation_state.cpp"><Filter>Source Files</Filter></ClCompile>
     <Filter Include="Source Files">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>

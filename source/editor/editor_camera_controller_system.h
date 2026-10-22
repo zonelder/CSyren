@@ -1,9 +1,7 @@
 #pragma once
 
 #include "core/event_bus.h"
-#include "core/services.h"
-#include "core/system_base.h"
-#include "core/scene.h"
+#include "core/typed_system.h"
 #include "core/camera.h"
 #include "math/math.h"
 #include "core/time.h"
@@ -14,28 +12,26 @@
 #include "editor_viewport_state.h"
 #include "core/registration.h"
 
+CS_STRICT_SYSTEMS_BEGIN
 namespace csyren
 {
-    class EditorCameraControllerSystem : public core::System
+    class EditorCameraControllerSystem : public core::TypedSystem<EditorCameraControllerSystem>
     {
     public:
-        core::TaskDescription describe() const override {
-            core::TaskDescription d; d.phase = "simulation";
-            // Input is a snapshot after the input phase. Only EditorViewportState is mutated;
-            // this controller neither calls window APIs nor accesses scene components.
-            d.readResource<core::Devices>().readResource<core::Time>().writeResource<editor::EditorViewportState>(); return d;
-        }
+        static constexpr auto phase = "simulation";
 
         explicit EditorCameraControllerSystem() = default;
 
-        void execute() override
+        // Input is a snapshot after the input phase. Only EditorViewportState is mutated;
+        // this controller neither calls window APIs nor accesses scene components.
+        void execute(core::Res<const core::Devices> devices, core::Res<const core::Time> time,
+            core::Res<editor::EditorViewportState> viewport)
         {
 			using namespace csyren::core;
 			using namespace csyren::math;
-			using ctx = core::Services;
-			auto devices = ctx::get<const core::Devices>();
-			auto editorView = ctx::get<editor::EditorViewportState>();
-			auto time = ctx::get<const core::Time>();
+			// Missing services fail every frame, before any change (as Services::get did).
+			const auto& clock = *time;
+			auto* editorView = &*viewport;
 
             auto& keyboard = devices->keyboard();
             auto& mouse = devices->mouse();
@@ -100,7 +96,7 @@ namespace csyren
 					// Calculate movement vector in world space
 					Vector3 moveVector = right * movement[0] + up * movement[1] + forward * movement[2];
 					moveVector.normalize();
-					moveVector *= movementSpeed * time->deltaTime();
+					moveVector *= movementSpeed * clock.deltaTime();
 					cameraTransform.position += moveVector;
 				}
 		    }
@@ -111,3 +107,4 @@ namespace csyren
 
 	CS_SYSTEM(EditorCameraControllerSystem);
 }
+CS_STRICT_SYSTEMS_END

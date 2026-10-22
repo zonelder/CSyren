@@ -2,8 +2,10 @@
 #include "system_base.h"
 #include "core/scene.h"
 #include "frame_graph.h"
+#include "cstdmf/profiler.h"
 
 #include <algorithm>
+#include <atomic>
 #include <limits>
 #include <string>
 #include <vector>
@@ -36,6 +38,7 @@ namespace csyren::core
         // User systems enter the application schedule by default.
         void add(const std::string& name, size_t pos = BACK_POS)
         {
+            requireIdle("add");
             if (std::find(_configuration.app.begin(), _configuration.app.end(), name) != _configuration.app.end()) return;
             if (!ensureSystem(name)) return;
             _configuration.app.insert(_configuration.app.begin() + (std::min)(pos, _configuration.app.size()), name);
@@ -43,6 +46,7 @@ namespace csyren::core
         }
         void addEditor(const std::string& name, EditorSystemScene scene = EditorSystemScene::Editor)
         {
+            requireIdle("addEditor");
             if (editorConfiguration(name)) return;
             if (!ensureSystem(name)) return;
             _configuration.editor.push_back({ name, scene });
@@ -50,6 +54,7 @@ namespace csyren::core
         }
         void remove(const std::string& name)
         {
+            requireIdle("remove");
             auto it = std::find_if(_systems.begin(), _systems.end(), [&](const auto& entry) { return entry.name == name; });
             if (it == _systems.end()) return;
             it->system->detach();
@@ -59,24 +64,27 @@ namespace csyren::core
             std::erase_if(_configuration.editor, [&](const auto& entry) { return entry.name == name; });
             refresh();
         }
-        void reserve(size_t capacity) { _systems.reserve(capacity); rebuildSchedule(); }
+        void reserve(size_t capacity) { requireIdle("reserve"); _systems.reserve(capacity); rebuildSchedule(); }
         const auto& list() const noexcept { return _schedule; }
         const SystemConfiguration& configuration() const noexcept { return _configuration; }
         void move(size_t src, size_t dst) { _deferredMove = { src, dst }; }
 
         void bind(SceneContext editor, SceneContext active, bool playing)
         {
+            requireIdle("bind");
             _editor.emplace(editor); _active.emplace(active); _playing = playing;
             refresh();
         }
-        void unbind() noexcept
+        void unbind()
         {
+            requireIdle("unbind");
             for (auto it = _systems.rbegin(); it != _systems.rend(); ++it)
             { it->system->detach(); it->instance = 0; }
             _editor.reset(); _active.reset(); invalidateGraph();
         }
         void init()
         {
+            requireIdle("init");
             if (_initialized) return;
             if (!_jobs.getNumThreads()) {
                 const auto available = (std::max)(1u, std::thread::hardware_concurrency());
@@ -88,6 +96,7 @@ namespace csyren::core
         }
         void shutdown()
         {
+            requireIdle("shutdown");
             for (auto it = _systems.rbegin(); it != _systems.rend(); ++it)
             {
                 it->system->detach();
@@ -101,6 +110,7 @@ namespace csyren::core
         }
         void processMove()
         {
+            requireIdle("processMove");
             auto [src, dst] = _deferredMove;
             _deferredMove = { BACK_POS, BACK_POS };
             if (src < _schedule.size() && dst < _schedule.size() && src != dst)
@@ -121,10 +131,10 @@ namespace csyren::core
                 rebuildSchedule();
             }
         }
-        template<class T> void resourceState(std::string state) { _initialStates.insert_or_assign(std::type_index(typeid(T)), std::move(state)); invalidateGraph(); }
-        void taskBackend(std::shared_ptr<TaskBackend> backend) { _backend = std::move(backend); invalidateGraph(); }
+        template<class T> void resourceState(std::string state) { requireIdle("resourceState"); _initialStates.insert_or_assign(TypeKey::of<T>(), std::move(state)); invalidateGraph(); }
+        void taskBackend(std::shared_ptr<TaskBackend> backend) { requireIdle("taskBackend"); _backend = std::move(backend); invalidateGraph(); }
         const std::shared_ptr<TaskBackend>& taskBackend() const noexcept { return _backend; }
-        void phase(PhaseDescription phase) { _phases.push_back(std::move(phase)); invalidateGraph(); }
+        void phase(PhaseDescription phase) { requireIdle("phase"); _phases.push_back(std::move(phase)); invalidateGraph(); }
         const auto& phases() const { return _phases; }
         // Inspect the last successfully compiled schedule; never rebuild from editor callbacks.
         const FrameGraph::Inspection& executionGraph() const noexcept { return _inspection; }
@@ -159,17 +169,27 @@ namespace csyren::core
         bool playing() const noexcept { return _playing; }
         cstdmf::multicore::JobSystem& jobs() noexcept { return _jobs; }
         void execute() {
+            requireIdle("execute");
+            CS_PROFILE_SCOPE("Frame graph");
             processMove();
-            if (_dirty) rebuild();
+            if (_dirty) { CS_PROFILE_SCOPE("Frame graph rebuild"); rebuild(); }
+            // System lifecycle (attach/detach/init/shutdown) and schedule edits run
+            // only between frames; they are rejected while tasks may be running.
+            struct Executing {
+                std::atomic<bool>& flag;
+                explicit Executing(std::atomic<bool>& f) : flag(f) { flag.store(true, std::memory_order_release); }
+                ~Executing() { flag.store(false, std::memory_order_release); }
+            } guard(_executing);
             try { _graph.execute(_jobs); }
             catch (...) { for (auto& transaction : _transactions) transaction->discard(); throw; }
         }
-        void update() { processMove(); for (auto* entry : _schedule) if (entry->system->attached()) entry->system->update(); }
-        void onFrame()
-        {
-            for (auto* entry : _schedule) if (entry->system->attached()) entry->system->onFrame();
-        }
+        bool executing() const noexcept { return _executing.load(std::memory_order_acquire); }
     private:
+        void requireIdle(const char* operation) const
+        {
+            if (executing())
+                throw std::logic_error(std::string("SystemManager::") + operation + " is not allowed while the frame graph executes");
+        }
         bool ensureSystem(const std::string& name)
         {
             if (findSystem(name)) return true;
@@ -278,6 +298,7 @@ namespace csyren::core
             std::unordered_map<std::string, bool> structural;
             for (const auto* entry : schedule) {
                 if (!entry) throw std::logic_error("Configured system is missing");
+                if (!entry->system->scheduled()) continue; // OnceSystem: lifecycle only
                 auto description = entry->system->describe();
                 structural[entry->name] = description.structuralChanges;
                 if (_backend) _backend->describe(description);
@@ -314,13 +335,16 @@ namespace csyren::core
                 _transactions.push_back(transaction);
                 const bool changes = description.structuralChanges;
                 auto system = entry.system;
-                _graph.task(entry.name, description, [this, system, scene, transaction, changes, description, name = entry.name] {
+                // Every task is a profiler mark named like the graph node.
+                const auto mark = profiler::name(entry.name);
+                _graph.task(entry.name, description, [this, system, scene, transaction, changes, description, mark, name = entry.name] {
+                    const profiler::Scope profile(mark);
                     transaction->discard();
                     Scene::TaskScope scope(*scene, changes ? transaction.get() : nullptr, &description);
                     auto invoke = [system, scene, &description] {
                         Services::SceneScope binding(scene, &scene->eventBus());
                         Services::TaskScope resources(description);
-                        system->execute();
+                        system->run();
                     };
                     if (!description.gpuAccesses.empty()) {
                         if (!_backend) throw std::logic_error("GPU task has no execution backend");
@@ -329,7 +353,11 @@ namespace csyren::core
                 });
                 if (changes) {
                     auto apply = commitDescription(entry.name, description);
-                    _graph.task(entry.name + "/apply", std::move(apply), [scene, transaction] { transaction->apply(*scene); });
+                    const auto applyMark = profiler::name(entry.name + "/apply");
+                    _graph.task(entry.name + "/apply", std::move(apply), [scene, transaction, applyMark] {
+                        const profiler::Scope profile(applyMark);
+                        transaction->apply(*scene);
+                    });
                 }
             }
             _graph.compile();
@@ -343,7 +371,7 @@ namespace csyren::core
         std::shared_ptr<TaskBackend> _backend;
         cstdmf::multicore::JobSystem _jobs;
         std::vector<PhaseDescription> _phases;
-        std::unordered_map<std::type_index, std::string> _initialStates;
+        std::unordered_map<TypeKey, std::string> _initialStates;
         bool _dirty = true;
         size_t _graphRevision = 0;
         mutable GraphPreview _editorPreview, _gamePreview, _standalonePreview;
@@ -351,6 +379,7 @@ namespace csyren::core
         SystemConfiguration _configuration;
         std::optional<SceneContext> _editor, _active;
         bool _playing{}, _initialized{};
+        std::atomic<bool> _executing{false};
         std::pair<size_t, size_t> _deferredMove{ BACK_POS, BACK_POS };
         std::vector<SystemEntry> _systems;
         std::vector<SystemEntry*> _schedule;

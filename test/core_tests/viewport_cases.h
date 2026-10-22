@@ -230,13 +230,13 @@ TEST_F(SceneWorkflow, ViewportNavigationIgnoresNativeInputOutsideTheImage)
     auto& mouse = const_cast<MouseDevice&>(devices.mouse());
     mouse.setButtonState(MouseButton::Right,true); mouse.setMousePosition(100,100);
     const auto initial = view.transform.rotation;
-    EditorCameraControllerSystem controller; controller.execute();
+    EditorCameraControllerSystem controller; controller.run();
     EXPECT_TRUE(view.transform.rotation.exactEqual(initial));
     view.navigation.active = true; view.navigation.captured = true; view.navigation.dx = .1f;
-    controller.execute(); EXPECT_FALSE(view.transform.rotation.exactEqual(initial));
+    controller.run(); EXPECT_FALSE(view.transform.rotation.exactEqual(initial));
     EXPECT_FLOAT_EQ(view.navigation.dx,0);
     const auto once = view.transform.rotation;
-    controller.execute(); EXPECT_TRUE(view.transform.rotation.exactEqual(once));
+    controller.run(); EXPECT_TRUE(view.transform.rotation.exactEqual(once));
 }
 
 TEST_F(SceneWorkflow, ViewportRotationPreservesNativePixelSensitivity)
@@ -246,11 +246,11 @@ TEST_F(SceneWorkflow, ViewportRotationPreservesNativePixelSensitivity)
     auto& view = core::details::ServiceRegistry::create<EditorViewportState>();
     auto& mouse = const_cast<MouseDevice&>(devices.mouse());
     mouse.setButtonState(MouseButton::Right,true); mouse.setMousePosition(20,10);
-    EditorCameraControllerSystem controller; controller.execute();
+    EditorCameraControllerSystem controller; controller.run();
     const auto native = view.transform.rotation;
     view.transform.rotation = math::Quaternion{}; view.viewportInput = true;
     view.navigation.active = true; view.navigation.dx = 20; view.navigation.dy = 10;
-    controller.execute(); EXPECT_TRUE(view.transform.rotation.exactEqual(native));
+    controller.run(); EXPECT_TRUE(view.transform.rotation.exactEqual(native));
 }
 
 TEST_F(SceneWorkflow, CameraColorIsSampledBeforeEditorOutputIsPresented)

@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "physic_system.h"
 #include "physics_layers.h"
+#include "cstdmf/profiler.h"
 
 #include <iostream>
 #include <unordered_set>
@@ -57,14 +58,6 @@ namespace
 
 namespace csyren::physics
 {
-    core::TaskDescription PhysicsSystem::describe() const {
-        core::TaskDescription d; d.phase = "simulation";
-        d.write<core::Transform>().write<RigidBody>().write<CharacterController>().writeResource<PhysicsEngine>().readResource<core::Time>();
-        d.readResource<PhysicsLayers>(); // collision matrix consulted by the Jolt filters
-        d.readResource<core::SceneEntities>();
-        return d;
-    }
-
     // Jolt object layer = (PhysicsLayers index << 1) | moving bit. The moving
     // bit comes from the body type and selects the broadphase layer; the index
     // selects the row of the project's collision matrix (PhysicsLayers).
@@ -189,10 +182,39 @@ namespace csyren::physics
         }
     }
 
+    // Read access for (re)building bodies and characters: the scene while the
+    // system attaches (lifecycle), PhysicsSyncSystem's queries afterwards.
+    struct SceneAccess
+    {
+        core::Scene& scene;
+        template<class T> auto get(core::Entity::ID id) const { return scene.getComponent<T>(id); }
+        math::Matrix4x4 worldMatrix(core::Entity::ID id) const { return core::worldMatrix(scene, id); }
+        math::Quaternion worldRotation(core::Entity::ID id) const { return core::worldRotation(scene, id); }
+    };
+    // Through the systems' queries: Transform and RigidBody from `bodies`, the
+    // colliders from `colliders`, CharacterController from `characters`.
+    template<class Bodies, class Colliders, class Characters>
+    struct QueryAccess
+    {
+        const Bodies& bodies;
+        const Colliders& colliders;
+        const Characters& characters;
+        template<class T> auto get(core::Entity::ID id) const
+        {
+            using Value = std::remove_const_t<T>;
+            if constexpr (std::is_same_v<Value, CharacterController>) return characters.template get<T>(id);
+            else if constexpr (std::is_same_v<Value, core::Transform> || std::is_same_v<Value, RigidBody>) return bodies.template get<T>(id);
+            else return colliders.template get<T>(id);
+        }
+        math::Matrix4x4 worldMatrix(core::Entity::ID id) const { return core::worldMatrix(bodies, id); }
+        math::Quaternion worldRotation(core::Entity::ID id) const { return core::worldRotation(bodies, id); }
+    };
+    template<class Bodies, class Colliders, class Characters>
+    QueryAccess(const Bodies&, const Colliders&, const Characters&) -> QueryAccess<Bodies, Colliders, Characters>;
+
     class PhysicsEngine::Impl
     {
     public:
-        core::Scene* scene{};
         core::EventBus2* bus{};
         const PhysicsLayers* layers{};
         core::WorldTransforms worlds;
@@ -207,6 +229,16 @@ namespace csyren::physics
 
         // Подписки на события ECS
         std::vector<core::SubscriberToken> tokens;
+        // Entities whose bodies / characters must be brought in line with the scene
+        // (in event order, without duplicates); applied by PhysicsSyncSystem.
+        struct DirtyList
+        {
+            std::vector<core::Entity::ID> order;
+            std::unordered_set<core::Entity::ID> listed;
+            void add(core::Entity::ID id) { if (listed.insert(id).second) order.push_back(id); }
+            void clear() { order.clear(); listed.clear(); }
+        };
+        DirtyList dirtyBodies, dirtyCharacters;
 
         struct BodyRecord
         {
@@ -239,13 +271,16 @@ namespace csyren::physics
         float accumulator{ 0.0f };
         float alpha{ 0.0f };
 
-        void initialize(core::Scene& target, core::EventBus2& events)
+        // Lifecycle (attach): builds the world from the scene; the scene is not kept.
+        void initialize(core::Scene& scene, core::EventBus2& events)
         {
-            scene = &target;
             bus = &events;
 
             m_tempAllocator = std::make_unique<JPH::TempAllocatorImpl>(16 * 1024 * 1024);
-            m_jobSystem = std::make_unique<JPH::JobSystemThreadPool>(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, 4);
+            m_jobSystem = std::make_unique<JPH::JobSystemThreadPool>();
+            // Profiler tracks "Jolt N" (set before the pool starts its threads).
+            m_jobSystem->SetThreadInitFunction([](int thread) { profiler::setThreadName("Jolt " + std::to_string(thread)); });
+            m_jobSystem->Init(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, 4);
 
             layers = core::Services::get<const PhysicsLayers>();
             m_broadPhaseLayerInterface = std::make_unique<BPLayerInterfaceImpl>();
@@ -263,67 +298,68 @@ namespace csyren::physics
             );
             m_physicsSystem->SetContactListener(m_contactRecorder.get());
 
-            tokens.push_back(bus->subscribe<csyren::core::ComponentCreateEvent<RigidBody>>(
-                [this](const auto& event) { rebuildBody(event.comp.id()); }));
-            tokens.push_back(bus->subscribe<csyren::core::ComponentDestroyEvent<RigidBody>>(
-                [this](const auto& event) { onRigidBodyRemoved(event.comp.id()); }));
-            tokens.push_back(bus->subscribe<csyren::core::ComponentCreateEvent<BoxCollider>>(
-                [this](const auto& event) { rebuildBody(event.comp.id()); }));
-            tokens.push_back(bus->subscribe<csyren::core::ComponentDestroyEvent<BoxCollider>>(
-                [this](const auto& event) { rebuildBody(event.comp.id()); }));
-            tokens.push_back(bus->subscribe<csyren::core::ComponentCreateEvent<SphereCollider>>(
-                [this](const auto& event) { rebuildBody(event.comp.id()); }));
-            tokens.push_back(bus->subscribe<csyren::core::ComponentDestroyEvent<SphereCollider>>(
-                [this](const auto& event) { rebuildBody(event.comp.id()); }));
-            tokens.push_back(bus->subscribe<csyren::core::ComponentCreateEvent<CapsuleCollider>>(
-                [this](const auto& event) { rebuildBody(event.comp.id()); }));
-            tokens.push_back(bus->subscribe<csyren::core::ComponentDestroyEvent<CapsuleCollider>>(
-                [this](const auto& event) { rebuildBody(event.comp.id()); }));
-
-            tokens.push_back(bus->subscribe<csyren::core::ComponentCreateEvent<CharacterController>>(
-                [this](const auto& event) { rebuildCharacter(event.comp.id()); }));
-            tokens.push_back(bus->subscribe<csyren::core::ComponentDestroyEvent<CharacterController>>(
-                [this](const auto& event) {
-                    if (scene->hasComponent<CharacterController>(event.comp.id())) rebuildCharacter(event.comp.id());
-                    else removeCharacter(event.comp.id());
-                }));
+            // The handlers only queue the entity: PhysicsSyncSystem rebuilds it from
+            // the scene's current state (a destroyed or re-added component, a stale
+            // event generation all reduce to "make the body match the scene").
+            const auto body = [this](const auto& event) { dirtyBodies.add(event.comp.id()); };
+            const auto character = [this](const auto& event) { dirtyCharacters.add(event.comp.id()); };
+            tokens.push_back(bus->subscribe<csyren::core::ComponentCreateEvent<RigidBody>>(body));
+            tokens.push_back(bus->subscribe<csyren::core::ComponentDestroyEvent<RigidBody>>(body));
+            tokens.push_back(bus->subscribe<csyren::core::ComponentCreateEvent<BoxCollider>>(body));
+            tokens.push_back(bus->subscribe<csyren::core::ComponentDestroyEvent<BoxCollider>>(body));
+            tokens.push_back(bus->subscribe<csyren::core::ComponentCreateEvent<SphereCollider>>(body));
+            tokens.push_back(bus->subscribe<csyren::core::ComponentDestroyEvent<SphereCollider>>(body));
+            tokens.push_back(bus->subscribe<csyren::core::ComponentCreateEvent<CapsuleCollider>>(body));
+            tokens.push_back(bus->subscribe<csyren::core::ComponentDestroyEvent<CapsuleCollider>>(body));
+            tokens.push_back(bus->subscribe<csyren::core::ComponentCreateEvent<CharacterController>>(character));
+            tokens.push_back(bus->subscribe<csyren::core::ComponentDestroyEvent<CharacterController>>(character));
 
             m_physicsSystem->SetGravity(details::to_jolt(gravity));
-            tokens.push_back(bus->subscribe<core::ComponentPatchEvent<RigidBody>>(
-                [this](auto& event) { if (event.comp == scene->getComponent<RigidBody>(event.comp.id())) rebuildBody(event.comp.id()); }));
-            tokens.push_back(bus->subscribe<core::ComponentPatchEvent<BoxCollider>>(
-                [this](auto& event) { if (event.comp == scene->getComponent<BoxCollider>(event.comp.id())) rebuildBody(event.comp.id()); }));
-            tokens.push_back(bus->subscribe<core::ComponentPatchEvent<SphereCollider>>(
-                [this](auto& event) { if (event.comp == scene->getComponent<SphereCollider>(event.comp.id())) rebuildBody(event.comp.id()); }));
-            tokens.push_back(bus->subscribe<core::ComponentPatchEvent<CapsuleCollider>>(
-                [this](auto& event) { if (event.comp == scene->getComponent<CapsuleCollider>(event.comp.id())) rebuildBody(event.comp.id()); }));
-            for (auto [entity, rb] : scene->view<RigidBody>()) rebuildBody(entity);
-            for (auto [entity, cc] : scene->view<CharacterController>()) rebuildCharacter(entity);
+            tokens.push_back(bus->subscribe<core::ComponentPatchEvent<RigidBody>>(body));
+            tokens.push_back(bus->subscribe<core::ComponentPatchEvent<BoxCollider>>(body));
+            tokens.push_back(bus->subscribe<core::ComponentPatchEvent<SphereCollider>>(body));
+            tokens.push_back(bus->subscribe<core::ComponentPatchEvent<CapsuleCollider>>(body));
+            const SceneAccess access{ scene };
+            for (auto [entity, rb] : scene.view<RigidBody>()) rebuildBody(access, entity);
+            for (auto [entity, cc] : scene.view<CharacterController>()) rebuildCharacter(access, entity);
             m_physicsSystem->OptimizeBroadPhase();
             broadPhaseDirty = false;
             accumulator = 0.0f; alpha = 0.0f;
         }
 
-        void onRigidBodyRemoved(core::Entity::ID ent) {
-            // A deferred event can outlive this component's generation.
-            if (scene->hasComponent<RigidBody>(ent)) rebuildBody(ent);
-            else removeBody(ent);
+        // Applies the queued changes (PhysicsSyncSystem, and PhysicsSystem before stepping).
+        template<class Access> void applyPending(const Access& access)
+        {
+            if (dirtyBodies.order.empty() && dirtyCharacters.order.empty()) return;
+            CS_PROFILE_SCOPE("Physics apply changes");
+            CS_PROFILE_VALUE("Physics rebuilt bodies", dirtyBodies.order.size() + dirtyCharacters.order.size());
+            for (auto ent : dirtyBodies.order) rebuildBody(access, ent);
+            for (auto ent : dirtyCharacters.order) rebuildCharacter(access, ent);
+            dirtyBodies.clear(); dirtyCharacters.clear();
+        }
+        void sync(const PhysicsSyncSystem::Sources& sources, const PhysicsSyncSystem::Characters& characterQuery, const PhysicsLayers& currentLayers)
+        {
+            if (!m_physicsSystem) { dirtyBodies.clear(); dirtyCharacters.clear(); return; } // not attached
+            layers = &currentLayers;
+            applyPending(QueryAccess{ sources, sources, characterQuery });
         }
 
-        void rebuildBody(core::Entity::ID ent)
+        // Removes the entity's body and creates it again from its current
+        // components (none when the RigidBody or every collider is gone).
+        template<class Access> void rebuildBody(const Access& access, core::Entity::ID ent)
         {
             removeBody(ent);
-            if (!scene->hasComponent<RigidBody>(ent))
+            auto rb = access.template get<const RigidBody>(ent);
+            if (!rb)
             {
                 return;
             }
-            auto rb = scene->getComponent<RigidBody>(ent);
 
             std::vector<JPH::Ref<JPH::Shape>> shapes;
             std::vector<JPH::Vec3> offsets;
             std::vector<JPH::Quat> rotations;
 
-            if (auto box = scene->getComponent<BoxCollider>(ent))
+            if (auto box = access.template get<const BoxCollider>(ent))
             {
                 auto shape = details::createBoxShape(*box);
                 shapes.push_back(shape);
@@ -331,7 +367,7 @@ namespace csyren::physics
                 rotations.push_back(details::to_jolt(box->rotation));
             }
 
-            if (auto sphere = scene->getComponent<SphereCollider>(ent))
+            if (auto sphere = access.template get<const SphereCollider>(ent))
             {
                 auto shape = details::createSphereShape(*sphere);
                 shapes.push_back(shape);
@@ -339,7 +375,7 @@ namespace csyren::physics
                 rotations.push_back(JPH::Quat::sIdentity());
             }
 
-            if (auto cap = scene->getComponent<CapsuleCollider>(ent))
+            if (auto cap = access.template get<const CapsuleCollider>(ent))
             {
                 auto shape = details::createCapsuleShape(*cap);
                 shapes.push_back(shape);
@@ -377,7 +413,7 @@ namespace csyren::physics
                 }
             }
 
-            auto transform = scene->getComponent<core::Transform>(ent);
+            auto transform = access.template get<const core::Transform>(ent);
 
             if (!transform) return;
 
@@ -388,8 +424,8 @@ namespace csyren::physics
                 : rb->type == BodyType::Dynamic ?   JPH::EMotionType::Dynamic
                 :                                   JPH::EMotionType::Kinematic;
 
-            const auto worldPos = core::worldMatrix(*scene, ent).translation();
-            const auto worldRot = core::worldRotation(*scene, ent);
+            const auto worldPos = access.worldMatrix(ent).translation();
+            const auto worldRot = access.worldRotation(ent);
             settings.mPosition = details::to_jolt(worldPos);
             settings.mRotation = details::to_jolt(worldRot);
             settings.mObjectLayer  = Layers::make(layerIndex(*layers, rb->layer.name), rb->type != BodyType::Static);
@@ -437,11 +473,11 @@ namespace csyren::physics
         }
 
         //---------------------------------------- characters ----------------------------------------
-        void rebuildCharacter(core::Entity::ID ent)
+        template<class Access> void rebuildCharacter(const Access& access, core::Entity::ID ent)
         {
             removeCharacter(ent);
-            auto cc = scene->getComponent<CharacterController>(ent);
-            auto transform = scene->getComponent<core::Transform>(ent);
+            auto cc = access.template get<CharacterController>(ent);
+            auto transform = access.template get<const core::Transform>(ent);
             if (!cc || !transform) return;
 
             JPH::CharacterVirtualSettings settings;
@@ -456,7 +492,7 @@ namespace csyren::physics
             settings.mBackFaceMode = JPH::EBackFaceMode::CollideWithBackFaces;
             settings.mEnhancedInternalEdgeRemoval = true;
 
-            const auto worldPos = core::worldMatrix(*scene, ent).translation();
+            const auto worldPos = access.worldMatrix(ent).translation();
             CharacterRecord record;
             record.character = new JPH::CharacterVirtual(&settings, details::to_jolt(worldPos), JPH::Quat::sIdentity(), 0, m_physicsSystem.get());
             record.shapeHeight = (std::max)(cc->height, 2.0f * cc->radius + 0.01f);
@@ -570,11 +606,11 @@ namespace csyren::physics
         }
 
         //---------------------------------------- transforms ----------------------------------------
-        void pushTransform()
+        void pushTransform(const PhysicsSystem::Bodies& bodyQuery, const PhysicsSystem::Characters& characterQuery)
         {
             auto& bodyInterface = m_physicsSystem->GetBodyInterface();
-            worlds.update(*scene);
-            for (auto [ent, rb, tr] : scene->view<RigidBody, core::Transform>())
+            worlds.update(bodyQuery);
+            for (auto [ent, rb, tr] : bodyQuery)
             {
                 auto found = bodies.find(ent);
                 if (found == bodies.end()) continue;
@@ -591,8 +627,9 @@ namespace csyren::physics
                 record.prevRot = record.currRot = joltRot;
                 record.written = false;
             }
-            for (auto [ent, cc, tr] : scene->view<CharacterController, core::Transform>())
+            for (auto [ent, cc] : characterQuery)
             {
+                if (!bodyQuery.get<const core::Transform>(ent)) continue;
                 auto found = characters.find(ent);
                 if (found == characters.end()) continue;
                 auto& record = found->second;
@@ -624,21 +661,21 @@ namespace csyren::physics
             }
         }
 
-        void pullTransforms()
+        void pullTransforms(const PhysicsSystem::Bodies& bodyQuery)
         {
             const float t = std::clamp(alpha, 0.0f, 1.0f);
             const auto& lockInterface = m_physicsSystem->GetBodyLockInterface();
             // Propagate the new body poses and inherited local transforms in one
             // pass. No ancestor walks or rebuilding the snapshot for each body.
-            worlds.propagate(*scene, [&](auto ent, const auto& parentMatrix, const auto& parentRotation) {
+            worlds.propagate(bodyQuery, [&](auto ent, const auto& parentMatrix, const auto& parentRotation) {
                 if (auto found = bodies.find(ent); found != bodies.end())
                 {
                     auto& record = found->second;
-                    auto rb = scene->getComponent<RigidBody>(ent);
+                    auto rb = bodyQuery.get<RigidBody>(ent);
                     if (!rb || rb->type != BodyType::Dynamic) return;
                     const auto position = details::from_jolt(record.prevPos + (record.currPos - record.prevPos) * t);
                     const auto rotation = details::from_jolt(record.prevRot.SLERP(record.currRot, t).Normalized());
-                    core::setWorldPose(*scene, ent, position, rotation, parentMatrix, parentRotation);
+                    core::setWorldPose(bodyQuery, ent, position, rotation, parentMatrix, parentRotation);
                     record.writtenPos = position; record.writtenRot = rotation; record.written = true;
                     const JPH::BodyLockRead lock(lockInterface, record.id);
                     if (lock.Succeeded())
@@ -652,7 +689,7 @@ namespace csyren::physics
                 {
                     auto& record = found->second;
                     const auto position = details::from_jolt(record.prevPos + (record.currPos - record.prevPos) * t);
-                    auto transform = scene->getComponent<core::Transform>(ent);
+                    auto transform = bodyQuery.get<core::Transform>(ent);
                     if (!transform) return;
                     math::Vector3 local = position;
                     if (!DirectX::XMMatrixIsIdentity(parentMatrix))
@@ -662,7 +699,7 @@ namespace csyren::physics
                         local = inverseParent.multiplyPoint3x4(position);
                     }
                     if (!transform->position.exactEqual(local))
-                        scene->patch(transform, [&](core::Transform& tr) { tr.position = local; });
+                        bodyQuery.patch(transform, [&](core::Transform& tr) { tr.position = local; });
                     record.writtenPos = position; record.written = true;
                 }
             });
@@ -763,11 +800,17 @@ namespace csyren::physics
         }
 
         //---------------------------------------- frame ----------------------------------------
-        void frame(float frameDt, float fixedDt)
+        void frame(const PhysicsSystem::Bodies& bodyQuery, const PhysicsSystem::Colliders& colliderQuery,
+            const PhysicsSystem::Characters& characterQuery, float frameDt, float fixedDt, const PhysicsLayers& currentLayers)
         {
+            layers = &currentLayers;
+            applyPending(QueryAccess{ bodyQuery, colliderQuery, characterQuery });
             contacts.clear();
             if (broadPhaseDirty) { m_physicsSystem->OptimizeBroadPhase(); broadPhaseDirty = false; }
-            pushTransform();
+            {
+                CS_PROFILE_SCOPE("Physics push transforms");
+                pushTransform(bodyQuery, characterQuery);
+            }
 
             accumulator += std::clamp(frameDt, 0.0f, 0.1f);
             const float step = std::clamp(fixedDt, 1.0f / 480.0f, 0.1f);
@@ -775,22 +818,31 @@ namespace csyren::physics
             int steps = 0;
             while (accumulator >= step && steps < maxSteps)
             {
-                for (auto [ent, cc] : scene->view<CharacterController>())
                 {
-                    auto found = characters.find(ent);
-                    if (found != characters.end()) stepCharacter(ent, found->second, cc, step);
+                    CS_PROFILE_SCOPE("Physics characters");
+                    for (auto [ent, cc] : characterQuery)
+                    {
+                        auto found = characters.find(ent);
+                        if (found != characters.end()) stepCharacter(ent, found->second, cc, step);
+                    }
                 }
                 applyPendingForces(steps == 0);
-                stepBodies(step);
+                {
+                    CS_PROFILE_SCOPE("Physics step");
+                    stepBodies(step);
+                }
                 accumulator -= step;
                 ++steps;
             }
             if (steps == maxSteps) accumulator = 0.0f; // too slow: drop time instead of spiralling
             if (steps > 0) pendingForces.clear();
             alpha = accumulator / step;
+            CS_PROFILE_VALUE("Physics steps", steps);
+            CS_PROFILE_VALUE("Physics bodies", bodies.size());
 
             collectContacts();
-            pullTransforms();
+            CS_PROFILE_SCOPE("Physics pull transforms");
+            pullTransforms(bodyQuery);
         }
 
         void shutdown() noexcept
@@ -798,6 +850,7 @@ namespace csyren::physics
             if (!bus) return;
             for (auto token : tokens) bus->unsubscribe(token);
             tokens.clear();
+            dirtyBodies.clear(); dirtyCharacters.clear();
 
             characters.clear();
             while (!bodies.empty()) removeBody(bodies.begin()->first);
@@ -816,7 +869,7 @@ namespace csyren::physics
             m_objectLayerPairFilter.reset();
             m_objectVsBroadPhaseLayerFilter.reset();
             m_broadPhaseLayerInterface.reset();
-            bus = nullptr; scene = nullptr;
+            bus = nullptr;
         }
     };
 
@@ -886,26 +939,28 @@ namespace csyren::physics
 
     //-----------------------------------------------------------------------------------------
 
-    void csyren::physics::PhysicsSystem::onAttach()
+    void PhysicsSystem::onAttach()
     {
         auto physic = core::Services::get<physics::PhysicsEngine>();
         physic->_pImpl->initialize(scene(), sceneBus());
     }
 
-    void csyren::physics::PhysicsSystem::execute()
-    {
-        using ctx = core::Services;
-        auto physic = ctx::get<PhysicsEngine>();
-        auto time = ctx::get<const core::Time>();
-        physic->_pImpl->frame(time->deltaTime(), time->fixedDeltaTime);
-    }
-
-    void csyren::physics::PhysicsSystem::onDetach() noexcept
+    void PhysicsSystem::onDetach() noexcept
     {
         core::Services::get<PhysicsEngine>()->_pImpl->shutdown();
     }
 
-    void PhysicsSystem::init() {}
-    void PhysicsSystem::shutdown() {}
+CS_STRICT_SYSTEMS_BEGIN
+    void PhysicsSystem::execute(Bodies bodies, Colliders colliders, Characters characters, core::Res<PhysicsEngine> engine,
+        core::Res<const core::Time> time, core::Res<const PhysicsLayers> layers)
+    {
+        engine->_pImpl->frame(bodies, colliders, characters, time->deltaTime(), time->fixedDeltaTime, *layers);
+    }
+
+    void PhysicsSyncSystem::execute(Sources sources, Characters characters, core::Res<PhysicsEngine> engine, core::Res<const PhysicsLayers> layers)
+    {
+        engine->_pImpl->sync(sources, characters, *layers);
+    }
+CS_STRICT_SYSTEMS_END
 
 }

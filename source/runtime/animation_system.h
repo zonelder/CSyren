@@ -2,13 +2,12 @@
 // Advances Animators and writes sampled TRS tracks into the Transforms of the
 // animated entity's subtree (targets matched by entity name).
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include "core/system_base.h"
-#include "core/services.h"
-#include "core/scene.h"
+#include "core/typed_system.h"
 #include "core/transform.h"
 #include "core/time.h"
 #include "cstdmf/tree_algorithms.h"
@@ -17,30 +16,26 @@
 #include "animation.h"
 #include "core/registration.h"
 
+CS_STRICT_SYSTEMS_BEGIN
 namespace csyren
 {
-    class AnimationSystem : public core::System
+    class AnimationSystem : public core::TypedSystem<AnimationSystem>
     {
     public:
-        core::TaskDescription describe() const override
-        {
-            core::TaskDescription d; d.phase = "simulation"; d.after = { "PhysicsSystem" };
-            d.write<Animator>().write<core::Transform>();
-            d.readResource<render::ResourceManager>().readResource<core::Time>().readResource<core::SceneEntities>();
-            return d;
-        }
+        static constexpr auto phase = "simulation";
+        static constexpr std::array after{ "PhysicsSystem" };
 
-        void execute() override
+        // Animated targets are any entities with a Transform in the animator's subtree.
+        void execute(core::Update<Animator> animators, core::Update<core::Transform> transforms,
+            core::Res<const render::ResourceManager> resourceManager, core::Res<const core::Time> time)
         {
             using namespace math;
-            const auto* time = core::Services::get<const core::Time>();
-            const auto& resources = *core::Services::get<const render::ResourceManager>();
+            const auto& resources = *resourceManager;
             const float dt = std::clamp(time->deltaTime(), 0.0f, 0.1f);
-            auto& scene = this->scene();
-            const uint64_t revision = scene.hierarchyRevision();
+            const uint64_t revision = animators.hierarchyRevision();
             std::unordered_set<core::Entity::ID> alive;
 
-            for (auto [ent, animator] : scene.view<Animator>())
+            for (auto [ent, animator] : animators)
             {
                 alive.insert(ent);
                 const auto* clip = resources.getAnimationClip(animator.clip);
@@ -61,7 +56,7 @@ namespace csyren
                 if (!animator.bound || animator.hierarchyRevision != revision)
                 {
                     targets.clear();
-                    const auto& entities = scene.entities();
+                    const auto& entities = animators.entities();
                     cstdmf::tree::preorder(ent, [&](auto id) -> const auto& { return entities.try_get(id)->children; }, [&](auto id) {
                         if (const auto* entity = entities.try_get(id)) targets.emplace(entity->name, id);
                     });
@@ -72,7 +67,7 @@ namespace csyren
                 {
                     auto target = targets.find(track.node);
                     if (target == targets.end()) continue;
-                    auto transform = scene.getComponent<core::Transform>(target->second);
+                    auto transform = transforms.get<core::Transform>(target->second);
                     if (!transform) continue;
                     const auto value = track.sample(animator.time);
                     switch (track.path)
@@ -83,7 +78,7 @@ namespace csyren
                     }
                     touched.insert(target->second);
                 }
-                for (auto id : touched) scene.patch<core::Transform>(id);
+                for (auto id : touched) transforms.patch<core::Transform>(id);
             }
             std::erase_if(_targets, [&](const auto& entry) { return !alive.contains(entry.first); });
         }
@@ -97,3 +92,4 @@ namespace csyren
 
     CS_SYSTEM(AnimationSystem);
 }
+CS_STRICT_SYSTEMS_END

@@ -182,13 +182,12 @@ def spinner_header(namespace):
 // source/ is scanned before each build; CS_* markers register what they name.
 #include <vector>
 #include "core/registration.h"
-#include "core/system_base.h"
-#include "core/services.h"
-#include "core/scene.h"
+#include "core/typed_system.h"
 #include "core/transform.h"
 #include "core/time.h"
 #include "math/math.h"
 
+CS_STRICT_SYSTEMS_BEGIN
 namespace {namespace}
 {{
     // Rotates the entity around `axis` (degrees per second) while playing.
@@ -201,28 +200,25 @@ namespace {namespace}
     }};
     CS_COMPONENT(Spinner);
 
-    class SpinnerSystem : public csyren::core::System
+    // The parameters of execute() are what the system reads and writes; the
+    // compiler rejects anything else (docs/frame_graph.md, "Typed systems").
+    class SpinnerSystem : public csyren::core::TypedSystem<SpinnerSystem>
     {{
     public:
-        csyren::core::TaskDescription describe() const override
-        {{
-            csyren::core::TaskDescription d; d.phase = "simulation";
-            d.read<Spinner>().write<csyren::core::Transform>().readResource<csyren::core::Time>();
-            return d;
-        }}
+        static constexpr auto phase = "simulation";
 
-        void execute() override
+        void execute(csyren::core::Update<csyren::core::Transform, const Spinner> spinners,
+                     csyren::core::Res<const csyren::core::Time> time)
         {{
             using namespace csyren;
-            const float dt = core::Services::get<const core::Time>()->deltaTime();
-            auto& scene = this->scene();
+            const float dt = time->deltaTime();
             _rotated.clear();
-            for (auto [entity, transform, spinner] : scene.view<core::Transform, const Spinner>())
+            for (auto [entity, transform, spinner] : spinners)
             {{
                 transform.rotation = math::Quaternion::angleAxis(spinner.speed * dt, spinner.axis) * transform.rotation;
                 _rotated.push_back(entity);
             }}
-            for (auto entity : _rotated) scene.patch<core::Transform>(entity); // publish the change
+            for (auto entity : _rotated) spinners.patch<core::Transform>(entity); // publish the change
         }}
 
     private:
@@ -230,6 +226,7 @@ namespace {namespace}
     }};
     CS_SYSTEM(SpinnerSystem);
 }}
+CS_STRICT_SYSTEMS_END
 '''
 
 

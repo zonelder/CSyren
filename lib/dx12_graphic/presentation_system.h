@@ -1,18 +1,25 @@
 #pragma once
-#include "core/system_base.h"
+#include <array>
+#include "core/typed_system.h"
 #include "core/registration.h"
+#include "dx12_graphic/renderer.h"
 
 namespace csyren::render
 {
-    namespace details { struct PresentationState; }
+    namespace details { struct PresentationState; struct FrameRecording; }
 
-    class PresentationSystem : public core::System
+    // Submits the recorded GPU plan and hands the frame to the output worker;
+    // moves the frame token (FrameRecording) from "ready" to "submitted".
+    class PresentationSystem : public core::TypedSystem<PresentationSystem>
     {
     public:
-        core::TaskDescription describe() const override;
+        static constexpr auto phase = "submit";
+        static constexpr core::TaskAffinity affinity = core::TaskAffinity::MainThread;
+        static constexpr std::array states{ core::StateUse::write<details::FrameRecording>("ready", "submitted") };
 
         void init() override;
-        void execute() override;
+        // The GPU plan submission records into the Renderer.
+        void execute(core::Res<Renderer> renderer);
         void shutdown() override;
     private:
         std::shared_ptr<details::PresentationState> _state;

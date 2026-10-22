@@ -211,6 +211,7 @@
     <ClInclude Include="presentation_system.h" />
     <ClInclude Include="pso_factory.h" />
     <ClInclude Include="primitives.h" />
+    <ClInclude Include="recorder.h" />
     <ClInclude Include="renderer.h" />
     <ClInclude Include="render_queue.h" />
     <ClInclude Include="resource_handle.h" />

@@ -3,7 +3,7 @@
 #include "input_context.h"
 #include "devices.h"
 #include "event_bus.h"
-#include "system_base.h"
+#include "typed_system.h"
 #include "dispatch_handle.h"
 
 #include <unordered_map>
@@ -12,18 +12,22 @@
 //todo make class a sender of
 // InputEvent
 // ActionEvent++
+CS_STRICT_SYSTEMS_BEGIN
 namespace csyren::core
 {
-	class InputDispatchSystem : public System,private details::DispatchHandle
+	class InputDispatchSystem : public TypedSystem<InputDispatchSystem>, private details::DispatchHandle
 	{
 	public:
-        core::TaskDescription describe() const override;
+		static constexpr auto phase = "input";
+		// Drains the window's input queue (filled on the main thread).
+		static constexpr TaskAffinity affinity = TaskAffinity::MainThread;
 
 		void init() override;
 
 		void shutdown() override;
 
-		void execute() override;
+		// Updates the device snapshots and publishes input events on the scene bus.
+		void execute(Res<Devices> devices, Res<EventBus2> bus);
 	protected:
 		void onAttach() override;
 		void onDetach() noexcept override;
@@ -38,6 +42,7 @@ namespace csyren::core
 
 	CS_SYSTEM(InputDispatchSystem);
 }
+CS_STRICT_SYSTEMS_END
 
 
 #endif

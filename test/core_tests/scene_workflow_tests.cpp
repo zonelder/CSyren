@@ -8,6 +8,8 @@
 #include "core/meta_json.h"
 #include "core/scene_serialization_context.h"
 #include "core/system_manager.h"
+#include "core/typed_system.h"
+#include "core/scene_events_system.h"
 #include "core/time.h"
 #include "core/transform.h"
 #include "physics/physic_system.h"
@@ -244,7 +246,7 @@ void importWorkflow()
     CHECK(!session.error().empty()); CHECK(session.editorContext().instance == instance); CHECK(!session.dirty());
 }
 
-class Probe : public System
+class Probe : public TypedSystem<Probe>
 {
 public:
     int attachedCount{}, detachedCount{}, updatedCount{}, alive{}, initCount{}, shutdownCount{};
@@ -252,7 +254,7 @@ public:
     Scene* target{};
     void init() override { ++initCount; if (failInit) throw std::runtime_error("Injected system init failure"); }
     void shutdown() override { ++shutdownCount; }
-    void update() override { ++updatedCount; }
+    void execute(Exclusive) { ++updatedCount; }
 protected:
     void onAttach() override
     {
@@ -264,7 +266,7 @@ protected:
 
 void systemLifecycle()
 {
-    MemoryStorage storage; SceneSession session(storage); SystemManager manager;
+    MemoryStorage storage; SceneSession session(storage); SystemManager manager; manager.phase({"simulation"});
     auto editor = std::make_shared<Probe>();
     auto presentation = std::make_shared<Probe>();
     auto runtime = std::make_shared<Probe>();
@@ -275,7 +277,7 @@ void systemLifecycle()
     manager.add("WorkflowPresentation"); manager.add("WorkflowRuntime");
     manager.addEditor("WorkflowPresentation", EditorSystemScene::Active);
     manager.addEditor("WorkflowEditor");
-    manager.init(); manager.update();
+    manager.init(); manager.execute();
     CHECK(presentation->initCount == 1); // one instance shared by both schedules
     CHECK(manager.list().size() == 2);
     CHECK(manager.list()[0]->name == "WorkflowPresentation");
@@ -288,7 +290,7 @@ void systemLifecycle()
     runtime->fail = false;
     for (int i = 0; i < 4; ++i)
     {
-        run(session, SceneOperation::Play); manager.update();
+        run(session, SceneOperation::Play); manager.execute();
         CHECK(manager.list().size() == 3);
         CHECK(manager.list()[0]->name == "WorkflowPresentation");
         CHECK(manager.list()[1]->name == "WorkflowRuntime");
@@ -321,20 +323,20 @@ void systemsConfiguration()
     } cleanup{ appFile, editorFile };
     auto utf8 = [](const auto& file) { auto path = file.u8string(); return std::string(reinterpret_cast<const char*>(path.data()), path.size()); };
     {
-        std::ofstream(appFile) << R"({"systems":[{"class":"ConfigGame"},{"class":"ConfigShared"}]})";
+        std::ofstream(appFile) << R"({"phases":[{"name":"simulation"}],"systems":[{"class":"ConfigGame"},{"class":"ConfigShared"}]})";
         std::ofstream(editorFile) << R"({"systems":[{"class":"ConfigShared","scene":"active"},{"class":"ConfigEditor"}]})";
     }
     MemoryStorage storage; SceneSession session(storage); SystemManager manager; Serializer serializer;
     session.setBind([&](auto document, auto active, bool playing) { manager.bind(document, active, playing); });
     CHECK(serializer.loadSystems(utf8(appFile), utf8(editorFile), manager));
     CHECK(sharedCreated == 1 && shared->initCount == 1);
-    manager.update(); CHECK(game->updatedCount == 0 && editor->updatedCount == 1 && shared->updatedCount == 1);
-    manager.move(0, 1); manager.update();
+    manager.execute(); CHECK(game->updatedCount == 0 && editor->updatedCount == 1 && shared->updatedCount == 1);
+    manager.move(0, 1); manager.execute();
     CHECK(manager.configuration().editor[0].name == "ConfigEditor");
-    run(session, SceneOperation::Play); manager.update();
+    run(session, SceneOperation::Play); manager.execute();
     CHECK(manager.list()[0]->name == "ConfigGame" && manager.list()[1]->name == "ConfigShared");
     CHECK(shared->target == &session.activeContext().scene && editor->target == &session.editorScene());
-    manager.move(0, 1); manager.update();
+    manager.move(0, 1); manager.execute();
     CHECK(manager.configuration().app[0] == "ConfigShared");
     CHECK(serializer.saveSystems(utf8(appFile), utf8(editorFile), manager));
     run(session, SceneOperation::Stop);
@@ -385,13 +387,42 @@ void systemsIncludes()
     manager.unbind(); manager.shutdown();
 }
 
+// Typed probes with the plans the preview test needs; the counters show that a
+// preview neither initializes, attaches nor executes a system.
+struct PreviewMark {};
+struct PreviewCounters { int initCount{}, attachedCount{}, updatedCount{}; };
+template<class Derived> class PreviewProbe : public TypedSystem<Derived>, public PreviewCounters
+{
+public:
+    void init() override { ++initCount; }
+protected:
+    void onAttach() override { ++attachedCount; }
+};
+class PreviewProducerSystem final : public PreviewProbe<PreviewProducerSystem>
+{
+public:
+    void execute(Insert<PreviewMark>) { ++updatedCount; } // structural: has a commit task
+};
+class PreviewConsumerSystem final : public PreviewProbe<PreviewConsumerSystem>
+{
+public:
+    static constexpr auto after = "PreviewProducer";
+    void execute() { ++updatedCount; }
+};
+class PreviewPlainSystem final : public PreviewProbe<PreviewPlainSystem>
+{
+public:
+    void execute() { ++updatedCount; }
+};
+class PreviewBrokenSystem final : public PreviewProbe<PreviewBrokenSystem>
+{
+public:
+    static constexpr auto after = "MissingPreviewTask";
+    void execute() { ++updatedCount; }
+};
+
 void systemGraphPreviews()
 {
-    class PlanProbe final : public Probe {
-    public:
-        TaskDescription plan;
-        TaskDescription describe() const override { return plan; }
-    };
     class PlanBackend final : public TaskBackend {
     public:
         int compiled = 0;
@@ -399,16 +430,16 @@ void systemGraphPreviews()
         void compile(const std::vector<GraphTask>&) override { ++compiled; }
         void record(const std::string&, const std::function<void()>& invoke) override { invoke(); }
     };
-    auto producer = std::make_shared<PlanProbe>(), consumer = std::make_shared<PlanProbe>();
-    auto pinned = std::make_shared<PlanProbe>(), editorOnly = std::make_shared<PlanProbe>();
-    for (const auto& probe : {producer, consumer, pinned, editorOnly}) probe->plan.phase = "simulation";
-    producer->plan.structuralChanges = true;
-    consumer->plan.after = {"PreviewProducer"};
+    auto producer = std::make_shared<PreviewProducerSystem>();
+    auto consumer = std::make_shared<PreviewConsumerSystem>();
+    auto pinned = std::make_shared<PreviewPlainSystem>(), editorOnly = std::make_shared<PreviewPlainSystem>();
+    auto broken = std::make_shared<PreviewBrokenSystem>();
     auto& registry = core::details::SystemRegistry::instance();
     registry.registerSystem("PreviewProducer", [producer] { return producer; });
     registry.registerSystem("PreviewConsumer", [consumer] { return consumer; });
     registry.registerSystem("PreviewPinned", [pinned] { return pinned; });
     registry.registerSystem("PreviewEditorOnly", [editorOnly] { return editorOnly; });
+    registry.registerSystem("PreviewBroken", [broken] { return broken; });
     SceneInstance editor, game;
     SystemManager manager;
     manager.phase({"simulation"}); manager.resourceState<int>("ready");
@@ -445,12 +476,11 @@ void systemGraphPreviews()
     compare(gamePlan, manager.executionGraph());
     CHECK(producer->updatedCount == 1 && pinned->updatedCount == 2 && editorOnly->updatedCount == 1);
     manager.bind(editor.context(), editor.context(), false); manager.execute();
-    producer->plan.after = {"MissingPreviewTask"};
-    manager.resourceState<int>("ready"); // invalidate cached plans
+    manager.add("PreviewBroken"); // an application system that names a missing task
     CHECK(!manager.previewExecutionGraph(true).error.empty());
     CHECK(manager.previewExecutionGraph(false).error.empty());
     manager.execute(); // an invalid inactive plan must not affect the active schedule
-    producer->plan.after.clear(); manager.resourceState<int>("ready");
+    manager.remove("PreviewBroken");
     CHECK(manager.previewExecutionGraph(true).error.empty());
     manager.remove("PreviewEditorOnly");
     CHECK(manager.previewExecutionGraph(false).graph.tasks.size() == 1);
@@ -473,18 +503,19 @@ void physicsLifecycle()
     core::details::ServiceRegistry::create<physics::PhysicsEngine>();
     core::details::ServiceRegistry::create<Time>();
     MemoryStorage storage; SceneSession session(storage); SystemManager manager;
+    manager.phase({"simulation"}); manager.phase({"events", {"simulation"}});
     auto entity = session.editorScene().createEntity("falling body");
     session.editorScene().addComponent<Transform>(entity)->position = math::Vector3{ 0, 10, 0 };
     session.editorScene().addComponent<physics::BoxCollider>(entity);
     session.editorScene().addComponent<physics::RigidBody>(entity)->type = physics::BodyType::Dynamic;
     session.settle();
     session.setBind([&](auto document, auto active, bool playing) { manager.bind(document, active, playing); });
-    manager.add("PhysicsSystem"); manager.init();
+    manager.add("PhysicsSystem"); manager.add("PhysicsSyncSystem"); manager.add("SceneEventsSystem"); manager.init();
     core::details::TimeHandler clock;
     for (int i = 0; i < 8; ++i)
     {
         run(session, SceneOperation::Play);
-        clock.update(*Services::get<Time>()); manager.update();
+        clock.update(*Services::get<Time>()); manager.execute();
         auto created = session.activeContext().scene.createEntity("temporary body");
         session.activeContext().scene.addComponent<Transform>(created);
         session.activeContext().scene.addComponent<physics::BoxCollider>(created);
@@ -637,7 +668,7 @@ void editorCameraWorkerExecution()
     CHECK(!graph.dependsOn("camera", "transforms") && !graph.dependsOn("transforms", "camera"));
     std::exception_ptr failure;
     std::thread worker([&] {
-        try { core::Services::TaskScope scope(description); controller.execute(); }
+        try { core::Services::TaskScope scope(description); controller.run(); }
         catch (...) { failure = std::current_exception(); }
     });
     worker.join();
@@ -1165,6 +1196,10 @@ protected:
         // register what they need, like the components above).
         core::details::SystemRegistry::instance().registerSystem("PhysicsSystem",
             []() -> std::shared_ptr<System> { return std::make_shared<physics::PhysicsSystem>(); });
+        core::details::SystemRegistry::instance().registerSystem("PhysicsSyncSystem",
+            []() -> std::shared_ptr<System> { return std::make_shared<physics::PhysicsSyncSystem>(); });
+        core::details::SystemRegistry::instance().registerSystem("SceneEventsSystem",
+            []() -> std::shared_ptr<System> { return std::make_shared<SceneEventsSystem>(); });
     }
     void TearDown() override
     {

@@ -27,9 +27,9 @@ RenderQueue& FrameGraphBackend::queueFor(const std::string& name) const {
 void FrameGraphBackend::describe(core::TaskDescription& description) const {
     if (!description.gpuAccesses.empty()) {
         description.readResource<FrameRecording>("ready");
-        description.localResources.emplace_back(typeid(Renderer));
+        description.localResources.push_back(core::TypeKey::of<Renderer>());
         // The PSO cache is internally synchronized; calls cannot mutate resource contents.
-        description.localResources.emplace_back(typeid(PSOFactory));
+        description.localResources.push_back(core::TypeKey::of<PSOFactory>());
     }
 }
 void FrameGraphBackend::compile(const std::vector<core::GraphTask>& tasks) {
@@ -94,7 +94,7 @@ void FrameGraphBackend::prepareViews() {
         }
     }
     if (core::Services::has<GpuResources>())
-        for (const auto& [name,imported] : core::Services::get<GpuResources>()->_resources)
+        for (const auto& [name,imported] : core::Services::get<const GpuResources>()->_resources)
             resources.push_back({name,static_cast<uint32_t>(imported.final),static_cast<uint32_t>(imported.final)});
     auto expanded = expandCameraViews(_templates,branches);
     _copyOutput = renderer.presentsCameraOutput() && bool(renderer.outputView());

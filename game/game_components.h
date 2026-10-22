@@ -5,6 +5,7 @@
 #include <string>
 #include <cstdint>
 #include "core/entity.h"
+#include "core/prefab.h"
 #include "math/math.h"
 #include "dx12_graphic/resource_handle.h"
 #include "core/reflected_enum.h"
@@ -189,6 +190,10 @@ namespace csyren::game
 		float explosionImpulse = 6.0f;
 		std::string reloadClip;       // e.g. "models/rifle.glb#anim:reload"; its length overrides reloadTime
 		LayerMask hitLayers = layers::world(); // what hitscan rays / explosions hit
+		// Spawned copies (empty: none). The projectile gets the weapon's tuning above.
+		core::PrefabRef projectilePrefab{ "prefabs/grenade.prefab" };
+		core::PrefabRef impactPrefab{ "prefabs/impact.prefab" };
+		core::PrefabRef muzzleFlashPrefab{ "prefabs/muzzle_flash.prefab" };
 		static void describe();
 	};
 
@@ -218,6 +223,8 @@ namespace csyren::game
 		bool exploded = false;
 		LayerMask hitLayers = layers::world(); // copied from the weapon
 		core::Entity::ID owner = core::Entity::invalidID; // not reflected
+		core::PrefabRef trail{ "prefabs/projectile_trail.prefab" };   // spawned along the flight (empty: none)
+		core::PrefabRef explosion{ "prefabs/explosion.prefab" };      // spawned on detonation (empty: none)
 		static void describe();
 	};
 

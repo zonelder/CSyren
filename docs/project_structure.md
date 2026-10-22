@@ -69,7 +69,7 @@ namespace my_game
     struct Health { float value = 100.0f; static void describe(); };
     CS_COMPONENT(Health);
 
-    class RegenSystem : public csyren::core::System { /* ... */ };
+    class RegenSystem : public csyren::core::TypedSystem<RegenSystem> { /* ... */ };
     CS_SYSTEM(RegenSystem);
 
     struct Score { int value = 0; };
@@ -123,7 +123,7 @@ The engine pipeline is split into pieces under `assets/pipelines/`:
 | file | contents |
 | --- | --- |
 | `begin.systems` | frame phases + `InputDispatchSystem` |
-| `simulation.systems` | `PhysicsSystem`, `SpringJoinSystem`, `AnimationSystem` |
+| `simulation.systems` | `PhysicsSystem`, `PhysicsSyncSystem`, `SpringJoinSystem`, `AnimationSystem` |
 | `render.systems` | `RenderEnvironmentSystem` … `PresentationSystem`, `SceneEventsSystem` |
 | `editor.systems` | the complete editor list |
 
@@ -144,7 +144,5 @@ A project's `app.systems`:
 `game/` (the movement prototype) still lives in the engine repository and is
 compiled into `CSyren.vcxproj`. Its systems use `REGISTER_SYSTEM`; its components
 and services are listed as markers in `game_registration.h`, which
-`CSyren.vcxproj` adds to the scan roots. `mesh_filter.h`, `animation.h`,
-`editor_overlays.h` and `editor_viewport_state.h` in the repository root forward
-to `source/` for the `"../x.h"` includes in `game/`. All of these go away when
-`game/` moves to its own project with CS_* markers.
+`CSyren.vcxproj` adds to the scan roots. Both go away when `game/` moves to its
+own project with CS_* markers.

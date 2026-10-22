@@ -117,7 +117,10 @@ namespace csyren::render
         std::shared_ptr<CameraRenderTarget> primaryCameraTarget() const { return _primaryView ? _primaryView->target : nullptr; }
         void attachCameraScene(core::Scene& scene) { _cameraViews.attach(scene); }
         void detachCameraScene() { _views.clear(); _primaryView.reset(); _cameraViews.detach(); }
-        void prepareCameraViews(core::Scene& scene,UINT width,UINT height);
+        // Cameras with a Transform; the world matrices are computed for every
+        // Transform (the query's select<Transform>()).
+        using CameraQuery = core::Select<core::Camera, core::Transform>;
+        void prepareCameraViews(const CameraQuery& cameras,float time,UINT width,UINT height);
         const core::WorldTransforms& worldTransforms() const { return _worldTransforms; }
         const auto& cameraViews() const { return _views; }
         const auto& outputView() const { return _primaryView; }

@@ -5,17 +5,16 @@
 #include <algorithm>
 #include <cstdio>
 #include <string>
-#include "core/system_base.h"
-#include "core/services.h"
-#include "core/scene.h"
+#include "core/typed_system.h"
 #include "physics/character_controller.h"
 #include "imGui/imgui.h"
 
 #include "game_components.h"
 #include "player_input.h"
-#include "../editor_overlays.h"
-#include "../editor_viewport_state.h"
+#include "editor_overlays.h"
+#include "editor_viewport_state.h"
 
+CS_STRICT_SYSTEMS_BEGIN
 namespace csyren::game
 {
 	struct GameHud
@@ -36,16 +35,11 @@ namespace csyren::game
 		bool sprinting = false;
 	};
 
-	class GameHudSystem : public core::System
+	class GameHudSystem : public core::TypedSystem<GameHudSystem>
 	{
 	public:
-		core::TaskDescription describe() const override
-		{
-			core::TaskDescription d; d.phase = "simulation"; d.after = { "LifetimeSystem" };
-			d.read<PlayerTag>().read<PilotState>().read<WeaponInventory>().read<physics::CharacterController>().read<Health>().read<Bot>();
-			d.readResource<PlayerInput>().writeResource<GameHud>();
-			return d;
-		}
+		static constexpr auto phase = "simulation";
+		static constexpr auto after = "LifetimeSystem";
 
 		void init() override
 		{
@@ -57,32 +51,33 @@ namespace csyren::game
 			if (core::Services::has<editor::EditorOverlays>()) core::Services::get<editor::EditorOverlays>()->remove("GameHud");
 		}
 
-		void execute() override
+		void execute(core::Select<PilotState>::Where<PlayerTag> players,
+			core::Select<physics::CharacterController, WeaponInventory, Health> playerDetails,
+			core::Select<Bot, Health> bots,
+			core::Res<GameHud> hudService, core::Res<const PlayerInput> input)
 		{
-			auto& hud = *core::Services::get<GameHud>();
-			const auto& in = *core::Services::get<const PlayerInput>();
-			auto& scene = this->scene();
+			auto& hud = *hudService;
 			hud.active = false;
-			hud.captured = in.captured;
-			for (auto [ent, tag, state] : scene.view<const PlayerTag, const PilotState>())
+			hud.captured = input->captured;
+			for (auto [ent, state] : players)
 			{
 				hud.active = true;
 				hud.speed = state.speed; hud.verticalSpeed = state.verticalSpeed; hud.move = state.move;
 				hud.doubleJump = state.doubleJumpReady; hud.crouching = state.crouching; hud.sprinting = state.sprinting;
 				hud.wallSide = state.move == PilotMove::WallRun ? state.wallSide : 0; hud.wallTime = state.wallTime;
-				if (auto cc = scene.getComponent<const physics::CharacterController>(ent)) hud.grounded = cc->grounded;
-				if (auto inventory = scene.getComponent<const WeaponInventory>(ent))
+				if (auto cc = playerDetails.get<physics::CharacterController>(ent)) hud.grounded = cc->grounded;
+				if (auto inventory = playerDetails.get<WeaponInventory>(ent))
 				{
 					const auto& weapon = inventory->active == 0 ? inventory->primary : inventory->secondary;
 					hud.weapon = weapon.name; hud.magazine = weapon.magazine;
 					hud.ammo = inventory->active == 0 ? inventory->ammoPrimary : inventory->ammoSecondary;
 					hud.reloading = inventory->reloading; hud.hitMarker = inventory->hitMarker;
 				}
-				if (auto health = scene.getComponent<const Health>(ent)) hud.health = health->current;
+				if (auto health = playerDetails.get<Health>(ent)) hud.health = health->current;
 				break;
 			}
 			hud.botsAlive = hud.botsTotal = 0;
-			for (auto [ent, bot, health] : scene.view<const Bot, const Health>()) { ++hud.botsTotal; if (!health.dead) ++hud.botsAlive; }
+			for (auto [ent, bot, health] : bots) { ++hud.botsTotal; if (!health.dead) ++hud.botsAlive; }
 		}
 
 	protected:
@@ -141,3 +136,4 @@ namespace csyren::game
 
 	REGISTER_SYSTEM(GameHudSystem)
 }
+CS_STRICT_SYSTEMS_END

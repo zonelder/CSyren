@@ -1,0 +1,50 @@
+{
+    "$version": 2,
+    "entities": [
+        {
+            "id": 0,
+            "name": "trail",
+            "components": {
+                "Transform": {
+                    "position": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        0.11,
+                        0.11,
+                        0.11
+                    ]
+                },
+                "MeshFilter": {
+                    "mesh": 0
+                },
+                "MeshRenderer": {
+                    "material": 1
+                },
+                "Lifetime": {
+                    "remaining": 0.35
+                }
+            }
+        }
+    ],
+    "resources": [
+        {
+            "id": 0,
+            "path": "__primitive_sphere__",
+            "type": "mesh"
+        },
+        {
+            "id": 1,
+            "path": "__game_mat_projectile__",
+            "type": "material"
+        }
+    ]
+}

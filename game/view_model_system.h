@@ -5,9 +5,7 @@
 // weapon models. Publishes the muzzle position for the weapon code.
 #include <algorithm>
 #include <cmath>
-#include "core/system_base.h"
-#include "core/services.h"
-#include "core/scene.h"
+#include "core/typed_system.h"
 #include "core/transform.h"
 #include "core/transform_hierarchy.h"
 #include "core/time.h"
@@ -18,43 +16,40 @@
 #include "game_components.h"
 #include "player_input.h"
 
+CS_STRICT_SYSTEMS_BEGIN
 namespace csyren::game
 {
-	class ViewModelSystem : public core::System
+	class ViewModelSystem : public core::TypedSystem<ViewModelSystem>
 	{
 	public:
-		core::TaskDescription describe() const override
-		{
-			core::TaskDescription d; d.phase = "simulation"; d.after = { "CameraRigSystem" };
-			d.write<ViewModel>().write<ViewModelSlot>().write<core::Transform>()
-				.read<PlayerTag>().read<PilotState>().read<PilotConfig>().read<WeaponInventory>().read<physics::CharacterController>();
-			d.readResource<PlayerInput>().readResource<core::Time>().readResource<core::SceneEntities>().writeResource<ViewModelState>();
-			return d;
-		}
+		static constexpr auto phase = "simulation";
+		static constexpr auto after = "CameraRigSystem";
 
-		void execute() override
+		void execute(core::Select<PilotState, WeaponInventory, PilotConfig>::Where<PlayerTag> players,
+			core::Select<physics::CharacterController> controllers,
+			core::Update<ViewModel, core::Transform> viewModels,
+			core::Update<ViewModelSlot, core::Transform> slots,
+			core::Res<const PlayerInput> input, core::Res<const core::Time> time, core::Res<ViewModelState> viewModelState)
 		{
 			using namespace math;
-			const auto& in = *core::Services::get<const PlayerInput>();
-			const auto* time = core::Services::get<const core::Time>();
-			auto& state = *core::Services::get<ViewModelState>();
+			const auto& in = *input;
+			auto& state = *viewModelState;
 			const float dt = std::clamp(time->deltaTime(), 0.0f, 0.05f);
-			auto& scene = this->scene();
 
 			// Player state the view model reacts to.
 			const WeaponInventory* inventory = nullptr; const PilotState* pilot = nullptr; const PilotConfig* config = nullptr;
 			const physics::CharacterController* controller = nullptr;
-			for (auto [ent, tag, pilotState, inv, cfg] : scene.view<const PlayerTag, const PilotState, const WeaponInventory, const PilotConfig>())
+			for (auto [ent, pilotState, inv, cfg] : players)
 			{
 				inventory = &inv; pilot = &pilotState; config = &cfg;
-				if (auto cc = scene.getComponent<const physics::CharacterController>(ent)) controller = cc.get();
+				if (auto cc = controllers.get<physics::CharacterController>(ent)) controller = cc.get();
 				break;
 			}
 			state.hasMuzzle = false; state.switching = false; state.activeSlotEntity = core::Entity::invalidID;
 			if (!inventory || !pilot || !config) return;
 
 			int shownSlot = inventory->active;
-			for (auto [ent, vm, tr] : scene.view<ViewModel, core::Transform>())
+			for (auto [ent, vm, tr] : viewModels)
 			{
 				// Weapon switch: drop, swap the visible model halfway, raise.
 				if (vm.shownSlot < 0) vm.shownSlot = inventory->active;
@@ -110,33 +105,33 @@ namespace csyren::game
 				if (!tr.position.exactEqual(position) || !tr.rotation.exactEqual(rotation))
 				{
 					tr.position = position; tr.rotation = rotation;
-					scene.patch<core::Transform>(ent);
+					viewModels.patch<core::Transform>(ent);
 				}
 				break; // one view model
 			}
 
 			// Show the active slot only; find its muzzle.
-			const uint64_t revision = scene.hierarchyRevision();
-			for (auto [ent, slot, tr] : scene.view<ViewModelSlot, core::Transform>())
+			const uint64_t revision = slots.hierarchyRevision();
+			for (auto [ent, slot, tr] : slots)
 			{
 				if (!slot.baseScaleCaptured) { slot.baseScale = tr.scale; slot.baseScaleCaptured = true; }
 				const bool visible = slot.slot == shownSlot;
 				const Vector3 scale = visible ? slot.baseScale : Vector3::zero;
-				if (!tr.scale.exactEqual(scale)) { tr.scale = scale; scene.patch<core::Transform>(ent); }
+				if (!tr.scale.exactEqual(scale)) { tr.scale = scale; slots.patch<core::Transform>(ent); }
 				if (!visible) continue;
 				state.activeSlotEntity = ent;
 				if (slot.muzzle == core::Entity::invalidID || slot.muzzleRevision != revision)
 				{
 					slot.muzzle = core::Entity::invalidID; slot.muzzleRevision = revision;
-					const auto& entities = scene.entities();
+					const auto& entities = slots.entities();
 					cstdmf::tree::preorder(ent, [&](auto id) -> const auto& { return entities.try_get(id)->children; }, [&](auto id) {
 						if (slot.muzzle == core::Entity::invalidID)
 							if (const auto* entity = entities.try_get(id); entity && entity->name == slot.muzzleNode) slot.muzzle = id;
 					});
 				}
-				if (slot.muzzle != core::Entity::invalidID && scene.entities().contains(slot.muzzle))
+				if (slot.muzzle != core::Entity::invalidID && slots.entities().contains(slot.muzzle))
 				{
-					const auto world = core::worldMatrix(scene, slot.muzzle);
+					const auto world = core::worldMatrix(slots, slot.muzzle);
 					state.hasMuzzle = true;
 					state.muzzlePosition = world.translation();
 					state.muzzleForward = world.forward();
@@ -147,3 +142,4 @@ namespace csyren::game
 
 	REGISTER_SYSTEM(ViewModelSystem)
 }
+CS_STRICT_SYSTEMS_END

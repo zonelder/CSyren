@@ -2,9 +2,8 @@
 // Gathers the scene's light components into the SceneLights snapshot and the
 // renderer's RenderEnvironment before the camera views are prepared.
 #include <algorithm>
-#include "core/system_base.h"
-#include "core/services.h"
-#include "core/scene.h"
+#include <array>
+#include "core/typed_system.h"
 #include "core/transform.h"
 #include "core/transform_hierarchy.h"
 #include "dx12_graphic/renderer.h"
@@ -12,35 +11,32 @@
 #include "dx12_graphic/lighting/scene_lights.h"
 #include "core/registration.h"
 
+CS_STRICT_SYSTEMS_BEGIN
 namespace csyren::render
 {
-    class LightCollectSystem : public core::System
+    class LightCollectSystem : public core::TypedSystem<LightCollectSystem>
     {
     public:
-        core::TaskDescription describe() const override
-        {
-            core::TaskDescription d; d.phase = "acquire"; d.before = { "FrameAcquireSystem" };
-            d.affinity = core::TaskAffinity::MainThread;
-            d.read<core::Transform>().read<DirectionalLight>().read<PointLight>().read<LightingSettings>();
-            d.readResource<core::SceneEntities>();
-            d.writeResource<Renderer>().writeResource<SceneLights>();
-            return d;
-        }
+        static constexpr auto phase = "acquire";
+        static constexpr std::array before{ "FrameAcquireSystem" };
+        static constexpr core::TaskAffinity affinity = core::TaskAffinity::MainThread;
 
-        void execute() override
+        void execute(core::Select<LightingSettings> lightingSettings,
+            core::Select<core::Transform, DirectionalLight> directionalLights,
+            core::Select<core::Transform, PointLight> pointLights,
+            core::Res<SceneLights> sceneLights, core::Res<Renderer> output)
         {
             using namespace DirectX;
-            auto& scene = this->scene();
-            auto& lights = *core::Services::get<SceneLights>();
-            auto& renderer = *core::Services::get<Renderer>();
-            _worlds.update(scene);
+            auto& lights = *sceneLights;
+            auto& renderer = *output; // before any change: a missing service leaves lights untouched
+            _worlds.update(directionalLights); // any query that reads Transform
 
             lights.lights.clear();
             lights.directionalCount = 0; lights.pointCount = 0;
             RenderEnvironment environment;
 
             // Settings: first component wins.
-            for (auto [id, settings] : scene.view<const LightingSettings>())
+            for (auto [id, settings] : lightingSettings)
             {
                 XMFLOAT4 ambient; XMStoreFloat4(&ambient, settings.ambientColor);
                 environment.ambientColor = { ambient.x * settings.ambientIntensity, ambient.y * settings.ambientIntensity, ambient.z * settings.ambientIntensity, 0.0f };
@@ -50,7 +46,7 @@ namespace csyren::render
                 break;
             }
 
-            for (auto [id, transform, light] : scene.view<const core::Transform, const DirectionalLight>())
+            for (auto [id, transform, light] : directionalLights)
             {
                 if (!light.enabled || lights.directionalCount >= SceneLights::MaxDirectional) continue;
                 const auto& world = _worlds.matrix(id);
@@ -71,7 +67,7 @@ namespace csyren::render
                 ++lights.directionalCount;
             }
 
-            for (auto [id, transform, light] : scene.view<const core::Transform, const PointLight>())
+            for (auto [id, transform, light] : pointLights)
             {
                 if (!light.enabled || light.radius <= 0.0f || lights.lights.size() >= SceneLights::MaxLights) continue;
                 const auto position = _worlds.matrix(id).translation();
@@ -96,3 +92,4 @@ namespace csyren::render
     };
     CS_SYSTEM(LightCollectSystem);
 }
+CS_STRICT_SYSTEMS_END

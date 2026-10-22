@@ -83,22 +83,16 @@ namespace csyren::game
 		}
 	}
 
-	// Registers the prototype's resources and collision layers before any scene is loaded.
-	class GameSetupSystem : public core::System
+	// Registers the prototype's resources and collision layers before any scene
+	// is loaded (init only).
+	class GameSetupSystem : public core::OnceSystem
 	{
 	public:
-		core::TaskDescription describe() const override
-		{
-			core::TaskDescription d; d.phase = "scene"; d.affinity = core::TaskAffinity::MainThread;
-			d.dynamicResources = true;
-			return d;
-		}
 		void init() override
 		{
 			materials::registerAll();
 			layers::registerAll(*core::Services::get<physics::PhysicsLayers>());
 		}
-		void execute() override {}
 	};
 	REGISTER_SYSTEM(GameSetupSystem)
 }

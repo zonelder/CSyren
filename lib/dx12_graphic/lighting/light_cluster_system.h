@@ -3,38 +3,38 @@
 // X x Y screen tiles and Z exponential depth slices (ClusterGridLayout); each
 // froxel gets the list of point lights whose sphere touches its view-space AABB.
 // The light pass (deferred) and the forward pass read the same lists.
-#include "core/system_base.h"
-#include "core/services.h"
+#include <array>
+#include "core/typed_system.h"
 #include "dx12_graphic/renderer.h"
+#include "dx12_graphic/recorder.h"
 #include "dx12_graphic/resource_manager.h"
 #include "dx12_graphic/compute_shader.h"
 #include "dx12_graphic/camera_render_target.h"
 #include "dx12_graphic/lighting/scene_lights.h"
 #include "core/registration.h"
 
+CS_STRICT_SYSTEMS_BEGIN
 namespace csyren::render
 {
-    class LightClusterSystem : public core::System
+    class LightClusterSystem : public core::TypedSystem<LightClusterSystem>
     {
     public:
         static constexpr const char* ShaderPath = "shaders/light_cluster.coshader";
 
-        core::TaskDescription describe() const override
-        {
-            core::TaskDescription d; d.phase = "render";
-            d.after = { "MeshRenderSystem" }; d.before = { "LightPassSystem" };
-            d.gpuScope = core::GpuTaskScope::View;
-            d.readResource<ResourceManager>().readResource<SceneLights>();
-            d.gpu("scene.clusterGrid", D3D12_RESOURCE_STATE_UNORDERED_ACCESS, core::AccessMode::Write);
-            d.gpu("scene.clusterIndices", D3D12_RESOURCE_STATE_UNORDERED_ACCESS, core::AccessMode::Write);
-            return d;
-        }
+        static constexpr auto phase = "render";
+        static constexpr std::array after{ "MeshRenderSystem" };
+        static constexpr std::array before{ "LightPassSystem" };
+        static constexpr core::GpuTaskScope gpuScope = core::GpuTaskScope::View;
+        static constexpr std::array gpu{
+            core::GpuUse{ "scene.clusterGrid", D3D12_RESOURCE_STATE_UNORDERED_ACCESS, core::AccessMode::Write },
+            core::GpuUse{ "scene.clusterIndices", D3D12_RESOURCE_STATE_UNORDERED_ACCESS, core::AccessMode::Write },
+        };
 
-        void execute() override
+        void execute(Recorder recorder, core::Res<const ResourceManager> resourceManager, core::Res<const SceneLights> sceneLights)
         {
-            auto& renderer = *core::Services::get<Renderer>();
-            auto& resources = *core::Services::get<const ResourceManager>();
-            const auto& lights = *core::Services::get<const SceneLights>();
+            auto& renderer = *recorder;
+            auto& resources = *resourceManager;
+            const auto& lights = *sceneLights;
             const auto* target = renderer.currentTarget();
             if (!target) return;
             const auto& engine = *renderer.getEngineVariableBuffer();
@@ -83,3 +83,4 @@ namespace csyren::render
     };
     CS_SYSTEM(LightClusterSystem);
 }
+CS_STRICT_SYSTEMS_END

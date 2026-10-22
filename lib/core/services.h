@@ -67,14 +67,27 @@ namespace csyren::core
             return _services.find(reflection::ServiceFamily::getID<std::remove_const_t<T>>()) != _services.end();
         }
 
+        // Like get(), but returns nullptr for a service that is not registered.
+        template<typename T>
+        static T* find()
+        {
+            requireAccess<T>();
+            if constexpr (std::is_same_v<std::remove_const_t<T>, Scene>) { if (_scene) return _scene; }
+            if constexpr (std::is_same_v<std::remove_const_t<T>, EventBus2>) { if (_bus) return _bus; }
+            auto it = _services.find(reflection::ServiceFamily::getID<std::remove_const_t<T>>());
+            return it == _services.end() ? nullptr : reinterpret_cast<T*>(it->second);
+        }
+
     private:
         template<class T> static void requireAccess() {
+#if CSYREN_ACCESS_VALIDATION
             if (!_activeTask || _activeTask->dynamicResources || std::is_same_v<std::remove_const_t<T>, Scene>) return;
-            const auto type = std::type_index(typeid(std::remove_const_t<T>));
+            const auto type = TypeKey::of<T>();
             if (std::find(_activeTask->localResources.begin(), _activeTask->localResources.end(), type) != _activeTask->localResources.end()) return;
             for (const auto& access : _activeTask->accesses)
                 if (!access.component && access.type == type && (std::is_const_v<T> || access.mode == AccessMode::Write)) return;
-            throw std::logic_error("Undeclared resource access in system: " + std::string(type.name()));
+            throw std::logic_error("Undeclared resource access in system: " + std::string(type.name));
+#endif
         }
         inline static thread_local Scene* _scene = nullptr;
         inline static thread_local EventBus2* _bus = nullptr;

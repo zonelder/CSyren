@@ -3,33 +3,29 @@
 // mouse look. The cursor is captured by clicking the game view and released
 // with Escape, when the window loses focus or when the system detaches.
 #include "cstdmf/window_clean.h"
-#include "core/system_base.h"
-#include "core/services.h"
+#include "core/typed_system.h"
 #include "core/devices.h"
 #include "core/window.h"
 #include "core/input_enums.h"
 
 #include "player_input.h"
-#include "../editor_viewport_state.h"
+#include "editor_viewport_state.h"
 
+CS_STRICT_SYSTEMS_BEGIN
 namespace csyren::game
 {
-	class PlayerInputSystem : public core::System
+	class PlayerInputSystem : public core::TypedSystem<PlayerInputSystem>
 	{
 	public:
-		core::TaskDescription describe() const override
-		{
-			core::TaskDescription d; d.phase = "input"; d.affinity = core::TaskAffinity::MainThread;
-			d.after = { "InputDispatchSystem" };
-			d.dynamicResources = true;
-			return d;
-		}
+		static constexpr auto phase = "input";
+		static constexpr auto after = "InputDispatchSystem";
+		static constexpr auto affinity = core::TaskAffinity::MainThread; // Win32 cursor calls
 
-		void execute() override
+		// The editor viewport service is absent in a standalone host.
+		void execute(core::Res<PlayerInput> input, core::Res<const core::Devices> devices,
+			core::Res<const core::Window> window, core::Res<const editor::EditorViewportState> viewport)
 		{
-			auto& in = *core::Services::get<PlayerInput>();
-			const auto* devices = core::Services::get<const core::Devices>();
-			const auto* window = core::Services::get<const core::Window>();
+			auto& in = *input;
 			const auto& keyboard = devices->keyboard();
 			const auto& mouse = devices->mouse();
 			const HWND hwnd = window->hwnd();
@@ -39,9 +35,9 @@ namespace csyren::game
 			POINT cursor{}; GetCursorPos(&cursor); ScreenToClient(hwnd, &cursor);
 			float centerX = float(client.right - client.left) * 0.5f, centerY = float(client.bottom - client.top) * 0.5f;
 			bool overGame = cursor.x >= client.left && cursor.x < client.right && cursor.y >= client.top && cursor.y < client.bottom;
-			if (core::Services::has<editor::EditorViewportState>())
+			if (viewport)
 			{
-				const auto& view = *core::Services::get<const editor::EditorViewportState>();
+				const auto& view = *viewport;
 				if (view.viewportInput)
 				{
 					const auto& game = view.gameViewport;
@@ -135,3 +131,4 @@ namespace csyren::game
 
 	REGISTER_SYSTEM(PlayerInputSystem)
 }
+CS_STRICT_SYSTEMS_END

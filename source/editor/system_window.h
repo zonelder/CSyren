@@ -3,6 +3,7 @@
 #include "core/services.h"
 #include "core/system_manager.h"
 #include <cmath>
+#include <vector>
 
 namespace csyren::editor
 {
@@ -38,6 +39,15 @@ namespace csyren::editor
                     ImGui::BulletText("%s (%zu tasks)", phase.name.c_str(), count);
                     for (const auto& name : phase.after) ImGui::Text("    after: %s", name.c_str());
                     for (const auto& name : phase.before) ImGui::Text("    before: %s", name.c_str());
+                }
+            }
+            if (_graphMode == 0) {
+                std::vector<const char*> onceSystems;
+                for (const auto* entry : systems->list())
+                    if (entry && !entry->system->scheduled()) onceSystems.push_back(entry->name.c_str());
+                if (!onceSystems.empty() && ImGui::CollapsingHeader("Init-only systems")) {
+                    ImGui::TextDisabled("OnceSystem: lifecycle only, not part of the frame graph.");
+                    for (const char* name : onceSystems) ImGui::BulletText("%s", name);
                 }
             }
             if (graph.phases.empty()) {
@@ -152,8 +162,11 @@ namespace csyren::editor
                 if (parents[i].empty()) ImGui::TextUnformatted("  Root task");
                 for (size_t parent : parents[i]) ImGui::BulletText("%s", graph.tasks[parent].task.name.c_str());
                 for (const auto& access : d.accesses)
-                    ImGui::BulletText("%s %s: %s [%s -> %s]", access.mode == core::AccessMode::Write ? "Write" : "Read",
-                        access.component ? "component" : "resource", access.type.name(), access.requiredState.c_str(), access.resultingState.c_str());
+                    ImGui::BulletText("%s %s: %.*s [%s -> %s]", access.mode == core::AccessMode::Write ? "Write" : "Read",
+                        access.component ? "component" : "resource", int(access.type.name.size()), access.type.name.data(),
+                        access.requiredState.c_str(), access.resultingState.c_str());
+                for (const auto& type : d.inserts) ImGui::BulletText("Insert component: %.*s", int(type.name.size()), type.name.data());
+                for (const auto& type : d.filters) ImGui::BulletText("Filter component: %.*s", int(type.name.size()), type.name.data());
                 for (const auto& access : d.gpuAccesses)
                     ImGui::BulletText("GPU %s: %s | queue: %s | state: %u", access.mode == core::AccessMode::Write ? "Write" : "Read",
                         access.resource.c_str(), d.gpuQueue.c_str(), access.requiredState);

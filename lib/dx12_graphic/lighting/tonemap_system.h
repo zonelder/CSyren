@@ -1,36 +1,35 @@
 #pragma once
 // HDR -> LDR: exposure, ACES tone curve and gamma encoding into scene.color.
 // Debug views (LightingSettings::debugView) pass through untouched.
-#include "core/system_base.h"
-#include "core/services.h"
+#include <array>
+#include "core/typed_system.h"
 #include "dx12_graphic/renderer.h"
+#include "dx12_graphic/recorder.h"
 #include "dx12_graphic/resource_manager.h"
 #include "dx12_graphic/camera_render_target.h"
 #include "dx12_graphic/lighting/fullscreen_pass.h"
 #include "core/registration.h"
 
+CS_STRICT_SYSTEMS_BEGIN
 namespace csyren::render
 {
-    class TonemapSystem : public core::System
+    class TonemapSystem : public core::TypedSystem<TonemapSystem>
     {
     public:
         static constexpr const char* ShaderPath = "shaders/tonemap.shader";
 
-        core::TaskDescription describe() const override
-        {
-            core::TaskDescription d; d.phase = "render";
-            d.after = { "ForwardRenderSystem" };
-            d.gpuScope = core::GpuTaskScope::View;
-            d.readResource<ResourceManager>();
-            d.gpu("scene.hdr", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, core::AccessMode::Read);
-            d.gpu("scene.color", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
-            return d;
-        }
+        static constexpr auto phase = "render";
+        static constexpr std::array after{ "ForwardRenderSystem" };
+        static constexpr core::GpuTaskScope gpuScope = core::GpuTaskScope::View;
+        static constexpr std::array gpu{
+            core::GpuUse{ "scene.hdr", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, core::AccessMode::Read },
+            core::GpuUse{ "scene.color", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write },
+        };
 
-        void execute() override
+        void execute(Recorder recorder, core::Res<const ResourceManager> resourceManager)
         {
-            auto& renderer = *core::Services::get<Renderer>();
-            auto& resources = *core::Services::get<const ResourceManager>();
+            auto& renderer = *recorder;
+            auto& resources = *resourceManager;
             const auto* target = renderer.currentTarget();
             if (!target) return;
             const auto* shader = _pass.bind(renderer, resources);
@@ -45,3 +44,4 @@ namespace csyren::render
     };
     CS_SYSTEM(TonemapSystem);
 }
+CS_STRICT_SYSTEMS_END

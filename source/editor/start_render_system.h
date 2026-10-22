@@ -2,7 +2,7 @@
 
 #include "core/event_bus.h"
 #include "core/services.h"
-#include "core/system_base.h"
+#include "core/typed_system.h"
 #include "core/scene.h"
 
 #include "core/transform.h"
@@ -12,7 +12,9 @@
 #include "core/time.h"
 #include "core/camera.h"
 #include "dx12_graphic/renderer.h"
+#include "dx12_graphic/recorder.h"
 #include "math/matrix4x4.h"
+#include <array>
 
 #include "imGui/imgui.h"
 #include "imGui/imgui_internal.h"
@@ -35,17 +37,19 @@ extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam
 
 namespace csyren::editor
 {
-	class EditorSystem : public core::System
+	// The editor UI. Exclusive: the ImGui editors touch types known only at run
+	// time; the windows reach the world themselves (Services, scene session), so
+	// the Exclusive parameter is declaration only (unnamed).
+	class EditorSystem : public core::TypedSystem<EditorSystem>
 	{
 	public:
-        core::TaskDescription describe() const override {
-            core::TaskDescription d; d.phase = "render"; d.affinity = core::TaskAffinity::MainThread;
-            d.exclusiveScene = true; d.dynamicResources = true; d.structuralChanges = true;
-            d.after = {"TonemapSystem"}; // scene.color is final after the tonemap pass
-            d.writeResource<render::ResourceManager>();
-            d.gpu("frame.color", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
-            d.gpu("scene.color", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, core::AccessMode::Read); return d;
-        }
+        static constexpr auto phase = "render";
+        static constexpr core::TaskAffinity affinity = core::TaskAffinity::MainThread;
+        static constexpr auto after = "TonemapSystem"; // scene.color is final after the tonemap pass
+        static constexpr std::array gpu{
+            core::GpuUse{ "frame.color", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write },
+            core::GpuUse{ "scene.color", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, core::AccessMode::Read },
+        };
 
 
 		void init() override
@@ -68,8 +72,9 @@ namespace csyren::editor
 			auto* renderer = core::Services::get<render::Renderer>();
             auto& view = *core::Services::get<EditorViewportState>();
             view.viewportInput = true;
-            _cameraView = renderer->addCameraView([] {
-                auto* state = core::Services::get<EditorViewportState>();
+            // The source runs inside FrameAcquireSystem (Renderer::prepareCameraViews):
+            // capture the state now instead of looking the service up there.
+            _cameraView = renderer->addCameraView([state = &view] {
                 return std::pair<const core::Camera*,const core::Transform*>{&state->camera,&state->transform};
             });
             _viewport.cameraView(_cameraView);
@@ -144,11 +149,11 @@ namespace csyren::editor
 			_windows.push_back(std::make_unique<StatisticWindow>());
 			ImGui_ImplDX12_Init(&init_info);
 		}
-		void execute() override
+		void execute(core::Exclusive, render::Recorder renderer)
 		{
             if (IsIconic(core::Services::get<core::Window>()->hwnd())) {
                 const float background[]{.08f,.08f,.09f,1};
-                core::Services::get<render::Renderer>()->clearColor(background);
+                renderer->clearColor(background);
                 auto& view = *core::Services::get<EditorViewportState>();
                 view.viewport = {}; view.gameViewport = {}; view.navigation = {};
                 return;
@@ -157,7 +162,7 @@ namespace csyren::editor
 			ImGui_ImplWin32_NewFrame();
 			ImGui::NewFrame();
             const float background[]{.08f,.08f,.09f,1};
-            core::Services::get<render::Renderer>()->clearColor(background);
+            renderer->clearColor(background);
             synchronizeSelection();
             if (!_viewport.manipulating()) _workflow->shortcuts();
 
@@ -192,7 +197,6 @@ namespace csyren::editor
             _gameViewport.render(&_gameOpen,ViewportCamera::Game);
             if (core::Services::has<EditorOverlays>()) core::Services::get<EditorOverlays>()->draw();
             if (!ImGui::IsAnyItemActive() && !_viewport.manipulating()) core::Services::get<SceneSession>()->finishEdit();
-			auto* renderer = core::Services::get<render::Renderer>();
 			ID3D12GraphicsCommandList* cmdList = renderer->commandList();
 
 			ImGui::Render();

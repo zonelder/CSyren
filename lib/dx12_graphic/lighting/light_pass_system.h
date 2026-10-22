@@ -2,43 +2,42 @@
 // Deferred light pass: fullscreen triangle reading the GBuffer and depth,
 // writing linear HDR radiance to scene.hdr (sky = camera background where
 // depth is cleared). Point lights come from the cluster lists.
-#include "core/system_base.h"
-#include "core/services.h"
+#include <array>
+#include "core/typed_system.h"
 #include "dx12_graphic/renderer.h"
+#include "dx12_graphic/recorder.h"
 #include "dx12_graphic/resource_manager.h"
 #include "dx12_graphic/camera_render_target.h"
 #include "dx12_graphic/lighting/scene_lights.h"
 #include "dx12_graphic/lighting/fullscreen_pass.h"
 #include "core/registration.h"
 
+CS_STRICT_SYSTEMS_BEGIN
 namespace csyren::render
 {
-    class LightPassSystem : public core::System
+    class LightPassSystem : public core::TypedSystem<LightPassSystem>
     {
     public:
         static constexpr const char* ShaderPath = "shaders/light_pass.shader";
 
-        core::TaskDescription describe() const override
-        {
-            core::TaskDescription d; d.phase = "render";
-            d.after = { "MeshRenderSystem", "LightClusterSystem" };
-            d.gpuScope = core::GpuTaskScope::View;
-            d.readResource<ResourceManager>().readResource<SceneLights>();
-            d.gpu("scene.gbuffer0", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, core::AccessMode::Read);
-            d.gpu("scene.gbuffer1", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, core::AccessMode::Read);
-            d.gpu("scene.gbuffer2", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, core::AccessMode::Read);
-            d.gpu("scene.depth", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, core::AccessMode::Read);
-            d.gpu("scene.clusterGrid", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, core::AccessMode::Read);
-            d.gpu("scene.clusterIndices", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, core::AccessMode::Read);
-            d.gpu("scene.hdr", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
-            return d;
-        }
+        static constexpr auto phase = "render";
+        static constexpr std::array after{ "MeshRenderSystem", "LightClusterSystem" };
+        static constexpr core::GpuTaskScope gpuScope = core::GpuTaskScope::View;
+        static constexpr std::array gpu{
+            core::GpuUse{ "scene.gbuffer0", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, core::AccessMode::Read },
+            core::GpuUse{ "scene.gbuffer1", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, core::AccessMode::Read },
+            core::GpuUse{ "scene.gbuffer2", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, core::AccessMode::Read },
+            core::GpuUse{ "scene.depth", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, core::AccessMode::Read },
+            core::GpuUse{ "scene.clusterGrid", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, core::AccessMode::Read },
+            core::GpuUse{ "scene.clusterIndices", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, core::AccessMode::Read },
+            core::GpuUse{ "scene.hdr", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write },
+        };
 
-        void execute() override
+        void execute(Recorder recorder, core::Res<const ResourceManager> resourceManager, core::Res<const SceneLights> sceneLights)
         {
-            auto& renderer = *core::Services::get<Renderer>();
-            auto& resources = *core::Services::get<const ResourceManager>();
-            const auto& lights = *core::Services::get<const SceneLights>();
+            auto& renderer = *recorder;
+            auto& resources = *resourceManager;
+            const auto& lights = *sceneLights;
             const auto* target = renderer.currentTarget();
             if (!target) return;
             const auto* shader = _pass.bind(renderer, resources);
@@ -59,3 +58,4 @@ namespace csyren::render
     };
     CS_SYSTEM(LightPassSystem);
 }
+CS_STRICT_SYSTEMS_END

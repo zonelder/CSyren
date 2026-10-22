@@ -11,7 +11,6 @@
 #include <mutex>
 #include <stdexcept>
 #include <string>
-#include <typeindex>
 #include <unordered_map>
 #include <vector>
 
@@ -102,9 +101,9 @@ public:
         _compiled = false;
     }
     template<class T> void resourceState(std::string state) {
-        resourceState(std::type_index(typeid(T)), std::move(state));
+        resourceState(TypeKey::of<T>(), std::move(state));
     }
-    void resourceState(std::type_index type, std::string state) {
+    void resourceState(TypeKey type, std::string state) {
         _initialStates.insert_or_assign(type, std::move(state));
         _compiled = false;
     }
@@ -260,10 +259,26 @@ public:
     }
 private:
     static bool sceneAccess(const TaskDescription& d) {
-        return d.exclusiveScene || d.structuralChanges || std::any_of(d.accesses.begin(), d.accesses.end(),
-            [](const TaskAccess& access) { return access.component || access.type == std::type_index(typeid(SceneEntities)); });
+        return d.exclusiveScene || d.structuralChanges || !d.inserts.empty() || !d.filters.empty() ||
+            std::any_of(d.accesses.begin(), d.accesses.end(),
+            [](const TaskAccess& access) { return access.component || access.type == TypeKey::of<SceneEntities>(); });
+    }
+    // Inserts and filters never conflict with live readers or writers: staged
+    // components and entity presence change only in the exclusive structural
+    // commit. Two tasks that may add the same type do conflict, so the later one
+    // runs after the earlier commit and can see (and skip) the earlier addition.
+    static bool insertsCollide(const TaskDescription& a, const TaskDescription& b) {
+        for (const auto& type : a.inserts) {
+            if (std::find(b.inserts.begin(), b.inserts.end(), type) != b.inserts.end()) return true;
+            // A classic structural writer of T may add T as well.
+            if (b.structuralChanges && std::any_of(b.accesses.begin(), b.accesses.end(), [&](const TaskAccess& access) {
+                return access.component && access.type == type && access.mode == AccessMode::Write;
+            })) return true;
+        }
+        return false;
     }
     static bool conflicts(const TaskDescription& a, const TaskDescription& b) {
+        if (insertsCollide(a, b) || insertsCollide(b, a)) return true;
         if ((a.dynamicResources && (!b.accesses.empty() || b.dynamicResources || !b.localResources.empty())) ||
             (b.dynamicResources && (!a.accesses.empty() || a.dynamicResources || !a.localResources.empty()))) return true;
         if ((a.exclusiveScene && sceneAccess(b)) || (b.exclusiveScene && sceneAccess(a))) return true;
@@ -288,7 +303,7 @@ private:
     }
     std::vector<PhaseDescription> _phases;
     std::vector<std::unique_ptr<Node>> _nodes;
-    std::unordered_map<std::type_index, std::string> _initialStates;
+    std::unordered_map<TypeKey, std::string> _initialStates;
     std::vector<size_t> _order;
     std::vector<size_t> _phaseOrder;
     std::atomic<bool> _failed{false};

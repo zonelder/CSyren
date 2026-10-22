@@ -37,10 +37,11 @@ namespace csyren::render::details
                 if (entry.camera.get() == &camera) return entry.view->target;
             return {};
         }
-        template<class Callback> void each(core::Scene& scene,Callback callback)
+        // `query` is a Select/Update that lists Transform.
+        template<class Query,class Callback> void each(const Query& query,Callback callback)
         {
             for (auto& [id,entry] : _entries) {
-                auto transform = scene.getComponent<const core::Transform>(id);
+                auto transform = query.template get<const core::Transform>(id);
                 if (entry.camera && transform) callback(id,*entry.camera,*transform,entry.view);
             }
         }

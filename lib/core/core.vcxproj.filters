@@ -163,6 +163,9 @@
     <ClInclude Include="project_paths.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="component_registry.inl"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="transform_hierarchy.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="typed_system.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="prefab.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="spawn.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="type_key.h"><Filter>Header Files</Filter></ClInclude>
   </ItemGroup>
 </Project>

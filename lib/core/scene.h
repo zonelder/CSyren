@@ -6,7 +6,6 @@
 #include <unordered_map>
 #include <memory>
 #include <stdexcept>
-#include <any>
 #include <functional>
 #include <type_traits>
 
@@ -151,7 +150,9 @@ namespace csyren::core
             template<typename...> friend class SceneView;
             std::vector<std::function<void()>> commands;
             std::vector<std::function<void()>> cancellations;
-            std::unordered_map<uint64_t, std::any> components;
+            // Staged additions (StagedComponent<T>) and removals (nullptr) by
+            // componentKey(id, family); the key already names the type.
+            std::unordered_map<uint64_t, std::shared_ptr<void>> components;
             std::unordered_map<Entity::ID, bool> entities;
         public:
             void apply(Scene& scene) {
@@ -260,20 +261,30 @@ namespace csyren::core
             _em.queueDestroy(id);
         }
 
+        // A structural change whose types are known only at run time (core::Spawn):
+        // runs in the active task's structural commit, in order with its other
+        // changes; immediately outside a graph task.
+        void defer(std::function<void()> command) {
+            requireStructuralAccess();
+            if (auto* tx = transaction()) { tx->commands.emplace_back(std::move(command)); return; }
+            command();
+        }
+
 		template<typename T, typename... Args>
 		ComponentRef<T> addComponent(Entity::ID id, Args&&... args)
         {
             requireStructuralAccess();
-            requireComponentAccess<T>();
+            requireInsertAccess<T>();
             if (auto* tx = transaction()) {
                 if (!tx->entities.contains(id) && !_em.contains(id)) return {};
                 const auto family = reflection::ComponentFamily::getID<T>();
                 const uint64_t key = componentKey(id, family);
-                if (hasComponent<T>(id)) throw std::runtime_error("Component already present");
+                // Presence only: inserting T does not require read access to T.
+                if (lookupComponent<const T>(id)) throw std::runtime_error("Component already present");
                 auto staged = std::make_shared<StagedComponent<T>>();
                 staged->value = std::make_shared<T>(std::forward<Args>(args)...);
                 ComponentRef<T> result(id, staged);
-                tx->components.insert_or_assign(key, result);
+                tx->components.insert_or_assign(key, staged);
                 tx->cancellations.emplace_back([staged] { if (staged->value) staged->value.reset(); });
                 tx->commands.emplace_back([this, id, staged] {
                     auto live = addComponent<T>(id, std::move_if_noexcept(*staged->value));
@@ -308,7 +319,7 @@ namespace csyren::core
 		{
             requireStructuralAccess();
             if (auto* tx = transaction()) {
-                tx->components.insert_or_assign(componentKey(id, family), std::any{});
+                tx->components.insert_or_assign(componentKey(id, family), nullptr);
                 tx->commands.emplace_back([this, id, family] {
                     auto it = _cStates.find(family);
                     if (it != _cStates.end()) it->second.meta->destroy(this, id);
@@ -321,22 +332,25 @@ namespace csyren::core
 
 		template<typename T> ComponentRef<T> getComponent(Entity::ID id)
 		{
-            using Value = std::remove_const_t<T>;
             requireComponentAccess<T>();
+            return lookupComponent<T>(id);
+		}
+
+    private:
+        template<typename T> ComponentRef<T> lookupComponent(Entity::ID id)
+        {
+            using Value = std::remove_const_t<T>;
             if (auto* tx = transaction()) {
                 auto it = tx->components.find(componentKey(id, reflection::ComponentFamily::getID<Value>()));
                 if (it != tx->components.end()) {
-                    if (!it->second.has_value()) return {};
-                    if constexpr (!std::is_const_v<T>) return std::any_cast<ComponentRef<Value>>(it->second);
-                    else {
-                        auto writable = std::any_cast<ComponentRef<Value>>(it->second);
-                        return ComponentRef<T>(writable);
-                    }
+                    if (!it->second) return {}; // removed in this transaction
+                    return ComponentRef<T>(id, std::static_pointer_cast<StagedComponent<Value>>(it->second));
                 }
             }
             return ComponentRef<T>(id, getPool<Value>());
-		}
+        }
 
+    public:
         // A patch notifies derived data after a mutation. The callback overload
         // also reports partial writes if the callback throws. It does not add an
         // undo command; editor history is a separate concern.
@@ -379,14 +393,22 @@ namespace csyren::core
 		template<typename... Cs>
 		SceneView<Cs...> view(){ (requireComponentAccess<Cs>(), ...); return SceneView<Cs...>(this); }
 
+        // Validation hooks for typed queries (core/typed_system.h), which build their
+        // views directly: Cs are checked like view<Cs...>(), filter types only for
+        // presence. No-ops without CSYREN_ACCESS_VALIDATION.
+        template<typename T> void validateAccess() const { requireComponentAccess<T>(); }
+        template<typename T> void validatePresence() const { requirePresenceAccess<T>(); }
+
 		const cstdmf::SparseSet<Entity>& entities() const {
+#if CSYREN_ACCESS_VALIDATION
             const auto* b = TaskScope::_active;
             if (b && b->scene == this && b->description && !b->description->exclusiveScene && !b->description->structuralChanges) {
                 const auto& accesses = b->description->accesses;
                 if (std::none_of(accesses.begin(), accesses.end(), [](const auto& a) {
-                    return !a.component && a.type == std::type_index(typeid(SceneEntities));
+                    return !a.component && a.type == TypeKey::of<SceneEntities>();
                 })) throw std::logic_error("System must declare SceneEntities access before enumerating entities");
             }
+#endif
             return _em.all();
         }
 
@@ -435,12 +457,40 @@ namespace csyren::core
                 throw std::logic_error("System must declare structuralChanges before changing Scene structure");
         }
         template<class T> void requireComponentAccess() const {
+#if CSYREN_ACCESS_VALIDATION
             const auto* b = TaskScope::_active;
             if (!b || b->scene != this || !b->description || b->description->exclusiveScene) return;
-            const auto type = std::type_index(typeid(std::remove_const_t<T>));
+            const auto type = TypeKey::of<T>();
             for (const auto& a : b->description->accesses)
                 if (a.component && a.type == type && (std::is_const_v<T> || a.mode == AccessMode::Write)) return;
-            throw std::logic_error("Undeclared component access in system: " + std::string(type.name()));
+            throw std::logic_error("Undeclared component access in system: " + std::string(type.name));
+#endif
+        }
+        // Presence tests only: a filter, read or write declaration of T.
+        template<class T> void requirePresenceAccess() const {
+#if CSYREN_ACCESS_VALIDATION
+            const auto* b = TaskScope::_active;
+            if (!b || b->scene != this || !b->description || b->description->exclusiveScene) return;
+            const auto type = TypeKey::of<T>();
+            const auto& filters = b->description->filters;
+            if (std::find(filters.begin(), filters.end(), type) != filters.end()) return;
+            for (const auto& a : b->description->accesses)
+                if (a.component && a.type == type) return;
+            throw std::logic_error("Undeclared component filter in system: " + std::string(type.name));
+#endif
+        }
+        // addComponent: write access, or an insert declaration for the staged type.
+        template<class T> void requireInsertAccess() const {
+#if CSYREN_ACCESS_VALIDATION
+            const auto* b = TaskScope::_active;
+            if (!b || b->scene != this || !b->description || b->description->exclusiveScene) return;
+            const auto type = TypeKey::of<T>();
+            const auto& inserts = b->description->inserts;
+            if (std::find(inserts.begin(), inserts.end(), type) != inserts.end()) return;
+            for (const auto& a : b->description->accesses)
+                if (a.component && a.type == type && a.mode == AccessMode::Write) return;
+            throw std::logic_error("Undeclared component insert in system: " + std::string(type.name));
+#endif
         }
         Transaction* transaction() const {
             auto* binding = TaskScope::_active;
@@ -648,25 +698,25 @@ namespace csyren::core
 		[[nodiscard]] std::tuple<Cs&...> get(Entity::ID id)
 		{
 			assert(contains(id) && "Entity does not belong to this view");
-            if (_overlayMode) return std::tuple<Cs&...>(*(_scene->template getComponent<Cs>(id))...);
+            if (_overlayMode) return std::tuple<Cs&...>(*(_scene->template lookupComponent<Cs>(id))...);
 			return std::tie((*std::get<PoolPtr<Cs>>(_pools))[id]...);
 		}
 		[[nodiscard]] std::tuple<const Cs&...> get(Entity::ID id) const
 		{
 			assert(contains(id) && "Entity does not belong to this view");
-            if (_overlayMode) return std::tuple<const Cs&...>(*(_scene->template getComponent<const std::remove_const_t<Cs>>(id))...);
+            if (_overlayMode) return std::tuple<const Cs&...>(*(_scene->template lookupComponent<const std::remove_const_t<Cs>>(id))...);
 			return std::tie((*std::get<PoolPtr<Cs>>(_pools))[id]...);
 		}
 
 	private:
 		auto make_pointer_tuple(Entity::ID id) const
 		{
-            if (_overlayMode) return std::tuple<Entity::ID, const Cs&...>(id, *(_scene->template getComponent<const std::remove_const_t<Cs>>(id))...);
+            if (_overlayMode) return std::tuple<Entity::ID, const Cs&...>(id, *(_scene->template lookupComponent<const std::remove_const_t<Cs>>(id))...);
 			return std::tuple<Entity::ID,const Cs&...>(id, (*std::get<PoolPtr<Cs>>(_pools))[id]...);
 		}
 		auto make_pointer_tuple(Entity::ID id)
 		{
-            if (_overlayMode) return std::tuple<Entity::ID, Cs&...>(id, *(_scene->template getComponent<Cs>(id))...);
+            if (_overlayMode) return std::tuple<Entity::ID, Cs&...>(id, *(_scene->template lookupComponent<Cs>(id))...);
 			return std::tuple<Entity::ID, Cs&...>(id, (*std::get<PoolPtr<Cs>>(_pools))[id]...);
 		}
 		
@@ -728,7 +778,7 @@ namespace csyren::core
 		}
 		bool has_all_components(Entity::ID id) const
 		{
-            if (_overlayMode) return (bool(_scene->template getComponent<const std::remove_const_t<Cs>>(id)) && ...);
+            if (_overlayMode) return (bool(_scene->template lookupComponent<const std::remove_const_t<Cs>>(id)) && ...);
 			return (std::get<PoolPtr<Cs>>(_pools)->contains(id) && ...);
 		}
 

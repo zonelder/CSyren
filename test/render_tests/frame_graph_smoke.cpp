@@ -5,6 +5,8 @@
 #include "dx12_graphic/gpu_resources.h"
 #include "core/window.h"
 #include "core/system_manager.h"
+#include "core/typed_system.h"
+#include "dx12_graphic/recorder.h"
 #include "core/scene.h"
 #include "core/camera.h"
 #include "core/transform.h"
@@ -28,35 +30,32 @@ void overlap() {
         std::this_thread::yield();
     }
 }
-class ParallelRenderA : public System {
+class ParallelRenderA : public TypedSystem<ParallelRenderA> {
 public:
-    TaskDescription describe() const override {
-        TaskDescription d; d.phase = "record";
-        d.gpu("frame.color", D3D12_RESOURCE_STATE_RENDER_TARGET, AccessMode::Write); return d;
-    }
-    void execute() override { overlap(); Services::get<render::Renderer>()->commandList()->SetMarker(0, "A", 1); }
+    static constexpr auto phase = "record";
+    static constexpr std::array gpu{ GpuUse{ "frame.color", D3D12_RESOURCE_STATE_RENDER_TARGET, AccessMode::Write } };
+    void execute(render::Recorder recorder) { overlap(); recorder->commandList()->SetMarker(0, "A", 1); }
 };
-class ParallelRenderB : public System {
+class ParallelRenderB : public TypedSystem<ParallelRenderB> {
 public:
-    TaskDescription describe() const override {
-        TaskDescription d; d.phase = "record"; d.gpuQueue = "secondary";
-        d.gpu("test.source", D3D12_RESOURCE_STATE_GENERIC_READ, AccessMode::Read);
-        d.gpu("test.destination", D3D12_RESOURCE_STATE_COPY_DEST, AccessMode::Write); return d;
-    }
-    void execute() override {
+    static constexpr auto phase = "record";
+    static constexpr auto gpuQueue = "secondary";
+    static constexpr std::array gpu{
+        GpuUse{ "test.source", D3D12_RESOURCE_STATE_GENERIC_READ, AccessMode::Read },
+        GpuUse{ "test.destination", D3D12_RESOURCE_STATE_COPY_DEST, AccessMode::Write } };
+    void execute(render::Recorder recorder) {
         overlap();
-        Services::get<render::Renderer>()->commandList()->CopyBufferRegion(destination.Get(), 0, source.Get(), 0, 4);
+        recorder->commandList()->CopyBufferRegion(destination.Get(), 0, source.Get(), 0, 4);
     }
 };
-class ReadbackSystem : public System {
+class ReadbackSystem : public TypedSystem<ReadbackSystem> {
 public:
-    TaskDescription describe() const override {
-        TaskDescription d; d.phase = "record";
-        d.gpu("test.destination", D3D12_RESOURCE_STATE_COPY_SOURCE, AccessMode::Read);
-        d.gpu("test.readback", D3D12_RESOURCE_STATE_COPY_DEST, AccessMode::Write); return d;
-    }
-    void execute() override {
-        Services::get<render::Renderer>()->commandList()->CopyBufferRegion(readback.Get(), 0, destination.Get(), 0, 4);
+    static constexpr auto phase = "record";
+    static constexpr std::array gpu{
+        GpuUse{ "test.destination", D3D12_RESOURCE_STATE_COPY_SOURCE, AccessMode::Read },
+        GpuUse{ "test.readback", D3D12_RESOURCE_STATE_COPY_DEST, AccessMode::Write } };
+    void execute(render::Recorder recorder) {
+        recorder->commandList()->CopyBufferRegion(readback.Get(), 0, destination.Get(), 0, 4);
     }
 };
 REGISTER_SYSTEM(ParallelRenderA)

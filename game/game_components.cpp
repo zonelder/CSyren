@@ -158,7 +158,10 @@ namespace csyren::game
 			.data<&WeaponDef::explosionRadius>("explosionRadius"_hs)
 			.data<&WeaponDef::explosionImpulse>("explosionImpulse"_hs)
 			.data<&WeaponDef::reloadClip>("reloadClip"_hs)
-			.data<&WeaponDef::hitLayers>("hitLayers"_hs);
+			.data<&WeaponDef::hitLayers>("hitLayers"_hs)
+			.data<&WeaponDef::projectilePrefab>("projectilePrefab"_hs)
+			.data<&WeaponDef::impactPrefab>("impactPrefab"_hs)
+			.data<&WeaponDef::muzzleFlashPrefab>("muzzleFlashPrefab"_hs);
 	}
 	void WeaponInventory::describe()
 	{
@@ -180,7 +183,9 @@ namespace csyren::game
 			.data<&Projectile::impulse>("impulse"_hs)
 			.data<&Projectile::lifetime>("lifetime"_hs)
 			.data<&Projectile::armTime>("armTime"_hs)
-			.data<&Projectile::hitLayers>("hitLayers"_hs);
+			.data<&Projectile::hitLayers>("hitLayers"_hs)
+			.data<&Projectile::trail>("trail"_hs)
+			.data<&Projectile::explosion>("explosion"_hs);
 	}
 	void Health::describe()
 	{

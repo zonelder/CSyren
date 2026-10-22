@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "cstdmf/profiler.h"
 #include "presentation_system.h"
 #include "frame_prepare_system.h"
 #include "presentation_state.h"
@@ -19,30 +20,6 @@
 
 namespace csyren::render
 {
-    core::TaskDescription FrameAcquireSystem::describe() const {
-        core::TaskDescription d; d.phase = "acquire"; d.affinity = core::TaskAffinity::MainThread;
-        d.read<core::Camera>().read<core::Transform>().readResource<core::Time>().readResource<core::Window>();
-        d.readResource<core::SceneEntities>();
-        d.dynamicResources = true;
-        d.writeResource<Renderer>().writeResource<ResourceManager>().writeResource<DescriptorManager>();
-        d.writeResource<details::FrameRecording>({}, "ready"); return d;
-    }
-    core::TaskDescription FramePrepareSystem::describe() const {
-        core::TaskDescription d; d.phase = "prepare";
-        d.gpuScope = core::GpuTaskScope::View;
-        // Clears the deferred geometry targets. scene.hdr / scene.color are
-        // fully written by the light pass and the tonemap pass.
-        d.gpu("scene.gbuffer0", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
-        d.gpu("scene.gbuffer1", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
-        d.gpu("scene.gbuffer2", D3D12_RESOURCE_STATE_RENDER_TARGET, core::AccessMode::Write);
-        d.gpu("scene.depth", D3D12_RESOURCE_STATE_DEPTH_WRITE, core::AccessMode::Write);
-        return d;
-    }
-    core::TaskDescription PresentationSystem::describe() const {
-        core::TaskDescription d; d.phase = "submit"; d.affinity = core::TaskAffinity::MainThread;
-        d.writeResource<Renderer>().writeResource<details::FrameRecording>("ready", "submitted"); return d;
-    }
-
     namespace
     {
         void require(bool success, const char* message)
@@ -91,20 +68,21 @@ namespace csyren::render
     void FramePrepareSystem::shutdown() { _state.reset(); }
     void PresentationSystem::shutdown() { _state.reset(); }
 
-    void FrameAcquireSystem::updateCamera()
-    {
-        core::Services::get<Renderer>()->prepareCameraViews(scene(),_state->width,_state->height);
-    }
-
-    void FrameAcquireSystem::execute()
+CS_STRICT_SYSTEMS_BEGIN
+    // DescriptorManager and GpuResources are declaration only (unnamed): the camera
+    // targets, the upload pipeline and the GPU plan fetch them through Services.
+    void FrameAcquireSystem::execute(Renderer::CameraQuery cameras, core::Res<Renderer> renderer, core::Res<ResourceManager> resources,
+        core::Res<DescriptorManager>, core::Res<const GpuResources>,
+        core::Res<const core::Window> window, core::Res<const core::Time> time)
     {
         auto& context = *_state;
-        auto* renderer = core::Services::get<Renderer>();
-        auto* window = core::Services::get<const core::Window>();
         renderer->collectDeferredReleases();
         context.resize(static_cast<UINT>(window->width()),static_cast<UINT>(window->height()));
         context.commandIndex = (context.commandIndex + 1) % Renderer::FramesInFlight;
-        context.graph->acquire();
+        {
+            CS_PROFILE_SCOPE("Wait GPU frame slot");
+            context.graph->acquire();
+        }
         UINT target = details::PresentationState::FrameCount;
         {
             std::lock_guard lock(context.mutex);
@@ -134,31 +112,47 @@ namespace csyren::render
         }
         auto& frame = context.frames[target];
         float background[]{ 0.1f, 0.1f, 0.3f, 1.0f };
-        updateCamera();
+        {
+            CS_PROFILE_SCOPE("Prepare camera views");
+            renderer->prepareCameraViews(cameras, time->totalTime(), context.width, context.height);
+        }
         // Stable colors reuse the texture without waiting for its previous draw:
         // both writes are already ordered on the same GPU queue.
-        if (frame.color && !std::equal(background, background + 4, frame.clearColor))
+        if (frame.color && !std::equal(background, background + 4, frame.clearColor)) {
+            CS_PROFILE_SCOPE("Wait previous draw");
             renderer->queue().syncAwaitComplete(frame.renderFence);
+        }
         context.prepareTarget(frame, background);
         std::copy(background, background + 4, context.background);
-        core::Services::get<ResourceManager>()->update();
+        {
+            CS_PROFILE_SCOPE("Resource uploads");
+            resources->update();
+        }
+        CS_PROFILE_SCOPE("Prepare GPU views");
         context.graph->prepareViews();
     }
+CS_STRICT_SYSTEMS_END
 
-    void FramePrepareSystem::execute() {
-        auto* renderer = core::Services::get<Renderer>();
+CS_STRICT_SYSTEMS_BEGIN
+    void FramePrepareSystem::execute(Recorder recorder) {
         // GBuffer contents outside geometry are ignored (depth == 0 marks the sky).
         const float zero[4]{ 0, 0, 0, 0 };
-        renderer->clearColor(zero);
-        renderer->clearDepth();
+        recorder->clearColor(zero);
+        recorder->clearDepth();
     }
+CS_STRICT_SYSTEMS_END
 
-    void PresentationSystem::execute()
+CS_STRICT_SYSTEMS_BEGIN
+    // The Renderer is declaration only (unnamed): the backend's submit() records into it.
+    void PresentationSystem::execute(core::Res<Renderer>)
     {
         auto& context = *_state;
-        auto* renderer = core::Services::get<Renderer>();
         auto& frame = context.frames[context.frameIndex];
-        const auto renderFence = context.graph->submit();
+        uint64_t renderFence = 0;
+        {
+            CS_PROFILE_SCOPE("GPU submit");
+            renderFence = context.graph->submit();
+        }
         {
             std::lock_guard lock(context.mutex);
             frame.sequence = ++context.sequence;
@@ -167,9 +161,11 @@ namespace csyren::render
         }
         context.changed.notify_one();
     }
+CS_STRICT_SYSTEMS_END
 
     void details::PresentationState::runOutput() noexcept
     {
+        profiler::setThreadName("Present");
         try
         {
             while (true)
@@ -210,6 +206,7 @@ namespace csyren::render
         }
         auto presentPending = [&] {
             if (!context.pendingPresent) return true;
+            CS_PROFILE_SCOPE("Present");
             const auto result = context.swapChain.present(0, DXGI_PRESENT_DO_NOT_WAIT);
             if (result == DXGI_ERROR_WAS_STILL_DRAWING) return false;
             require(SUCCEEDED(result), "Mailbox Present failed");
@@ -247,6 +244,7 @@ namespace csyren::render
             newest->copying = false;
             return;
         }
+        CS_PROFILE_SCOPE("Output copy");
         copy.reset();
         auto* destination = context.swapChain.currentBackBuffer();
         transition(copy, destination, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_COPY_DEST);

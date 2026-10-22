@@ -3,17 +3,13 @@
 #include "core/scene.h"
 #include "core/gpu_execution_plan.h"
 #include "core/system_manager.h"
+#include "core/typed_system.h"
 #include "core/scene_context.h"
 #include <atomic>
 #include <thread>
 #include <chrono>
+#include "scene_job_test_access.h"
 
-namespace csyren::core::details {
-struct SceneJobTestAccess {
-    using Transaction = Scene::Transaction;
-    using TaskScope = Scene::TaskScope;
-};
-}
 namespace {
 using namespace csyren::core;
 using SceneJobAccess = details::SceneJobTestAccess;
@@ -172,8 +168,10 @@ TEST(SceneJobs, UndeclaredWritesAndStructuralChangesFailBeforeMutation) {
     auto d = task(); d.read<Position>();
     SceneJobAccess::TaskScope scope(scene, nullptr, &d);
     EXPECT_NO_THROW(scene.view<const Position>());
+#if CSYREN_ACCESS_VALIDATION
     EXPECT_THROW(scene.view<Position>(), std::logic_error);
-    EXPECT_THROW(scene.createEntity(), std::logic_error);
+#endif
+    EXPECT_THROW(scene.createEntity(), std::logic_error); // structural checks are always on
 }
 TEST(GpuPlan, CrossQueueReadersEachWaitForProducerAndWriterWaitsForAllReaders) {
     constexpr uint32_t initial = 0, uav = 8, srv = 16;
@@ -232,20 +230,20 @@ TEST(FrameGraph, DisjointStructuralTasksRunBeforeTheirCommits) {
     EXPECT_TRUE(graph.dependsOn("a/apply", "b")); EXPECT_TRUE(graph.dependsOn("b/apply", "a"));
     EXPECT_FALSE(graph.dependsOn("a", "b")); EXPECT_FALSE(graph.dependsOn("b", "a"));
 }
-class StructuralProducer : public System {
+class StructuralProducer : public TypedSystem<StructuralProducer> {
 public:
-    TaskDescription describe() const override { auto d = task(); d.write<Position>(); d.structuralChanges = true; return d; }
-    void execute() override {
-        auto* scene = Services::get<Scene>();
-        auto id = scene->createEntity(); scene->addComponent<Position>(id)->x = 77;
+    static constexpr auto phase = "custom";
+    void execute(Insert<Position> spawn) {
+        auto id = spawn.create(); spawn.add<Position>(id)->x = 77;
     }
 };
-class StructuralConsumer : public System {
+class StructuralConsumer : public TypedSystem<StructuralConsumer> {
 public:
     static inline int observed = 0;
-    TaskDescription describe() const override { auto d = task(); d.read<Position>(); d.after = {"StructuralProducer"}; return d; }
-    void execute() override {
-        for (auto [id, position] : Services::get<Scene>()->view<const Position>()) observed = position.x;
+    static constexpr auto phase = "custom";
+    static constexpr auto after = "StructuralProducer";
+    void execute(Select<Position> positions) {
+        for (auto [id, position] : positions) observed = position.x;
     }
 };
 REGISTER_SYSTEM(StructuralProducer)
@@ -267,8 +265,10 @@ TEST(ServicesJobs, ReadsRequireConstPointersAndUndeclaredResourcesAreRejected) {
     {
         Services::TaskScope scope(d);
         EXPECT_EQ(Services::get<const Resource>(), &resource);
+#if CSYREN_ACCESS_VALIDATION
         EXPECT_THROW(Services::get<Resource>(), std::logic_error);
         EXPECT_THROW(Services::get<Velocity>(), std::logic_error);
+#endif
     }
     details::ServiceRegistry::shutdownAll();
 }
@@ -330,12 +330,13 @@ TEST(SceneJobs, ParallelCreatorsReserveUniqueIDsAndQueryTheirOwnComponents) {
     EXPECT_EQ(scene.entities().size(), 1001u);
 }
 
-class BoundSceneProbe : public System {
+class BoundSceneProbe : public TypedSystem<BoundSceneProbe> {
 public:
     inline static std::vector<Scene*> observed;
-    TaskDescription describe() const override { auto d = task(); d.affinity = TaskAffinity::MainThread; d.readResource<EventBus2>(); return d; }
-    void execute() override {
-        if (Services::get<Scene>() != &scene() || Services::get<const EventBus2>() != &sceneBus())
+    static constexpr auto phase = "custom";
+    static constexpr auto affinity = TaskAffinity::MainThread;
+    void execute(Res<const EventBus2> bus) {
+        if (Services::get<Scene>() != &scene() || bus.get() != &sceneBus())
             throw std::logic_error("Graph lost the scene binding");
         observed.push_back(&scene());
     }
@@ -363,8 +364,10 @@ TEST(SceneJobs, PatchChecksWriteAccessAndCommitsStagedNotifications) {
     SceneInstance instance; auto& scene=instance.scene(); auto& bus=scene.eventBus();
     auto id=scene.createEntity(); scene.addComponent<Position>(id);
     auto reader=task(); reader.read<Position>();
+#if CSYREN_ACCESS_VALIDATION
     { SceneJobAccess::TaskScope scope(scene,nullptr,&reader);
       EXPECT_THROW(scene.patch<Position>(id,[](auto& p) { p.x=9; }),std::logic_error); }
+#endif
     EXPECT_EQ(scene.getComponent<Position>(id)->x,0);
     int notified=0;
     bus.subscribe<ComponentPatchEvent<Position>>([&](auto& e) { EXPECT_TRUE(e.comp); ++notified; });

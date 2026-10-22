@@ -5,9 +5,8 @@
 // its systems register themselves with REGISTER_SYSTEM once their headers are
 // compiled into the executable, and its components and services are listed
 // here as markers for tools/csyren_registry.py (CSyren.vcxproj adds this file
-// to the scan roots). Remove this header, and the forwarding headers next to it
-// (mesh_filter.h, animation.h, editor_overlays.h, editor_viewport_state.h),
-// when game/ moves out and gets CS_* markers of its own.
+// to the scan roots). Remove this header when game/ moves out and gets CS_*
+// markers of its own.
 #include "core/registration.h"
 #include "game/game_components.h"
 #include "game/player_input.h"

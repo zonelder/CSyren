@@ -1,26 +1,26 @@
 #pragma once
-#include "core/system_base.h"
+#include "core/typed_system.h"
 #include "core/services.h"
 #include "scene_session.h"
 #include "serializer.h"
 #include "core/registration.h"
 
+CS_STRICT_SYSTEMS_BEGIN
 namespace csyren
 {
-    // Compatibility only. New editor actions enqueue explicit session operations.
-    class SceneLoaderSystem : public core::System
+    // Compatibility only. New editor actions enqueue explicit session operations;
+    // the session applies them between frames, so this system only queues them.
+    class SceneLoaderSystem : public core::TypedSystem<SceneLoaderSystem>
     {
     public:
-        core::TaskDescription describe() const override {
-            core::TaskDescription d; d.phase = "scene"; d.affinity = core::TaskAffinity::MainThread;
-            d.exclusiveScene = true; d.dynamicResources = true; d.structuralChanges = true; return d;
-        }
-        void execute() override { update(); }
-        void update() override
+        static constexpr auto phase = "scene";
+        static constexpr core::TaskAffinity affinity = core::TaskAffinity::MainThread;
+
+        void execute(core::Select<SceneLoaderRequest> requests, core::Delete remove, core::Res<editor::SceneSession> sessionService)
         {
-            auto& session = *core::Services::get<editor::SceneSession>();
+            auto& session = *sessionService;
             if (session.playing()) return;
-            for (auto [entity, request] : scene().view<SceneLoaderRequest>())
+            for (auto [entity, request] : requests)
             {
                 switch (request.type)
                 {
@@ -30,7 +30,7 @@ namespace csyren
                     session.enqueue(request.path.empty() ? editor::SceneOperation::Save : editor::SceneOperation::SaveAs, request.path);
                     break;
                 }
-                scene().removeComponent<SceneLoaderRequest>(entity);
+                remove.remove<SceneLoaderRequest>(entity);
             }
         }
     protected:
@@ -58,3 +58,4 @@ namespace csyren
     };
     CS_SYSTEM(SceneLoaderSystem);
 }
+CS_STRICT_SYSTEMS_END

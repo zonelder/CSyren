@@ -47,13 +47,14 @@ TEST_F(SceneWorkflow, RenderViewsReadOnePreparedWorldSnapshot)
     Transform p; p.position=math::Vector3{10,0,0};
     Transform c; c.position=math::Vector3{2,0,0};
     scene.addComponent<Transform>(parent,p); scene.addComponent<Transform>(child,c);
-    renderer.prepareCameraViews(scene,800,600);
+    const auto cameras=core::details::Param<render::Renderer::CameraQuery>::make(&scene);
+    renderer.prepareCameraViews(cameras,0,800,600);
     const auto* matrix=&renderer.worldTransforms().matrix(child);
     EXPECT_FLOAT_EQ(matrix->translation().x,12);
     scene.patch<Transform>(parent,[](auto& tr) { tr.position.x=20; });
     // All view recordings read the prepared frame, even if an edit follows it.
     EXPECT_FLOAT_EQ(renderer.worldTransforms().matrix(child).translation().x,12);
-    renderer.prepareCameraViews(scene,800,600);
+    renderer.prepareCameraViews(cameras,0,800,600);
     EXPECT_EQ(matrix,&renderer.worldTransforms().matrix(child));
     EXPECT_FLOAT_EQ(matrix->translation().x,22);
 }
@@ -83,6 +84,31 @@ TEST_F(SceneWorkflow, HierarchyComposesLocalMatricesThroughNodesWithoutTransform
     ASSERT_TRUE(worlds.update(scene)); EXPECT_TRUE(worlds.matrix(child)==c.localMatrix());
     EXPECT_TRUE(scene.getComponent<Transform>(child)->localMatrix()==c.localMatrix());
     SceneInstance other; ASSERT_TRUE(worlds.update(other.scene()));
+}
+
+TEST_F(SceneWorkflow, TypedQueriesMatchSceneTransformHelpers)
+{
+    using namespace csyren::core;
+    SceneInstance instance; auto& scene=instance.scene();
+    auto parent=scene.createEntity(), gap=scene.createEntity(parent), child=scene.createEntity(gap);
+    Transform p; p.position=math::Vector3{4,5,6}; p.rotation=math::Quaternion::euler(10,30,20); p.scale=math::Vector3{2,3,4};
+    Transform c; c.position=math::Vector3{1,2,3}; c.rotation=math::Quaternion::euler(20,40,10);
+    scene.addComponent<Transform>(parent,p); scene.addComponent<Transform>(child,c);
+    // Typed system parameters, built the way TypedSystem::execute builds them.
+    auto read=details::Param<Select<Transform>>::make(&scene);
+    auto write=details::Param<Update<Transform>>::make(&scene);
+    EXPECT_TRUE(worldMatrix(read,child)==worldMatrix(scene,child));
+    EXPECT_NEAR((worldRotation(read,child)*math::Vector3::forward-worldRotation(scene,child)*math::Vector3::forward).magnitude(),0,1e-5f);
+    EXPECT_EQ(parentOf(read,child),gap);
+    WorldTransforms fromQuery, fromScene;
+    ASSERT_TRUE(fromQuery.update(read)); ASSERT_TRUE(fromScene.update(scene));
+    EXPECT_TRUE(fromQuery.matrix(child)==fromScene.matrix(child));
+    EXPECT_FALSE(fromQuery.update(read));
+    const math::Vector3 target{17,-4,9}; const auto rotation=math::Quaternion::euler(45,20,15);
+    ASSERT_TRUE(setWorldPose(write,child,target,rotation));
+    EXPECT_NEAR((worldMatrix(scene,child).translation()-target).magnitude(),0,1e-4f);
+    EXPECT_TRUE(fromQuery.update(read)); // the patch changed the Transform revision
+    EXPECT_TRUE(fromQuery.matrix(child)==worldMatrix(scene,child));
 }
 
 TEST_F(SceneWorkflow, WorldPoseConversionHandlesShearedParentsAndSingularScale)
@@ -152,7 +178,9 @@ TEST_F(SceneWorkflow, PhysicsRoundTripsParentAndChildBodiesInWorldSpace)
         scene.addComponent<physics::RigidBody>(id,rb);
     }
     instance.settle();
-    SystemManager manager; manager.phase({"simulation"}); manager.add("PhysicsSystem"); manager.bind(instance.context(),instance.context(),true); manager.init();
+    SystemManager manager; manager.phase({"simulation"}); manager.phase({"events",{"simulation"}});
+    manager.add("PhysicsSystem"); manager.add("PhysicsSyncSystem"); manager.add("SceneEventsSystem");
+    manager.bind(instance.context(),instance.context(),true); manager.init();
     engine.setGravity({0,0,0});
     auto expectedChild=worldMatrix(scene,child).translation();
     core::details::TimeHandler clock;
@@ -164,7 +192,9 @@ TEST_F(SceneWorkflow, PhysicsRoundTripsParentAndChildBodiesInWorldSpace)
     scene.patch<Transform>(parent,[](auto& tr) { tr.position.x+=7; }); step();
     expectedChild.x+=7;
     EXPECT_NEAR((worldMatrix(scene,child).translation()-expectedChild).magnitude(),0,1e-4f);
-    scene.patch<physics::BoxCollider>(child,[](auto& box) { box.size=math::Vector3{2,2,2}; }); instance.settle(); step();
+    // PhysicsSyncSystem rebuilds the patched body at the end of the frame; the
+    // next step simulates the rebuilt body from the inherited pose.
+    scene.patch<physics::BoxCollider>(child,[](auto& box) { box.size=math::Vector3{2,2,2}; }); instance.settle(); step(); step();
     EXPECT_NEAR((worldMatrix(scene,child).translation()-expectedChild).magnitude(),0,1e-4f);
     manager.unbind(); manager.shutdown(); core::details::ServiceRegistry::shutdownAll();
 }

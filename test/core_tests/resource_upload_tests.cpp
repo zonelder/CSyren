@@ -245,7 +245,7 @@ TEST_F(ResourceUpload, GPUPlanCachesStableViewsAndRebuildsOnceBranchesAndGraphEd
     renderer->presentCameraOutput(false);
     auto view=renderer->addCameraView([&] { return std::pair{&camera,&transform}; });
     view->target->request(32,32);
-    renderer->prepareCameraViews(instance.scene(),32,32);
+    renderer->prepareCameraViews(core::details::Param<render::Renderer::CameraQuery>::make(&instance.scene()),0,32,32);
     ResourceFrame frame(*renderer);
     core::TaskDescription draw; draw.gpuScope=core::GpuTaskScope::View;
     draw.gpu("scene.color",D3D12_RESOURCE_STATE_RENDER_TARGET,core::AccessMode::Write);
@@ -256,7 +256,7 @@ TEST_F(ResourceUpload, GPUPlanCachesStableViewsAndRebuildsOnceBranchesAndGraphEd
     frame.graph.compile(tasks);
     int recordings=0;
     const auto run=[&] {
-        renderer->prepareCameraViews(instance.scene(),32,32);
+        renderer->prepareCameraViews(core::details::Param<render::Renderer::CameraQuery>::make(&instance.scene()),0,32,32);
         frame.graph.acquire(); frame.graph.prepareViews();
         frame.graph.record("view",[&] {
             ++recordings;
