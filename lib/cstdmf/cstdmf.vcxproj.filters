@@ -27,6 +27,9 @@
     <ClInclude Include="page_view.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="profiler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="fixed_sparse_set.h">
       <Filter>Header Files</Filter>
     </ClInclude>

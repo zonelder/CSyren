@@ -147,6 +147,7 @@
     <ClCompile Include="audit_regression_test.cpp" />
     <ClCompile Include="job_system_test.cpp" />
     <ClCompile Include="frame_graph_test.cpp" />
+    <ClCompile Include="profiler_test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

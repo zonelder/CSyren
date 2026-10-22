@@ -182,6 +182,7 @@
     <ClInclude Include="log.h" />
     <ClInclude Include="sparse_set.h" />
     <ClInclude Include="page_view.h" />
+    <ClInclude Include="profiler.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="static_vector.h" />
     <ClInclude Include="tree_algorithms.h" />

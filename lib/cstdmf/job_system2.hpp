@@ -5,6 +5,7 @@
 #define CSYREN_JOB_SYSTEM2_HPP
 
 #include "log.h"
+#include "profiler.h"
 #include "third_party/enkiTS/src/TaskScheduler.h"
 #include <algorithm>
 #include <array>
@@ -52,7 +53,11 @@ public:
     static JobSystem& instance() { static JobSystem system; return system; }
     void init(uint32_t numThreads = 0) {
         log::info("init JobSystem with {} threads", numThreads);
-        _scheduler.Initialize(numThreads ? numThreads : std::max(1u, std::thread::hardware_concurrency()));
+        enki::TaskSchedulerConfig config;
+        config.numTaskThreadsToCreate = (numThreads ? numThreads : std::max(1u, std::thread::hardware_concurrency())) - 1;
+        // Profiler tracks: "Worker N" (thread 0 is the thread that initializes, i.e. the main thread).
+        config.profilerCallbacks.threadStart = [](uint32_t thread) { profiler::setThreadName("Worker " + std::to_string(thread)); };
+        _scheduler.Initialize(config);
         _numThreads = _scheduler.GetNumTaskThreads();
         for (size_t storage = 0; storage < _entries.size(); ++storage) {
             _entries[storage].resize(_numThreads);
