@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "vector3.h"
+#include "Vector3.h"
 #include <limits>
 
 namespace csyren::math

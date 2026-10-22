@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Compiler settings shared by the engine libraries, csyren_host, the engine tests and
+       project executables (through CSyren.project.props). Import after Microsoft.Cpp.props.
+       Third-party projects (imGui, Jolt) do not import it.
+
+       cstdmf/window_clean.h is force-included first in every translation unit: <Windows.h>
+       is always included once, lean (WIN32_LEAN_AND_MEAN + NOMINMAX), and its near/far
+       macros are removed before any engine header is parsed (core::Camera::near/far).
+       The compiler and IntelliSense then see the same macro set in every file, whatever
+       the include order or the translation unit a header is parsed in.
+
+       /utf-8: sources are UTF-8 (without a BOM; .editorconfig sets it for new files) and
+       are compiled as UTF-8, string literals included. Without it cl reads a file without
+       a BOM in the system code page, while IntelliSense reads it as UTF-8: a Windows-1251
+       comment then breaks every IntelliSense parse that includes the file, standard
+       headers included, although the build is clean. tools/tests/test_source_encoding.py
+       rejects sources that are not UTF-8. -->
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <ForcedIncludeFiles>$(MSBuildThisFileDirectory)lib\cstdmf\window_clean.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <PreprocessorDefinitions>NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+</Project>

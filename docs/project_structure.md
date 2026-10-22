@@ -20,6 +20,13 @@ Components of a subsystem stay in its library (`Transform` in core, `RigidBody` 
 physics, lights in dx12_graphic): their systems use them, so they cannot live above
 the libraries. Projects do not list engine types anywhere; the registry picks them up.
 
+Sources (headers, `.cpp`, shaders) are UTF-8 without a BOM (`.editorconfig`) and are
+compiled with `/utf-8` (`CSyren.engine.props`, so projects get it too). Keep it that way:
+IntelliSense reads every file as UTF-8, and one file saved in another code page
+(Windows-1251) breaks it in every translation unit that includes the file, standard
+headers included (cl only warns, C4828). `tools/tests/test_source_encoding.py` lists
+such files.
+
 ## A project
 
 ```

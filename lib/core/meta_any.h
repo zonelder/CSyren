@@ -4,10 +4,8 @@
 #include "cstdmf/assert_helpler.h"
 #include <type_traits>
 
-namespace
+namespace csyren::core::reflection::details
 {
-	using namespace csyren::core::reflection;
-
 	inline const MetaData* findField(const MetaType* type, LiteralID id) noexcept
 	{
 		if (!type) return nullptr;
@@ -85,7 +83,8 @@ namespace csyren::core::reflection
 		{
 			using CleanType = std::remove_cvref_t<T>;
 
-			if (!_type || _type->id != resolve<CleanType>()->id)
+			// Compare type identities, not ids: unregistered types all have id 0.
+			if (!_type || _type != resolve<CleanType>())
 				return nullptr;
 
 			return static_cast<T*>(_instance);
@@ -96,7 +95,7 @@ namespace csyren::core::reflection
 		{
 			using CleanType = std::remove_cvref_t<T>;
 
-			if (!_type || _type->id != resolve<CleanType>()->id)
+			if (!_type || _type != resolve<CleanType>())
 				return nullptr;
 
 			return static_cast<const T*>(_instance);
@@ -141,7 +140,7 @@ namespace csyren::core::reflection
 		{
 			if (!_type || !_instance) return MetaAny(nullptr, nullptr);
 
-			auto fieldMeta = findField(_type, id);
+			auto fieldMeta = details::findField(_type, id);
 			if (!fieldMeta) return MetaAny(nullptr, nullptr);
 
 			void* field_ptr = fieldMeta->get ? fieldMeta->get(_instance) : nullptr;
@@ -161,7 +160,7 @@ namespace csyren::core::reflection
 
 		bool hasField(LiteralID id) const
 		{
-			return _type && findField(_type,id);
+			return _type && details::findField(_type,id);
 		}
 
 	private:

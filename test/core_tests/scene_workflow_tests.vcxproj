@@ -15,6 +15,7 @@
     <UseDebugLibraries Condition="'$(Configuration)'!='Debug'">false</UseDebugLibraries>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="..\..\CSyren.engine.props" />
   <PropertyGroup>
     <WorkflowTestSource Condition="'$(WorkflowTestSource)'==''">scene_workflow_tests.cpp</WorkflowTestSource>
     <TargetName Condition="'$(WorkflowTestName)'!=''">$(WorkflowTestName)</TargetName>
@@ -25,7 +26,7 @@
     <ClCompile>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions><LanguageStandard>stdcpp20</LanguageStandard><WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)lib;$(SolutionDir)source\runtime;$(SolutionDir)source\editor;$(SolutionDir)source\host;$(SolutionDir);$(SolutionDir)lib\imGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)lib;$(SolutionDir)source\runtime;$(SolutionDir)source\editor;$(SolutionDir)source\host;$(SolutionDir)lib\imGui;$(SolutionDir)lib\imGui\backends;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary Condition="'$(Configuration)'=='Debug'">MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeLibrary Condition="'$(Configuration)'!='Debug'">MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
@@ -34,14 +35,6 @@
   <ItemGroup>
     <ClCompile Include="$(WorkflowTestSource)" />
     <ClCompile Include="resource_upload_tests.cpp" />
-    <ClCompile Include="..\..\source\editor\scene_session.cpp" />
-    <ClCompile Include="..\..\source\runtime\serializer_scene.cpp" />
-    <ClCompile Include="..\..\source\runtime\meta_common.cpp" />
-    <ClCompile Include="..\..\source\runtime\serializer.cpp" />
-    <ClCompile Include="..\..\source\editor\editor_base.cpp" />
-    <ClCompile Include="..\..\source\editor\math_editor.cpp" />
-    <ClCompile Include="..\..\source\editor\inspector_window.cpp" />
-    <ClCompile Include="..\..\lib\dx12_graphic\resource_manager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="scene_pipeline_cases.h" />
@@ -49,6 +42,9 @@
     <ClInclude Include="viewport_cases.h" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Editor/runtime code under test comes from the csyren_host library (linked as a .lib,
+         so only the objects the tests use are pulled in); it is not recompiled here. -->
+    <ProjectReference Include="..\..\source\csyren_host.vcxproj"><Project>{7e2b4c61-3f5a-4d8e-9b1c-2a6d5e8f0c13}</Project></ProjectReference>
     <ProjectReference Include="..\..\lib\core\core.vcxproj"><Project>{c2d419d8-5a36-4905-bf2f-7fbc3cd025e9}</Project></ProjectReference>
     <ProjectReference Include="..\..\lib\physics\physics.vcxproj"><Project>{996e7bff-0176-4769-ad10-d9f68d3f755b}</Project></ProjectReference>
     <ProjectReference Include="..\..\lib\dx12_graphic\dx12_graphic.vcxproj"><Project>{02615bfc-b339-45ba-bf9f-22820d9e80a2}</Project></ProjectReference>

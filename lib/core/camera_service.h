@@ -1,6 +1,7 @@
 #pragma once
 
 #include "camera.h"
+#include "entity.h"
 #include "transform.h"
 
 #include <functional>

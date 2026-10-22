@@ -4,7 +4,7 @@
 #include "editor_commands.h"
 #include <deque>
 #include <utility>
-#include "math/vector3.h"
+#include "math/Vector3.h"
 
 namespace csyren::editor
 {

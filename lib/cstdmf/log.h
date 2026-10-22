@@ -65,10 +65,12 @@ namespace csyren::log
         write(std::format("[{}] {}", toString(level), msg));
     }
 
-    namespace
+    namespace details
     {
+        // Not named `log`: a function with the namespace's own name (next to the CRT ::log
+        // from <cmath>) made IntelliSense resolve `log::` to a function.
         template<typename... Args>
-        void log(Level level, std::format_string<Args...> fmt, Args&&... args)
+        void writeFormatted(Level level, std::format_string<Args...> fmt, Args&&... args)
         {
             write(level, std::format(fmt, std::forward<Args>(args)...));
         }
@@ -78,25 +80,25 @@ namespace csyren::log
     template<typename... Args>
     void debug(std::format_string<Args...> fmt, Args&&... args)
     {
-        log(Level::Debug, fmt, std::forward<Args>(args)...);
+        details::writeFormatted(Level::Debug, fmt, std::forward<Args>(args)...);
     }
 
     template<typename... Args>
     void info(std::format_string<Args...> fmt, Args&&... args)
     {
-        log(Level::Info, fmt, std::forward<Args>(args)...);
+        details::writeFormatted(Level::Info, fmt, std::forward<Args>(args)...);
     }
 
     template<typename... Args>
     void warning(std::format_string<Args...> fmt, Args&&... args)
     {
-        log(Level::Warning, fmt, std::forward<Args>(args)...);
+        details::writeFormatted(Level::Warning, fmt, std::forward<Args>(args)...);
     }
 
     template<typename... Args>
     void error(std::format_string<Args...> fmt, Args&&... args)
     {
-        log(Level::Error, fmt, std::forward<Args>(args)...);
+        details::writeFormatted(Level::Error, fmt, std::forward<Args>(args)...);
     }
 
     inline void error(std::string_view msg)

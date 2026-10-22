@@ -2,7 +2,7 @@
 #define __MATRIX_H__
 
 
-#include "vector3.h"
+#include "Vector3.h"
 #include "vector4.h"
 #include "quaternion.h"
 

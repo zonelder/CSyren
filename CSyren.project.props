@@ -43,5 +43,6 @@
       <UseLibraryDependencyInputs>true</UseLibraryDependencyInputs>
     </ProjectReference>
   </ItemDefinitionGroup>
+  <Import Project="$(MSBuildThisFileDirectory)CSyren.engine.props" />
   <Import Project="$(MSBuildThisFileDirectory)CSyren.paths.props" />
 </Project>

@@ -156,12 +156,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="component_registry.inl">
-      <Filter>Header Files</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="scene_context.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="project_paths.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="component_registry.inl"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="transform_hierarchy.h"><Filter>Header Files</Filter></ClInclude>
   </ItemGroup>
 </Project>

@@ -4,20 +4,25 @@
 #include <d3dcompiler.h>
 
 
-struct ResourceKey
+namespace
+{
+// Shader binding key used only in this file. Not named ResourceKey: render::ResourceKey
+// (resource_handle_meta.h) is a different type, and the uses below are inside csyren::render.
+struct ShaderBindingKey
 {
     std::string name;
     uint32_t    space;
     uint32_t    reg;
     D3D_SHADER_INPUT_TYPE type;
-    bool operator==(const ResourceKey& o) const noexcept = default;
+    bool operator==(const ShaderBindingKey& o) const noexcept = default;
 };
+}
 
 namespace std
 {
-    template<> struct hash<ResourceKey>
+    template<> struct hash<ShaderBindingKey>
     {
-        size_t operator()(const ResourceKey& k) const noexcept
+        size_t operator()(const ShaderBindingKey& k) const noexcept
         {
             size_t h1 = hash<string>{}(k.name);
             size_t h2 = hash<uint32_t>{}(k.space) ^ (hash<uint32_t>{}(k.reg) << 1);
@@ -42,7 +47,7 @@ namespace
     static void collectResources(
         ID3D12ShaderReflection* refl,
         D3D12_SHADER_VISIBILITY stage,
-        std::unordered_map<ResourceKey, D3D12_SHADER_VISIBILITY>& vis,
+        std::unordered_map<ShaderBindingKey, D3D12_SHADER_VISIBILITY>& vis,
         std::unordered_map<std::string, uint32_t>& cbSizes,
         std::unordered_map<std::string, std::vector<std::pair<std::string, csyren::render::ConstantBufferVariableInfo>>>& vars)
     {
@@ -55,7 +60,7 @@ namespace
             D3D12_SHADER_INPUT_BIND_DESC bind;
             refl->GetResourceBindingDesc(i, &bind);
 
-            ResourceKey key{ bind.Name, bind.Space, bind.BindPoint,
+            ShaderBindingKey key{ bind.Name, bind.Space, bind.BindPoint,
                              bind.Type };
 
             auto [it, inserted] = vis.try_emplace(key, stage);
@@ -173,7 +178,7 @@ namespace csyren::render
         _variableInfoMap.clear();
         _constantBufferSizes.clear();
 
-        std::unordered_map<ResourceKey, D3D12_SHADER_VISIBILITY> resourceVisibility;
+        std::unordered_map<ShaderBindingKey, D3D12_SHADER_VISIBILITY> resourceVisibility;
         std::unordered_map<std::string, uint32_t>                cbSizes;
         std::unordered_map<std::string, std::vector<std::pair<std::string, csyren::render::ConstantBufferVariableInfo>>> cbVars;
 
@@ -202,7 +207,7 @@ namespace csyren::render
                 resourceVisibility, cbSizes, cbVars);
         }
 
-        std::vector<std::pair<ResourceKey, D3D12_SHADER_VISIBILITY>> items;
+        std::vector<std::pair<ShaderBindingKey, D3D12_SHADER_VISIBILITY>> items;
         items.reserve(resourceVisibility.size());
         for (auto& kv : resourceVisibility)
             items.push_back(kv);

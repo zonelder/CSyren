@@ -5,6 +5,13 @@
 #include <algorithm>
 #include "registration.h"
 
+// <Windows.h> defines near/far as empty macros, which would erase the fields below.
+// cstdmf/window_clean.h removes them and CSyren.engine.props force-includes it first in
+// every translation unit; fail with a clear message if they leak back in anyway.
+#if defined(near) || defined(far)
+#error "near/far macros from <Windows.h> are defined: include cstdmf/window_clean.h before Windows SDK headers (CSyren.engine.props force-includes it)"
+#endif
+
 namespace csyren::core
 {
     CS_ENUM(CameraRenderType, int, EachFrame, Once)
