@@ -4,6 +4,3 @@
 // another project's), which made highlighting unstable. Compiling them here also checks that
 // they build with this project's settings. Add new header-only headers of the project here.
 #include "pch.h"
-
-#include "physics/spring_join.h"
-#include "physics/spring_join_system.h"

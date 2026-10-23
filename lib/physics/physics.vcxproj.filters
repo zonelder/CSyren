@@ -36,12 +36,6 @@
     <ClInclude Include="default_shapes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="spring_join.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="spring_join_system.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="character_controller.h">
       <Filter>Header Files</Filter>
     </ClInclude>

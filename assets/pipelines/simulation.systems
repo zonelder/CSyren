@@ -7,9 +7,6 @@
             "class": "PhysicsSyncSystem"
         },
         {
-            "class": "SpringJoinSystem"
-        },
-        {
             "class": "AnimationSystem"
         }
     ]

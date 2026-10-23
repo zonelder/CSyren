@@ -123,7 +123,7 @@ The engine pipeline is split into pieces under `assets/pipelines/`:
 | file | contents |
 | --- | --- |
 | `begin.systems` | frame phases, `InputDispatchSystem`, `SceneEventsSystem` (dispatches scene events in phase `events`) |
-| `simulation.systems` | `PhysicsSystem`, `PhysicsSyncSystem`, `SpringJoinSystem`, `AnimationSystem` |
+| `simulation.systems` | `PhysicsSystem`, `PhysicsSyncSystem`, `AnimationSystem` |
 | `render.systems` | `RenderEnvironmentSystem` … `PresentationSystem` |
 | `editor.systems` | the complete editor list |
 

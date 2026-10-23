@@ -16,7 +16,7 @@ namespace csyren::physics
 		float mass = 1.0f;
 		bool useGravity = true;
 		float friction = 0.6f;
-		float restitution = 1.0f;
+		float restitution = 0.0f;   // Jolt combines it with max(): 1 on one body made every contact elastic
 		math::Vector3 linearVelocity = math::Vector3::zero;
 		math::Vector3 angularVelocity = math::Vector3::zero;
 		// Collision layer (PhysicsLayers); unknown names behave like "Default".
