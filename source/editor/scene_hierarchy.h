@@ -19,7 +19,7 @@ namespace csyren::editor
             auto* entt = scene->entities().try_get(entityId);
             if (!entt) return;
 
-            ImGui::PushID(static_cast<int>(entityId));
+            ImGui::PushID(static_cast<int>(core::Entity::slot(entityId))); // one live entity per slot
 
             bool isSelected = selection->isSelected(entityId);
             bool hasChildren = !entt->children.empty();

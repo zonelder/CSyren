@@ -145,6 +145,15 @@ namespace csyren::core
     private:
         // Owned by a graph task. Public Scene methods automatically use the active
         // transaction; users never manage command buffers or temporary entity IDs.
+        struct ComponentKey {
+            Entity::ID id; size_t family;
+            bool operator==(const ComponentKey&) const = default;
+        };
+        struct ComponentKeyHash {
+            size_t operator()(const ComponentKey& key) const noexcept {
+                return std::hash<uint64_t>{}(key.id * 0x9E3779B97F4A7C15ull ^ uint64_t(key.family));
+            }
+        };
         class Transaction {
             friend class Scene;
             template<typename...> friend class SceneView;
@@ -152,7 +161,7 @@ namespace csyren::core
             std::vector<std::function<void()>> cancellations;
             // Staged additions (StagedComponent<T>) and removals (nullptr) by
             // componentKey(id, family); the key already names the type.
-            std::unordered_map<uint64_t, std::shared_ptr<void>> components;
+            std::unordered_map<ComponentKey, std::shared_ptr<void>, ComponentKeyHash> components;
             std::unordered_map<Entity::ID, bool> entities;
         public:
             void apply(Scene& scene) {
@@ -278,7 +287,7 @@ namespace csyren::core
             if (auto* tx = transaction()) {
                 if (!tx->entities.contains(id) && !_em.contains(id)) return {};
                 const auto family = reflection::ComponentFamily::getID<T>();
-                const uint64_t key = componentKey(id, family);
+                const auto key = componentKey(id, family);
                 // Presence only: inserting T does not require read access to T.
                 if (lookupComponent<const T>(id)) throw std::runtime_error("Component already present");
                 auto staged = std::make_shared<StagedComponent<T>>();
@@ -399,7 +408,7 @@ namespace csyren::core
         template<typename T> void validateAccess() const { requireComponentAccess<T>(); }
         template<typename T> void validatePresence() const { requirePresenceAccess<T>(); }
 
-		const cstdmf::SparseSet<Entity>& entities() const {
+		const EntitySet<Entity>& entities() const {
 #if CSYREN_ACCESS_VALIDATION
             const auto* b = TaskScope::_active;
             if (b && b->scene == this && b->description && !b->description->exclusiveScene && !b->description->structuralChanges) {
@@ -496,9 +505,7 @@ namespace csyren::core
             auto* binding = TaskScope::_active;
             return binding && binding->scene == this ? binding->transaction : nullptr;
         }
-        static uint64_t componentKey(Entity::ID id, size_t family) {
-            return (uint64_t(id) << 32) | uint32_t(family);
-        }
+        static ComponentKey componentKey(Entity::ID id, size_t family) { return { id, family }; }
 
 		template<class T>
 		bool destroy(Entity::ID id)
@@ -739,7 +746,7 @@ namespace csyren::core
                             }
                         }(), ...);
                     }, _pools);
-                    for (const auto& [key, value] : tx->components) _overlayKeys.push_back(Entity::ID(key >> 32));
+                    for (const auto& [key, value] : tx->components) _overlayKeys.push_back(key.id);
                     std::sort(_overlayKeys.begin(), _overlayKeys.end());
                     _overlayKeys.erase(std::unique(_overlayKeys.begin(), _overlayKeys.end()), _overlayKeys.end());
                     _overlayMode = true;

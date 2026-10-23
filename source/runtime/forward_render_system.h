@@ -98,7 +98,7 @@ namespace csyren::render
                     boundMaterial = item.material; boundMesh = item.mesh;
                 }
                 entityParams->setWorld(worlds.matrix(item.entity));
-                entityParams->entityID = item.entity;
+                entityParams->entityID = core::Entity::slot(item.entity);
                 if (!renderer.bindEntity(entityLayout)) return;
                 mesh->draw(renderer);
             };

@@ -316,7 +316,7 @@ namespace csyren::core
         }
 
         // The entity hierarchy is always readable; it changes only in structural commits.
-        const cstdmf::SparseSet<Entity>& entities() const { return _scene->entities(); }
+        const EntitySet<Entity>& entities() const { return _scene->entities(); }
         uint64_t hierarchyRevision() const { return _scene->hierarchyRevision(); }
         // Distinguishes scenes (e.g. editor and play-mode instances) for derived caches.
         uint64_t sceneIdentity() const { return _scene->identity(); }

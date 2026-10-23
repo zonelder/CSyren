@@ -107,7 +107,7 @@ namespace csyren::core
             uint64_t identity() const { return scene.identity(); }
             uint64_t hierarchy() const { return scene.hierarchyRevision(); }
             uint64_t transforms() const { return scene.componentRevision<Transform>(); }
-            const cstdmf::SparseSet<Entity>& entities() const { return scene.entities(); }
+            const EntitySet<Entity>& entities() const { return scene.entities(); }
             auto view() const { return scene.view<const Transform>(); }
         };
         template<class Query> struct QuerySource
@@ -116,7 +116,7 @@ namespace csyren::core
             uint64_t identity() const { return query.sceneIdentity(); }
             uint64_t hierarchy() const { return query.hierarchyRevision(); }
             uint64_t transforms() const { return query.template componentRevision<Transform>(); }
-            const cstdmf::SparseSet<Entity>& entities() const { return query.entities(); }
+            const EntitySet<Entity>& entities() const { return query.entities(); }
             auto view() const { return query.template select<Transform>(); }
         };
     public:
@@ -179,7 +179,7 @@ namespace csyren::core
         }
         static constexpr size_t noParent = std::numeric_limits<size_t>::max();
         struct World { math::Matrix4x4 matrix; math::Quaternion rotation; size_t parent = noParent; };
-        cstdmf::SparseSet<World> _worlds;
+        EntitySet<World> _worlds;
         std::vector<const Transform*> _locals;
         std::vector<Entity::ID> _order;
         uint64_t _scene = 0, _hierarchy = 0, _components = 0;

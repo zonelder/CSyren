@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "core/scene.h"
+#include "scene_job_test_access.h"
 
 #include <random>
 #include <algorithm>
@@ -590,4 +591,119 @@ TEST(ReflectionTest, SameIdForTwoTypesIsAnError)
     MetaFactory<CollisionProbeA>{}.type("ReflectionCollisionProbe"_hs);
     EXPECT_NO_THROW(MetaFactory<CollisionProbeA>{}.type("ReflectionCollisionProbe"_hs)); // the same type again
     EXPECT_THROW(MetaFactory<CollisionProbeB>{}.type("ReflectionCollisionProbe"_hs), std::logic_error);
+}
+
+// ---- entity IDs carry a generation: the ID of a destroyed entity never names another one
+
+TEST_F(SceneTest, DestroyedIdNeverNamesTheReplacement)
+{
+    const auto old = scene.createEntity();
+    scene.addComponent<TestComponent>(old, 1);
+    scene.destroyEntity(old);
+    flush();
+    const auto replacement = scene.createEntity();
+    EXPECT_EQ(Entity::slot(replacement), Entity::slot(old)); // the slot is reused...
+    EXPECT_EQ(Entity::generation(replacement), Entity::generation(old) + 1); // ...with the next generation
+    EXPECT_NE(replacement, old);
+    EXPECT_FALSE(scene.entities().contains(old));
+    EXPECT_TRUE(scene.entities().contains(replacement));
+
+    EXPECT_FALSE(scene.addComponent<TestComponent>(old, 2));
+    EXPECT_FALSE(scene.hasComponent<TestComponent>(replacement));
+    scene.addComponent<TestComponent>(replacement, 3);
+    EXPECT_FALSE(scene.getComponent<TestComponent>(old));
+    EXPECT_FALSE(scene.view<TestComponent>().contains(old));
+    EXPECT_EQ(scene.getComponent<TestComponent>(replacement)->value, 3);
+
+    // Commands with the old ID leave the replacement alone.
+    scene.removeComponent<TestComponent>(old);
+    EXPECT_FALSE(scene.setParent(old, EntityManager::ROOT_PARENT));
+    EXPECT_FALSE(scene.setName(old, "old"));
+    scene.destroyEntity(old);
+    flush();
+    EXPECT_TRUE(scene.entities().contains(replacement));
+    EXPECT_EQ(scene.getComponent<TestComponent>(replacement)->value, 3);
+}
+
+TEST_F(SceneTest, StagedCommandsOfADestroyedEntitySkipTheReplacement)
+{
+    const auto target = scene.createEntity();
+    scene.addComponent<TestComponent>(target, 1);
+    // A task stages changes of `target`...
+    details::SceneJobTestAccess::Transaction tx;
+    TaskDescription description;
+    description.structuralChanges = true;
+    description.write<TestComponent>();
+    {
+        details::SceneJobTestAccess::TaskScope scope(scene, &tx, &description);
+        scene.removeComponent<TestComponent>(target);
+        scene.setName(target, "renamed");
+        scene.destroyEntity(target);
+    }
+    // ...another commit destroys it before this task's commit, and the slot is reused.
+    scene.destroyEntity(target);
+    flush();
+    const auto replacement = scene.createEntity("replacement");
+    scene.addComponent<TestComponent>(replacement, 2);
+    ASSERT_EQ(Entity::slot(replacement), Entity::slot(target));
+    tx.apply(scene);
+    ASSERT_TRUE(scene.entities().contains(replacement));
+    EXPECT_EQ(scene.entities().try_get(replacement)->name, "replacement");
+    EXPECT_EQ(scene.getComponent<TestComponent>(replacement)->value, 2);
+}
+
+TEST_F(SceneTest, EntityEventsCarryTheWholeId)
+{
+    std::vector<Entity::ID> created, destroyed;
+    bus.subscribe<EntityCreateEvent>([&](const EntityCreateEvent& e) { created.push_back(e.id); });
+    bus.subscribe<EntityDestroyEvent>([&](const EntityDestroyEvent& e) { destroyed.push_back(e.id); });
+    const auto old = scene.createEntity();
+    scene.destroyEntity(old);
+    flush();
+    const auto replacement = scene.createEntity();
+    bus.commit_batch(); // delivered by event type: creations first
+    EXPECT_EQ(created, (std::vector<Entity::ID>{ old, replacement }));
+    EXPECT_EQ(destroyed, std::vector<Entity::ID>{ old });
+}
+
+namespace csyren::core::details
+{
+    struct EntityManagerTestAccess
+    {
+        static void setGeneration(EntityManager& manager, uint32_t slot, uint32_t generation)
+        {
+            if (manager._generations.size() <= slot) manager._generations.resize(size_t(slot) + 1, 0);
+            manager._generations[slot] = generation;
+        }
+        static constexpr uint32_t lastGeneration = EntityManager::kLastGeneration;
+    };
+}
+
+namespace
+{
+    void destroyNow(EntityManager& manager, Entity::ID id)
+    {
+        manager.queueDestroy(id);
+        for (const auto doomed : manager.collectDestroyList()) manager.finalizeDestroy(doomed);
+        manager.clearPending();
+    }
+}
+
+TEST(EntityManagerTest, SlotWithExhaustedGenerationIsRetired)
+{
+    using Access = details::EntityManagerTestAccess;
+    EntityManager manager;
+    manager.init();
+    const auto first = manager.createEntity();
+    destroyNow(manager, first);
+    Access::setGeneration(manager, Entity::slot(first), Access::lastGeneration);
+    const auto last = manager.createEntity();
+    EXPECT_EQ(Entity::slot(last), Entity::slot(first));
+    EXPECT_EQ(Entity::generation(last), Access::lastGeneration);
+    EXPECT_NE(last, Entity::invalidID);
+    destroyNow(manager, last);
+    const auto next = manager.createEntity();
+    EXPECT_NE(Entity::slot(next), Entity::slot(first)); // retired: never handed out again
+    EXPECT_FALSE(manager.contains(last));
+    EXPECT_TRUE(manager.contains(next));
 }

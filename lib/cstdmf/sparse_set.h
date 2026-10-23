@@ -12,16 +12,28 @@
 
 namespace csyren::cstdmf
 {
+    // Slot of a key in the sparse pages: the key itself.
+    template<typename Key> struct KeySlot
+    {
+        constexpr std::uint64_t operator()(Key key) const noexcept { return key; }
+    };
+
     // Dense values with a paged key->index map. Keys are immutable through the
     // public API. Insertion/reserve can invalidate pointers; erase moves the last
-    // value into the hole. No synchronization or generation checking is implied.
-    template<typename T, typename EntityID = std::uint32_t>
+    // value into the hole. No synchronization is implied.
+    //
+    // SlotOf maps a key to its sparse slot. Keys that carry more than a slot (an
+    // entity ID with a generation) share the slot with their other generations;
+    // lookups compare the whole key, so a key of another generation is not found.
+    template<typename T, typename Key = std::uint32_t, typename SlotOf = KeySlot<Key>>
     class SparseSet
     {
-        static_assert(std::is_integral_v<EntityID> && std::is_unsigned_v<EntityID> && !std::is_same_v<EntityID, bool>);
+        static_assert(std::is_integral_v<Key> && std::is_unsigned_v<Key> && !std::is_same_v<Key, bool>);
         static_assert(std::is_nothrow_destructible_v<T>);
         static_assert(!std::is_same_v<T, bool>, "vector<bool> does not provide contiguous bool objects");
-        using index_type = EntityID;
+        using EntityID = Key;
+        // Dense indices: as wide as the key, at most 32 bits.
+        using index_type = std::conditional_t<(sizeof(Key) < sizeof(std::uint32_t)), Key, std::uint32_t>;
         static constexpr index_type kInvalidIndex = std::numeric_limits<index_type>::max();
         static constexpr std::size_t kPageBits = 12;
         static constexpr std::size_t kPageSize = std::size_t{1} << kPageBits;
@@ -70,7 +82,7 @@ namespace csyren::cstdmf
             requires (std::is_move_assignable_v<T> || relocatable)
         {
             auto* cell = sparsePtr(entity); // Read-only lookup: never allocate.
-            if (!cell || *cell == kInvalidIndex) return false;
+            if (!cell || *cell == kInvalidIndex || _dense[*cell] != entity) return false;
             const auto idx = *cell;
             const auto last = _dense.size() - 1;
             if (idx != last)
@@ -85,8 +97,8 @@ namespace csyren::cstdmf
                 const auto moved = _dense[last];
                 _dense[idx] = moved;
                 // moved is already live, so its sparse page necessarily exists.
-                const auto movedPage = static_cast<std::size_t>(static_cast<std::uintmax_t>(moved) >> kPageBits);
-                _sparsePages[movedPage][moved & kPageMask] = idx;
+                const auto movedSlot = SlotOf{}(moved);
+                _sparsePages[static_cast<std::size_t>(movedSlot >> kPageBits)][movedSlot & kPageMask] = idx;
             }
             _items.pop_back();
             _dense.pop_back();
@@ -95,11 +107,11 @@ namespace csyren::cstdmf
         }
 
         bool contains(EntityID entity) const noexcept
-        { const auto* cell = sparsePtr(entity); return cell && *cell != kInvalidIndex; }
+        { const auto* cell = sparsePtr(entity); return cell && *cell != kInvalidIndex && _dense[*cell] == entity; }
         T* try_get(EntityID entity) noexcept
-        { const auto* cell = sparsePtr(entity); return cell && *cell != kInvalidIndex ? &_items[*cell] : nullptr; }
+        { const auto* cell = sparsePtr(entity); return cell && *cell != kInvalidIndex && _dense[*cell] == entity ? &_items[*cell] : nullptr; }
         const T* try_get(EntityID entity) const noexcept
-        { const auto* cell = sparsePtr(entity); return cell && *cell != kInvalidIndex ? &_items[*cell] : nullptr; }
+        { const auto* cell = sparsePtr(entity); return cell && *cell != kInvalidIndex && _dense[*cell] == entity ? &_items[*cell] : nullptr; }
         T& operator[](EntityID entity)
         {
             if (auto* p = try_get(entity)) return *p;
@@ -150,19 +162,22 @@ namespace csyren::cstdmf
     private:
         index_type* sparsePtr(EntityID entity) noexcept
         {
-            const auto page = static_cast<std::uintmax_t>(entity) >> kPageBits;
+            const std::uint64_t slot = SlotOf{}(entity);
+            const auto page = slot >> kPageBits;
             if (std::cmp_greater_equal(page, _sparsePages.size()) || !_sparsePages[static_cast<std::size_t>(page)]) return nullptr;
-            return &_sparsePages[static_cast<std::size_t>(page)][entity & kPageMask];
+            return &_sparsePages[static_cast<std::size_t>(page)][slot & kPageMask];
         }
         const index_type* sparsePtr(EntityID entity) const noexcept
         {
-            const auto page = static_cast<std::uintmax_t>(entity) >> kPageBits;
+            const std::uint64_t slot = SlotOf{}(entity);
+            const auto page = slot >> kPageBits;
             if (std::cmp_greater_equal(page, _sparsePages.size()) || !_sparsePages[static_cast<std::size_t>(page)]) return nullptr;
-            return &_sparsePages[static_cast<std::size_t>(page)][entity & kPageMask];
+            return &_sparsePages[static_cast<std::size_t>(page)][slot & kPageMask];
         }
         index_type& sparseRef(EntityID entity)
         {
-            const auto widePage = static_cast<std::uintmax_t>(entity) >> kPageBits;
+            const std::uint64_t slot = SlotOf{}(entity);
+            const auto widePage = slot >> kPageBits;
             if (std::cmp_greater_equal(widePage, _sparsePages.max_size())) throw std::length_error("SparseSet key too large");
             const auto page = static_cast<std::size_t>(widePage);
             if (page >= _sparsePages.size()) _sparsePages.resize(page + 1);
@@ -172,7 +187,7 @@ namespace csyren::cstdmf
                 std::fill_n(allocated.get(), kPageSize, kInvalidIndex);
                 _sparsePages[page] = std::move(allocated);
             }
-            return _sparsePages[page][entity & kPageMask];
+            return _sparsePages[page][slot & kPageMask];
         }
 
         std::vector<std::unique_ptr<index_type[]>> _sparsePages;

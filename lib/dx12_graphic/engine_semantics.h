@@ -37,7 +37,7 @@ namespace csyren::render
 	{
 		DirectX::XMFLOAT4X4 worldMatrix{};
 		DirectX::XMFLOAT4X4 normalMatrix{};	// inverse-transpose of the world's 3x3 (semantic WorldNormal)
-		core::Entity::ID	entityID;
+		uint32_t			entityID;	// the entity's slot (core::Entity::slot)
 		size_t				materialID;
 		size_t				meshID;
 

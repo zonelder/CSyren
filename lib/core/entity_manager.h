@@ -12,9 +12,16 @@
 
 namespace csyren::core
 {
+    namespace details { struct EntityManagerTestAccess; }
+
+    // Entities of a scene and their IDs. An ID is a slot plus the slot's generation
+    // (see Entity::ID): freeing a slot raises its generation, so IDs of destroyed
+    // entities stay invalid when the slot is reused. A slot whose generation runs
+    // out is retired (never handed out again).
     class EntityManager
     {
         friend class EntityBatch;
+        friend struct details::EntityManagerTestAccess;
     public:
         static constexpr std::string_view DEFAULT_NAME{ "new Entity" };
         static constexpr Entity::ID ROOT_PARENT = 0;
@@ -139,7 +146,7 @@ namespace csyren::core
             return cstdmf::tree::reparent(id, parent, Entity::invalidID,
                 [this](auto key) { return tryGet(key); }, &Entity::parent, &Entity::children);
         }
-        [[nodiscard]] const cstdmf::SparseSet<Entity>& all() const { return _entities; }
+        [[nodiscard]] const EntitySet<Entity>& all() const { return _entities; }
 
         void finalizeDestroy(Entity::ID id)
         {
@@ -167,33 +174,54 @@ namespace csyren::core
             _entities.erase(id);
 
             std::lock_guard lock(_idMutex);
-            if (id + 1 == _nextId)
-                --_nextId;
-            else
-                _freeIDs.push_back(id);
+            freeSlot(id);
         }
 
         void clearPending() { _pendingDestroy.clear(); }
 
     private:
+        // Slots below this limit can be handed out (the all-ones ID is invalidID).
+        static constexpr uint32_t kSlotLimit = std::numeric_limits<uint32_t>::max();
+        // Freeing a slot at this generation retires it.
+        static constexpr uint32_t kLastGeneration = std::numeric_limits<uint32_t>::max() - 1;
+
+        uint32_t generationOf(uint32_t slot) const noexcept
+        {
+            return slot < _generations.size() ? _generations[slot] : 0;
+        }
         Entity::ID plannedId(size_t index) const
         {
-            if (index < _freeIDs.size()) return _freeIDs[_freeIDs.size() - index - 1];
-            const auto offset = index - _freeIDs.size();
-            if (offset >= uint64_t(Entity::invalidID) - _nextId) throw std::runtime_error("EntityManager: out of Entity IDs");
-            return _nextId + static_cast<Entity::ID>(offset);
+            if (index < _freeSlots.size())
+            {
+                const auto slot = _freeSlots[_freeSlots.size() - index - 1];
+                return Entity::makeID(slot, generationOf(slot));
+            }
+            const auto offset = index - _freeSlots.size();
+            if (offset >= uint64_t(kSlotLimit) - _nextSlot) throw std::runtime_error("EntityManager: out of Entity IDs");
+            return Entity::makeID(_nextSlot + static_cast<uint32_t>(offset), 0);
         }
         Entity::ID allocateId()
         {
-            if (!_freeIDs.empty())
+            if (!_freeSlots.empty())
             {
-                Entity::ID id = _freeIDs.back();
-                _freeIDs.pop_back();
-                return id;
+                const auto slot = _freeSlots.back();
+                _freeSlots.pop_back();
+                return Entity::makeID(slot, generationOf(slot));
             }
-            if (_nextId == Entity::invalidID)
+            if (_nextSlot == kSlotLimit)
                 throw std::runtime_error("EntityManager: out of Entity IDs");
-            return _nextId++;
+            return Entity::makeID(_nextSlot++, 0);
+        }
+        // The slot of `id` goes back to the free list with the next generation,
+        // or is retired when its generation is used up. Ignores stale IDs.
+        void freeSlot(Entity::ID id)
+        {
+            const auto slot = Entity::slot(id);
+            if (Entity::generation(id) != generationOf(slot)) return;
+            if (slot >= _generations.size()) _generations.resize(size_t(slot) + 1, 0);
+            if (_generations[slot] == kLastGeneration) return;
+            ++_generations[slot];
+            _freeSlots.push_back(slot);
         }
 
         bool canBeParent(Entity::ID parent, Entity::ID child) const
@@ -210,9 +238,10 @@ namespace csyren::core
             });
         }
 
-        cstdmf::SparseSet<Entity> _entities;
-        std::vector<Entity::ID>   _freeIDs;
-        Entity::ID                _nextId = 1;
+        EntitySet<Entity>     _entities;
+        std::vector<uint32_t> _generations;   // by slot; slots past the end are at generation 0
+        std::vector<uint32_t> _freeSlots;     // reused last in, first out
+        uint32_t              _nextSlot = 1;  // slot 0 is the scene root
         std::mutex _idMutex;
         std::unordered_set<Entity::ID>   _pendingDestroy;
     };

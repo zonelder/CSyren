@@ -175,3 +175,26 @@ TEST(SparseSet, IteratorStability) {
     std::vector<int> vec{ s.begin(), s.end() };
     EXPECT_EQ(vec.size(), 2u);
 }
+
+// Keys that carry more than a slot (here: the low 8 bits) share the slot with
+// their other versions; only the exact key is found.
+struct LowByteSlot { std::uint64_t operator()(std::uint32_t key) const noexcept { return key & 0xFFu; } };
+
+TEST(SparseSetTest, KeysSharingASlotAreDistinct)
+{
+    SparseSet<int, std::uint32_t, LowByteSlot> s;
+    const std::uint32_t first = 0x105, second = 0x205; // same slot 5
+    s.emplace(first, 1);
+    EXPECT_TRUE(s.contains(first));
+    EXPECT_FALSE(s.contains(second));
+    EXPECT_EQ(s.try_get(second), nullptr);
+    EXPECT_FALSE(s.erase(second));
+    EXPECT_THROW(s.emplace(second, 2), std::runtime_error); // the slot is taken
+    EXPECT_TRUE(s.erase(first));
+    s.emplace(second, 2);
+    EXPECT_FALSE(s.contains(first));
+    EXPECT_EQ(s[second], 2);
+    s.emplace(0x107, 7); // erase moves the last value into the hole: its slot follows
+    EXPECT_TRUE(s.erase(second));
+    EXPECT_EQ(s[0x107], 7);
+}

@@ -22,7 +22,7 @@ namespace csyren::core
     };
 
     template<class T>
-    class ComponentPool : public PoolBase, public cstdmf::SparseSet<T>
+    class ComponentPool : public PoolBase, public EntitySet<T>
     {
         static constexpr bool transferable = std::is_nothrow_move_constructible_v<T> || std::is_nothrow_copy_constructible_v<T>;
     public:
@@ -32,7 +32,7 @@ namespace csyren::core
             // reserveKeys preallocates these entries for its no-throw commit.
             auto [it, inserted] = _generations.try_emplace(id, 0);
             const bool existing = this->contains(id);
-            auto* value = cstdmf::SparseSet<T>::emplace(id, std::forward<Args>(args)...);
+            auto* value = EntitySet<T>::emplace(id, std::forward<Args>(args)...);
             if (!existing && value) it->second = ++_nextGeneration;
             return value;
         }

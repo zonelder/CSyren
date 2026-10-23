@@ -77,7 +77,7 @@ namespace csyren
                     {
                         //TODO instancing look pretty well here.
                         entityParams->setWorld(worlds.matrix(data.id));
-                        entityParams->entityID = data.id;
+                        entityParams->entityID = core::Entity::slot(data.id);
                         if (!renderer->bindEntity(cb)) continue;
                         mesh->draw(*renderer);
                     }

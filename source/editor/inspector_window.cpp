@@ -17,7 +17,7 @@ namespace csyren::editor
         {
             if (!entt) return;
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.9f, 1.0f, 1.0f));
-            ImGui::Text("Entity ID: %u", entt->id);
+            ImGui::Text("Entity ID: %u (generation %u)", core::Entity::slot(entt->id), core::Entity::generation(entt->id));
             ImGui::Text("Name: %s", entt->name.c_str());
 
             auto newParent = entt->parent;
