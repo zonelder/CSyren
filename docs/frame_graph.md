@@ -195,7 +195,8 @@ through `Update<RigidBody, Transform>`, the collider `Select` and
 `Update<CharacterController>`; the Jolt world is built from the scene when it
 attaches. Later scene changes (bodies, colliders and characters created, patched
 or destroyed) are queued by the event handlers and applied by `PhysicsSyncSystem`
-(phase `events`, after `SceneEventsSystem`, which must be in the same schedule),
+(phase `events`, after `SceneEventsSystem`, which must be in the same schedule;
+`pipelines/begin.systems` lists it),
 so bodies from changes made during a frame are visible to physics queries for
 the whole next frame. `PhysicsSystem` applies whatever is still queued before it
 steps (changes dispatched between frames, or a schedule without

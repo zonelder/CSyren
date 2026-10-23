@@ -122,9 +122,9 @@ The engine pipeline is split into pieces under `assets/pipelines/`:
 
 | file | contents |
 | --- | --- |
-| `begin.systems` | frame phases + `InputDispatchSystem` |
+| `begin.systems` | frame phases, `InputDispatchSystem`, `SceneEventsSystem` (dispatches scene events in phase `events`) |
 | `simulation.systems` | `PhysicsSystem`, `PhysicsSyncSystem`, `SpringJoinSystem`, `AnimationSystem` |
-| `render.systems` | `RenderEnvironmentSystem` … `PresentationSystem`, `SceneEventsSystem` |
+| `render.systems` | `RenderEnvironmentSystem` … `PresentationSystem` |
 | `editor.systems` | the complete editor list |
 
 A project's `app.systems`:

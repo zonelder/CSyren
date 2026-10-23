@@ -29,9 +29,6 @@
         },
         {
             "class": "PresentationSystem"
-        },
-        {
-            "class": "SceneEventsSystem"
         }
     ]
 }

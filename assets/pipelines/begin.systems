@@ -49,6 +49,9 @@
     "systems": [
         {
             "class": "InputDispatchSystem"
+        },
+        {
+            "class": "SceneEventsSystem"
         }
     ]
 }
