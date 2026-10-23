@@ -143,6 +143,35 @@ the inspector edits it with a list of the scene's entities.
 `spawn(...).root()` gives the copy's root ID right away; the entity exists after
 the task's commit.
 
+## Events
+
+Each scene has an event bus, `lib/core/event_bus.h` (`sceneBus()` in a system,
+`bus()` on `Exclusive`): deferred notifications about what has already happened,
+delivered at one point of the frame. An event type has one channel per bus:
+
+```cpp
+struct PlayerDied { Entity::ID player; static constexpr auto key = &PlayerDied::player; };
+
+auto died = bus.createEvent<PlayerDied>();   // every caller gets the same channel
+died.publish({ id });                         // any thread, no locks
+auto all = died.subscribe([](const PlayerDied& e) { ... });       // unsubscribes when reset or destroyed
+auto mine = died.subscribe(id, [](const PlayerDied& e) { ... });  // only this player's deaths
+```
+
+`publish()` appends to the publishing thread's queue; `dispatch()` (in
+`SceneEventsSystem`, phase `events`) delivers the events in publication order,
+whatever their type and thread, on the calling thread. Events published by
+handlers are delivered in the same `dispatch()`. An event whose channel has no
+subscribers is not kept. A `key` (a data member or a const member function) lets
+a subscription receive only the events with that key; the scene's events
+(`EntityCreateEvent`, `EntityDestroyEvent`, `EntityReparentEvent`,
+`ComponentCreateEvent<T>`, `ComponentPatchEvent<T>`, `ComponentDestroyEvent<T>`)
+are keyed by entity ID. A handler that should run once resets its own
+subscription. `reserve(n)` on a channel makes the next `n` publications on that
+thread allocation-free. Creating channels, subscribing, resetting and
+`dispatch()` run one at a time; the full contract is in the header of
+`event_bus.h` (internals in `event_bus.inl`).
+
 ## Systems files
 
 `.systems` entries are `{"class": "Name"}` or `{"include": "<systems file>"}`; an
