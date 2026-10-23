@@ -193,6 +193,9 @@
     <None Include="tools\tests\test_typed_contract.py">
       <Filter>tools</Filter>
     </None>
+    <None Include="docs\TODO.md">
+      <Filter>docs</Filter>
+    </None>
     <None Include="docs\frame_graph.md">
       <Filter>docs</Filter>
     </None>

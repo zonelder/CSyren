@@ -124,6 +124,7 @@
     <None Include="tools\tests\test_csyren_registry.py" />
     <None Include="tools\tests\test_source_encoding.py" />
     <None Include="tools\tests\test_typed_contract.py" />
+    <None Include="docs\TODO.md" />
     <None Include="docs\frame_graph.md" />
     <None Include="docs\job_system_wait_all.md" />
     <None Include="docs\profiler.md" />

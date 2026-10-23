@@ -7,3 +7,4 @@ C++20 / DirectX 12 engine with an ECS, a frame-graph scheduler, Jolt physics and
   (layout, `CS_COMPONENT` / `CS_SYSTEM` markers, generated registry, `.systems` includes).
 - Other notes: `docs/rendering.md`, `docs/reflection.md`, `docs/physics_layers.md`,
   `docs/asset_pipeline.md`, `docs/frame_graph.md`.
+- Roadmap: `docs/TODO.md`.
