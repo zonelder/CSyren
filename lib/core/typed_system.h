@@ -17,14 +17,16 @@
 //   };
 //
 //   Select<Cs...>   read Cs. Iterating visits the entities that have every C (and
-//                   every Where type); get<C>(id) reads one component of any entity.
+//                   every Where type); get<C>(id) reads one component of any entity,
+//                   get<C>(ref) the same through an EntityRef field.
 //   Update<Cs...>   the same with write access. A const C inside Update is read-only.
 //   ::Where<Ts...>  presence filter. Never conflicts with other systems.
 //   Insert<Cs...>   create entities and add Cs. Other systems see them after the
 //                   structural commit; never conflicts with readers or writers of Cs.
 //   Delete          destroy entities and remove components (after the commit too).
 //   Spawn           create copies of prefabs (core/spawn.h): types come from data,
-//                   so none are declared; copies appear in the commit like Insert.
+//                   so none are declared; copies appear in the commit like Insert,
+//                   their root IDs are known when spawning (root()).
 //   Res<T>          a service: Res<const T> reads, Res<T> writes. Empty (false) when
 //                   the service is not registered.
 //   Exclusive       the whole world: any component, structural changes and any
@@ -49,6 +51,10 @@
 // Two systems that Insert the same type are ordered, so the later one sees the
 // earlier commit; a same-phase reader not ordered after an inserter sees the
 // new components only in the next frame.
+//
+// Entity IDs carry a generation (core/entity.h): an ID kept after its entity was
+// destroyed finds nothing, even when its slot holds a new entity. Keep IDs in
+// components as Entity::ID (runtime only) or core::EntityRef (saved, remapped).
 //
 // Lifecycle hooks (init, onAttach, onDetach, shutdown) run between frames with
 // exclusive access and keep using scene()/Services directly.

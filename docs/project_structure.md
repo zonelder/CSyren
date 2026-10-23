@@ -120,6 +120,29 @@ Tests register the engine types they use explicitly, as before.
 
 Generator tests: `python -m unittest discover -s tools/tests`.
 
+## Entity IDs and references
+
+`Entity::ID` is a slot (low 32 bits) and the slot's generation (high 32 bits),
+`lib/core/entity.h`. Destroying an entity raises the generation of its slot, and
+every lookup (entity storage, component pools, queries, staged commands) compares
+the whole ID: an ID kept after its entity was destroyed finds nothing, even when
+the slot holds a new entity. Physics, render caches, events and the editor
+selection key their data by the whole ID, so they never mix the two up either.
+A slot whose generation runs out is retired.
+
+| field type | saved | after load / Duplicate / prefab copy |
+| --- | --- | --- |
+| `Entity::ID` | no (runtime only) | - |
+| `core::EntityRef` | the entity's number in the document, `-1` for none | points at the new entities |
+
+Duplicate keeps `EntityRef`s that leave the copied branch on the originals; a
+prefab cannot refer outside its branch ("Save as prefab" fails naming the
+component). A reference to a destroyed entity is saved as none. Systems read
+through a reference with `get<T>(ref)` / `contains(ref)` on `Select`/`Update`;
+the inspector edits it with a list of the scene's entities.
+`spawn(...).root()` gives the copy's root ID right away; the entity exists after
+the task's commit.
+
 ## Systems files
 
 `.systems` entries are `{"class": "Name"}` or `{"include": "<systems file>"}`; an

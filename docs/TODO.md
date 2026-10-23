@@ -16,7 +16,7 @@ prototype items each lean on an engine item (in brackets).
 
 ## Stage 1 — core foundations
 
-- [ ] Entity IDs with generations; `EntityRef` field remapped on load / duplicate / prefab; `Spawn` returns the root
+- [x] Entity IDs with generations; `EntityRef` field remapped on load / duplicate / prefab; `Spawn` returns the root
 - [ ] Events delivered in publish order (no Create/Destroy reordering on ID reuse)
 - [ ] Time: max delta, pause / single step, fixed-step phase for gameplay
 - [ ] Disabled entities; `Without<T>`, `single()` in queries; empty tag components; transient (not saved) fields
