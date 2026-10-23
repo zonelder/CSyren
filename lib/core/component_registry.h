@@ -97,10 +97,6 @@ namespace csyren::core::reflection
     };
 
 
-    /**
-     * @class ComponentRegistrar
-     * @brief ������ ��� ���������� ������ ������������ ����������� ���� T.
-     */
     template<class T>
     class ComponentRegistrar
     {

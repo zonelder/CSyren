@@ -7,8 +7,9 @@ compile). This is how a wrong system reads under your compiler.
 
 Compiler: CSYREN_CXX (cl, clang++ or g++), otherwise the first of cl, clang++,
 g++ found on PATH (cl needs a Developer Command Prompt); the cases are skipped
-when there is none. CSYREN_CXXFLAGS adds flags (searched before lib/), e.g.
-include directories for DirectXMath outside the Windows SDK."""
+when there is none, or when a header the engine includes is missing (Windows SDK,
+DirectXMath). CSYREN_CXXFLAGS adds flags (searched before lib/), e.g. include
+directories for DirectXMath outside the Windows SDK."""
 import os
 import shlex
 import shutil
@@ -60,6 +61,9 @@ def compile_source(compiler, source, defines=()):
 
 COMPILER = find_compiler()
 
+# Diagnostics of a missing include file (clang/gcc, cl).
+MISSING_HEADER = ('file not found', 'No such file or directory', 'C1083')
+
 VALID_SYSTEMS = '''
             CS_STRICT_SYSTEMS_BEGIN
             class Good : public TypedSystem<Good> {
@@ -97,6 +101,12 @@ class TypedContractTests(unittest.TestCase):
         # The prelude alone must build; otherwise a rejected case proves nothing
         # (test_prelude_compiles reports why).
         cls.prelude_ok, cls.prelude_diagnostics = compile_source(COMPILER, 'void prelude() {}')
+        if not cls.prelude_ok:
+            missing = [line.strip() for line in cls.prelude_diagnostics.splitlines()
+                       if any(marker in line for marker in MISSING_HEADER)]
+            if missing:
+                raise unittest.SkipTest('a header the engine includes is missing (Windows SDK / DirectXMath; '
+                                        'CSYREN_CXXFLAGS adds include directories): ' + missing[0])
 
     def expect_ok(self, source, defines=()):
         ok, diagnostics = compile_source(COMPILER, source, defines)

@@ -12,7 +12,7 @@
 //
 //       void execute(core::Update<PilotState, WeaponInventory>::Where<PlayerTag> players,
 //                    core::Select<physics::CharacterController> controllers,
-//                    core::Insert<core::Transform, Lifetime> spawn,
+//                    core::Spawn spawn,                 // grenades, impacts (prefabs)
 //                    core::Res<const core::Time> time);
 //   };
 //

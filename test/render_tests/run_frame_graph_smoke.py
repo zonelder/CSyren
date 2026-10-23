@@ -17,7 +17,9 @@ version = max((p for p in (kits/'Include').iterdir() if (p/'um').is_dir()), key=
 env['INCLUDE'] = ';'.join(str(p) for p in [msvc/'include'] + [kits/'Include'/version/p for p in ['ucrt','shared','um','winrt','cppwinrt']])
 env['LIB'] = ';'.join(str(p) for p in [msvc/'lib/x64', kits/'Lib'/version/'ucrt/x64', kits/'Lib'/version/'um/x64'])
 env['PATH'] = str(msvc/'bin/Hostx64/x64') + ';' + env['PATH']
+# Compile options of CSyren.engine.props: /utf-8, no RTTI, window_clean.h forced, NOMINMAX.
 args = [str(msvc/'bin/Hostx64/x64/cl.exe'), '/nologo', '/std:c++20', '/EHsc', '/bigobj', '/MDd',
+    '/utf-8', '/GR-', '/FIlib/cstdmf/window_clean.h',
     '/D_DEBUG', '/DNOMINMAX', '/DUNICODE', '/D_UNICODE', '/Ilib',
     '/Ipackages/directxtex_uwp.2025.7.10.1/include', '/Ipackages/directxtk12_uwp.2025.7.10.1/include',
     '/Ipackages/Microsoft.Direct3D.D3D12.1.616.1/build/native/include',

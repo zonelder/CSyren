@@ -68,7 +68,6 @@ namespace csyren::core::reflection
 			return *this;
 		}
 
-		// �������� ����������
 		explicit operator bool() const
 		{
 			return _instance != nullptr && _type != nullptr;

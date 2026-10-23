@@ -114,6 +114,19 @@
     <None Include="docs\rendering.md" />
     <None Include="docs\physics_layers.md" />
     <None Include="docs\reflection.md" />
+    <None Include=".editorconfig" />
+    <None Include="README.md" />
+    <None Include="assets\prefabs\explosion.prefab" />
+    <None Include="assets\prefabs\grenade.prefab" />
+    <None Include="assets\prefabs\impact.prefab" />
+    <None Include="assets\prefabs\muzzle_flash.prefab" />
+    <None Include="assets\prefabs\projectile_trail.prefab" />
+    <None Include="tools\tests\test_csyren_registry.py" />
+    <None Include="tools\tests\test_source_encoding.py" />
+    <None Include="tools\tests\test_typed_contract.py" />
+    <None Include="docs\frame_graph.md" />
+    <None Include="docs\job_system_wait_all.md" />
+    <None Include="docs\profiler.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <Import Project="CSyren.project.targets" />

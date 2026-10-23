@@ -73,7 +73,9 @@
     <None Include="CSyren.paths.props">
       <Filter>project</Filter>
     </None>
-    <None Include="CSyren.engine.props" />
+    <None Include="CSyren.engine.props">
+      <Filter>project</Filter>
+    </None>
     <None Include="CSyren.project.props">
       <Filter>project</Filter>
     </None>
@@ -159,6 +161,45 @@
       <Filter>docs</Filter>
     </None>
     <None Include="docs\reflection.md">
+      <Filter>docs</Filter>
+    </None>
+    <None Include=".editorconfig">
+      <Filter>project</Filter>
+    </None>
+    <None Include="README.md">
+      <Filter>docs</Filter>
+    </None>
+    <None Include="assets\prefabs\explosion.prefab">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="assets\prefabs\grenade.prefab">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="assets\prefabs\impact.prefab">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="assets\prefabs\muzzle_flash.prefab">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="assets\prefabs\projectile_trail.prefab">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="tools\tests\test_csyren_registry.py">
+      <Filter>tools</Filter>
+    </None>
+    <None Include="tools\tests\test_source_encoding.py">
+      <Filter>tools</Filter>
+    </None>
+    <None Include="tools\tests\test_typed_contract.py">
+      <Filter>tools</Filter>
+    </None>
+    <None Include="docs\frame_graph.md">
+      <Filter>docs</Filter>
+    </None>
+    <None Include="docs\job_system_wait_all.md">
+      <Filter>docs</Filter>
+    </None>
+    <None Include="docs\profiler.md">
       <Filter>docs</Filter>
     </None>
   </ItemGroup>
