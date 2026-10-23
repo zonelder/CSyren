@@ -1,8 +1,8 @@
 #pragma once
 
+#include <algorithm>
 #include <limits>
 #include <vector>
-#include <bitset>
 #include <string>
 
 #include "component_base.h"
@@ -20,19 +20,17 @@ namespace csyren::core
 		std::string name;
 		bool has(uint64_t comp) const noexcept
 		{
-			return _components.test(comp);
+			return std::find(componentList.begin(), componentList.end(), comp) != componentList.end();
 		}
 
 		void add(uint64_t comp)
 		{
-			if (_components.test(comp)) return;
-			_components[comp] = true;
+			if (has(comp)) return;
 			componentList.push_back(comp);
 		}
 
 		void remove(uint64_t comp)
 		{
-			_components[comp] = false;
 			auto it = std::find(componentList.begin(), componentList.end(), comp);
 			if (it != componentList.end())
 			{
@@ -44,7 +42,8 @@ namespace csyren::core
 			return componentList;
 		}
 	private:
-		std::bitset<reflection::MAX_COMPONENT_TYPES> _components;
+		// Families of the components. An entity has a handful of them, so a linear
+		// search is enough and the number of component types is not limited.
 		std::vector<uint64_t> componentList;
 	};
 }

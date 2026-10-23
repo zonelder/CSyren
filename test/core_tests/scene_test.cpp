@@ -523,3 +523,71 @@ TEST_F(SceneViewHardcoreTest, NeedleInAHaystack)
     std::cout << "Needle in a haystack search took: " << duration.count() << "us\n";
     EXPECT_LT(duration.count(), 1000);
 }
+// ---- any number of component types (there is no 128-type cap)
+
+namespace
+{
+    // Family ids are handed out on first use: taking 150 ids for tag types first makes the
+    // components below get families above 128 without instantiating the scene for each.
+    template<int N> struct FamilyFiller {};
+    template<int... N> void takeFamilies(std::integer_sequence<int, N...>) { (reflection::ComponentFamily::getID<FamilyFiller<N>>(), ...); }
+    struct HighFamilyA { int value = 1; };
+    struct HighFamilyB { int value = 2; };
+    struct HighFamilyC { int value = 3; };
+    void registerHighFamilies()
+    {
+        REGISTER_COMPONENT(HighFamilyA);
+        REGISTER_COMPONENT(HighFamilyB);
+        REGISTER_COMPONENT(HighFamilyC);
+    }
+}
+
+TEST_F(SceneTest, ComponentFamiliesAbove128)
+{
+    takeFamilies(std::make_integer_sequence<int, 150>{});
+    ASSERT_GT(reflection::ComponentFamily::getID<HighFamilyA>(), uint64_t(128));
+    ASSERT_GT(reflection::ComponentFamily::getID<HighFamilyC>(), uint64_t(128));
+    registerHighFamilies();
+    const auto id = scene.createEntity();
+    const auto other = scene.createEntity();
+    scene.addComponent<TestComponent>(id, 7);
+    scene.addComponent<HighFamilyA>(id);
+    scene.addComponent<HighFamilyB>(id);
+    scene.addComponent<HighFamilyB>(other);
+    flush();
+    EXPECT_TRUE(scene.hasComponent<HighFamilyA>(id));
+    EXPECT_TRUE(scene.hasComponent<HighFamilyB>(id));
+    EXPECT_FALSE(scene.hasComponent<HighFamilyC>(id));
+    EXPECT_FALSE(scene.hasComponent<HighFamilyA>(other));
+    EXPECT_EQ(scene.getComponent<HighFamilyB>(id)->value, 2);
+    EXPECT_EQ(scene.entities().try_get(id)->componentView().size(), 3u);
+
+    int both = 0;
+    scene.view<TestComponent, HighFamilyB>().each([&](auto, auto&, auto&) { ++both; });
+    EXPECT_EQ(both, 1);
+    int highs = 0;
+    scene.view<HighFamilyB>().each([&](auto, auto&) { ++highs; });
+    EXPECT_EQ(highs, 2);
+
+    scene.removeComponent<HighFamilyA>(id);
+    flush();
+    EXPECT_FALSE(scene.hasComponent<HighFamilyA>(id));
+    EXPECT_TRUE(scene.hasComponent<HighFamilyB>(id));
+    EXPECT_EQ(scene.entities().try_get(id)->componentView().size(), 2u);
+}
+
+// ---- two reflected types with the same id are an error (they would share one layout)
+
+namespace
+{
+    struct CollisionProbeA { int a = 0; };
+    struct CollisionProbeB { double b = 0; };
+}
+
+TEST(ReflectionTest, SameIdForTwoTypesIsAnError)
+{
+    using namespace csyren::core::reflection;
+    MetaFactory<CollisionProbeA>{}.type("ReflectionCollisionProbe"_hs);
+    EXPECT_NO_THROW(MetaFactory<CollisionProbeA>{}.type("ReflectionCollisionProbe"_hs)); // the same type again
+    EXPECT_THROW(MetaFactory<CollisionProbeB>{}.type("ReflectionCollisionProbe"_hs), std::logic_error);
+}

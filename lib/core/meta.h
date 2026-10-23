@@ -2,11 +2,14 @@
 
 #include "component_base.h"
 #include "cstdmf/hash_literal.h"
+#include "cstdmf/log.h"
 #include "cstdmf/static_vector.h"
 #include "archive.h"
 #include "serialization_context.h"
 
 #include <cstdint>
+#include <stdexcept>
+#include <string>
 #include <string_view>
 #include <type_traits>
 #include <unordered_map>
@@ -112,12 +115,14 @@ namespace csyren::core::reflection
         MetaFactory& type(LiteralID id, std::string_view name = {})
         {
             _type = details::MetaContext::instance().insert(id, name.empty() ? id.str : name, ComponentFamily::getID<Type>(), sizeof(Type), &details::MetaLink<Type>::type);
+            requireOwnType(name.empty() ? id.str : name);
             if (!_type->archive.save) _type->archive = { &saveFields, &loadFields };
             return *this;
         }
         MetaFactory& primitiveType(LiteralID id, std::string_view name = {})
         {
-            _type = details::MetaContext::instance().insert(id, name.empty() ? id.str : name, sizeof(Type), &details::MetaLink<Type>::type); return *this;
+            _type = details::MetaContext::instance().insert(id, name.empty() ? id.str : name, sizeof(Type), &details::MetaLink<Type>::type);
+            requireOwnType(name.empty() ? id.str : name); return *this;
         }
         MetaFactory& version(uint32_t value) { _type->version = value; return *this; }
         MetaFactory& archive(MetaArchiveOps ops) { _type->archive = ops; return *this; }
@@ -135,7 +140,18 @@ namespace csyren::core::reflection
             field.getConst = [](const void* object) noexcept -> const void* { return &(static_cast<const Owner*>(object)->*Member); };
             _type->data.emplace_back(field); return *this;
         }
-    private: MetaType* _type{ nullptr };
+    private:
+        // Two types with the same reflection id would share one MetaType: the second
+        // type's fields would be read and written with the first type's layout.
+        void requireOwnType(std::string_view name) const
+        {
+            if (_type == &details::MetaLink<Type>::type) return;
+            const std::string message = "Reflection: '" + std::string(name) + "' has the same id as the registered type '"
+                + std::string(_type->name) + "'; rename one of them";
+            log::error("{}", message);
+            throw std::logic_error(message);
+        }
+        MetaType* _type{ nullptr };
     };
     inline MetaType* resolve(LiteralID id) { return details::MetaContext::instance().get(id); }
     inline MetaType* resolve(ComponentFamily::typeID id) { return details::MetaContext::instance().get(id); }
