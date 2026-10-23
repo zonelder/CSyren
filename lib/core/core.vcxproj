@@ -173,6 +173,7 @@
     <ClInclude Include="time.h" />
     <ClInclude Include="transform.h" />
     <ClInclude Include="transform_hierarchy.h" />
+    <ClInclude Include="unknown_components.h" />
     <ClInclude Include="window.h" />
   </ItemGroup>
   <ItemGroup>

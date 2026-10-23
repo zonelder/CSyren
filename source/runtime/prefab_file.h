@@ -7,7 +7,8 @@
 // assets ("prefabs/grenade.prefab").
 //
 // BranchArchive is the archived form of a branch: names, parents, component
-// values (JSON) and the serialization sections (the resource table). The editor
+// values (JSON, unknown component types included) and the serialization
+// sections (the resource table). The editor
 // uses it for Duplicate and "Save as prefab", PrefabFile to create copies.
 #include <functional>
 #include <memory>
@@ -32,12 +33,15 @@ namespace csyren
     {
         static constexpr size_t npos = static_cast<size_t>(-1);
         struct Component { const core::reflection::ComponentMeta* meta = nullptr; nlohmann::json value; };
+        // A component of a type this program does not know (core::UnknownComponents).
+        struct UnknownComponent { std::string name; nlohmann::json value; };
         struct Entity
         {
             std::string name;
             size_t parent = npos;   // index in `entities`; npos for the root
             uint64_t id = 0;        // id in SceneEntityReferences (saved / loaded)
             std::vector<Component> components;
+            std::vector<UnknownComponent> unknown; // kept as data and written back
         };
         std::vector<Entity> entities;                   // entities[0] is the root; parents come first
         nlohmann::json sections = nlohmann::json::object();
@@ -56,15 +60,16 @@ namespace csyren
         // references.loaded[entity.id] to them, so references inside the branch
         // resolve to the copies.
         std::vector<core::Entity::ID> create(core::EntityBatch& batch, core::SceneEntityReferences& references) const;
-        // Parents and component values of the entities from create().
+        // Parents and component values of the entities from create(). Unknown
+        // components go to core::UnknownComponents (dropped if it is not registered).
         bool load(core::EntityBatch& batch, const std::vector<core::Entity::ID>& ids,
             core::SerializationContext& context, std::string& error) const;
 
         // Scene document form ({"$version":2,"entities":[...],<sections>}).
         nlohmann::json document() const;
-        // Reads a document with exactly one root. Unknown component types are
-        // skipped and listed in `skipped`.
-        bool fromDocument(const nlohmann::json& document, std::string& error, std::vector<std::string>* skipped = nullptr);
+        // Reads a document with exactly one root. Components of unknown types are
+        // kept in Entity::unknown and their names listed in `unknownNames`.
+        bool fromDocument(const nlohmann::json& document, std::string& error, std::vector<std::string>* unknownNames = nullptr);
     };
 
     // A prefab read from a file. The document is parsed once; each copy reads the

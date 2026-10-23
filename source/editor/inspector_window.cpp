@@ -4,6 +4,7 @@
 #include "core/scene.h"
 #include "editor_selection.h"
 #include "core/meta_any.h"
+#include "core/unknown_components.h"
 #include <algorithm>
 
 namespace csyren::editor
@@ -79,6 +80,17 @@ void csyren::editor::InspectorWindow::onFrame()
 
     for (auto i : entt->componentView())
     {
+        if (i == core::reflection::ComponentFamily::getID<core::UnknownComponents>())
+        {
+            // Read only: kept from the file and saved back unchanged.
+            const auto* unknown = static_cast<const core::UnknownComponents*>(scene->getComponentRaw(entt->id, i));
+            if (unknown && !unknown->entries.empty() && ImGui::CollapsingHeader("Unknown components", ImGuiTreeNodeFlags_DefaultOpen))
+            {
+                ImGui::TextDisabled("Types this build does not know: kept and saved unchanged.");
+                for (const auto& entry : unknown->entries) ImGui::BulletText("%s", entry.name.c_str());
+            }
+            continue;
+        }
         auto metaType = core::reflection::resolve(i);
         if (!metaType)
         {

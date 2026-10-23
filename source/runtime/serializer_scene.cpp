@@ -2,7 +2,12 @@
 #include "core/scene.h"
 #include "core/meta.h"
 #include "core/scene_serialization_context.h"
+#include "core/unknown_components.h"
+#include "cstdmf/log.h"
+#include <algorithm>
+#include <mutex>
 #include <optional>
+#include <unordered_set>
 
 namespace csyren
 {
@@ -17,10 +22,46 @@ namespace csyren
             const bool ok = read();
             return reader.endField() && ok;
         }
+        void addName(std::vector<std::string>& names, std::string_view name)
+        {
+            if (std::find(names.begin(), names.end(), name) == names.end()) names.emplace_back(name);
+        }
+        // One warning per type name for the program's lifetime: the editor reloads
+        // the scene from snapshots on every edit.
+        void reportUnknown(const std::vector<std::string>& names, bool kept)
+        {
+            static std::mutex mutex;
+            static std::unordered_set<std::string> reported;
+            std::string text;
+            {
+                std::lock_guard lock(mutex);
+                for (const auto& name : names)
+                    if (reported.insert((kept ? "kept:" : "dropped:") + name).second) text += (text.empty() ? "" : ", ") + name;
+            }
+            if (text.empty()) return;
+            if (kept) log::warning("Scene: unknown components kept as data (saved back unchanged): {}", text);
+            else log::warning("Scene: unknown components skipped: {}", text);
+        }
+        // A component of an unknown type: kept in the entity's UnknownComponents.
+        // Dropped (listed in `dropped`) when the format cannot capture values or
+        // UnknownComponents is not registered.
+        void keepUnknown(core::ArchiveReader& reader, core::EntityBatch& batch, core::Entity::ID entity, uint64_t id,
+            const std::string& name, std::vector<std::string>& kept, std::vector<std::string>& dropped)
+        {
+            const auto label = name.empty() ? "#" + std::to_string(id) : name;
+            core::UnknownComponents::Entry entry{ id, name, {} };
+            if (name.empty() || !reader.capture(entry.value)) { addName(dropped, label); return; }
+            auto* unknown = batch.getComponent<core::UnknownComponents>(entity);
+            if (!unknown) unknown = batch.addComponent<core::UnknownComponents>(entity);
+            if (!unknown) { addName(dropped, label); return; }
+            unknown->set(std::move(entry));
+            addName(kept, label);
+        }
     }
     bool Serializer::saveScene(core::ArchiveWriter& writer, core::SerializationContext& context, core::Scene& scene)
     {
         context.reset();
+        const auto unknownFamily = core::reflection::ComponentFamily::getID<core::UnknownComponents>();
         auto& references = context.emplaceService<core::SceneEntityReferences>();
         for (const auto& entity : scene.entities())
             if (entity.id != core::EntityManager::ROOT_PARENT) references.saved.emplace(entity.id, references.saved.size());
@@ -37,13 +78,23 @@ namespace csyren
             }
             if (!writer.beginField("name"_hs.id, "name") || !writer.string(entity.name) || !writer.endField()) return false;
             if (!writer.beginField("components"_hs.id, "components") || !writer.object()) return false;
+            const core::UnknownComponents* unknown = nullptr;
+            std::vector<std::string_view> written;
             for (auto family : entity.componentView()) {
+                if (family == unknownFamily) { unknown = static_cast<const core::UnknownComponents*>(scene.getComponentRaw(entity.id, family)); continue; }
                 const auto* info = core::reflection::ComponentRegistry::get(family);
                 if (!info || !info->metaType || info->metaType->id.id == 0) continue;
                 if (!writer.beginField(info->metaType->id.id, info->name)) return false;
                 const bool ok = core::reflection::save(writer, context, *info->metaType, info->getRaw(&scene, entity.id));
                 if (!writer.endField() || !ok) return false;
+                written.push_back(info->name);
             }
+            // Kept unknown components go back as they were read (unless the type is known now).
+            if (unknown)
+                for (const auto& entry : unknown->entries) {
+                    if (std::find(written.begin(), written.end(), entry.name) != written.end()) continue;
+                    if (!writer.beginField(entry.id, entry.name) || !core::write(writer, entry.value) || !writer.endField()) return false;
+                }
             if (!writer.endObject() || !writer.endField() || !writer.endObject() || !writer.endElement()) return false;
         }
         return writer.endSequence() && writer.endField() && context.saveSections(writer) && writer.endObject();
@@ -64,6 +115,7 @@ namespace csyren
         if (!present) return reader.endObject() && context.finishLoad();
         size_t count{};
         if (!reader.sequence(count)) return false;
+        std::vector<std::string> unknownNames, droppedNames;
         struct Record { core::Entity::ID entity; std::optional<uint64_t> parent; bool skip; };
         std::vector<Record> records; records.reserve(count);
         auto imported = scene.stageEntities(count);
@@ -114,6 +166,7 @@ namespace csyren
                         bool ok = true;
                         if (info && info->metaType && info->metaType->id.id != 0)
                             ok = core::reflection::load(reader, context, *info->metaType, imported.addComponent(records[i].entity, info->family));
+                        else keepUnknown(reader, imported, records[i].entity, typeID, name, unknownNames, droppedNames);
                         if (!reader.endField() || !ok) return false;
                     }
                     if (!reader.endFields() || !reader.endObject() || !reader.endField()) return false;
@@ -122,6 +175,8 @@ namespace csyren
             if (!reader.endObject() || !reader.endElement()) return false;
         }
         if (!reader.endSequence() || !reader.endField() || !reader.endObject() || !context.finishLoad()) return false;
+        reportUnknown(unknownNames, true);
+        reportUnknown(droppedNames, false);
         if (!scene.append(std::move(imported))) return false;
         referenceRollback.committed = true;
         return true;

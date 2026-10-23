@@ -2,6 +2,7 @@
 #include "core/scene.h"
 #include "core/meta_json.h"
 #include "core/project_paths.h"
+#include "core/unknown_components.h"
 #include "cstdmf/log.h"
 #include <algorithm>
 #include <atomic>
@@ -80,6 +81,18 @@ namespace csyren
             }
             for (const auto family : source->componentView())
             {
+                if (family == core::reflection::ComponentFamily::getID<core::UnknownComponents>())
+                {
+                    const auto* unknown = static_cast<const core::UnknownComponents*>(scene.getComponentRaw(branch[i], family));
+                    if (unknown) for (const auto& kept : unknown->entries)
+                    {
+                        UnknownComponent component{ kept.name, {} };
+                        core::JsonArchiveWriter writer(component.value);
+                        if (!core::write(writer, kept.value)) { error = "unknown component '" + kept.name + "' cannot be saved"; return false; }
+                        entity.unknown.push_back(std::move(component));
+                    }
+                    continue;
+                }
                 const auto* info = core::reflection::ComponentRegistry::get(family);
                 // Components without reflection are not saved (as in scene files).
                 if (!info || !info->metaType || info->metaType->id.id == 0) continue;
@@ -144,6 +157,19 @@ namespace csyren
                     return false;
                 }
             }
+        for (size_t i = 0; i < entities.size(); ++i)
+        {
+            if (entities[i].unknown.empty()) continue;
+            auto* unknown = batch.addComponent<core::UnknownComponents>(ids[i]);
+            if (!unknown) continue; // not registered: the values are dropped
+            for (const auto& component : entities[i].unknown)
+            {
+                core::UnknownComponents::Entry entry{ cstdmf::fnv1a_32(component.name.data(), component.name.size()).id, component.name, {} };
+                core::JsonArchiveReader reader(component.value);
+                reader.capture(entry.value);
+                unknown->set(std::move(entry));
+            }
+        }
         return true;
     }
 
@@ -160,6 +186,8 @@ namespace csyren
             item["name"] = entity.name;
             auto components = nlohmann::json::object();
             for (const auto& component : entity.components) components[std::string(component.meta->name)] = component.value;
+            for (const auto& component : entity.unknown)
+                if (!components.contains(component.name)) components[component.name] = component.value;
             item["components"] = std::move(components);
             list.push_back(std::move(item));
         }
@@ -167,7 +195,7 @@ namespace csyren
         return document;
     }
 
-    bool BranchArchive::fromDocument(const nlohmann::json& document, std::string& error, std::vector<std::string>* skipped)
+    bool BranchArchive::fromDocument(const nlohmann::json& document, std::string& error, std::vector<std::string>* unknownNames)
     {
         entities.clear();
         sections = nlohmann::json::object();
@@ -222,7 +250,8 @@ namespace csyren
                     const auto* info = core::reflection::ComponentRegistry::get(name);
                     if (!info || !info->metaType || info->metaType->id.id == 0)
                     {
-                        if (skipped) skipped->push_back(name);
+                        if (unknownNames) unknownNames->push_back(name);
+                        entity.unknown.push_back({ name, value });
                         continue;
                     }
                     entity.components.push_back({ info, value });
@@ -313,13 +342,15 @@ namespace csyren
             auto document = nlohmann::json::parse(in, nullptr, false);
             if (document.is_discarded()) { error = "invalid JSON in " + core::pathToUtf8(file); return nullptr; }
             BranchArchive archive;
-            std::vector<std::string> skipped;
-            if (!archive.fromDocument(document, error, &skipped)) return nullptr;
-            if (!skipped.empty())
+            std::vector<std::string> unknown;
+            if (!archive.fromDocument(document, error, &unknown)) return nullptr;
+            if (!unknown.empty())
             {
+                std::sort(unknown.begin(), unknown.end());
+                unknown.erase(std::unique(unknown.begin(), unknown.end()), unknown.end());
                 std::string names;
-                for (const auto& name : skipped) names += (names.empty() ? "" : ", ") + name;
-                log::warning("Prefab '{}': unknown components skipped: {}", normalized, names);
+                for (const auto& name : unknown) names += (names.empty() ? "" : ", ") + name;
+                log::warning("Prefab '{}': unknown components kept as data (copies carry them): {}", normalized, names);
             }
             auto prefab = std::make_shared<PrefabFile>(normalized, std::move(archive), configure);
             if (!prefab->prepare(error)) return nullptr;

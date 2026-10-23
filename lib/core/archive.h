@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace csyren::core
 {
@@ -26,6 +27,27 @@ namespace csyren::core
         virtual bool unsignedInteger(uint64_t) = 0;
         virtual bool floating(double) = 0;
         virtual bool string(std::string_view) = 0;
+    };
+    // A value of a type the program does not know (e.g. a component of a type that
+    // was renamed or removed), kept as data so it can be written back unchanged.
+    struct ArchiveValue
+    {
+        enum class Kind : uint8_t { None, Boolean, Signed, Unsigned, Floating, String, Object, Sequence };
+        struct Field;
+        Kind kind = Kind::None;
+        bool boolean = false;
+        int64_t signedInteger = 0;
+        uint64_t unsignedInteger = 0;
+        double floating = 0.0;
+        std::string string;
+        std::vector<Field> fields;          // Object, in document order
+        std::vector<ArchiveValue> elements; // Sequence
+    };
+    struct ArchiveValue::Field
+    {
+        uint64_t id = 0;
+        std::string name;
+        ArchiveValue value;
     };
     class ArchiveReader
     {
@@ -53,5 +75,34 @@ namespace csyren::core
         virtual bool unsignedInteger(uint64_t&) = 0;
         virtual bool floating(double&) = 0;
         virtual bool string(std::string&) = 0;
+        // Reads the current value whatever its type (formats that cannot tell the
+        // type of a value return false, and unknown values are dropped).
+        virtual bool capture(ArchiveValue&) { return false; }
     };
+
+    // Writes a captured value back (Kind::None writes nothing).
+    inline bool write(ArchiveWriter& writer, const ArchiveValue& value)
+    {
+        using Kind = ArchiveValue::Kind;
+        switch (value.kind)
+        {
+        case Kind::None: return true;
+        case Kind::Boolean: return writer.boolean(value.boolean);
+        case Kind::Signed: return writer.signedInteger(value.signedInteger);
+        case Kind::Unsigned: return writer.unsignedInteger(value.unsignedInteger);
+        case Kind::Floating: return writer.floating(value.floating);
+        case Kind::String: return writer.string(value.string);
+        case Kind::Object:
+            if (!writer.object()) return false;
+            for (const auto& field : value.fields)
+                if (!writer.beginField(field.id, field.name) || !write(writer, field.value) || !writer.endField()) return false;
+            return writer.endObject();
+        case Kind::Sequence:
+            if (!writer.sequence(value.elements.size())) return false;
+            for (size_t i = 0; i < value.elements.size(); ++i)
+                if (!writer.beginElement(i) || !write(writer, value.elements[i]) || !writer.endElement()) return false;
+            return writer.endSequence();
+        }
+        return false;
+    }
 }

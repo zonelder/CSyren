@@ -89,6 +89,12 @@ Names are unqualified type names and must be unique (scene and `.systems` files
 use them). The markers only check the type at compile time; they do not register
 anything by themselves.
 
+A component in a scene or prefab whose name is not registered (a renamed or
+removed type, code that is not built in) is kept on the entity as data
+(`core::UnknownComponents`, listed read-only in the inspector) and written back by
+save, Duplicate and "Save as prefab"; a warning names it once. Two reflected types
+with the same id stop the program at registration (`std::logic_error`).
+
 Before every build `CSyren.project.targets` runs
 
 ```

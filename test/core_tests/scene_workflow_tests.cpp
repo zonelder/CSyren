@@ -1177,6 +1177,7 @@ static void completeEditingWorkflow()
 
 #include "scene_pipeline_cases.h"
 #include "prefab_cases.h"
+#include "unknown_component_cases.h"
 
 class SceneWorkflow : public ::testing::Test
 {
@@ -1192,6 +1193,7 @@ protected:
         REGISTER_COMPONENT(BoxCollider);
         REGISTER_COMPONENT(ComponentResource);
         REGISTER_COMPONENT(Camera);
+        REGISTER_COMPONENT(UnknownComponents);
         // Engine systems used by these tests (the executable's registry is generated; tests
         // register what they need, like the components above).
         core::details::SystemRegistry::instance().registerSystem("PhysicsSystem",
@@ -1219,6 +1221,7 @@ TEST_F(SceneWorkflow, prefab_document_rules) { ASSERT_NO_THROW(prefabDocumentRul
 TEST_F(SceneWorkflow, prefab_missing_and_broken_files) { ASSERT_NO_THROW(prefabMissingAndBrokenFiles()); }
 TEST_F(SceneWorkflow, prefab_references_are_loaded_together) { ASSERT_NO_THROW(prefabReferencesAreLoadedTogether()); }
 TEST_F(SceneWorkflow, prefab_editor_save_and_instantiate) { ASSERT_NO_THROW(prefabEditorWorkflow()); }
+TEST_F(SceneWorkflow, unknown_components_roundtrip) { ASSERT_NO_THROW(unknownComponentsRoundtrip()); }
 TEST_F(SceneWorkflow, complete_editing_workflow) { ASSERT_NO_THROW(completeEditingWorkflow()); }
 TEST_F(SceneWorkflow, component_add_remove) { ASSERT_NO_THROW(componentWorkflow()); }
 TEST_F(SceneWorkflow, component_resource_references) { ASSERT_NO_THROW(componentResourceWorkflow()); }
