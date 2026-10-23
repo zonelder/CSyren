@@ -1,5 +1,6 @@
 #pragma once
 #include "core/scene.h"
+#include "core/entity_ref.h"
 #include "core/type_key.h"
 #include "core/meta_json.h"
 #include <functional>
@@ -140,6 +141,27 @@ namespace csyren::editor
             core::JsonArchiveReader reader(value);
             core::SerializationContext serialization;
             if (!core::reflection::load(reader, serialization, *type, destination)) return false;
+            return context.scene.patch(context.resolve(key), family);
+        }
+    };
+    // Edit of an EntityRef field. before/after are the targets' editor keys (0:
+    // none): runtime IDs change when the editor scene is rebuilt, keys do not.
+    class EntityRefFieldEdit final : public PendingFieldEdit
+    {
+    public:
+        EntityKey before{}, after{};
+        EntityRefFieldEdit(EntityKey target, size_t component, FieldPath field, EntityKey previous, EntityKey next)
+            : PendingFieldEdit(core::TypeKey::of<EntityRefFieldEdit>()), before(previous), after(next)
+        { key = target; family = component; path = std::move(field); }
+        bool changed() const override { return before != after; }
+        bool execute(EditContext& context) override { return apply(context, after); }
+        bool undo(EditContext& context) override { return apply(context, before); }
+    private:
+        bool apply(EditContext& context, EntityKey value)
+        {
+            auto* destination = context.field<core::EntityRef>(key, family, path);
+            if (!destination) return false;
+            destination->id = value ? context.resolve(value) : core::Entity::invalidID;
             return context.scene.patch(context.resolve(key), family);
         }
     };

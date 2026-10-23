@@ -132,6 +132,9 @@
     <ClInclude Include="editor\prefab_editor.h">
       <Filter>editor</Filter>
     </ClInclude>
+    <ClInclude Include="editor\entity_ref_editor.h">
+      <Filter>editor</Filter>
+    </ClInclude>
     <ClInclude Include="host\application.h">
       <Filter>host</Filter>
     </ClInclude>

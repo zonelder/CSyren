@@ -1,5 +1,6 @@
 #include "math_editor.h"
 #include "prefab_editor.h"
+#include "entity_ref_editor.h"
 using namespace csyren::math;
 
 namespace csyren::editor::details
@@ -18,6 +19,7 @@ namespace csyren::editor::details
         static ColorEditor colorEditor;
         static QuaternionEditor quaternionEditor;
         static PrefabRefEditor prefabEditor;
+        static EntityRefEditor entityRefEditor;
         using core::reflection::resolve;
         EditorRegistry::add(resolve<std::string>(), &stringEditor);
         EditorRegistry::add(resolve<float>(), &floatEditor);
@@ -29,5 +31,6 @@ namespace csyren::editor::details
         EditorRegistry::add(resolve<Color>(), &colorEditor);
         EditorRegistry::add(resolve<Quaternion>(), &quaternionEditor);
         EditorRegistry::add(resolve<core::PrefabRef>(), &prefabEditor);
+        EditorRegistry::add(resolve<core::EntityRef>(), &entityRefEditor);
     }
 }

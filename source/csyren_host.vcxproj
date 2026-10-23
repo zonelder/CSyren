@@ -116,6 +116,7 @@
     <ClInclude Include="editor\system_window.h" />
     <ClInclude Include="editor\profiler_window.h" />
     <ClInclude Include="editor\prefab_editor.h" />
+    <ClInclude Include="editor\entity_ref_editor.h" />
     <ClInclude Include="host\application.h" />
     <ClInclude Include="host\project_settings.h" />
     <ClInclude Include="host\startup_options.h" />

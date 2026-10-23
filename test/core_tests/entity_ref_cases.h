@@ -4,6 +4,7 @@
 // Included by scene_workflow_tests.cpp after prefab_cases.h: uses CHECK, PrefabProject
 // and prefabEntityNamed().
 #include "core/entity_ref.h"
+#include "editor_commands.h"
 
 struct RefHolder
 {
@@ -128,4 +129,35 @@ static void entityRefDuplicateAndPrefab()
     CHECK(copy && copy->children.size() == 1);
     CHECK(target.scene().getComponent<RefHolder>(root)->target == EntityRef{ copy->children.front() });
     CHECK(target.scene().getComponent<RefHolder>(root)->other.empty());
+}
+
+// The inspector's edit keeps editor keys: undo and redo work after the scene is
+// rebuilt with new runtime IDs (SceneSession does that on structural changes).
+static void entityRefFieldEditUsesKeys()
+{
+    registerEntityRefTestTypes();
+    const auto family = core::reflection::ComponentFamily::getID<RefHolder>();
+    const editor::FieldPath path{ "target"_hs.id };
+    SceneInstance first;
+    const auto holder = first.scene().createEntity("holder");
+    const auto target = first.scene().createEntity("target");
+    first.scene().addComponent<RefHolder>(holder);
+    editor::EntityMap keys{ { 1, holder }, { 2, target } };
+    editor::EditContext context{ first.scene(), keys };
+    editor::EntityRefFieldEdit edit(1, family, path, 0, 2);
+    CHECK(edit.changed());
+    CHECK(edit.execute(context));
+    CHECK(first.scene().getComponent<RefHolder>(holder)->target == EntityRef{ target });
+
+    SceneInstance rebuilt;
+    (void)rebuilt.scene().createEntity("shifts the IDs");
+    const auto holder2 = rebuilt.scene().createEntity("holder");
+    const auto target2 = rebuilt.scene().createEntity("target");
+    rebuilt.scene().addComponent<RefHolder>(holder2, RefHolder{ { target2 }, {} });
+    editor::EntityMap rebuiltKeys{ { 1, holder2 }, { 2, target2 } };
+    editor::EditContext rebuiltContext{ rebuilt.scene(), rebuiltKeys };
+    CHECK(edit.undo(rebuiltContext));
+    CHECK(rebuilt.scene().getComponent<RefHolder>(holder2)->target.empty());
+    CHECK(edit.execute(rebuiltContext));
+    CHECK(rebuilt.scene().getComponent<RefHolder>(holder2)->target == EntityRef{ target2 });
 }

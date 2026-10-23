@@ -59,6 +59,15 @@ namespace csyren::editor
             else edit->after = after;
             if (finished) finishEdit();
         }
+        // An EntityRef field was set from `before` to `after` (one finished edit).
+        void previewEntityRef(EntityKey key, size_t family, const FieldPath& path, core::Entity::ID before, core::Entity::ID after)
+        {
+            if (playing()) return;
+            editorScene().patch(resolve(key), family);
+            finishEdit();
+            _edit = std::make_unique<EntityRefFieldEdit>(key, family, path, keyFor(before), keyFor(after));
+            finishEdit();
+        }
         // Same as preview() for editors that only know the reflected type.
         void previewArchived(EntityKey key, size_t family, const FieldPath& path, const core::reflection::MetaType& type,
             nlohmann::json before, nlohmann::json after, bool finished)

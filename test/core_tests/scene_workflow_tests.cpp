@@ -1225,6 +1225,7 @@ TEST_F(SceneWorkflow, prefab_editor_save_and_instantiate) { ASSERT_NO_THROW(pref
 TEST_F(SceneWorkflow, unknown_components_roundtrip) { ASSERT_NO_THROW(unknownComponentsRoundtrip()); }
 TEST_F(SceneWorkflow, entity_ref_scene_roundtrip) { ASSERT_NO_THROW(entityRefSceneRoundtrip()); }
 TEST_F(SceneWorkflow, entity_ref_duplicate_and_prefab) { ASSERT_NO_THROW(entityRefDuplicateAndPrefab()); }
+TEST_F(SceneWorkflow, entity_ref_field_edit_uses_keys) { ASSERT_NO_THROW(entityRefFieldEditUsesKeys()); }
 TEST_F(SceneWorkflow, complete_editing_workflow) { ASSERT_NO_THROW(completeEditingWorkflow()); }
 TEST_F(SceneWorkflow, component_add_remove) { ASSERT_NO_THROW(componentWorkflow()); }
 TEST_F(SceneWorkflow, component_resource_references) { ASSERT_NO_THROW(componentResourceWorkflow()); }
