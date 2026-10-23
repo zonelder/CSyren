@@ -67,6 +67,7 @@
 
 #include "system_base.h"
 #include "scene.h"
+#include "entity_ref.h"
 #include "services.h"
 
 // IntelliSense (the EDG front end of Visual Studio, __INTELLISENSE__) only needs
@@ -284,6 +285,7 @@ namespace csyren::core
             validate();
             return View(_scene).contains(id);
         }
+        bool contains(EntityRef reference) const { return contains(reference.id); }
 
         // One component of any entity; read-only unless T is listed without const.
         template<class T> auto get(Entity::ID id) const
@@ -293,6 +295,8 @@ namespace csyren::core
             using Access = std::conditional_t<!std::is_const_v<T> && writes<Value>, Value, const Value>;
             return _scene->template getComponent<Access>(id);
         }
+        // Through a reference kept in a component: empty when its entity is gone.
+        template<class T> auto get(EntityRef reference) const { return get<T>(reference.id); }
 
         // Notify derived data (e.g. world transforms) after writing a component.
         template<class T> bool patch(Entity::ID id) const { requireWrite<T>(); return _scene->template patch<T>(id); }

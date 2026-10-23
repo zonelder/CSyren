@@ -62,6 +62,7 @@ namespace csyren
         sections = nlohmann::json::object();
         auto* references = context.tryGet<core::SceneEntityReferences>();
         if (!references) { error = "no entity references in the serialization context"; return false; }
+        references->scene = &scene;
         std::unordered_map<core::Entity::ID, size_t> index;
         for (size_t i = 0; i < branch.size(); ++i) index.emplace(branch[i], i);
         for (size_t i = 0; i < branch.size(); ++i)

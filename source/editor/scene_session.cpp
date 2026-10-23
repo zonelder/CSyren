@@ -275,6 +275,7 @@ namespace csyren::editor
             core::SerializationContext serialization;
             _storage.configureComponentArchive(serialization);
             auto& refs = serialization.emplaceService<core::SceneEntityReferences>();
+            refs.scene = &editorScene();
             for (const auto& entity : editorScene().entities())
                 if (entity.id != core::EntityManager::ROOT_PARENT) refs.saved.emplace(entity.id, keyFor(entity.id));
             core::JsonArchiveWriter writer(*archive);
@@ -334,6 +335,7 @@ namespace csyren::editor
             core::SerializationContext saving;
             _storage.configureComponentArchive(saving);
             auto& savedRefs = saving.emplaceService<core::SceneEntityReferences>();
+            savedRefs.scene = &scene;
             for (const auto& [entityKey, id] : keys) savedRefs.saved.emplace(id, entityKey);
             BranchArchive archive;
             std::string error;

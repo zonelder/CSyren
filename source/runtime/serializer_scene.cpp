@@ -63,6 +63,7 @@ namespace csyren
         context.reset();
         const auto unknownFamily = core::reflection::ComponentFamily::getID<core::UnknownComponents>();
         auto& references = context.emplaceService<core::SceneEntityReferences>();
+        references.scene = &scene;
         for (const auto& entity : scene.entities())
             if (entity.id != core::EntityManager::ROOT_PARENT) references.saved.emplace(entity.id, references.saved.size());
         if (!writer.object() || !writer.beginField("$version"_hs.id, "$version") || !writer.unsignedInteger(2) || !writer.endField()) return false;

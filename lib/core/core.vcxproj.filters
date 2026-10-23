@@ -155,6 +155,9 @@
     <ClCompile Include="prefab.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="entity_ref.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -169,6 +172,7 @@
     <ClInclude Include="transform_hierarchy.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="typed_system.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="prefab.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="entity_ref.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="spawn.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="type_key.h"><Filter>Header Files</Filter></ClInclude>
   </ItemGroup>

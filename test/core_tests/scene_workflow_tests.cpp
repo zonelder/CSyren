@@ -1178,6 +1178,7 @@ static void completeEditingWorkflow()
 #include "scene_pipeline_cases.h"
 #include "prefab_cases.h"
 #include "unknown_component_cases.h"
+#include "entity_ref_cases.h"
 
 class SceneWorkflow : public ::testing::Test
 {
@@ -1222,6 +1223,8 @@ TEST_F(SceneWorkflow, prefab_missing_and_broken_files) { ASSERT_NO_THROW(prefabM
 TEST_F(SceneWorkflow, prefab_references_are_loaded_together) { ASSERT_NO_THROW(prefabReferencesAreLoadedTogether()); }
 TEST_F(SceneWorkflow, prefab_editor_save_and_instantiate) { ASSERT_NO_THROW(prefabEditorWorkflow()); }
 TEST_F(SceneWorkflow, unknown_components_roundtrip) { ASSERT_NO_THROW(unknownComponentsRoundtrip()); }
+TEST_F(SceneWorkflow, entity_ref_scene_roundtrip) { ASSERT_NO_THROW(entityRefSceneRoundtrip()); }
+TEST_F(SceneWorkflow, entity_ref_duplicate_and_prefab) { ASSERT_NO_THROW(entityRefDuplicateAndPrefab()); }
 TEST_F(SceneWorkflow, complete_editing_workflow) { ASSERT_NO_THROW(completeEditingWorkflow()); }
 TEST_F(SceneWorkflow, component_add_remove) { ASSERT_NO_THROW(componentWorkflow()); }
 TEST_F(SceneWorkflow, component_resource_references) { ASSERT_NO_THROW(componentResourceWorkflow()); }

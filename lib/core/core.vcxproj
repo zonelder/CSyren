@@ -173,6 +173,7 @@
     <ClInclude Include="time.h" />
     <ClInclude Include="transform.h" />
     <ClInclude Include="transform_hierarchy.h" />
+    <ClInclude Include="entity_ref.h" />
     <ClInclude Include="unknown_components.h" />
     <ClInclude Include="window.h" />
   </ItemGroup>
@@ -190,6 +191,7 @@
     </ClCompile>
     <ClCompile Include="prefab.cpp" />
     <ClCompile Include="transform.cpp" />
+    <ClCompile Include="entity_ref.cpp" />
     <ClCompile Include="window.cpp" />
   </ItemGroup>
   <ItemGroup>

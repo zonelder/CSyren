@@ -447,4 +447,35 @@ TEST(TypedSystem, FiltersAllowPresenceTestsOnly) {
     EXPECT_THROW(scene.validatePresence<TTag>(), std::logic_error);
 }
 #endif
+
+// Queries follow an EntityRef kept in a component; it is empty once its entity is gone.
+class TRefReader : public TypedSystem<TRefReader> {
+public:
+    inline static EntityRef target;
+    inline static int seen = 0;
+    inline static bool contained = false;
+    void execute(Select<TPosition> positions) {
+        const auto position = positions.get<TPosition>(target);
+        seen = position ? position->x : -1;
+        contained = positions.contains(target);
+    }
+};
+TEST(TypedSystem, QueriesFollowEntityRefs) {
+    registerTypedComponents();
+    ServiceScene services;
+    details::ServiceRegistry::initializeAll();
+    const auto id = services.scene.createEntity();
+    services.scene.addComponent<TPosition>(id, 7);
+    TRefReader::target = EntityRef{ id };
+    TRefReader reader;
+    reader.run();
+    EXPECT_EQ(TRefReader::seen, 7);
+    EXPECT_TRUE(TRefReader::contained);
+    services.scene.destroyEntity(id);
+    services.scene.flush();
+    services.scene.addComponent<TPosition>(services.scene.createEntity(), 9); // takes the slot
+    reader.run();
+    EXPECT_EQ(TRefReader::seen, -1);
+    EXPECT_FALSE(TRefReader::contained);
+}
 }

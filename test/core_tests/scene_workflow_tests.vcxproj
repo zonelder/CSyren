@@ -42,6 +42,7 @@
     <ClInclude Include="scene_pipeline_cases.h" />
     <ClInclude Include="prefab_cases.h" />
     <ClInclude Include="unknown_component_cases.h" />
+    <ClInclude Include="entity_ref_cases.h" />
     <ClInclude Include="gizmo_transform_cases.h" />
     <ClInclude Include="viewport_cases.h" />
   </ItemGroup>
