@@ -13,7 +13,7 @@ namespace csyren::core
         if (_consumed || !scene._bus || !scene._entityCreateToken.valid() ||
             !manager.contains(EntityManager::ROOT_PARENT) || !validateHierarchy()) return false;
         for (size_t i = 0; i < size(); ++i)
-            if (_entities[i].id != manager.plannedId(i)) return false;
+            if (i < _reserved ? !manager.isReserved(_entities[i].id) : _entities[i].id != manager.plannedId(i - _reserved)) return false;
         for (const auto& [family, components] : _components)
             if (scene._cStates.contains(family) && !components.pool->canMove()) return false;
 
@@ -57,10 +57,12 @@ namespace csyren::core
         // Capacity and sparse pages are ready. From here, insertion and transfer
         // cannot allocate or throw (component relocation is checked above).
         static_assert(std::is_nothrow_move_constructible_v<Entity>);
-        for (auto& entity : _entities) {
+        for (size_t i = 0; i < size(); ++i) {
+            auto& entity = _entities[i];
             const auto id = entity.id;
             const bool rootChild = entity.parent == EntityManager::ROOT_PARENT;
-            (void)manager.allocateId();
+            if (i < _reserved) { std::lock_guard lock(manager._idMutex); manager._reserved.erase(id); }
+            else (void)manager.allocateId();
             manager._entities.emplace(id, std::move(entity));
             if (rootChild) manager.tryGet(EntityManager::ROOT_PARENT)->children.push_back(id);
         }

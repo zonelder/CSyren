@@ -136,6 +136,18 @@ namespace csyren::core
 	public:
 
         EntityBatch stageEntities(size_t count) const { return EntityBatch(_em.planAppend(count)); }
+        // The batch's first entity gets `root`, an ID from reserveEntityId().
+        EntityBatch stageEntities(size_t count, Entity::ID root) const {
+            if (root == Entity::invalidID || count == 0) return stageEntities(count);
+            auto planned = _em.planAppend(count - 1);
+            planned.insert(planned.begin(), root);
+            return EntityBatch(std::move(planned), 1);
+        }
+        // An ID for an entity created later (as a batch root, e.g. by Spawn), known
+        // now. Thread safe. releaseEntityId() gives an unused one back: it never
+        // becomes an entity.
+        [[nodiscard]] Entity::ID reserveEntityId() { requireStructuralAccess(); return _em.reserveId(); }
+        void releaseEntityId(Entity::ID id) { _em.releaseReserved(id); }
 
         // The batch is consumed only on success. No scene data changes before
         // preparation completes; the commit performs only prepared, no-throw moves.

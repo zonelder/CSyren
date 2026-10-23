@@ -25,9 +25,10 @@ class FakePrefab final : public Prefab {
 public:
     explicit FakePrefab(std::string path, int children = 1) : _path(std::move(path)), _children(children) {}
     const std::string& path() const noexcept override { return _path; }
-    Entity::ID instantiate(Scene& scene, const SpawnPose& pose, const std::vector<PrefabEdit>& edits) const override {
+    Entity::ID instantiate(Scene& scene, const SpawnPose& pose, const std::vector<PrefabEdit>& edits,
+        Entity::ID reservedRoot = Entity::invalidID) const override {
         ++instances;
-        auto batch = scene.stageEntities(size_t(1 + _children));
+        auto batch = scene.stageEntities(size_t(1 + _children), reservedRoot);
         const auto root = batch.createEntity("prefab");
         batch.addComponent<SPayload>(root)->value = 7;
         for (int i = 0; i < _children; ++i) {
@@ -124,6 +125,19 @@ public:
     }
 };
 REGISTER_SYSTEM(SMixed)
+
+// Keeps the roots of its copies: known when spawning, alive after the commit.
+class SRootSpawner : public TypedSystem<SRootSpawner> {
+public:
+    static constexpr auto phase = "custom";
+    inline static std::vector<Entity::ID> roots;
+    void execute(Select<SOrigin> origins, Spawn spawn) {
+        for (auto [id, origin] : origins) { (void)origin; roots.push_back(spawn(PrefabRef{ "prefabs/box.prefab" }).root()); }
+        roots.push_back(spawn(PrefabRef{ "prefabs/missing.prefab" }).root());
+        roots.push_back(spawn(PrefabRef{}).root());
+    }
+};
+REGISTER_SYSTEM(SRootSpawner)
 }
 
 TEST(Spawn, DeclaresOnlyAStructuralChange) {
@@ -291,4 +305,44 @@ TEST(Spawn, LibraryCachesAndInvalidates) {
     EXPECT_EQ(loads, 2);
     PrefabLibrary empty;
     EXPECT_EQ(empty.load("prefabs/a.prefab"), nullptr);
+}
+
+TEST(Spawn, RootIsKnownWhenSpawning) {
+    registerSpawnComponents();
+    SpawnServices services;
+    services.scene.addComponent<SOrigin>(services.scene.createEntity(), 1);
+    SRootSpawner::roots.clear();
+    SystemManager systems; systems.phase({ "custom" });
+    systems.jobs().init(2);
+    systems.add("SRootSpawner"); systems.init();
+    systems.execute();
+    ASSERT_EQ(SRootSpawner::roots.size(), 3u);
+    const auto copy = SRootSpawner::roots[0], missing = SRootSpawner::roots[1], none = SRootSpawner::roots[2];
+    ASSERT_TRUE(services.scene.entities().contains(copy));
+    EXPECT_EQ(services.scene.getComponent<const SPayload>(copy)->value, 7);
+    EXPECT_EQ(services.scene.entities().try_get(copy)->children.size(), 1u);
+    EXPECT_EQ(none, Entity::invalidID);
+    // The copy of a missing prefab was not created: its ID never names an entity.
+    ASSERT_NE(missing, Entity::invalidID);
+    EXPECT_FALSE(services.scene.entities().contains(missing));
+    const auto next = services.scene.createEntity();
+    EXPECT_EQ(Entity::slot(next), Entity::slot(missing)); // the slot came back...
+    EXPECT_NE(next, missing);                             // ...with the next generation
+    systems.shutdown();
+}
+
+TEST(Spawn, RequestLeftByAnExceptionGivesItsRootBack) {
+    registerSpawnComponents();
+    SpawnServices services;
+    auto spawn = Spawn::makeParam(services.scene);
+    Entity::ID root = Entity::invalidID;
+    EXPECT_THROW({
+        auto&& request = spawn(PrefabRef{ "prefabs/box.prefab" });
+        root = request.root();
+        throw std::runtime_error("execute failed");
+    }, std::runtime_error);
+    EXPECT_EQ(countPayloads(services.scene), 0u);
+    const auto next = services.scene.createEntity();
+    EXPECT_EQ(Entity::slot(next), Entity::slot(root));
+    EXPECT_NE(next, root);
 }

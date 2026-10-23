@@ -81,7 +81,7 @@ namespace csyren
         PrefabFile(std::string path, BranchArchive archive, ConfigureArchive configure);
         const std::string& path() const noexcept override { return _path; }
         core::Entity::ID instantiate(core::Scene& scene, const core::SpawnPose& pose,
-            const std::vector<core::PrefabEdit>& edits = {}) const override;
+            const std::vector<core::PrefabEdit>& edits = {}, core::Entity::ID root = core::Entity::invalidID) const override;
         size_t entityCount() const noexcept { return _archive.entities.size(); }
         std::vector<std::string> references() const override { return _references; }
         // Reads the sections and every component value once (validation, resources
@@ -89,7 +89,7 @@ namespace csyren
         bool prepare(std::string& error);
     private:
         bool tryInstantiate(core::Scene& scene, const core::SpawnPose& pose,
-            const std::vector<core::PrefabEdit>& edits, core::Entity::ID& root, std::string& error) const;
+            const std::vector<core::PrefabEdit>& edits, core::Entity::ID reservedRoot, core::Entity::ID& root, std::string& error) const;
         std::string _path;
         BranchArchive _archive;
         ConfigureArchive _configure;

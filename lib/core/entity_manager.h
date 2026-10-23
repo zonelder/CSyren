@@ -41,15 +41,32 @@ namespace csyren::core
             return createReservedEntity(reserveId(), name, parent);
         }
 
-        // Reservation only touches the allocator, never the entity storage.
+        // Reservation only touches the allocator, never the entity storage. A
+        // reserved ID becomes an entity through createReservedEntity() or as the
+        // root of an EntityBatch, or is given back with releaseReserved(). Thread safe.
         Entity::ID reserveId() {
             std::lock_guard lock(_idMutex);
-            return allocateId();
+            const auto id = allocateId();
+            _reserved.insert(id);
+            return id;
+        }
+        // The slot goes back with the next generation: `id` never becomes an entity.
+        void releaseReserved(Entity::ID id) {
+            std::lock_guard lock(_idMutex);
+            if (_reserved.erase(id)) freeSlot(id);
+        }
+        bool isReserved(Entity::ID id) {
+            std::lock_guard lock(_idMutex);
+            return _reserved.contains(id);
         }
 
         Entity::ID createReservedEntity(Entity::ID id, std::string_view name,
             Entity::ID parent = ROOT_PARENT)
         {
+            {
+                std::lock_guard lock(_idMutex);
+                _reserved.erase(id);
+            }
             if (isPendingDestroy(parent))
             {
                 log::error("Cannot create entity under pending-destroy parent {}", parent);
@@ -242,6 +259,7 @@ namespace csyren::core
         std::vector<uint32_t> _generations;   // by slot; slots past the end are at generation 0
         std::vector<uint32_t> _freeSlots;     // reused last in, first out
         uint32_t              _nextSlot = 1;  // slot 0 is the scene root
+        std::unordered_set<Entity::ID> _reserved; // reserved, not created yet
         std::mutex _idMutex;
         std::unordered_set<Entity::ID>   _pendingDestroy;
     };

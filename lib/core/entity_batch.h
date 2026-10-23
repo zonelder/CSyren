@@ -18,12 +18,13 @@ namespace csyren::core
             std::shared_ptr<PoolBase> pool;
         };
         std::vector<Entity::ID> _planned;
+        size_t _reserved = 0; // leading planned IDs reserved beforehand (EntityManager::reserveId)
         std::vector<Entity> _entities;
         std::unordered_map<Entity::ID, size_t> _indices;
         std::unordered_map<size_t, Components> _components;
         bool _consumed = false;
         bool appendTo(Scene&);
-        explicit EntityBatch(std::vector<Entity::ID> planned) : _planned(std::move(planned))
+        explicit EntityBatch(std::vector<Entity::ID> planned, size_t reserved = 0) : _planned(std::move(planned)), _reserved(reserved)
         {
             _entities.reserve(_planned.size());
             _indices.reserve(_planned.size());
@@ -32,7 +33,7 @@ namespace csyren::core
         EntityBatch(const EntityBatch&) = delete;
         EntityBatch& operator=(const EntityBatch&) = delete;
         EntityBatch(EntityBatch&& other) noexcept :
-            _planned(std::move(other._planned)), _entities(std::move(other._entities)),
+            _planned(std::move(other._planned)), _reserved(other._reserved), _entities(std::move(other._entities)),
             _indices(std::move(other._indices)), _components(std::move(other._components)),
             _consumed(std::exchange(other._consumed, true)) {}
         EntityBatch& operator=(EntityBatch&&) = delete;

@@ -302,11 +302,11 @@ namespace csyren
     }
 
     bool PrefabFile::tryInstantiate(core::Scene& scene, const core::SpawnPose& pose,
-        const std::vector<core::PrefabEdit>& edits, core::Entity::ID& root, std::string& error) const
+        const std::vector<core::PrefabEdit>& edits, core::Entity::ID reservedRoot, core::Entity::ID& root, std::string& error) const
     {
         auto& references = *_context.tryGet<core::SceneEntityReferences>();
         references.loaded.clear();
-        auto batch = scene.stageEntities(_archive.entities.size());
+        auto batch = scene.stageEntities(_archive.entities.size(), reservedRoot);
         std::vector<core::Entity::ID> ids;
         {
             auto scope = _context.scopedService(batch);
@@ -318,16 +318,16 @@ namespace csyren
     }
 
     core::Entity::ID PrefabFile::instantiate(core::Scene& scene, const core::SpawnPose& pose,
-        const std::vector<core::PrefabEdit>& edits) const
+        const std::vector<core::PrefabEdit>& edits, core::Entity::ID reservedRoot) const
     {
         std::lock_guard lock(_mutex);
         core::Entity::ID root = core::Entity::invalidID;
         std::string error;
-        if (tryInstantiate(scene, pose, edits, root, error)) return root;
+        if (tryInstantiate(scene, pose, edits, reservedRoot, root, error)) return root;
         // Resolved resources are cached in the context; a resource may have been
         // reloaded since. Read the resource table again and retry once.
         std::string retryError;
-        if (_archive.loadSections(_context, retryError) && tryInstantiate(scene, pose, edits, root, retryError)) return root;
+        if (_archive.loadSections(_context, retryError) && tryInstantiate(scene, pose, edits, reservedRoot, root, retryError)) return root;
         core::logOnce(_path + "#instantiate", "Prefab '" + _path + "' cannot be instantiated: " + error);
         return core::Entity::invalidID;
     }

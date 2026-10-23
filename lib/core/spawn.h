@@ -5,9 +5,10 @@
 //   public:
 //       void execute(core::Update<Launcher, const core::Transform> launchers, core::Spawn spawn) {
 //           for (auto [id, launcher, tr] : launchers)
-//               spawn(launcher.projectile, { tr.position, tr.rotation })
+//               launcher.last = spawn(launcher.projectile, { tr.position, tr.rotation })
 //                   .edit<physics::RigidBody>([velocity = launcher.velocity](physics::RigidBody& body) { body.linearVelocity = velocity; })
-//                   .with(Projectile{ .owner = id });
+//                   .with(Projectile{ .owner = id })
+//                   .root();
 //       }
 //   };
 //
@@ -21,9 +22,13 @@
 //   edit<T>(fn)       change the prefab's T on the root before anyone sees it.
 //                     fn runs in the commit, after execute() returned: capture
 //                     by value, never references to locals or query rows.
+//   root()            the ID the copy's root will have, known now (it can be kept,
+//                     e.g. in an EntityRef). The entity exists after the commit;
+//                     if the copy cannot be created, the ID never names an entity.
 //
-// An empty PrefabRef spawns nothing. A prefab that cannot be loaded, or an edit
-// of a component the prefab's root lacks, is logged once and skipped.
+// An empty PrefabRef spawns nothing (root() is invalidID). A prefab that cannot
+// be loaded, or an edit of a component the prefab's root lacks, is logged once
+// and skipped.
 #include "typed_system.h"
 #include "prefab.h"
 #include "entity_batch.h"
@@ -43,6 +48,7 @@ namespace csyren::core
             std::string path;
             SpawnPose pose;
             std::vector<PrefabEdit> edits;
+            Entity::ID root = Entity::invalidID; // reserved when the request is made
         };
     public:
         // One spawn. It is scheduled when the Request goes away (normally at the end
@@ -58,11 +64,17 @@ namespace csyren::core
             Request& operator=(Request&&) = delete;
             ~Request()
             {
-                if (!_scene || !_record || std::uncaught_exceptions() > _exceptions) return;
-                try { schedule(*_scene, std::move(_record)); }
+                if (!_scene || !_record) return;
+                const auto root = _record->root;
+                if (std::uncaught_exceptions() > _exceptions) { _scene->releaseEntityId(root); return; }
+                try { schedule(*_scene, std::move(_record)); return; }
                 catch (const std::exception& error) { log::error("Spawn could not be scheduled: {}", error.what()); }
                 catch (...) { log::error("Spawn could not be scheduled"); }
+                _scene->releaseEntityId(root);
             }
+
+            // The ID of the copy's root; the entity exists after the commit.
+            Entity::ID root() const noexcept { return _record ? _record->root : Entity::invalidID; }
 
             template<class T> Request& with(T value)
             {
@@ -100,6 +112,7 @@ namespace csyren::core
         {
             auto record = std::make_shared<Record>();
             record->path = prefab.path; record->pose = pose;
+            if (!record->path.empty()) record->root = _scene->reserveEntityId();
             return Request(*_scene, std::move(record));
         }
         // A prefab loaded beforehand (e.g. in onAttach).
@@ -107,6 +120,7 @@ namespace csyren::core
         {
             auto record = std::make_shared<Record>();
             record->prefab = std::move(prefab); record->pose = pose;
+            if (record->prefab) record->root = _scene->reserveEntityId();
             return Request(*_scene, std::move(record));
         }
 
@@ -123,18 +137,15 @@ namespace csyren::core
         }
         static void commit(Scene& scene, const Record& record)
         {
+            if (record.root == Entity::invalidID) return; // reference not set: nothing to spawn
             auto prefab = record.prefab;
             if (!prefab) {
-                if (record.path.empty()) return; // reference not set: nothing to spawn
                 auto* library = Services::find<PrefabLibrary>();
-                if (!library) {
-                    logOnce("#no-library", "Spawn of '" + record.path + "': no PrefabLibrary service is registered");
-                    return;
-                }
-                prefab = library->load(record.path); // logs a failure once per path
-                if (!prefab) return;
+                if (!library) logOnce("#no-library", "Spawn of '" + record.path + "': no PrefabLibrary service is registered");
+                else prefab = library->load(record.path); // logs a failure once per path
             }
-            prefab->instantiate(scene, record.pose, record.edits);
+            const auto root = prefab ? prefab->instantiate(scene, record.pose, record.edits, record.root) : Entity::invalidID;
+            if (root != record.root) scene.releaseEntityId(record.root); // not created: the ID stays unused
         }
         Scene* _scene;
     };

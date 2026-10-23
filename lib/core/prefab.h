@@ -63,7 +63,10 @@ namespace csyren::core
         // edits run, then the whole branch is appended. Structural: call it between
         // frames or from a structural commit (core::Spawn does). Returns the root,
         // or Entity::invalidID when the copy could not be created (logged).
-        virtual Entity::ID instantiate(Scene& scene, const SpawnPose& pose, const std::vector<PrefabEdit>& edits = {}) const = 0;
+        // `root`: an ID from Scene::reserveEntityId() for the copy's root (pass it
+        // to Scene::stageEntities); invalidID: a new one.
+        virtual Entity::ID instantiate(Scene& scene, const SpawnPose& pose, const std::vector<PrefabEdit>& edits = {},
+            Entity::ID root = Entity::invalidID) const = 0;
         // Prefabs this one refers to (PrefabRef fields of its components); the
         // library loads them together with this one.
         virtual std::vector<std::string> references() const { return {}; }
