@@ -24,6 +24,7 @@ namespace csyren::core
 		_tokens[static_cast<uint32_t>(EventType::MouseButtonDown)] =	bus->register_publisher<InputEvent>(static_cast<uint32_t>(EventType::MouseButtonDown));
 		_tokens[static_cast<uint32_t>(EventType::MouseButtonUp)] =		bus->register_publisher<InputEvent>(static_cast<uint32_t>(EventType::MouseButtonUp));
 		_tokens[static_cast<uint32_t>(EventType::MouseMove)] =			bus->register_publisher<InputEvent>(static_cast<uint32_t>(EventType::MouseMove));
+		_tokens[static_cast<uint32_t>(EventType::MouseWheel)] =			bus->register_publisher<InputEvent>(static_cast<uint32_t>(EventType::MouseWheel));
 	}
 
 CS_STRICT_SYSTEMS_BEGIN
@@ -35,20 +36,17 @@ CS_STRICT_SYSTEMS_BEGIN
 		while (!_eventBuffer.empty())
 		{
 			auto event = _eventBuffer.pop();
+			// The device snapshot gets every event, published on the bus or not.
+			devices->dispatchEvent(event);
 
 			auto token_it = _tokens.find(static_cast<uint32_t>(event.type));
-			if (token_it == _tokens.end())
-			{
-				log::error("Unregister input event find. event type = {}", static_cast<uint32_t>(event.type));
-				continue;
-			}
+			if (token_it == _tokens.end()) continue; // no bus publisher for this event type
 
 			if (auto currentContext = _contextManager.activeContext(event, action))
 			{
 				bus->publish(_actionToken, action);
 			}
 			bus->publish(token_it->second, event);
-			devices->dispatchEvent(event);
 		}
 	}
 CS_STRICT_SYSTEMS_END

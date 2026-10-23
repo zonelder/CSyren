@@ -98,6 +98,10 @@ namespace csyren::core
 		 */
 		bool empty() const noexcept(noexcept(_buffer.empty())) { return _buffer.empty(); }
 
+		/// The newest item (the buffer must not be empty).
+		T& back() { return _buffer.back(); }
+		const T& back() const { return _buffer.back(); }
+
 		/**
 		 * @brief clear the buffer
 		 * Remove all items trom the buffer.

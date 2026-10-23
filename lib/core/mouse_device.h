@@ -44,16 +44,27 @@ namespace csyren::core
 			_buttonStates[code] = isDown;
 		}
 
+		// Called per move event: the delta accumulates over the frame (reset by update()).
 		void setMousePosition(int x, int y)
 		{
-			_delta.x = x - _x;
-			_delta.y = y - _y;
+			if (_hasPosition)
+			{
+				_delta.x += x - _x;
+				_delta.y += y - _y;
+			}
+			_hasPosition = true;
 			_x = x;
 			_y = y;
 		}
-		void setScrollDelta(int delta) { _scrollDelta = delta; }
+		// Called per wheel event: the wheel delta (WHEEL_DELTA = 120 per notch) accumulates over the frame.
+		void setScrollDelta(int delta) { _scrollDelta += delta; }
 
+		// Movement since the previous frame, in client pixels.
 		const MouseDelta& deltaPosition() const noexcept { return _delta; }
+		int x() const noexcept { return _x; }
+		int y() const noexcept { return _y; }
+		// Wheel movement since the previous frame (positive: away from the user).
+		int scrollDelta() const noexcept { return _scrollDelta; }
 
 	private:
 		bool getState(MouseButton button) const noexcept {
@@ -62,6 +73,7 @@ namespace csyren::core
 		std::bitset<static_cast<size_t>(MouseButton::Count)> _buttonStates;
 		int _x{ 0 };
 		int _y{ 0 };
+		bool _hasPosition{ false };
 
 		MouseDelta _delta;
 		int _scrollDelta{ 0 };
