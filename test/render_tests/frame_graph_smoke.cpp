@@ -83,7 +83,7 @@ int main() {
     REGISTER_COMPONENT(Camera); REGISTER_COMPONENT(Transform);
     details::ServiceRegistry::create<Window>(640, 480, L"FrameGraph integration test (hidden)");
     details::ServiceRegistry::create<Time>();
-    auto& bus = details::ServiceRegistry::create<EventBus2>();
+    auto& bus = details::ServiceRegistry::create<EventBus>();
     auto& scene = details::ServiceRegistry::create<Scene>(&bus);
     auto& systems = details::ServiceRegistry::create<SystemManager>();
     details::ServiceRegistry::create<render::DescriptorManager>();

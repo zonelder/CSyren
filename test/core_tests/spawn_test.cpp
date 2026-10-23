@@ -51,7 +51,7 @@ struct FakeFiles {
 };
 
 struct SpawnServices {
-    EventBus2& bus = details::ServiceRegistry::create<EventBus2>();
+    EventBus& bus = details::ServiceRegistry::create<EventBus>();
     Scene& scene = details::ServiceRegistry::create<Scene>(&bus);
     PrefabLibrary& prefabs = details::ServiceRegistry::create<PrefabLibrary>();
     FakeFiles library;

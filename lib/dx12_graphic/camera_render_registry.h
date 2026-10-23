@@ -17,10 +17,10 @@ namespace csyren::render::details
         void attach(core::Scene& scene)
         {
             detach(); _bus = &scene.eventBus();
-            _created = _bus->subscribe<core::ComponentCreateEvent<core::Camera>>(
-                [this](auto& event) { add(event.comp); });
-            _destroyed = _bus->subscribe<core::ComponentDestroyEvent<core::Camera>>(
-                [this](auto& event) {
+            _created = _bus->createEvent<core::ComponentCreateEvent<core::Camera>>().subscribe(
+                [this](const auto& event) { add(event.comp); });
+            _destroyed = _bus->createEvent<core::ComponentDestroyEvent<core::Camera>>().subscribe(
+                [this](const auto& event) {
                     auto it = _entries.find(event.comp.id());
                     if (it != _entries.end() && it->second.camera == event.comp) _entries.erase(it);
                 });
@@ -28,8 +28,8 @@ namespace csyren::render::details
         }
         void detach() noexcept
         {
-            if (_bus) { _bus->unsubscribe(_created); _bus->unsubscribe(_destroyed); }
-            _bus = nullptr; _created = {}; _destroyed = {}; _entries.clear();
+            _created.reset(); _destroyed.reset();
+            _bus = nullptr; _entries.clear();
         }
         std::shared_ptr<CameraRenderTarget> target(const core::Camera& camera) const
         {
@@ -61,7 +61,7 @@ namespace csyren::render::details
         }
         struct Entry { core::ComponentRef<core::Camera> camera; std::shared_ptr<CameraRenderView> view; };
         std::unordered_map<core::Entity::ID,Entry> _entries;
-        core::EventBus2* _bus = nullptr;
-        core::SubscriberToken _created,_destroyed;
+        core::EventBus* _bus = nullptr;
+        core::Subscription _created,_destroyed;
     };
 }

@@ -10,7 +10,7 @@ namespace csyren::core
     inline bool EntityBatch::appendTo(Scene& scene)
     {
         auto& manager = scene._em;
-        if (_consumed || !scene._bus || !scene._entityCreateToken.valid() ||
+        if (_consumed || !scene._bus || !scene._entityCreated ||
             !manager.contains(EntityManager::ROOT_PARENT) || !validateHierarchy()) return false;
         for (size_t i = 0; i < size(); ++i)
             if (i < _reserved ? !manager.isReserved(_entities[i].id) : _entities[i].id != manager.plannedId(i - _reserved)) return false;
@@ -35,22 +35,14 @@ namespace csyren::core
                 components.meta->ensurePool(&scene);
                 auto& destination = scene._cStates.at(family);
                 if (!adopt) destination.pool->reserveKeys(components.pool->keys());
-                if (!scene._bus->reservePending(destination.addToken, components.pool->keys().size()))
-                    throw std::runtime_error("Entity batch publisher registration failed");
+                destination.events->reserveCreated(components.pool->keys().size());
             }
-            if (!scene._bus->reservePending(scene._entityCreateToken, size()))
-                throw std::runtime_error("Entity batch publisher registration failed");
+            scene._entityCreated.reserve(size());
         } catch (...) {
-            // Preflight can allocate; discard only the newly registered empty pools.
-            // Existing values, allocator state and queued events have not changed.
-            for (auto family : addedFamilies) {
-                const auto it = scene._cStates.find(family);
-                if (it == scene._cStates.end()) continue;
-                scene._bus->unregister_publisher(it->second.addToken);
-                scene._bus->unregister_publisher(it->second.removeToken);
-                scene._bus->unregister_publisher(it->second.patchToken);
-                scene._cStates.erase(it);
-            }
+            // Preflight can allocate; discard only the newly registered empty pools
+            // (their event channels stay on the bus). Existing values, allocator
+            // state and queued events have not changed.
+            for (auto family : addedFamilies) scene._cStates.erase(family);
             throw;
         }
 
@@ -77,7 +69,7 @@ namespace csyren::core
         for (const auto& [family, components] : _components) ++scene._cStates.at(family).revision;
         for (size_t i = 0; i < size(); ++i) {
             const auto id = _planned[i];
-            scene._bus->publish(scene._entityCreateToken, EntityCreateEvent{id});
+            scene._entityCreated.publish(EntityCreateEvent{id});
             for (auto family : manager.tryGet(id)->componentView())
                 scene._cStates.at(family).meta->publishAdded(&scene, id);
         }

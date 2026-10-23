@@ -215,7 +215,7 @@ namespace csyren::physics
     class PhysicsEngine::Impl
     {
     public:
-        core::EventBus2* bus{};
+        core::EventBus* bus{};
         const PhysicsLayers* layers{};
         core::WorldTransforms worlds;
         std::unique_ptr<JPH::TempAllocatorImpl> m_tempAllocator;
@@ -228,7 +228,7 @@ namespace csyren::physics
         std::unique_ptr<ContactRecorder> m_contactRecorder;
 
         // Подписки на события ECS
-        std::vector<core::SubscriberToken> tokens;
+        std::vector<core::Subscription> subscriptions;
         // Entities whose bodies / characters must be brought in line with the scene
         // (in event order, without duplicates); applied by PhysicsSyncSystem.
         struct DirtyList
@@ -272,7 +272,7 @@ namespace csyren::physics
         float alpha{ 0.0f };
 
         // Lifecycle (attach): builds the world from the scene; the scene is not kept.
-        void initialize(core::Scene& scene, core::EventBus2& events)
+        void initialize(core::Scene& scene, core::EventBus& events)
         {
             bus = &events;
 
@@ -303,22 +303,22 @@ namespace csyren::physics
             // event generation all reduce to "make the body match the scene").
             const auto body = [this](const auto& event) { dirtyBodies.add(event.comp.id()); };
             const auto character = [this](const auto& event) { dirtyCharacters.add(event.comp.id()); };
-            tokens.push_back(bus->subscribe<csyren::core::ComponentCreateEvent<RigidBody>>(body));
-            tokens.push_back(bus->subscribe<csyren::core::ComponentDestroyEvent<RigidBody>>(body));
-            tokens.push_back(bus->subscribe<csyren::core::ComponentCreateEvent<BoxCollider>>(body));
-            tokens.push_back(bus->subscribe<csyren::core::ComponentDestroyEvent<BoxCollider>>(body));
-            tokens.push_back(bus->subscribe<csyren::core::ComponentCreateEvent<SphereCollider>>(body));
-            tokens.push_back(bus->subscribe<csyren::core::ComponentDestroyEvent<SphereCollider>>(body));
-            tokens.push_back(bus->subscribe<csyren::core::ComponentCreateEvent<CapsuleCollider>>(body));
-            tokens.push_back(bus->subscribe<csyren::core::ComponentDestroyEvent<CapsuleCollider>>(body));
-            tokens.push_back(bus->subscribe<csyren::core::ComponentCreateEvent<CharacterController>>(character));
-            tokens.push_back(bus->subscribe<csyren::core::ComponentDestroyEvent<CharacterController>>(character));
+            subscriptions.push_back(bus->createEvent<csyren::core::ComponentCreateEvent<RigidBody>>().subscribe(body));
+            subscriptions.push_back(bus->createEvent<csyren::core::ComponentDestroyEvent<RigidBody>>().subscribe(body));
+            subscriptions.push_back(bus->createEvent<csyren::core::ComponentCreateEvent<BoxCollider>>().subscribe(body));
+            subscriptions.push_back(bus->createEvent<csyren::core::ComponentDestroyEvent<BoxCollider>>().subscribe(body));
+            subscriptions.push_back(bus->createEvent<csyren::core::ComponentCreateEvent<SphereCollider>>().subscribe(body));
+            subscriptions.push_back(bus->createEvent<csyren::core::ComponentDestroyEvent<SphereCollider>>().subscribe(body));
+            subscriptions.push_back(bus->createEvent<csyren::core::ComponentCreateEvent<CapsuleCollider>>().subscribe(body));
+            subscriptions.push_back(bus->createEvent<csyren::core::ComponentDestroyEvent<CapsuleCollider>>().subscribe(body));
+            subscriptions.push_back(bus->createEvent<csyren::core::ComponentCreateEvent<CharacterController>>().subscribe(character));
+            subscriptions.push_back(bus->createEvent<csyren::core::ComponentDestroyEvent<CharacterController>>().subscribe(character));
 
             m_physicsSystem->SetGravity(details::to_jolt(gravity));
-            tokens.push_back(bus->subscribe<core::ComponentPatchEvent<RigidBody>>(body));
-            tokens.push_back(bus->subscribe<core::ComponentPatchEvent<BoxCollider>>(body));
-            tokens.push_back(bus->subscribe<core::ComponentPatchEvent<SphereCollider>>(body));
-            tokens.push_back(bus->subscribe<core::ComponentPatchEvent<CapsuleCollider>>(body));
+            subscriptions.push_back(bus->createEvent<core::ComponentPatchEvent<RigidBody>>().subscribe(body));
+            subscriptions.push_back(bus->createEvent<core::ComponentPatchEvent<BoxCollider>>().subscribe(body));
+            subscriptions.push_back(bus->createEvent<core::ComponentPatchEvent<SphereCollider>>().subscribe(body));
+            subscriptions.push_back(bus->createEvent<core::ComponentPatchEvent<CapsuleCollider>>().subscribe(body));
             const SceneAccess access{ scene };
             for (auto [entity, rb] : scene.view<RigidBody>()) rebuildBody(access, entity);
             for (auto [entity, cc] : scene.view<CharacterController>()) rebuildCharacter(access, entity);
@@ -848,8 +848,7 @@ namespace csyren::physics
         void shutdown() noexcept
         {
             if (!bus) return;
-            for (auto token : tokens) bus->unsubscribe(token);
-            tokens.clear();
+            subscriptions.clear();
             dirtyBodies.clear(); dirtyCharacters.clear();
 
             characters.clear();

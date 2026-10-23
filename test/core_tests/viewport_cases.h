@@ -197,13 +197,13 @@ TEST_F(SceneWorkflow, CameraRenderRegistryFollowsComponentAndSceneLifetimes)
     auto camera = scene.addComponent<Camera>(id);
     render::details::CameraRenderRegistry registry; registry.attach(scene);
     auto original = registry.target(*camera); ASSERT_TRUE(original);
-    scene.eventBus().commit_batch();
+    scene.eventBus().dispatch();
     EXPECT_EQ(registry.target(*camera),original); // pending create on attach is idempotent
     run(session,SceneOperation::SaveAs,"camera views");
     EXPECT_EQ(storage.files.at("camera views").find("renderResources"),std::string::npos);
     std::weak_ptr<render::CameraRenderTarget> retired = original; original.reset();
     scene.removeComponent<Camera>(id); scene.flush(); camera = scene.addComponent<Camera>(id);
-    scene.eventBus().commit_batch();
+    scene.eventBus().dispatch();
     EXPECT_TRUE(retired.expired()); EXPECT_EQ(registry.size(),1u);
     auto replacement = registry.target(*camera); ASSERT_TRUE(replacement);
     // Outgoing scene subscriptions/resources must be detached before replacement.
@@ -216,7 +216,7 @@ TEST_F(SceneWorkflow, CameraRenderRegistryFollowsComponentAndSceneLifetimes)
     EXPECT_NE(runtime,&editor.camera);
     registry.detach(); run(session,SceneOperation::Stop);
     registry.attach(scene); EXPECT_NE(registry.target(*camera),replacement);
-    scene.removeComponent<Camera>(id); scene.flush(); scene.eventBus().commit_batch(); EXPECT_EQ(registry.size(),0u);
+    scene.removeComponent<Camera>(id); scene.flush(); scene.eventBus().dispatch(); EXPECT_EQ(registry.size(),0u);
     registry.detach(); run(session,SceneOperation::Open,"camera views");
     registry.attach(session.editorScene()); EXPECT_EQ(registry.size(),1u);
     registry.detach();

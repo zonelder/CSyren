@@ -51,7 +51,7 @@ namespace csyren::core
 
     protected:
         Scene& scene() const { return _context->scene; }
-        EventBus2& sceneBus() const { return _context->bus; }
+        EventBus& sceneBus() const { return _context->bus; }
         virtual void onAttach() {}
         virtual void onDetach() noexcept {}
 

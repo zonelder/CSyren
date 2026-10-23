@@ -31,7 +31,7 @@ bool listed(const std::vector<TypeKey>& list, TypeKey type) {
 
 // Registers Scene (+ bus) as services and always cleans the registry up.
 struct ServiceScene {
-    EventBus2& bus = details::ServiceRegistry::create<EventBus2>();
+    EventBus& bus = details::ServiceRegistry::create<EventBus>();
     Scene& scene = details::ServiceRegistry::create<Scene>(&bus);
     ~ServiceScene() { details::ServiceRegistry::shutdownAll(); }
 };

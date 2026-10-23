@@ -105,7 +105,7 @@ TEST(Audit, InvalidParentFallsBackConsistently) {
 }
 TEST(Audit, DestroyEntityRemovesEveryPoolEntry) {
     registerAudit();
-    auto bus = std::make_unique<EventBus2>(); Scene s(bus.get()); s.init();
+    auto bus = std::make_unique<EventBus>(); Scene s(bus.get()); s.init();
     auto id = s.createEntity();
     auto a = s.addComponent<AuditA>(id);
     auto b = s.addComponent<AuditB>(id);
@@ -116,7 +116,7 @@ TEST(Audit, DestroyEntityRemovesEveryPoolEntry) {
 }
 TEST(Audit, ComponentRefDoesNotRetargetReusedEntityID) {
     registerAudit();
-    auto bus = std::make_unique<EventBus2>(); Scene s(bus.get()); s.init();
+    auto bus = std::make_unique<EventBus>(); Scene s(bus.get()); s.init();
     auto id = s.createEntity(); auto old = s.addComponent<AuditA>(id);
     s.destroyEntity(id); s.flush();
     auto next = s.createEntity(); s.addComponent<AuditA>(next);
@@ -124,13 +124,13 @@ TEST(Audit, ComponentRefDoesNotRetargetReusedEntityID) {
 }
 TEST(Audit, DestroyEventMustNotResolveReplacementComponent) {
     registerAudit();
-    auto bus = std::make_unique<EventBus2>(); Scene s(bus.get()); s.init();
+    auto bus = std::make_unique<EventBus>(); Scene s(bus.get()); s.init();
     bool replacementSeen = false; int delivered = 0;
-    bus->subscribe<ComponentDestroyEvent<AuditA>>([&](const auto& e) {
+    auto subscription = bus->createEvent<ComponentDestroyEvent<AuditA>>().subscribe([&](const auto& e) {
         ++delivered; replacementSeen = e.comp && e.comp->value == 99;
     });
     auto id = s.createEntity(); s.addComponent<AuditA>(id, 1);
     s.removeComponent<AuditA>(id); s.flush(); s.addComponent<AuditA>(id, 99);
-    bus->commit_batch();
+    bus->dispatch();
     EXPECT_EQ(delivered, 1); EXPECT_FALSE(replacementSeen);
 }

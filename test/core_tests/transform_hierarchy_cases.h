@@ -29,7 +29,7 @@ TEST_F(SceneWorkflow, UnchangedWorldPoseDoesNotInvalidateOrPublishPatch)
     SceneInstance instance; auto& scene=instance.scene();
     auto id=scene.createEntity(); scene.addComponent<Transform>(id);
     int events=0;
-    instance.context().bus.subscribe<ComponentPatchEvent<Transform>>([&](auto&) { ++events; });
+    auto subscription = instance.context().bus.createEvent<ComponentPatchEvent<Transform>>().subscribe([&](const auto&) { ++events; });
     const auto revision=scene.componentRevision<Transform>();
     for(int i=0;i<100;++i) ASSERT_TRUE(setWorldPose(scene,id,{0,0,0},{}));
     EXPECT_EQ(scene.componentRevision<Transform>(),revision);

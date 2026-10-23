@@ -1,21 +1,60 @@
 // event_bus.h
 #ifndef __CSYREN_EVENT_BUS__
 #define __CSYREN_EVENT_BUS__
-
+// Event bus: deferred notifications about what has already happened in a scene.
+// Events are published anywhere during the frame and delivered at one point,
+// dispatch() (SceneEventsSystem; between frames the scene's settle), on one
+// thread, in publication order. Not for requests that need an answer, immediate
+// calls or data that changes every frame (components and resources are for that).
+//
+//   struct PlayerDied { Entity::ID player; static constexpr auto key = &PlayerDied::player; };
+//
+//   auto died = bus.createEvent<PlayerDied>();   // every caller gets the same channel
+//   died.publish({ id });                         // any thread, no locks
+//   auto all  = died.subscribe([](const PlayerDied& e) { ... });      // every event
+//   auto mine = died.subscribe(id, [](const PlayerDied& e) { ... });  // events with this key
+//
+// API: EventBus::createEvent<E>() and dispatch(); Broadcast<E>::publish,
+// subscribe, subscribe(key) and reserve; Subscription (unsubscribes when reset or
+// destroyed).
+//
+// Guarantees:
+// 1. Events are delivered in publication order, whatever their type and thread.
+// 2. An event published to a channel without subscribers is not kept.
+// 3. Per event, subscribers of every event run first, then those of its key, each
+//    in subscription order. A key is a data member or a const member function
+//    (`static constexpr auto key = &E::member`); finding its subscribers is one
+//    hash lookup.
+// 4. A handler may publish (delivered later in the same dispatch(), at most
+//    kMaxRounds chains deep; the rest waits for the next dispatch()), subscribe
+//    (from the next event on) and reset subscriptions, its own included (takes
+//    effect at once). dispatch() called from a handler does nothing.
+// 5. A handler that throws is logged; the other handlers still run.
+// 6. A Subscription may outlive the bus; a Broadcast may not.
+//
+// Threads: publish() runs on any thread, but not while dispatch() runs on another
+// one. createEvent, subscribe, Subscription::reset and dispatch() run one at a
+// time, on any thread: in the engine in onAttach/onDetach, structural commits and
+// SceneEventsSystem. Debug builds log a call made on another thread while
+// dispatch() runs.
 #include "family_generator.h"
+#include "type_key.h"
 #include "cstdmf/log.h"
 
-#include <vector>
-#include <array>
-#include <map>
+#include <algorithm>
+#include <atomic>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
 #include <functional>
-#include <mutex>
 #include <memory>
 #include <optional>
-#include <shared_mutex>
-#include <algorithm>
+#include <string_view>
+#include <thread>
 #include <type_traits>
-#include <cstdint>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace csyren::core::reflection
 {
@@ -23,298 +62,138 @@ namespace csyren::core::reflection
 	using EventFamily = Family<EventFamilyID>;
 }
 
-
 namespace csyren::core
 {
-	using EventMarker = uint32_t;
+    class EventBus;
 
-	static constexpr uint32_t MAX_GENERATION = std::numeric_limits<uint32_t>::max();
-    constexpr uint64_t INVALID_TOKEN = 0xFFFFFFFFFFFFFFFFull;
-	class PublishToken
-	{
-		friend class EventBus2;
-		explicit PublishToken(uint64_t d,uint32_t generation = 0) : _data(d),_generation(generation) {}
-	public:
-		PublishToken() noexcept = default;
-
-        bool valid() const noexcept 
+    // Internals (defined in event_bus.inl).
+    namespace details
+    {
+        template<class E> concept KeyedEvent = requires(const E& event) { std::invoke(E::key, event); };
+        struct NoKey { bool operator==(const NoKey&) const = default; };
+        template<class E> struct EventKey { using type = NoKey; };
+        template<KeyedEvent E> struct EventKey<E>
         {
-            return _data != INVALID_TOKEN;
-        }
-    private:
-        uint64_t _data{ INVALID_TOKEN };
-		uint32_t _generation{ MAX_GENERATION };
-	};
+            using type = std::remove_cvref_t<std::invoke_result_t<decltype(E::key), const E&>>;
+        };
 
-	class SubscriberToken
-	{
-
-		friend class EventBus2;
-		explicit SubscriberToken(uint64_t d) : _data(d) {}
-
-	public:
-		SubscriberToken() noexcept = default;
-        bool valid() const noexcept
+        class ChannelBase;
+        struct ListenerBase { ChannelBase* channel = nullptr; bool removed = false; };
+        class ChannelBase
         {
-            return _data != INVALID_TOKEN;
+        public:
+            ChannelBase(EventBus& bus, std::string_view name, size_t family) : bus(bus), name(name), family(family) {}
+            virtual ~ChannelBase() = default;
+            virtual void remove(ListenerBase& listener) noexcept = 0;
+            bool listened() const noexcept { return listeners.load(std::memory_order_relaxed) != 0; }
+
+            EventBus& bus;
+            const std::string_view name;
+            const size_t family;
+            std::atomic<uint32_t> listeners{ 0 }; // read by publishers: no subscribers, nothing kept
+        };
+        template<class E> class Channel;
+        struct BufferBase;
+        struct ThreadQueue;
+        struct Record { uint64_t number; BufferBase* buffer; size_t index; }; // a published event
+    }
+
+    // Removes its subscription when reset or destroyed. Move-only.
+    class Subscription
+    {
+    public:
+        Subscription() = default;
+        Subscription(Subscription&&) noexcept = default;
+        Subscription& operator=(Subscription&& other) noexcept
+        {
+            if (this != &other) { reset(); _listener = std::move(other._listener); }
+            return *this;
         }
+        ~Subscription() { reset(); }
+
+        void reset() noexcept
+        {
+            if (auto listener = _listener.lock()) listener->channel->remove(*listener);
+            _listener.reset();
+        }
+        explicit operator bool() const noexcept { return !_listener.expired(); }
+
     private:
-		uint64_t _data{ INVALID_TOKEN };
-	};
+        template<class> friend class details::Channel;
+        explicit Subscription(std::weak_ptr<details::ListenerBase> listener) noexcept : _listener(std::move(listener)) {}
+        std::weak_ptr<details::ListenerBase> _listener;
+    };
 
-	class EventBus2
-	{
-	public:
-		template<class Event_t>
-		using Callback_t = std::function<void(std::decay_t<Event_t>&)>;
-		
-		// Легковесная запись о паблишере
-		struct PublisherRecord {
-			uint64_t type_id;
-			std::optional<EventMarker> marker;
-			uint32_t generation;
-		};
+    // Handle of the channel of E on one bus (EventBus::createEvent). Cheap to copy.
+    template<class E> class Broadcast
+    {
+        using Channel = details::Channel<E>;
+    public:
+        using Handler = std::function<void(const E&)>;
+        using Key = typename details::EventKey<E>::type;
+        static constexpr bool keyed = details::KeyedEvent<E>;
 
-		// --- Структуры для безопасного стирания типов ---
-		struct EventDataWrapper {
-			virtual ~EventDataWrapper() = default;
-			virtual void reserve(size_t additional) = 0;
-			virtual void publish(void* event, std::optional<EventMarker> marker) = 0;
-			virtual void commit() = 0;
-			virtual void unsubscribe(uint64_t sub_id) = 0;
-			virtual void cleanup_subscribers() = 0;
-		};
+        Broadcast() = default;
+        explicit operator bool() const noexcept { return _channel != nullptr; }
 
-		template<typename Event_t>
-		struct EventData : public EventDataWrapper {
-			struct Subscriber {
-				uint64_t id;
-				Callback_t<Event_t> callback;
-				std::optional<EventMarker> marker;
-                std::atomic<bool> active{true};
-                Subscriber(uint64_t id, Callback_t<Event_t>&& callback, std::optional<EventMarker> marker)
-                    : id(id), callback(std::move(callback)), marker(marker) {}
-			};
-
-			struct EventInstance {
-				Event_t event;
-				std::optional<EventMarker> marker;
-			};
-
-			std::vector<std::shared_ptr<Subscriber>> subscribers_;
-			mutable std::shared_mutex subscribers_mutex_;
-
-			std::vector<EventInstance> pending_events_;
-			std::mutex events_mutex_;
-
-			// --- Реализация интерфейса ---
-
-            void reserve(size_t additional) override {
-                std::lock_guard lock(events_mutex_);
-                pending_events_.reserve(pending_events_.size() + additional);
-            }
-			void publish(void* event, std::optional<EventMarker> marker) override {
-				std::lock_guard lock(events_mutex_);
-				pending_events_.push_back({ *static_cast<Event_t*>(event), marker });
-			}
-
-			void commit() override {
-				std::vector<EventInstance> events_to_process;
-				{
-					std::lock_guard lock(events_mutex_);
-					if (pending_events_.empty()) return;
-					events_to_process.swap(pending_events_);
-				}
-                std::vector<std::shared_ptr<Subscriber>> subscribers;
-                { std::shared_lock lock(subscribers_mutex_); subscribers = subscribers_; }
-                for (const auto& instance : events_to_process)
-				{
-					for (const auto& sub : subscribers)
-					{ // Iterate by reference
-						// Check for active status and marker match
-						if (sub->active)
-						{
-							if (instance.marker.has_value() && sub->marker.has_value() && instance.marker != sub->marker)
-							{
-								continue;
-							}
-							sub->callback(const_cast<Event_t&>(instance.event));
-						}
-					}
-				}
-			}
-
-			void unsubscribe(uint64_t sub_id) override {
-				std::unique_lock lock(subscribers_mutex_);
-				auto it = std::find_if(subscribers_.begin(), subscribers_.end(),
-					[sub_id](const auto& s) { return s->id == sub_id; });
-				if (it != subscribers_.end()) 
-				{
-					(*it)->active = false;
-				}
-			}
-
-			uint64_t subscribe(Callback_t<Event_t>&& callback, std::optional<EventMarker> marker) {
-				const uint64_t sub_id = next_subscriber_id_++;
-				std::unique_lock lock(subscribers_mutex_);
-				subscribers_.push_back(std::make_shared<Subscriber>(sub_id, std::move(callback), marker));
-				return sub_id;
-			}
-
-			void cleanup_subscribers() override 
-			{
-				std::unique_lock lock(subscribers_mutex_);
-				std::erase_if(subscribers_, [](const auto& s) { return !s->active; });
-			}
-		};
-	private:
-		std::array<std::unique_ptr<EventDataWrapper>, 1024> event_data_;
-		std::array<PublisherRecord, 65536> publishers_;
-		std::atomic<uint64_t> next_publisher_id_{ 1 };
-		static inline std::atomic<uint64_t> next_subscriber_id_{ 1 };
-
-        std::vector<EventDataWrapper*> snapshot_types() {
-            std::lock_guard lock(_dataMutex);
-            std::vector<EventDataWrapper*> snapshot;
-            for (auto& data : event_data_) if (data) snapshot.push_back(data.get());
-            return snapshot;
+        // Any thread. Not kept when nobody is subscribed.
+        void publish(E event) const
+        {
+            if (_channel && _channel->listened()) _channel->bus.record(*_channel, std::move(event));
         }
-		template<typename Event_t>
-		EventData<Event_t>& get_typed_data() {
-			const uint64_t type_id = reflection::EventFamily::getID<Event_t>();
-            std::lock_guard lock(_dataMutex);
-            if (type_id >= event_data_.size()) throw std::out_of_range("Too many event types");
-            if (!event_data_[type_id]) event_data_[type_id] = std::make_unique<EventData<Event_t>>();
-			return static_cast<EventData<Event_t>&>(*event_data_[type_id]);
-		}
-
-	public:
-		// --- ПУБЛИЧНОЕ API (теперь работает корректно) ---
-
-        // Generic queue capacity API, independent of scene/import operations.
-        // The caller must prevent interleaved publication/dispatch when relying
-        // on the reserved capacity for a no-allocation batch.
-        bool reservePending(PublishToken token, size_t additional) {
-            if (!token.valid() || token._data == 0 || token._data >= next_publisher_id_.load()) return false;
-            const auto& record = publishers_[token._data];
-            if (record.generation != token._generation || !event_data_[record.type_id]) return false;
-            event_data_[record.type_id]->reserve(additional);
-            return true;
+        [[nodiscard]] Subscription subscribe(Handler handler) const { return _channel->subscribe(std::nullopt, std::move(handler)); }
+        [[nodiscard]] Subscription subscribe(const Key& key, Handler handler) const requires keyed
+        {
+            return _channel->subscribe(key, std::move(handler));
         }
-		template<typename Event_t>
-		PublishToken register_publisher() {
-			return register_publisher_impl<Event_t>(std::nullopt);
-		}
+        // The next `count` publications on this thread allocate nothing (a commit
+        // that must not throw reserves before it starts).
+        void reserve(size_t count) const
+        {
+            if (_channel && _channel->listened()) _channel->bus.reserve(*_channel, count);
+        }
 
-		template<typename Event_t>
-		PublishToken register_publisher(EventMarker marker) {
-			return register_publisher_impl<Event_t>(marker);
-		}
+    private:
+        friend class EventBus;
+        explicit Broadcast(Channel* channel) noexcept : _channel(channel) {}
+        Channel* _channel = nullptr;
+    };
 
-		void unregister_publisher(PublishToken token) 
-		{
-			if (!token.valid()) return;
-			const uint64_t pub_id = token._data;
-			if (pub_id == 0 || pub_id >= next_publisher_id_.load()) return;
+    class EventBus
+    {
+    public:
+        // Handler chains deeper than this many rounds continue in the next dispatch().
+        static constexpr int kMaxRounds = 16;
 
-			auto& pub_record = publishers_[pub_id];
+        EventBus();
+        EventBus(const EventBus&) = delete;
+        EventBus& operator=(const EventBus&) = delete;
+        ~EventBus();
 
-			//invalidate record;
-			pub_record.generation = pub_record.generation >= MAX_GENERATION ? 0 : pub_record.generation + 1;
-			pub_record.marker = std::nullopt;
-			pub_record.type_id = 0;
-		}
+        // The channel of E on this bus, created on the first call.
+        template<class E> Broadcast<E> createEvent();
+        // Delivers the events published so far, in publication order, on the calling thread.
+        void dispatch();
 
-		template<class Event_t>
-		SubscriberToken subscribe(Callback_t<Event_t>&& callback) {
-			using Clean_t = std::decay_t<Event_t>;
-			auto& data = get_typed_data<Clean_t>();
-			const uint64_t sub_id = data.subscribe(std::move(callback), std::nullopt);
-			return SubscriberToken(sub_id);
-		}
+    private:
+        template<class> friend class Broadcast;
+        template<class> friend class details::Channel;
+        details::ThreadQueue& localQueue();
+        template<class E> void record(details::Channel<E>& channel, E&& event);
+        template<class E> void reserve(details::Channel<E>& channel, size_t count);
+        bool pending() const noexcept;
+        void check(std::string_view what, std::string_view event) const;
 
-		template<class Event_t>
-		SubscriberToken subscribe(EventMarker mark, Callback_t<Event_t>&& callback) {
-			auto& data = get_typed_data<Event_t>();
-			const uint64_t sub_id = data.subscribe(std::move(callback), mark);
-			return SubscriberToken(sub_id);
-		}
-
-		void unsubscribe(SubscriberToken token) {
-			if (!token.valid()) return;
-			// This part is inefficient as it iterates all event types.
-			// A better design would map token to event type. For now, it works.
-			for (auto* data_ptr : snapshot_types()) {
-				if (data_ptr) {
-					data_ptr->unsubscribe(token._data);
-				}
-			}
-		}
-
-		template<typename Event_t>
-		void publish(PublishToken token, Event_t& event) {
-			publish_impl(token, event);
-		}
-
-		template<typename Event_t>
-		void publish(PublishToken token, Event_t&& event) {
-			publish_impl(token, std::move(event));
-		}
-
-		void commit_batch() 
-		{
-			//1.dispatch all pending events
-			for (auto* data_ptr : snapshot_types()) {
-				if (data_ptr) {
-					data_ptr->commit();
-				}
-			}
-
-			for (auto* data_ptr : snapshot_types())
-			{
-				if (data_ptr) {
-					data_ptr->cleanup_subscribers();
-				}
-			}
-		}
-
-	private:
-		template<typename Event_t>
-		void publish_impl(PublishToken token, Event_t&& event) {
-			if (!token.valid()) return;
-
-			using Clean_t = std::decay_t<Event_t>;
-			const uint64_t pub_id = token._data;
-			if (pub_id == 0 || pub_id >= next_publisher_id_.load()) return;
-
-			const auto& pub_record = publishers_[pub_id];
-			const uint64_t type_id = reflection::EventFamily::getID<Clean_t>();
-
-			if (pub_record.type_id != type_id) return;
-			if (pub_record.generation != token._generation) return;
-
-			get_typed_data<Clean_t>().publish(&event, pub_record.marker);
-		}
-		template<typename Event_t>
-		PublishToken register_publisher_impl(std::optional<EventMarker> marker) {
-			const uint64_t pub_id = next_publisher_id_.fetch_add(1);
-			using Clean_t = std::decay_t<Event_t>;
-			if (pub_id >= publishers_.size())
-			{
-				log::error("EventBus: too many publishers been created.");
-				return PublishToken(INVALID_TOKEN);
-			}
-            (void)get_typed_data<Clean_t>();
-			publishers_[pub_id] = { reflection::EventFamily::getID<Clean_t>(), marker };
-			return PublishToken(pub_id);
-		}
-	private:
-        std::mutex _dataMutex;
-        bool _isCommitState{ false };
-	};
-   
+        std::vector<std::unique_ptr<details::ChannelBase>> _channels; // by EventFamily id
+        std::atomic<details::ThreadQueue*> _queues{ nullptr };         // one per publishing thread
+        std::atomic<uint64_t> _published{ 0 };                         // numbers events: the delivery order
+        std::atomic<bool> _dispatching{ false };
+        std::atomic<std::thread::id> _dispatcher{};
+        std::vector<details::Record> _round;                           // dispatch() scratch
+        const uint64_t _serial;                                        // tells buses apart in thread_local caches
+    };
 }
 
-
+#include "event_bus.inl"
 
 #endif

@@ -84,22 +84,49 @@ namespace csyren::core
 
 namespace csyren::core
 {
-	struct EntityCreateEvent { Entity::ID id; };
-	struct EntityDestroyEvent { Entity::ID id; };
-    struct EntityReparentEvent { Entity::ID id, previous, parent; };
-    template<class T> struct ComponentPatchEvent { ComponentRef<T> comp; };
-
+    // Scene events (keyed by entity: channel.subscribe(id, handler) gets one entity's).
+	struct EntityCreateEvent { Entity::ID id; static constexpr auto key = &EntityCreateEvent::id; };
+	struct EntityDestroyEvent { Entity::ID id; static constexpr auto key = &EntityDestroyEvent::id; };
+    struct EntityReparentEvent { Entity::ID id, previous, parent; static constexpr auto key = &EntityReparentEvent::id; };
+    template<class T> struct ComponentPatchEvent
+    {
+        ComponentRef<T> comp;
+        Entity::ID entity() const noexcept { return comp.id(); }
+        static constexpr auto key = &ComponentPatchEvent::entity;
+    };
 	template<typename T>
 	struct ComponentCreateEvent
 	{
 		ComponentRef<T> comp;
+        Entity::ID entity() const noexcept { return comp.id(); }
+        static constexpr auto key = &ComponentCreateEvent::entity;
 	};
-
 	template<typename T>
 	struct ComponentDestroyEvent
 	{
 		ComponentRef<T> comp;
+        Entity::ID entity() const noexcept { return comp.id(); }
+        static constexpr auto key = &ComponentDestroyEvent::entity;
 	};
+
+    // The channels of one component type's events on a scene's bus (created with its pool).
+    struct ComponentEventsBase
+    {
+        virtual ~ComponentEventsBase() = default;
+        virtual void reserveCreated(size_t count) const = 0; // EntityBatch, before its no-throw commit
+    };
+    template<class T> struct ComponentEvents final : ComponentEventsBase
+    {
+        explicit ComponentEvents(EventBus& bus)
+            : created(bus.createEvent<ComponentCreateEvent<T>>()),
+              patched(bus.createEvent<ComponentPatchEvent<T>>()),
+              destroyed(bus.createEvent<ComponentDestroyEvent<T>>()) {}
+        void reserveCreated(size_t count) const override { created.reserve(count); }
+
+        Broadcast<ComponentCreateEvent<T>> created;
+        Broadcast<ComponentPatchEvent<T>> patched;
+        Broadcast<ComponentDestroyEvent<T>> destroyed;
+    };
 }
 
 namespace csyren::core
@@ -123,9 +150,7 @@ namespace csyren::core
 		struct ComponentState
 		{
 			std::shared_ptr<PoolBase> pool;
-			PublishToken      addToken;
-			PublishToken      removeToken;
-            PublishToken patchToken;
+            std::unique_ptr<ComponentEventsBase> events; // ComponentEvents<T>
             uint64_t revision = 0;
 			const reflection::ComponentMeta* meta;
 
@@ -202,8 +227,8 @@ namespace csyren::core
         };
 
     public:
-		EventBus2& eventBus() const { return *_bus; }
-		explicit Scene(EventBus2* bus) : _bus(bus) {}
+		EventBus& eventBus() const { return *_bus; }
+		explicit Scene(EventBus* bus) : _bus(bus) {}
         uint64_t identity() const { return _identity; }
         uint64_t hierarchyRevision() const { (void)entities(); return _hierarchyRevision; }
         template<class T> uint64_t componentRevision() const {
@@ -219,9 +244,9 @@ namespace csyren::core
 				log::error("Scene::init: EventBus not provided");
 				return;
 			}
-			_entityCreateToken = _bus->register_publisher<EntityCreateEvent>();
-			_entityDestroyToken = _bus->register_publisher<EntityDestroyEvent>();
-            _entityReparentToken = _bus->register_publisher<EntityReparentEvent>();
+			_entityCreated = _bus->createEvent<EntityCreateEvent>();
+			_entityDestroyed = _bus->createEvent<EntityDestroyEvent>();
+            _entityReparented = _bus->createEvent<EntityReparentEvent>();
 			_em.init();			
 		}
 
@@ -234,7 +259,7 @@ namespace csyren::core
             if (!_em.setParent(id, parent)) return false;
             if (previous != parent) {
                 ++_hierarchyRevision;
-                _bus->publish(_entityReparentToken, EntityReparentEvent{id, previous, parent});
+                _entityReparented.publish(EntityReparentEvent{id, previous, parent});
             }
             return true;
         }
@@ -263,13 +288,13 @@ namespace csyren::core
                 tx->commands.emplace_back([this, id, parent, name = std::string(name)] {
                     _em.createReservedEntity(id, name, parent);
                     ++_hierarchyRevision;
-                    _bus->publish(_entityCreateToken, EntityCreateEvent{id});
+                    _entityCreated.publish(EntityCreateEvent{id});
                 });
                 return id;
             }
             Entity::ID id = _em.createEntity(name, parent);
             ++_hierarchyRevision;
-			_bus->publish(_entityCreateToken, EntityCreateEvent{ id });
+			_entityCreated.publish(EntityCreateEvent{ id });
 			return id;
 		}
 
@@ -327,9 +352,9 @@ namespace csyren::core
 			if (ptr)
 			{
 				ent->add(family);
-                ++_cStates.at(family).revision;
-                _bus->publish(getAddToken<T>(),
-					ComponentCreateEvent<T>{compRef});
+                auto& state = _cStates.at(family);
+                ++state.revision;
+                eventsOf<T>(state).created.publish(ComponentCreateEvent<T>{compRef});
 			}
 			return compRef;
 		}
@@ -385,7 +410,7 @@ namespace csyren::core
             }
             auto& state = _cStates.at(reflection::ComponentFamily::getID<T>());
             ++state.revision;
-            _bus->publish(state.patchToken, ComponentPatchEvent<T>{component});
+            eventsOf<T>(state).patched.publish(ComponentPatchEvent<T>{component});
             return true;
         }
         template<class T, class Edit> bool patch(ComponentRef<T> component, Edit&& edit) {
@@ -461,7 +486,7 @@ namespace csyren::core
 					it->second.meta->destroy(this, id);
 				}
 
-				_bus->publish(_entityDestroyToken, EntityDestroyEvent{ id });
+				_entityDestroyed.publish(EntityDestroyEvent{ id });
 				_em.finalizeDestroy(id);
                 ++_hierarchyRevision;
 			}
@@ -527,7 +552,7 @@ namespace csyren::core
 			if (ptr)
 			{
 				auto family = reflection::ComponentFamily::getID<T>();
-                _bus->publish(_cStates[family].removeToken, ComponentDestroyEvent<T>{ComponentRef<T>(id, pool)});
+                eventsOf<T>(_cStates.at(family)).destroyed.publish(ComponentDestroyEvent<T>{ComponentRef<T>(id, pool)});
 				pool->erase(id);
                 ++_cStates.at(family).revision;
 				if (Entity* ent = _em.tryGet(id))
@@ -570,28 +595,20 @@ namespace csyren::core
 				return false;
 			}
 			auto& m = _cStates[family];
-			m.addToken = _bus->register_publisher<ComponentCreateEvent<T>>();
-			m.removeToken = _bus->register_publisher<ComponentDestroyEvent<T>>();
-            m.patchToken = _bus->register_publisher<ComponentPatchEvent<T>>();
+			m.events = std::make_unique<ComponentEvents<T>>(*_bus);
 			m.meta = meta;
 			return true;
 		}
+		// The event channels of T (its pool is created if needed).
 		template<typename T>
-		PublishToken& getAddToken()
+		ComponentEvents<T>& componentEvents()
 		{
 			size_t family = reflection::ComponentFamily::getID<T>();
 			if (!_cStates.contains(family)) getOrCreatePool<T>(family);
-			return _cStates[family].addToken;
+			return eventsOf<T>(_cStates.at(family));
 		}
-
 		template<typename T>
-		PublishToken& getRemoveToken()
-		{
-			size_t family = reflection::ComponentFamily::getID<T>();
-			if (!_cStates.contains(family)) getOrCreatePool<T>(family);
-			return _cStates[family].removeToken;
-		}
-
+		static ComponentEvents<T>& eventsOf(ComponentState& state) { return static_cast<ComponentEvents<T>&>(*state.events); }
 
 	private:
 		EntityManager				_em;
@@ -599,14 +616,14 @@ namespace csyren::core
 
 		std::vector<DestroyComponentCommand> _deferred;
 
-		PublishToken _entityCreateToken;
-		PublishToken _entityDestroyToken;
-        PublishToken _entityReparentToken;
+		Broadcast<EntityCreateEvent> _entityCreated;
+		Broadcast<EntityDestroyEvent> _entityDestroyed;
+        Broadcast<EntityReparentEvent> _entityReparented;
         inline static std::atomic<uint64_t> _nextIdentity{0};
         const uint64_t _identity = ++_nextIdentity;
         uint64_t _hierarchyRevision = 0;
 
-		EventBus2* _bus;
+		EventBus* _bus;
 		//
 	};
 

@@ -50,7 +50,7 @@ namespace csyren::core::reflection
         meta.createPool = []() -> std::shared_ptr<PoolBase> { return std::make_shared<ComponentPool<T>>(); };
         meta.ensurePool = [](Scene* scene) { (void)scene->getOrCreatePool<T>(ComponentFamily::getID<T>()); };
         meta.publishAdded = [](Scene* scene, Entity::ID id) {
-            scene->_bus->publish(scene->getAddToken<T>(), ComponentCreateEvent<T>{ scene->getComponent<T>(id) });
+            scene->template componentEvents<T>().created.publish(ComponentCreateEvent<T>{ scene->getComponent<T>(id) });
         };
 
         registry[family] = std::move(meta);

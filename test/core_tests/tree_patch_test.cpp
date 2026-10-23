@@ -37,7 +37,7 @@ namespace {
 struct PatchedValue { int value=0; };
 class ScenePatch : public ::testing::Test {
 protected:
-    EventBus2 bus; Scene scene{&bus};
+    EventBus bus; Scene scene{&bus};
     static void SetUpTestCase() { REGISTER_COMPONENT(PatchedValue); }
     void SetUp() override { scene.init(); }
 };
@@ -45,13 +45,13 @@ TEST_F(ScenePatch, NotifiesTracksRevisionAndRejectsForeignOrStaleRefs) {
     const auto id=scene.createEntity();
     auto component=scene.addComponent<PatchedValue>(id);
     int events=0;
-    bus.subscribe<ComponentPatchEvent<PatchedValue>>([&](auto& e) { EXPECT_EQ(e.comp,component); ++events; });
+    auto subscription = bus.createEvent<ComponentPatchEvent<PatchedValue>>().subscribe([&](const auto& e) { EXPECT_EQ(e.comp,component); ++events; });
     const auto revision=scene.componentRevision<PatchedValue>();
     EXPECT_TRUE(scene.patch(component,[](auto& c) { c.value=73; }));
     EXPECT_EQ(events,0); EXPECT_EQ(component->value,73);
     EXPECT_GT(scene.componentRevision<PatchedValue>(),revision);
-    bus.commit_batch(); EXPECT_EQ(events,1);
-    auto otherBus=std::make_unique<EventBus2>(); Scene other(otherBus.get()); other.init();
+    bus.dispatch(); EXPECT_EQ(events,1);
+    auto otherBus=std::make_unique<EventBus>(); Scene other(otherBus.get()); other.init();
     const auto otherId=other.createEntity(); other.addComponent<PatchedValue>(otherId);
     EXPECT_FALSE(other.patch(component));
     scene.removeComponent<PatchedValue>(id); scene.flush();
@@ -69,14 +69,14 @@ TEST_F(ScenePatch, ThrowingCallbackStillInvalidatesPartiallyChangedData) {
 TEST_F(ScenePatch, HierarchyRevisionAndEventDescribeOnlySuccessfulChanges) {
     auto a=scene.createEntity(), b=scene.createEntity(), child=scene.createEntity(a);
     int events=0;
-    bus.subscribe<EntityReparentEvent>([&](auto& e) {
+    auto subscription = bus.createEvent<EntityReparentEvent>().subscribe([&](const auto& e) {
         EXPECT_EQ(e.id,child); EXPECT_EQ(e.previous,a); EXPECT_EQ(e.parent,b); ++events;
     });
     auto revision=scene.hierarchyRevision();
     EXPECT_FALSE(scene.setParent(a,child)); EXPECT_EQ(scene.hierarchyRevision(),revision);
     EXPECT_TRUE(scene.setParent(child,a)); EXPECT_EQ(scene.hierarchyRevision(),revision);
     EXPECT_TRUE(scene.setParent(child,b)); EXPECT_GT(scene.hierarchyRevision(),revision);
-    bus.commit_batch(); EXPECT_EQ(events,1);
+    bus.dispatch(); EXPECT_EQ(events,1);
     revision=scene.hierarchyRevision(); scene.destroyEntity(b); scene.flush();
     EXPECT_GT(scene.hierarchyRevision(),revision); EXPECT_FALSE(scene.entities().contains(child));
     scene.destroyEntity(EntityManager::ROOT_PARENT); scene.flush();

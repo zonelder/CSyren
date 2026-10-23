@@ -9,7 +9,7 @@ class SceneEventsSystem final : public TypedSystem<SceneEventsSystem> {
 public:
     static constexpr auto phase = "events";
     static constexpr TaskAffinity affinity = TaskAffinity::MainThread;
-    void execute(Exclusive world) { world.bus().commit_batch(); }
+    void execute(Exclusive world) { world.bus().dispatch(); }
 };
 CS_SYSTEM(SceneEventsSystem);
 }

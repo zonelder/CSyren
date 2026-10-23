@@ -411,7 +411,7 @@ namespace csyren::core
         template<class> friend struct details::Param;
     public:
         Scene& scene() const noexcept { return *_scene; }
-        EventBus2& bus() const noexcept { return _scene->eventBus(); }
+        EventBus& bus() const noexcept { return _scene->eventBus(); }
     private:
         explicit Exclusive(Scene& scene) : _scene(&scene) {}
         Scene* _scene;

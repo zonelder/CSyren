@@ -30,9 +30,8 @@ void CALLBACK inspect(HWND, UINT, UINT_PTR timer, DWORD) {
         if (!session->playing() || !session->error().empty()) ++errors;
         // Inject gameplay input independently of ImGui keyboard focus.
         auto& bus = session->activeContext().bus;
-        auto token = bus.register_publisher<core::InputEvent>(static_cast<uint32_t>(core::InputEvent::Type::KeyDown));
         core::InputEvent event(core::InputEvent::Type::KeyDown, core::DeviceType::Keyboard, VK_SPACE);
-        bus.publish(token, event);
+        bus.createEvent<core::InputEvent>().publish(event);
         return;
     }
     if (stage == 3) {

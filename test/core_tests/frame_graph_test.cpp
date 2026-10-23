@@ -141,7 +141,7 @@ TEST(FrameGraph, RunsIndependentWorkAndPinsUIAndDrainsExceptions) {
 }
 TEST(SceneJobs, TransparentCreateReadModifyAndCommit) {
     registerJobComponents();
-    auto bus = std::make_unique<EventBus2>(); Scene scene(bus.get()); scene.init();
+    auto bus = std::make_unique<EventBus>(); Scene scene(bus.get()); scene.init();
     SceneJobAccess::Transaction transaction;
     ComponentRef<Position> reference; Entity::ID id;
     auto d = task(); d.write<Position>(); d.structuralChanges = true;
@@ -164,7 +164,7 @@ TEST(SceneJobs, TransparentCreateReadModifyAndCommit) {
     EXPECT_FALSE(reference);
 }
 TEST(SceneJobs, UndeclaredWritesAndStructuralChangesFailBeforeMutation) {
-    auto bus = std::make_unique<EventBus2>(); Scene scene(bus.get()); scene.init();
+    auto bus = std::make_unique<EventBus>(); Scene scene(bus.get()); scene.init();
     auto d = task(); d.read<Position>();
     SceneJobAccess::TaskScope scope(scene, nullptr, &d);
     EXPECT_NO_THROW(scene.view<const Position>());
@@ -250,7 +250,7 @@ REGISTER_SYSTEM(StructuralProducer)
 REGISTER_SYSTEM(StructuralConsumer)
 TEST(SystemManager, DependencyIncludesInvisibleStructuralCommit) {
     registerJobComponents();
-    auto& bus = details::ServiceRegistry::create<EventBus2>();
+    auto& bus = details::ServiceRegistry::create<EventBus>();
     details::ServiceRegistry::create<Scene>(&bus);
     details::ServiceRegistry::initializeAll();
     SystemManager systems; systems.phase({"custom"});
@@ -274,7 +274,7 @@ TEST(ServicesJobs, ReadsRequireConstPointersAndUndeclaredResourcesAreRejected) {
 }
 
 TEST(SceneJobs, DiscardInvalidatesEscapedPendingReferences) {
-    auto bus = std::make_unique<EventBus2>(); Scene scene(bus.get()); scene.init();
+    auto bus = std::make_unique<EventBus>(); Scene scene(bus.get()); scene.init();
     SceneJobAccess::Transaction transaction;
     ComponentRef<Position> pending;
     {
@@ -287,7 +287,7 @@ TEST(SceneJobs, DiscardInvalidatesEscapedPendingReferences) {
 
 TEST(SceneJobs, ParallelCreatorsReserveUniqueIDsAndQueryTheirOwnComponents) {
     registerJobComponents();
-    auto bus = std::make_unique<EventBus2>(); Scene scene(bus.get()); scene.init();
+    auto bus = std::make_unique<EventBus>(); Scene scene(bus.get()); scene.init();
     SceneJobAccess::Transaction ta, tb;
     auto a = task(); a.write<Position>(); a.structuralChanges = true;
     auto b = task(); b.write<Velocity>(); b.structuralChanges = true;
@@ -335,7 +335,7 @@ public:
     inline static std::vector<Scene*> observed;
     static constexpr auto phase = "custom";
     static constexpr auto affinity = TaskAffinity::MainThread;
-    void execute(Res<const EventBus2> bus) {
+    void execute(Res<const EventBus> bus) {
         if (Services::get<Scene>() != &scene() || bus.get() != &sceneBus())
             throw std::logic_error("Graph lost the scene binding");
         observed.push_back(&scene());
@@ -370,21 +370,21 @@ TEST(SceneJobs, PatchChecksWriteAccessAndCommitsStagedNotifications) {
 #endif
     EXPECT_EQ(scene.getComponent<Position>(id)->x,0);
     int notified=0;
-    bus.subscribe<ComponentPatchEvent<Position>>([&](auto& e) { EXPECT_TRUE(e.comp); ++notified; });
+    auto subscription = bus.createEvent<ComponentPatchEvent<Position>>().subscribe([&](const auto& e) { EXPECT_TRUE(e.comp); ++notified; });
     SceneJobAccess::Transaction tx; auto writer=task(); writer.write<Position>(); writer.structuralChanges=true;
     Entity::ID created;
     { SceneJobAccess::TaskScope scope(scene,&tx,&writer);
       created=scene.createEntity(); auto staged=scene.addComponent<Position>(created);
       EXPECT_TRUE(scene.patch(staged,[](auto& p) { p.x=17; })); }
-    bus.commit_batch(); EXPECT_EQ(notified,0);
-    tx.apply(scene); bus.commit_batch(); EXPECT_EQ(notified,1);
+    bus.dispatch(); EXPECT_EQ(notified,0);
+    tx.apply(scene); bus.dispatch(); EXPECT_EQ(notified,1);
     EXPECT_EQ(scene.getComponent<Position>(created)->x,17);
     const auto revision=scene.componentRevision<Position>();
     { SceneJobAccess::TaskScope scope(scene,&tx,&writer);
       EXPECT_TRUE(scene.patch<Position>(id,[](auto& p) { p.x=31; })); }
     tx.discard(); // live value writes, unlike staged additions, are immediate
     EXPECT_GT(scene.componentRevision<Position>(),revision);
-    bus.commit_batch(); EXPECT_EQ(notified,2);
+    bus.dispatch(); EXPECT_EQ(notified,2);
 }
 
 TEST(FrameGraph, RepeatedExecutionRecoversWithoutRecompilingAndRebuildsAfterEdits) {

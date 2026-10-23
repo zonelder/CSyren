@@ -1,331 +1,350 @@
 #include "pch.h"
-#include "core/event_bus.h" // Заголовочный файл с EventBus2
-#include <memory>
-#include <vector>
-#include <atomic>
+#include "core/event_bus.h"
+#include <cstdlib>
+#include <new>
+#include <stdexcept>
 #include <string>
+#include <thread>
+#include <vector>
 
 using namespace csyren::core;
 
-struct TestEvent { int value; };
-struct AnotherEvent { float data; };
-struct MarkedEvent { std::string info; };
-
-class EventBusTest : public ::testing::Test {
-protected:
-    std::unique_ptr<EventBus2> bus = std::make_unique<EventBus2>();
-};
-
-class EventTracker {
-public:
-    std::atomic<int> testEventCount = 0;
-    std::atomic<int> markedEventCount = 0;
-    std::atomic<int> anotherEventCount = 0;
-    std::vector<int> receivedValues;
-    std::mutex vector_mutex;
-
-    void handleTestEvent(TestEvent& event) {
-        testEventCount++;
-        std::lock_guard lock(vector_mutex);
-        receivedValues.push_back(event.value);
-    }
-    void handleMarkedEvent(MarkedEvent& /*event*/) { markedEventCount++; }
-    void handleAnotherEvent(AnotherEvent& /*event*/) { anotherEventCount++; }
-};
-
-
-// =================================================================================
-// БАЗОВЫЕ ТЕСТЫ (В основном без изменений)
-// =================================================================================
-
-TEST_F(EventBusTest, BasicPublishSubscribe) {
-    EventTracker tracker;
-    auto pub_token = bus->register_publisher<TestEvent>();
-    ASSERT_TRUE(pub_token.valid());
-    auto sub_token = bus->subscribe<TestEvent>([&](TestEvent& e) { tracker.handleTestEvent(e); });
-    ASSERT_TRUE(sub_token.valid());
-
-    TestEvent event{ 42 };
-    bus->publish(pub_token, event);
-    bus->commit_batch();
-
-    EXPECT_EQ(tracker.testEventCount, 1);
-    ASSERT_EQ(tracker.receivedValues.size(), 1);
-    EXPECT_EQ(tracker.receivedValues[0], 42);
-}
-
-TEST_F(EventBusTest, MultipleSubscribers) {
-    EventTracker tracker1, tracker2;
-    auto pub_token = bus->register_publisher<TestEvent>();
-    bus->subscribe<TestEvent>([&](TestEvent& e) { tracker1.handleTestEvent(e); });
-    bus->subscribe<TestEvent>([&](TestEvent& e) { tracker2.handleTestEvent(e); });
-
-    TestEvent event{ 100 };
-    bus->publish(pub_token, event);
-    bus->commit_batch();
-
-    EXPECT_EQ(tracker1.testEventCount, 1);
-    EXPECT_EQ(tracker2.testEventCount, 1);
-}
-
-TEST_F(EventBusTest, Unsubscribe) {
-    EventTracker tracker;
-    auto pub_token = bus->register_publisher<TestEvent>();
-    auto sub_token = bus->subscribe<TestEvent>([&](TestEvent& e) { tracker.handleTestEvent(e); });
-
-    bus->publish(pub_token, TestEvent{ 1 });
-    bus->commit_batch();
-    EXPECT_EQ(tracker.testEventCount, 1);
-
-    bus->unsubscribe(sub_token);
-
-    bus->publish(pub_token, TestEvent{ 2 });
-    bus->commit_batch();
-    EXPECT_EQ(tracker.testEventCount, 1);
-}
-
-TEST_F(EventBusTest, MultipleEventTypes) {
-    EventTracker tracker;
-    auto pub_test = bus->register_publisher<TestEvent>();
-    auto pub_another = bus->register_publisher<AnotherEvent>();
-    bus->subscribe<TestEvent>([&](auto&) { tracker.testEventCount++; });
-    bus->subscribe<AnotherEvent>([&](auto&) { tracker.anotherEventCount++; });
-
-    bus->publish(pub_test, TestEvent{});
-    bus->publish(pub_another, AnotherEvent{});
-    bus->commit_batch();
-
-    EXPECT_EQ(tracker.testEventCount, 1);
-    EXPECT_EQ(tracker.anotherEventCount, 1);
-}
-
-TEST_F(EventBusTest, UnregisterPublisher)
+// One test (or a few) per guarantee in the header of core/event_bus.h.
+namespace
 {
-    EventTracker tracker;
-    auto pub_token = bus->register_publisher<TestEvent>();
-    bus->subscribe<TestEvent>([&](auto&) { tracker.testEventCount++; });
+    struct Ping { int value = 0; };
+    struct Pong { int value = 0; };
+    struct Died
+    {
+        uint64_t player = 0;
+        static constexpr auto key = &Died::player;
+    };
+    struct ByMethod
+    {
+        int raw = 0;
+        int id() const noexcept { return raw / 10; }
+        static constexpr auto key = &ByMethod::id;
+    };
+    struct Counted
+    {
+        static inline int alive = 0;
+        Counted() { ++alive; }
+        Counted(const Counted&) { ++alive; }
+        Counted(Counted&&) noexcept { ++alive; }
+        ~Counted() { --alive; }
+    };
+    struct FromThread { int thread = 0; int index = 0; };
 
-    bus->publish(pub_token, TestEvent{});
-    bus->commit_batch();
-    EXPECT_EQ(tracker.testEventCount, 1);
-
-    bus->unregister_publisher(pub_token);
-
-    bus->publish(pub_token, TestEvent{}); // Эта публикация не должна пройти
-    bus->commit_batch();
-    EXPECT_EQ(tracker.testEventCount, 1);
+    // Allocations made on this thread while `counting` is set (see ReserveMakesPublishingAllocationFree).
+    thread_local bool counting = false;
+    thread_local int allocations = 0;
 }
-TEST_F(EventBusTest, CommitAfterUnregisterPublisher)
+
+void* operator new(std::size_t size)
 {
-    EventTracker tracker;
-    auto pub_token = bus->register_publisher<TestEvent>();
-    bus->subscribe<TestEvent>([&](auto&) { tracker.testEventCount++; });
+    if (counting) ++allocations;
+    if (void* memory = std::malloc(size ? size : 1)) return memory;
+    throw std::bad_alloc();
+}
+void operator delete(void* memory) noexcept { std::free(memory); }
+void operator delete(void* memory, std::size_t) noexcept { std::free(memory); }
 
-    bus->publish(pub_token, TestEvent{});
-    EXPECT_EQ(tracker.testEventCount, 0);
-
-    bus->unregister_publisher(pub_token);
-
-    bus->publish(pub_token, TestEvent{}); // Эта публикация не должна пройти
-    bus->commit_batch();
-    EXPECT_EQ(tracker.testEventCount, 1);
+TEST(EventBus, SameChannelForTheSameType)
+{
+    EventBus bus;
+    int seen = 0;
+    auto subscription = bus.createEvent<Ping>().subscribe([&](const Ping&) { ++seen; });
+    bus.createEvent<Ping>().publish({});
+    bus.dispatch();
+    EXPECT_EQ(seen, 1);
 }
 
-// =================================================================================
-// ТЕСТЫ НА ОТПИСКУ И СИНХРОНИЗАЦИЮ (Проверяют ключевые исправления)
-// =================================================================================
-
-TEST_F(EventBusTest, UnsubscribeDuringCommit) {
-    EventTracker tracker;
-    SubscriberToken sub_token;
-    auto pub_token = bus->register_publisher<TestEvent>();
-    sub_token = bus->subscribe<TestEvent>([&](TestEvent&) {
-        tracker.testEventCount++;
-        bus->unsubscribe(sub_token);
-        });
-
-    bus->publish(pub_token, TestEvent{});
-    bus->publish(pub_token, TestEvent{});
-    bus->commit_batch();
-
-    EXPECT_EQ(tracker.testEventCount, 1);
+TEST(EventBus, SubscriptionReceivesUntilReset)
+{
+    EventBus bus;
+    auto ping = bus.createEvent<Ping>();
+    std::vector<int> seen;
+    auto subscription = ping.subscribe([&](const Ping& e) { seen.push_back(e.value); });
+    EXPECT_TRUE(subscription);
+    ping.publish({ 1 });
+    bus.dispatch();
+    subscription.reset();
+    EXPECT_FALSE(subscription);
+    ping.publish({ 2 });
+    bus.dispatch();
+    EXPECT_EQ(seen, std::vector<int>{ 1 });
 }
 
-TEST_F(EventBusTest, MassiveUnsubscribeDuringProcessing) {
-    // Этот тест теперь проходит благодаря copy-on-write
-    constexpr int NUM_SUBSCRIBERS = 1000;
-    std::atomic<int> active_count{ 0 };
-    std::vector<SubscriberToken> tokens;
-    tokens.reserve(NUM_SUBSCRIBERS);
-    auto pub_token = bus->register_publisher<TestEvent>();
+// 1. Publication order.
+TEST(EventBus, DeliveryFollowsPublicationOrderAcrossTypes)
+{
+    EventBus bus;
+    auto ping = bus.createEvent<Ping>();
+    auto pong = bus.createEvent<Pong>();
+    std::string order;
+    auto a = ping.subscribe([&](const Ping& e) { order += "i" + std::to_string(e.value); });
+    auto b = pong.subscribe([&](const Pong& e) { order += "o" + std::to_string(e.value); });
+    ping.publish({ 1 }); pong.publish({ 2 }); ping.publish({ 3 }); pong.publish({ 4 });
+    bus.dispatch();
+    EXPECT_EQ(order, "i1o2i3o4");
+}
 
-    for (int i = 0; i < NUM_SUBSCRIBERS; i++) {
-        tokens.push_back(bus->subscribe<TestEvent>([this, &active_count, &tokens, i](TestEvent&) {
-            active_count++;
-            bus->unsubscribe(tokens[i]);
-            }));
+TEST(EventBus, ThreadsPublishWithoutLocksInPublicationOrder)
+{
+    EventBus bus;
+    auto channel = bus.createEvent<FromThread>();
+    std::vector<FromThread> seen;
+    auto subscription = channel.subscribe([&](const FromThread& e) { seen.push_back(e); });
+    constexpr int threads = 8, perThread = 2000;
+    std::vector<std::thread> workers;
+    for (int t = 0; t < threads; ++t)
+        workers.emplace_back([&, t] { for (int i = 0; i < perThread; ++i) channel.publish({ t, i }); });
+    for (auto& worker : workers) worker.join();
+    channel.publish({ -1, 0 }); // published after the joins: delivered after everything above
+    bus.dispatch();
+    ASSERT_EQ(seen.size(), size_t(threads * perThread + 1));
+    std::vector<int> next(threads, 0);
+    for (size_t i = 0; i + 1 < seen.size(); ++i)
+    {
+        const auto& e = seen[i];
+        ASSERT_GE(e.thread, 0);
+        EXPECT_EQ(e.index, next[size_t(e.thread)]++); // each thread's events in its order
     }
-
-    bus->publish(pub_token, TestEvent{});
-    bus->commit_batch();
-    EXPECT_EQ(active_count, NUM_SUBSCRIBERS);
-
-    // Вторая публикация - никто не должен получить
-    bus->publish(pub_token, TestEvent{});
-    bus->commit_batch();
-    EXPECT_EQ(active_count, NUM_SUBSCRIBERS);
+    EXPECT_EQ(seen.back().thread, -1);
 }
 
-// =================================================================================
-// ТЕСТЫ ЛОГИКИ МАРКЕРОВ (Адаптированы под новую логику)
-// =================================================================================
-
-TEST_F(EventBusTest, MarkedEvents) {
-    // Проверяет базовую фильтрацию: подписчик с маркером А получает событие с маркером А, но не Б.
-    EventTracker tracker;
-    const EventMarker MARK_A = 1, MARK_B = 2;
-    auto pub_a = bus->register_publisher<MarkedEvent>(MARK_A);
-    auto pub_b = bus->register_publisher<MarkedEvent>(MARK_B);
-    bus->subscribe<MarkedEvent>(MARK_A, [&](auto& event) { tracker.handleMarkedEvent(event); });
-
-    bus->publish(pub_a, MarkedEvent{});
-    bus->publish(pub_b, MarkedEvent{});
-    bus->commit_batch();
-
-    EXPECT_EQ(tracker.markedEventCount, 1);
+// 2. Nothing is kept without subscribers.
+TEST(EventBus, EventsWithoutSubscribersAreNotKept)
+{
+    EventBus bus;
+    Counted::alive = 0;
+    auto channel = bus.createEvent<Counted>();
+    channel.publish({});
+    EXPECT_EQ(Counted::alive, 0);
+    auto subscription = channel.subscribe([](const Counted&) {});
+    subscription.reset();
+    channel.publish({});
+    EXPECT_EQ(Counted::alive, 0); // the last subscription is gone
 }
 
-TEST_F(EventBusTest, UniversalSubscriberReceivesAll) {
-    // ИЗМЕНЕНО: Этот тест заменяет старый UniversalPublisher.
-    // Он проверяет, что универсальный подписчик получает ВСЕ события своего типа.
-    EventTracker tracker;
-    const EventMarker MARK_A = 123;
-    auto universal_pub = bus->register_publisher<TestEvent>();
-    auto marked_pub = bus->register_publisher<TestEvent>(MARK_A);
-
-    // Универсальный подписчик
-    bus->subscribe<TestEvent>([&](auto&) { tracker.testEventCount++; });
-
-    // 1. Публикация от универсального издателя
-    bus->publish(universal_pub, TestEvent{});
-    bus->commit_batch();
-    EXPECT_EQ(tracker.testEventCount, 1); // Получил
-
-    // 2. Публикация от маркированного издателя
-    bus->publish(marked_pub, TestEvent{});
-    bus->commit_batch();
-    EXPECT_EQ(tracker.testEventCount, 2); // Тоже получил
+// 3. Subscribers of every event, then those of the key.
+TEST(EventBus, SubscribersOfEveryEventRunFirstThenKeyed)
+{
+    EventBus bus;
+    auto died = bus.createEvent<Died>();
+    std::string order;
+    auto keyed = died.subscribe(7, [&](const Died&) { order += "k"; });
+    auto first = died.subscribe([&](const Died&) { order += "1"; });
+    auto second = died.subscribe([&](const Died&) { order += "2"; });
+    died.publish({ 7 });
+    bus.dispatch();
+    EXPECT_EQ(order, "12k");
 }
 
-
-// =================================================================================
-// ПРОЧИЕ И СТРЕСС-ТЕСТЫ (В основном без изменений)
-// =================================================================================
-
-TEST_F(EventBusTest, HighLoadStressTest) {
-    constexpr int NUM_EVENTS = 5000;
-    constexpr int NUM_SUBSCRIBERS = 100;
-    std::atomic<int> event_counter{ 0 };
-    auto pub_token = bus->register_publisher<TestEvent>();
-
-    for (int i = 0; i < NUM_SUBSCRIBERS; i++) {
-        bus->subscribe<TestEvent>([&](TestEvent&) { event_counter++; });
-    }
-
-    TestEvent event;
-    for (int i = 0; i < NUM_EVENTS; i++) {
-        bus->publish(pub_token, event);
-    }
-    bus->commit_batch();
-
-    EXPECT_EQ(event_counter.load(), NUM_EVENTS * NUM_SUBSCRIBERS);
+TEST(EventBus, KeyedSubscriptionsGetOnlyTheirKey)
+{
+    EventBus bus;
+    auto died = bus.createEvent<Died>();
+    std::vector<uint64_t> seven, all;
+    auto mine = died.subscribe(7, [&](const Died& e) { seven.push_back(e.player); });
+    auto every = died.subscribe([&](const Died& e) { all.push_back(e.player); });
+    died.publish({ 5 }); died.publish({ 7 }); died.publish({ 9 }); died.publish({ 7 });
+    bus.dispatch();
+    EXPECT_EQ(seven, (std::vector<uint64_t>{ 7, 7 }));
+    EXPECT_EQ(all, (std::vector<uint64_t>{ 5, 7, 9, 7 }));
+    static_assert(Broadcast<Died>::keyed && !Broadcast<Ping>::keyed);
 }
 
-TEST_F(EventBusTest, EventOrderPreservation) {
-    std::vector<int> event_order;
-    constexpr int NUM_EVENTS = 100;
-    auto pub_token = bus->register_publisher<TestEvent>();
-    bus->subscribe<TestEvent>([&](TestEvent& e) {
-        event_order.push_back(e.value);
-        });
-
-    for (int i = 0; i < NUM_EVENTS; i++) {
-        bus->publish(pub_token, TestEvent{ i });
-    }
-    bus->commit_batch();
-
-    ASSERT_EQ(event_order.size(), NUM_EVENTS);
-    for (int i = 0; i < NUM_EVENTS; i++) {
-        EXPECT_EQ(event_order[i], i);
-    }
+TEST(EventBus, KeyFromAMemberFunction)
+{
+    EventBus bus;
+    auto channel = bus.createEvent<ByMethod>();
+    std::vector<int> seen;
+    auto subscription = channel.subscribe(3, [&](const ByMethod& e) { seen.push_back(e.raw); });
+    channel.publish({ 31 }); channel.publish({ 42 }); channel.publish({ 35 });
+    bus.dispatch();
+    EXPECT_EQ(seen, (std::vector<int>{ 31, 35 }));
 }
 
-TEST_F(EventBusTest, RapidSubscribeUnsubscribe) {
-    constexpr int NUM_ITERATIONS = 1000;
-    std::atomic<int> event_counter{ 0 };
-    auto pub_token = bus->register_publisher<TestEvent>();
-
-    for (int i = 0; i < NUM_ITERATIONS; i++) {
-        auto sub_token = bus->subscribe<TestEvent>([&](TestEvent&) { event_counter++; });
-        bus->publish(pub_token, TestEvent{});
-        bus->commit_batch();
-        bus->unsubscribe(sub_token);
-    }
-
-    EXPECT_EQ(event_counter, NUM_ITERATIONS);
+// 4. What a handler may do.
+TEST(EventBus, EventsPublishedByHandlersComeLaterInTheSameDispatch)
+{
+    EventBus bus;
+    auto ping = bus.createEvent<Ping>();
+    auto pong = bus.createEvent<Pong>();
+    std::string order;
+    auto a = ping.subscribe([&](const Ping& e) { order += "i" + std::to_string(e.value); if (e.value == 1) pong.publish({ 10 }); });
+    auto b = pong.subscribe([&](const Pong& e) { order += "o" + std::to_string(e.value); });
+    ping.publish({ 1 }); pong.publish({ 2 });
+    bus.dispatch();
+    EXPECT_EQ(order, "i1o2o10");
+    bus.dispatch();
+    EXPECT_EQ(order, "i1o2o10"); // nothing left
 }
 
-// =================================================================================
-// НОВЫЕ ТЕСТЫ
-// =================================================================================
-
-TEST_F(EventBusTest, NOP_UnsubscribeInvalidToken) {
-    // НОВЫЙ ТЕСТ: Проверяет, что отписка по невалидному токену ничего не ломает.
-    EventTracker tracker;
-    auto pub_token = bus->register_publisher<TestEvent>();
-    auto sub_token = bus->subscribe<TestEvent>([&](auto&) { tracker.testEventCount++; });
-
-    bus->unsubscribe(SubscriberToken{}); // Невалидный токен
-    bus->unsubscribe(SubscriberToken{});      // Несуществующий токен
-
-    bus->publish(pub_token, TestEvent{});
-    bus->commit_batch();
-
-    EXPECT_EQ(tracker.testEventCount, 1); // Подписка должна остаться активной
+TEST(EventBus, EndlessChainsStopAfterTheRoundLimit)
+{
+    EventBus bus;
+    auto ping = bus.createEvent<Ping>();
+    int seen = 0;
+    auto loop = ping.subscribe([&](const Ping& e) { ++seen; ping.publish({ e.value + 1 }); });
+    ping.publish({ 0 });
+    bus.dispatch();
+    EXPECT_EQ(seen, EventBus::kMaxRounds);
+    bus.dispatch(); // the rest continues
+    EXPECT_EQ(seen, 2 * EventBus::kMaxRounds);
+    loop.reset();
+    bus.dispatch();
 }
 
-TEST_F(EventBusTest, NOP_PublishWithInvalidToken) {
-    // НОВЫЙ ТЕСТ: Проверяет, что публикация с невалидным токеном ничего не делает.
-    EventTracker tracker;
-    bus->subscribe<TestEvent>([&](auto&) { tracker.testEventCount++; });
-
-    bus->publish(PublishToken{}, TestEvent{});
-    bus->commit_batch();
-
-    EXPECT_EQ(tracker.testEventCount, 0);
-}
-
-TEST_F(EventBusTest, NoSubscribers) {
-    // НОВЫЙ ТЕСТ: Проверяет, что система не падает, если нет подписчиков.
-    auto pub_token = bus->register_publisher<TestEvent>();
-
-    // Ожидаем, что эти вызовы просто ничего не сделают и не вызовут крэш
-    ASSERT_NO_THROW({
-        bus->publish(pub_token, TestEvent{});
-        bus->commit_batch();
-        });
-}
-TEST(EventBusConcurrency, SubscriptionDuringDispatchUsesStableSnapshot) {
-    struct Event { int value; };
-    auto bus = std::make_unique<csyren::core::EventBus2>();
-    auto publisher = bus->register_publisher<Event>();
-    int first = 0, next = 0;
-    bus->subscribe<Event>([&](auto&) {
-        ++first;
-        for (int i = 0; i < 128; ++i) bus->subscribe<Event>([&](auto&) { ++next; });
+TEST(EventBus, SubscriptionsMadeByHandlersStartWithTheNextEvent)
+{
+    EventBus bus;
+    auto died = bus.createEvent<Died>();
+    std::vector<uint64_t> all, keyed;
+    std::vector<Subscription> made;
+    auto first = died.subscribe([&](const Died& e) {
+        if (!made.empty()) return;
+        made.push_back(died.subscribe([&](const Died& later) { all.push_back(later.player); }));
+        made.push_back(died.subscribe(e.player, [&](const Died& later) { keyed.push_back(later.player); }));
     });
-    bus->publish(publisher, Event{1}); bus->commit_batch();
-    EXPECT_EQ(first, 1); EXPECT_EQ(next, 0);
-    bus->publish(publisher, Event{2}); bus->commit_batch();
-    EXPECT_EQ(first, 2); EXPECT_EQ(next, 128);
+    died.publish({ 1 }); died.publish({ 1 }); died.publish({ 2 });
+    bus.dispatch();
+    EXPECT_EQ(all, (std::vector<uint64_t>{ 1, 2 }));
+    EXPECT_EQ(keyed, (std::vector<uint64_t>{ 1 }));
+}
+
+TEST(EventBus, ResetDuringDeliveryTakesEffectAtOnce)
+{
+    EventBus bus;
+    auto ping = bus.createEvent<Ping>();
+    int second = 0;
+    Subscription removed;
+    auto first = ping.subscribe([&](const Ping&) { removed.reset(); });
+    removed = ping.subscribe([&](const Ping&) { ++second; });
+    ping.publish({}); ping.publish({});
+    bus.dispatch();
+    EXPECT_EQ(second, 0);
+}
+
+// The first matching event only: the handler resets its own subscription.
+TEST(EventBus, AHandlerMayResetItsOwnSubscription)
+{
+    EventBus bus;
+    auto died = bus.createEvent<Died>();
+    int seen = 0;
+    Subscription once;
+    once = died.subscribe(7, [&](const Died&) { ++seen; once.reset(); });
+    died.publish({ 7 }); died.publish({ 7 });
+    bus.dispatch();
+    EXPECT_EQ(seen, 1);
+    EXPECT_FALSE(once);
+}
+
+TEST(EventBus, DispatchFromAHandlerDoesNothing)
+{
+    EventBus bus;
+    auto ping = bus.createEvent<Ping>();
+    std::vector<int> seen;
+    auto subscription = ping.subscribe([&](const Ping& e) { seen.push_back(e.value); bus.dispatch(); });
+    ping.publish({ 1 }); ping.publish({ 2 });
+    bus.dispatch();
+    EXPECT_EQ(seen, (std::vector<int>{ 1, 2 }));
+}
+
+// 5. Exceptions.
+TEST(EventBus, AThrowingHandlerDoesNotStopTheOthers)
+{
+    EventBus bus;
+    auto ping = bus.createEvent<Ping>();
+    int after = 0;
+    auto failing = ping.subscribe([](const Ping&) { throw std::runtime_error("handler failed"); });
+    auto next = ping.subscribe([&](const Ping&) { ++after; });
+    ping.publish({}); ping.publish({});
+    EXPECT_NO_THROW(bus.dispatch());
+    EXPECT_EQ(after, 2);
+}
+
+// 6. Lifetimes.
+TEST(EventBus, EventsAreDestroyedAfterDeliveryOrWithTheBus)
+{
+    Counted::alive = 0;
+    {
+        EventBus bus;
+        auto channel = bus.createEvent<Counted>();
+        auto subscription = channel.subscribe([](const Counted&) {});
+        channel.publish({}); channel.publish({});
+        EXPECT_EQ(Counted::alive, 2);
+        bus.dispatch();
+        EXPECT_EQ(Counted::alive, 0);
+        channel.publish({});
+        EXPECT_EQ(Counted::alive, 1); // never dispatched
+    }
+    EXPECT_EQ(Counted::alive, 0);
+}
+
+TEST(EventBus, SubscriptionMayOutliveTheBus)
+{
+    Subscription subscription;
+    {
+        EventBus bus;
+        subscription = bus.createEvent<Ping>().subscribe([](const Ping&) {});
+        EXPECT_TRUE(subscription);
+    }
+    EXPECT_FALSE(subscription);
+    subscription.reset();
+}
+
+// Threads: SceneEventsSystem dispatches inside a frame graph task, on whatever worker runs it.
+TEST(EventBus, DispatchRunsOnAnyThread)
+{
+    EventBus bus;
+    auto ping = bus.createEvent<Ping>();
+    auto pong = bus.createEvent<Pong>();
+    std::string order;
+    auto a = ping.subscribe([&](const Ping& e) { order += "i" + std::to_string(e.value); pong.publish({ e.value + 1 }); });
+    auto b = pong.subscribe([&](const Pong& e) { order += "o" + std::to_string(e.value); });
+    ping.publish({ 1 });
+    testing::internal::CaptureStdout();
+    std::thread worker([&] { bus.dispatch(); });
+    worker.join();
+    EXPECT_EQ(testing::internal::GetCapturedStdout(), "");
+    EXPECT_EQ(order, "i1o2");
+}
+
+#ifdef _DEBUG
+TEST(EventBus, PublishingOnAnotherThreadDuringDispatchIsReported)
+{
+    EventBus bus;
+    auto ping = bus.createEvent<Ping>();
+    int seen = 0;
+    auto a = ping.subscribe([&](const Ping& e) {
+        ++seen;
+        if (e.value == 1) std::thread([&] { ping.publish({ 2 }); }).join();
+    });
+    ping.publish({ 1 });
+    testing::internal::CaptureStdout();
+    bus.dispatch();
+    EXPECT_NE(testing::internal::GetCapturedStdout().find("another thread while dispatch() runs"), std::string::npos);
+    EXPECT_EQ(seen, 2); // still delivered
+}
+#endif
+
+TEST(EventBus, ReserveMakesPublishingAllocationFree)
+{
+    EventBus bus;
+    auto ping = bus.createEvent<Ping>();
+    auto pong = bus.createEvent<Pong>();
+    int seen = 0;
+    auto a = ping.subscribe([&](const Ping&) { ++seen; });
+    auto b = pong.subscribe([&](const Pong&) { ++seen; });
+    ping.reserve(100);
+    pong.reserve(50);
+    counting = true; allocations = 0;
+    for (int i = 0; i < 100; ++i) ping.publish({ i });
+    for (int i = 0; i < 50; ++i) pong.publish({ i });
+    counting = false;
+    EXPECT_EQ(allocations, 0);
+    bus.dispatch();
+    EXPECT_EQ(seen, 150);
 }

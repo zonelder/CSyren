@@ -27,7 +27,7 @@ namespace csyren::core
 		void shutdown() override;
 
 		// Updates the device snapshots and publishes input events on the scene bus.
-		void execute(Res<Devices> devices, Res<EventBus2> bus);
+		void execute(Res<Devices> devices);
 	protected:
 		void onAttach() override;
 		void onDetach() noexcept override;
@@ -35,8 +35,8 @@ namespace csyren::core
 	private:
 		InputContextManager _contextManager;
 
-		PublishToken _actionToken;
-		std::unordered_map<uint32_t, PublishToken> _tokens;
+		Broadcast<InputAction> _actions;
+		Broadcast<InputEvent> _events;
 
 	};
 

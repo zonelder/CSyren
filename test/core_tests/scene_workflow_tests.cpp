@@ -486,7 +486,7 @@ void systemGraphPreviews()
     CHECK(manager.previewExecutionGraph(false).graph.tasks.size() == 1);
     manager.unbind(); manager.shutdown();
     // The standalone preview must match a host that executes only app.systems.
-    auto& standaloneBus = core::details::ServiceRegistry::create<EventBus2>();
+    auto& standaloneBus = core::details::ServiceRegistry::create<EventBus>();
     auto& standaloneScene = core::details::ServiceRegistry::create<Scene>(&standaloneBus);
     standaloneScene.init();
     SystemManager standalone;

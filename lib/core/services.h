@@ -23,7 +23,7 @@ namespace csyren::core
     // Forward declaration
     namespace details { class ServiceRegistry; }
     class Scene;
-    class EventBus2;
+    class EventBus;
 
     // ============================================================
     // ServiceLocator - non-intrusive access to services
@@ -34,12 +34,12 @@ namespace csyren::core
     public:
         class SceneScope {
         public:
-            SceneScope(Scene* scene, EventBus2* bus) : previousScene(_scene), previousBus(_bus) { _scene = scene; _bus = bus; }
+            SceneScope(Scene* scene, EventBus* bus) : previousScene(_scene), previousBus(_bus) { _scene = scene; _bus = bus; }
             ~SceneScope() { _scene = previousScene; _bus = previousBus; }
             SceneScope(const SceneScope&) = delete;
         private:
             Scene* previousScene;
-            EventBus2* previousBus;
+            EventBus* previousBus;
         };
         class TaskScope {
         public:
@@ -55,7 +55,7 @@ namespace csyren::core
         {
             requireAccess<T>();
             if constexpr (std::is_same_v<std::remove_const_t<T>, Scene>) { if (_scene) return _scene; }
-            if constexpr (std::is_same_v<std::remove_const_t<T>, EventBus2>) { if (_bus) return _bus; }
+            if constexpr (std::is_same_v<std::remove_const_t<T>, EventBus>) { if (_bus) return _bus; }
             auto it = _services.find(reflection::ServiceFamily::getID<std::remove_const_t<T>>());
             if (it == _services.end()) throw std::logic_error("Service not registered: " + std::string(typeName<std::remove_const_t<T>>()));
             return reinterpret_cast<T*>(it->second);
@@ -73,7 +73,7 @@ namespace csyren::core
         {
             requireAccess<T>();
             if constexpr (std::is_same_v<std::remove_const_t<T>, Scene>) { if (_scene) return _scene; }
-            if constexpr (std::is_same_v<std::remove_const_t<T>, EventBus2>) { if (_bus) return _bus; }
+            if constexpr (std::is_same_v<std::remove_const_t<T>, EventBus>) { if (_bus) return _bus; }
             auto it = _services.find(reflection::ServiceFamily::getID<std::remove_const_t<T>>());
             return it == _services.end() ? nullptr : reinterpret_cast<T*>(it->second);
         }
@@ -90,7 +90,7 @@ namespace csyren::core
 #endif
         }
         inline static thread_local Scene* _scene = nullptr;
-        inline static thread_local EventBus2* _bus = nullptr;
+        inline static thread_local EventBus* _bus = nullptr;
         inline static thread_local const TaskDescription* _activeTask = nullptr;
         template<typename T>
         static void add(T* service)

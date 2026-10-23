@@ -37,24 +37,23 @@ namespace csyren
         void onAttach() override
         {
             auto& session = *core::Services::get<editor::SceneSession>();
-            _tokens.push_back(sceneBus().subscribe<core::LoadSceneRequest>([&session](const auto& request) {
+            _tokens.push_back(sceneBus().createEvent<core::LoadSceneRequest>().subscribe([&session](const auto& request) {
                 if (request.scene == &session.editorScene()) session.enqueue(editor::SceneOperation::Open, request.scenePath);
             }));
-            _tokens.push_back(sceneBus().subscribe<core::ReloadSceneRequest>([&session](const auto& request) {
+            _tokens.push_back(sceneBus().createEvent<core::ReloadSceneRequest>().subscribe([&session](const auto& request) {
                 if (request.scene == &session.editorScene()) session.enqueue(editor::SceneOperation::Reload);
             }));
-            _tokens.push_back(sceneBus().subscribe<core::SaveSceneRequest>([&session](const auto& request) {
+            _tokens.push_back(sceneBus().createEvent<core::SaveSceneRequest>().subscribe([&session](const auto& request) {
                 if (request.scene == &session.editorScene()) session.enqueue(
                     request.filepath.empty() ? editor::SceneOperation::Save : editor::SceneOperation::SaveAs, request.filepath);
             }));
         }
         void onDetach() noexcept override
         {
-            for (auto token : _tokens) sceneBus().unsubscribe(token);
             _tokens.clear();
         }
     private:
-        std::vector<core::SubscriberToken> _tokens;
+        std::vector<core::Subscription> _tokens;
     };
     CS_SYSTEM(SceneLoaderSystem);
 }

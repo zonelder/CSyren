@@ -131,6 +131,7 @@
     <ClInclude Include="entity.h" />
     <ClInclude Include="entity_manager.h" />
     <ClInclude Include="event_bus.h" />
+    <ClInclude Include="event_bus.inl" />
     <ClInclude Include="family_generator.h" />
     <ClInclude Include="input_dispatch_system.h" />
     <ClInclude Include="framework.h" />

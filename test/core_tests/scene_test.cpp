@@ -26,7 +26,7 @@ inline void registerTestComponents()
 
 class SceneTest : public ::testing::Test {
 protected:
-    EventBus2 bus;
+    EventBus bus;
     Scene scene{ &bus };
 
     void SetUp() override {
@@ -183,23 +183,25 @@ TEST_F(SceneTest, EventDelivery) {
     int createCount = 0;
     int destroyCount = 0;
 
-    auto createToken = bus.subscribe<EntityCreateEvent>(
+    auto created = bus.createEvent<EntityCreateEvent>().subscribe(
         [&](const auto&) { createCount++; });
 
-    auto destroyToken = bus.subscribe<EntityDestroyEvent>(
+    auto destroyed = bus.createEvent<EntityDestroyEvent>().subscribe(
         [&](const auto&) { destroyCount++; });
 
 
     auto id = scene.createEntity();
-    bus.commit_batch();
+    bus.dispatch();
     EXPECT_EQ(createCount, 1);
 
     scene.destroyEntity(id);
     flush();
-    bus.commit_batch();
+    bus.dispatch();
     EXPECT_EQ(destroyCount, 1);
-    bus.unsubscribe(createToken);
-    bus.unsubscribe(destroyToken);
+    created.reset();
+    scene.createEntity();
+    bus.dispatch();
+    EXPECT_EQ(createCount, 1); // unsubscribed
 }
 
 TEST_F(SceneTest, HighLoadOperations) {
@@ -652,18 +654,19 @@ TEST_F(SceneTest, StagedCommandsOfADestroyedEntitySkipTheReplacement)
     EXPECT_EQ(scene.getComponent<TestComponent>(replacement)->value, 2);
 }
 
-TEST_F(SceneTest, EntityEventsCarryTheWholeId)
+TEST_F(SceneTest, EntityEventsCarryTheWholeIdInPublicationOrder)
 {
-    std::vector<Entity::ID> created, destroyed;
-    bus.subscribe<EntityCreateEvent>([&](const EntityCreateEvent& e) { created.push_back(e.id); });
-    bus.subscribe<EntityDestroyEvent>([&](const EntityDestroyEvent& e) { destroyed.push_back(e.id); });
+    std::vector<std::pair<char, Entity::ID>> events;
+    auto created = bus.createEvent<EntityCreateEvent>().subscribe([&](const EntityCreateEvent& e) { events.push_back({ 'c', e.id }); });
+    auto destroyed = bus.createEvent<EntityDestroyEvent>().subscribe([&](const EntityDestroyEvent& e) { events.push_back({ 'd', e.id }); });
     const auto old = scene.createEntity();
     scene.destroyEntity(old);
     flush();
     const auto replacement = scene.createEntity();
-    bus.commit_batch(); // delivered by event type: creations first
-    EXPECT_EQ(created, (std::vector<Entity::ID>{ old, replacement }));
-    EXPECT_EQ(destroyed, std::vector<Entity::ID>{ old });
+    ASSERT_EQ(Entity::slot(replacement), Entity::slot(old));
+    bus.dispatch();
+    const std::vector<std::pair<char, Entity::ID>> expected{ { 'c', old }, { 'd', old }, { 'c', replacement } };
+    EXPECT_EQ(events, expected);
 }
 
 namespace csyren::core::details
