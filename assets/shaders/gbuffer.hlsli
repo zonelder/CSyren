@@ -21,6 +21,8 @@ cbuffer perEntity
 {
     //@semantic World
     matrix world;
+    //@semantic WorldNormal
+    matrix worldNormalMatrix;   // inverse-transpose of world (non-uniform scale)
 }
 
 struct GBufferOutput
@@ -44,7 +46,7 @@ GBufferOutput packGBuffer(float3 albedoLinear, float metallic, float3 normal, fl
 // World-space normal for a (possibly non-uniformly scaled) entity.
 float3 worldNormal(float3 normal)
 {
-    return normalize(mul(float4(normal, 0.0f), world).xyz);
+    return normalize(mul(float4(normal, 0.0f), worldNormalMatrix).xyz);
 }
 
 #endif

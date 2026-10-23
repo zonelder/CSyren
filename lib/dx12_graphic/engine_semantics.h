@@ -1,6 +1,7 @@
 #pragma once
 
 #include <DirectXMath.h>
+#include <cmath>
 #include <unordered_map>
 #include "core/entity.h"
 
@@ -35,9 +36,24 @@ namespace csyren::render
 	struct alignas(16) EntityVariableBuffer
 	{
 		DirectX::XMFLOAT4X4 worldMatrix{};
+		DirectX::XMFLOAT4X4 normalMatrix{};	// inverse-transpose of the world's 3x3 (semantic WorldNormal)
 		core::Entity::ID	entityID;
 		size_t				materialID;
 		size_t				meshID;
+
+		// Stores the world matrix and its normal matrix: normals stay perpendicular to
+		// surfaces under non-uniform scale.
+		void setWorld(DirectX::FXMMATRIX world)
+		{
+			DirectX::XMStoreFloat4x4(&worldMatrix, world);
+			DirectX::XMMATRIX linear = world;
+			linear.r[3] = DirectX::g_XMIdentityR3;
+			DirectX::XMVECTOR determinant;
+			const DirectX::XMMATRIX inverse = DirectX::XMMatrixInverse(&determinant, linear);
+			// A zero scale has no inverse; nothing is visible then, keep the 3x3.
+			const bool invertible = std::fabs(DirectX::XMVectorGetX(determinant)) > 1e-12f;
+			DirectX::XMStoreFloat4x4(&normalMatrix, invertible ? DirectX::XMMatrixTranspose(inverse) : linear);
+		}
 	};
 }
 
@@ -131,6 +147,7 @@ namespace csyren::render::details
 
 			//entity buffers
 			registerSemantic<DirectX::XMMATRIX>("World"			, offsetof(EntityVariableBuffer, worldMatrix)	, SemanticDataType::Matrix4x4);
+			registerSemantic<DirectX::XMMATRIX>("WorldNormal"	, offsetof(EntityVariableBuffer, normalMatrix)	, SemanticDataType::Matrix4x4);
 			registerSemantic<uint32_t>("EntityID"				, offsetof(EntityVariableBuffer, entityID)		, SemanticDataType::Uint);
 			registerSemantic<uint32_t>("MaterialID"				, offsetof(EntityVariableBuffer, materialID)	, SemanticDataType::Uint);
 			registerSemantic<uint32_t>("MeshID"					, offsetof(EntityVariableBuffer, meshID)		, SemanticDataType::Matrix4x4);

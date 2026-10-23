@@ -146,6 +146,7 @@ namespace csyren
 		session->setBind([systems](auto editor, auto active, bool playing) { systems->bind(editor, active, playing); });
 
         core::details::ServiceRegistry::initializeAll();
+        renderer->createFallbackTexture();
 		log::info("-------------------------------------------------------------------------------------------");
 		log::info("-------------------------------Setup Start Up------------------------------------------------");
 		// Show after InputDispatchSystem has installed the window dispatcher.

@@ -6,6 +6,10 @@
 #include "compute_shader.h"
 #include "core/time.h"
 #include "core/transform_hierarchy.h"
+#include "descriptors.h"
+
+#include <ResourceUploadBatch.h>
+#include <BufferHelpers.h>
 
 using Microsoft::WRL::ComPtr;
 namespace csyren::render
@@ -242,14 +246,13 @@ namespace csyren::render
         auto& textures = material->textures();
         for (const auto& [name, handle] : textures)
         {
-            const Texture* tex = rm.getTexture(handle);
-            if (!tex || tex->status() != LoadStatus::Loaded) continue;
-
-            auto gpuHandle = tex->getGpuSrvHandle();
-            // assume rootParameterIndex is known by shader reflection
-            UINT rootIndex = shader->getRootParameterIndex(name);
+            const UINT rootIndex = shader->getRootParameterIndex(name);
             if (rootIndex == UINT_MAX) continue;
-            cmdList.setGraphicsRootDescriptorTable(rootIndex, gpuHandle);
+            // A texture that is not loaded (yet) is replaced by the white fallback:
+            // a descriptor table the shader reads must always be set.
+            const Texture* tex = rm.getTexture(handle);
+            if (tex && tex->status() == LoadStatus::Loaded) cmdList.setGraphicsRootDescriptorTable(rootIndex, tex->getGpuSrvHandle());
+            else if (_fallbackSrv.valid()) cmdList.setGraphicsRootDescriptorTable(rootIndex, _fallbackSrv.gpu);
         }
 
         if (!binder.updateFrameBuffer(cmdList.raw(), *getEngineVariableBuffer(), shader->getSemanticBuffer(details::CBufferUpdateType::Pass), upload))
@@ -358,6 +361,35 @@ namespace csyren::render
         data.commands.raw()->Dispatch(x, y, z);
     }
 
+
+    void Renderer::createFallbackTexture()
+    {
+        if (_fallbackTexture) return;
+        auto* descriptors = core::Services::get<DescriptorManager>();
+        DirectX::ResourceUploadBatch upload(_device.Get());
+        upload.Begin();
+        const uint32_t white = 0xFFFFFFFFu;
+        D3D12_SUBRESOURCE_DATA pixel{};
+        pixel.pData = &white;
+        pixel.RowPitch = sizeof(white);
+        pixel.SlicePitch = sizeof(white);
+        ComPtr<ID3D12Resource> texture;
+        const HRESULT hr = DirectX::CreateTextureFromMemory(_device.Get(), upload, 1, 1, DXGI_FORMAT_R8G8B8A8_UNORM, pixel,
+            texture.ReleaseAndGetAddressOf());
+        upload.End(_mainQueue.raw()).wait();
+        if (FAILED(hr))
+        {
+            log::error("Renderer: failed to create the fallback texture (HRESULT 0x{:X})", static_cast<uint32_t>(hr));
+            return;
+        }
+        D3D12_SHADER_RESOURCE_VIEW_DESC srv{};
+        srv.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        srv.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        srv.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+        srv.Texture2D.MipLevels = 1;
+        _fallbackSrv = descriptors->createSRV(texture.Get(), &srv);
+        _fallbackTexture = std::move(texture);
+    }
 
     void Renderer::beginResourceUpload()
     {

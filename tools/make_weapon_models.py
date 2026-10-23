@@ -153,6 +153,9 @@ class GlbBuilder:
             for i in range(segments):
                 a, b = ring[i], ring[(i + 1) % segments]
                 tris += [center_index, a, b] if sign > 0 else [center_index, b, a]
+        if axis != "z":
+            # place() swaps two coordinates for "x" / "y": a mirror, which flips the winding.
+            tris = [i for t in range(0, len(tris), 3) for i in (tris[t], tris[t + 2], tris[t + 1])]
         return self.mesh(name, positions, normals, tris, color)
 
     # ------------------------------------------------------------------ nodes / animation

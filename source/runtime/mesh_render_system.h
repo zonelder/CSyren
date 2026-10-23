@@ -76,7 +76,7 @@ namespace csyren
                     for (auto& data : entities)
                     {
                         //TODO instancing look pretty well here.
-                        DirectX::XMStoreFloat4x4(&entityParams->worldMatrix, worlds.matrix(data.id));
+                        entityParams->setWorld(worlds.matrix(data.id));
                         entityParams->entityID = data.id;
                         if (!renderer->bindEntity(cb)) continue;
                         mesh->draw(*renderer);

@@ -3,6 +3,8 @@
 #include "dx_main.h"
 #include "cstdmf/assert_helpler.h"
 
+#include <format>
+#include <stdexcept>
 #include <vector>
 
 namespace csyren::render
@@ -57,13 +59,10 @@ namespace csyren::render
 				return idx;
 			}
 			// Иначе bump-аллокация с конца.
+			// Writing past the heap would corrupt descriptors: an error in every build.
 			if (used_ >= capacity_)
-			{
-				log::error("DescriptorHeap::allocate: heap type %d is full "
-					"(%u/%u). Increase capacity!\n",
-					(int)type_, used_, capacity_);
-				CS_ASSERT(false && "DescriptorHeap overflow");
-			}
+				throw std::runtime_error(std::format("DescriptorHeap: heap of type {} is full ({} descriptors). "
+					"Increase its capacity in DescriptorManager::init.", static_cast<int>(type_), capacity_));
 			return used_++;
 		}
 

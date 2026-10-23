@@ -33,7 +33,10 @@ namespace csyren::render
         // --- Rasterizer State ---
         rasterizerState = {};
         rasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
-        rasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+        // Back faces are culled: front faces are clockwise on screen (left-handed engine;
+        // the glTF importer swaps winding when it mirrors Z). Double-sided and transparent
+        // materials set D3D12_CULL_MODE_NONE.
+        rasterizerState.CullMode = D3D12_CULL_MODE_BACK;
         rasterizerState.FrontCounterClockwise = FALSE;
         rasterizerState.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
         rasterizerState.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
@@ -81,6 +84,7 @@ namespace csyren::render
         const bool textured = !source->baseColorTexture.empty();
         const ShaderHandle shader = textured ? Primitives::getLitTextureShader() : Primitives::getLitShader();
         MaterialStateDesc states = {};
+        if (source->doubleSided) states.rasterizerState.CullMode = D3D12_CULL_MODE_NONE;
         if (!init(shader, states)) return false;
         Primitives::initializeMaterialDefaults(*this);
         setVector("tint", DirectX::XMFLOAT4(source->baseColor.x, source->baseColor.y, source->baseColor.z, source->baseColor.w));

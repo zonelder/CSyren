@@ -65,6 +65,10 @@ namespace csyren::render
 		Renderer& operator=(const Renderer&) = delete;
 
 		bool earlyInit();
+        // A 1x1 white texture bound in place of a material texture that is not loaded
+        // (still loading, failed or unloaded), so its descriptor table is always set.
+        // Call once at startup, after the DescriptorManager is initialized.
+        void createFallbackTexture();
 
 
 
@@ -191,6 +195,8 @@ namespace csyren::render
         bool _presentCameraOutput = true;
         bool _primaryShown = true;
         bool _uploadOpen = false;
+        details::ComPtr<ID3D12Resource> _fallbackTexture;
+        DescriptorAllocation _fallbackSrv;
         std::shared_ptr<details::CameraRenderView> _primaryView;
         std::vector<std::shared_ptr<details::CameraRenderView>> _views;
 

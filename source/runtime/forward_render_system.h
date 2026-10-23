@@ -97,7 +97,7 @@ namespace csyren::render
                     mesh->bind(renderer);
                     boundMaterial = item.material; boundMesh = item.mesh;
                 }
-                DirectX::XMStoreFloat4x4(&entityParams->worldMatrix, worlds.matrix(item.entity));
+                entityParams->setWorld(worlds.matrix(item.entity));
                 entityParams->entityID = item.entity;
                 if (!renderer.bindEntity(entityLayout)) return;
                 mesh->draw(renderer);

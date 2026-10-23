@@ -8,6 +8,8 @@ cbuffer perEntity
 {
     //@semantic World
     matrix world;
+    //@semantic WorldNormal
+    matrix worldNormalMatrix;   // inverse-transpose of world (non-uniform scale)
 }
 
 //@update material
@@ -44,7 +46,7 @@ PS_Input VSMain(VS_Input input)
     float4 pos = mul(float4(input.position, 1.0f), world);
     output.worldPos = pos.xyz;
     output.position = mul(pos, viewProjection);
-    output.normal = normalize(mul(float4(input.normal, 0.0f), world).xyz);
+    output.normal = normalize(mul(float4(input.normal, 0.0f), worldNormalMatrix).xyz);
     return output;
 }
 

@@ -194,8 +194,9 @@ namespace csyren::render
                     int first = lat * (longBands + 1) + lon;
                     int second = first + longBands + 1;
 
-                    builder.addTriangle(first, second, first + 1);
-                    builder.addTriangle(second, second + 1, first + 1);
+                    // Clockwise seen from outside (front faces; back faces are culled).
+                    builder.addTriangle(first, first + 1, second);
+                    builder.addTriangle(second, first + 1, second + 1);
                 }
             }
 
@@ -298,6 +299,7 @@ namespace csyren::render
         blend.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
         blend.BlendOpAlpha = D3D12_BLEND_OP_ADD;
         states.depthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; // test only
+        states.rasterizerState.CullMode = D3D12_CULL_MODE_NONE; // both sides of a pane are visible
         return states;
     }
 
