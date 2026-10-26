@@ -129,7 +129,10 @@ is rewritten only when it changes; the project disables Visual Studio's fast
 up-to-date check so the scan runs on every build. Errors are reported as
 `file(line): error CSRxxx` in the Error List (marker inside a class or function, in
 an anonymous namespace, duplicate names, ...). `CSyrenPython` selects the
-interpreter (`python` by default, e.g. `py -3`).
+interpreter: the one `tools/csyren.py` runs with, written by its `generate` and
+`restore` into `Build/csyren.local.props` (machine settings of the engine checkout,
+not in source control), otherwise `python`. An old Python first on `PATH` does not
+matter once the tool has run.
 
 Because every registration is an explicit call from the executable, nothing
 depends on static initializers surviving in a static library. Built-in field

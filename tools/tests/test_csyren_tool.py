@@ -122,6 +122,16 @@ class FindProjectTest(unittest.TestCase):
         self.assertFalse(os.path.exists(os.path.join(csyren.ENGINE_ROOT, 'build', 'engine.props')))
 
 
+class LocalPropsTest(unittest.TestCase):
+    def test_the_registry_python_is_the_tool_python(self):
+        with tempfile.TemporaryDirectory() as root:
+            self.assertTrue(csyren.write_local_props(root, python=r'C:\Users\Тест & Co\python.exe'))
+            text = read(os.path.join(root, 'Build', 'csyren.local.props'))
+            self.assertIn('"C:\\Users\\Тест &amp; Co\\python.exe"</CSyrenPython>', text)
+            self.assertIn("Condition=\"'$(CSyrenPython)'==''\"", text)
+            self.assertFalse(csyren.write_local_props(root, python=r'C:\Users\Тест & Co\python.exe'))
+
+
 class PackagesTest(unittest.TestCase):
     def test_missing_packages_are_listed(self):
         with tempfile.TemporaryDirectory() as root:

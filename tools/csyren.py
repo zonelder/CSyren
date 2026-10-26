@@ -25,7 +25,9 @@ A project folder:
 generate writes the generated files; new creates a project and runs generate;
 build and run run generate first. The engine's own sandbox (CSyren.csyrenproj
 next to CSyren.sln) builds with the committed CSyren.sln and is never
-regenerated. restore downloads the engine's NuGet packages (msbuild
+regenerated. generate and restore also write <engine>/Build/csyren.local.props:
+the registry step of every build then runs this Python, not whichever "python"
+comes first on PATH. restore downloads the engine's NuGet packages (msbuild
 -t:restore); build runs it when packages are missing.
 """
 import argparse
@@ -211,6 +213,24 @@ def engine_props_text(engine_root, engine_id):
 '''
 
 
+def local_props_text(python):
+    return f'''<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Written by tools/csyren.py: settings of this engine checkout on this machine (not in
+       source control). The registry step of every build runs the Python the tool runs with,
+       whatever "python" comes first on PATH. -->
+  <PropertyGroup>
+    <CSyrenPython Condition="'$(CSyrenPython)'==''">"{escape(python)}"</CSyrenPython>
+  </PropertyGroup>
+</Project>
+'''
+
+
+def write_local_props(root=ENGINE_ROOT, python=sys.executable):
+    """<engine>/Build/csyren.local.props (imported by CSyren.project.props); True when it changed."""
+    return write(os.path.join(root, 'Build', 'csyren.local.props'), local_props_text(python))
+
+
 def vcxproj_user_text(name):
     groups = ''.join(f'''  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='{c}|x64'">
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
@@ -227,8 +247,10 @@ def vcxproj_user_text(name):
 def generate(path, log=print):
     """Writes the files of a project that depend on this machine (see the module docstring)."""
     project = path if isinstance(path, Project) else find_project(path)
+    local = write_local_props()
     if project.is_engine:
-        log(f'{project.name}: the engine sandbox builds with the committed CSyren.sln; nothing to generate')
+        log(f'{project.name}: the engine sandbox builds with the committed CSyren.sln'
+            + ('; wrote Build/csyren.local.props' if local else ''))
         return project
     if not os.path.isfile(project.vcxproj):
         raise ToolError(f'{project.vcxproj} not found')
@@ -243,7 +265,7 @@ def generate(path, log=print):
             raise ToolError(f'engine project not found: {vcxproj}')
         engine_projects.append((os.path.splitext(os.path.basename(relative))[0], vcxproj, project_guid(vcxproj)))
 
-    written = []
+    written = ['<engine>/Build/csyren.local.props'] if local else []
     if write(project.solution, solution_text(project.name, projects, engine_projects), bom=True):
         written.append(os.path.basename(project.solution))
     props = os.path.join(project.folder, 'build', 'engine.props')
@@ -301,6 +323,7 @@ def missing_packages(root=ENGINE_ROOT):
 
 
 def restore():
+    write_local_props()
     execute([msbuild(), os.path.join(ENGINE_ROOT, 'CSyren.sln'), '-t:restore', '-p:RestorePackagesConfig=true',
              '-p:Configuration=Debug', '-p:Platform=x64', '-nologo', '-v:minimal'])
     missing = missing_packages()
