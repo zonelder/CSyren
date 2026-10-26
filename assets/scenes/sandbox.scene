@@ -1,0 +1,162 @@
+{
+    "$version": 2,
+    "entities": [
+        {
+            "id": 0,
+            "name": "camera",
+            "components": {
+                "Transform": {
+                    "position": [
+                        0.0,
+                        3.0,
+                        -8.0
+                    ],
+                    "rotation": [
+                        0.15,
+                        0.0,
+                        0.0,
+                        0.9886859966642595
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "Camera": {
+                    "render_type": "EachFrame",
+                    "far": 500.0,
+                    "near": 0.05,
+                    "aspectRatio": 1.7777778,
+                    "fov": 60.0,
+                    "priority": 0,
+                    "projection": "Perspective",
+                    "background": [
+                        0.52,
+                        0.66,
+                        0.86,
+                        1.0
+                    ],
+                    "viewportRect": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "w": 1.0,
+                        "h": 1.0
+                    }
+                }
+            }
+        },
+        {
+            "id": 1,
+            "name": "lighting settings",
+            "components": {
+                "Transform": {
+                    "position": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "LightingSettings": {
+                    "ambientColor": [
+                        0.42,
+                        0.47,
+                        0.58,
+                        1.0
+                    ],
+                    "ambientIntensity": 0.35,
+                    "exposure": 1.0,
+                    "clustered": true,
+                    "debugView": "Lit"
+                }
+            }
+        },
+        {
+            "id": 2,
+            "name": "sun",
+            "components": {
+                "Transform": {
+                    "position": [
+                        0.0,
+                        10.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.45128136651016376,
+                        -0.3798879351514666,
+                        0.2207144081588125,
+                        0.7767338250637598
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "DirectionalLight": {
+                    "color": [
+                        1.0,
+                        0.95,
+                        0.88,
+                        1.0
+                    ],
+                    "intensity": 3.0,
+                    "enabled": true
+                }
+            }
+        },
+        {
+            "id": 3,
+            "name": "ground",
+            "components": {
+                "Transform": {
+                    "position": [
+                        0.0,
+                        -0.1,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        20.0,
+                        0.2,
+                        20.0
+                    ]
+                },
+                "MeshFilter": {
+                    "mesh": 0
+                },
+                "MeshRenderer": {
+                    "material": 1
+                }
+            }
+        }
+    ],
+    "resources": [
+        {
+            "id": 0,
+            "path": "__primitive_cube__",
+            "type": "mesh"
+        },
+        {
+            "id": 1,
+            "path": "__primitive_lit_material__",
+            "type": "material"
+        }
+    ]
+}

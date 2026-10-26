@@ -28,7 +28,7 @@ Data-driven alternative to code registration (additive):
   "ignore": [["Player", "Projectile"], ["Projectile", "Projectile"]] }
 ```
 
-**Game (`game/game_physics.h`)** owns the names and the rules:
+**The project** owns the names and the rules (SyrenMovement: `source/game_physics.h`):
 
 ```cpp
 CS_ENUM(Layer, uint8_t, Default, Player, Projectile, Trigger)

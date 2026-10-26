@@ -4,6 +4,7 @@
 
 ```
 CSyren/
+  engine.json         engine name, version and project tool (read by CSyrenHub)
   lib/                core, cstdmf, math, dx12_graphic, physics (+ third_party, imGui, JoltSolution)
   source/
     runtime/          MeshFilter, Animator, render/animation systems, SceneLoader, serializer
@@ -11,8 +12,8 @@ CSyren/
     host/             Application, WinMain, startup options, project settings
     csyren_host.vcxproj   static library built from source/**
   assets/             engine assets ("engine:" mount): shaders, default textures, pipelines/*.systems
-  tools/              csyren_registry.py, new_project.py, ...
-  CSyren.vcxproj      the engine's own project executable (sandbox; still hosts game/ for now)
+  tools/              csyren.py (project tool), csyren_registry.py, tests/
+  CSyren.vcxproj      the engine's own project executable (sandbox, assets/scenes/sandbox.scene)
   CSyren.project.props / .targets   settings shared by every project executable
 ```
 
@@ -29,28 +30,47 @@ such files.
 
 ## A project
 
+A project lives in its own folder, usually its own repository, and is bound to an
+engine by an id; the engine is never copied into it.
+
 ```
 MyGame/
-  MyGame.csyrenproj   start scene, systems files, assets folder
-  MyGame.sln          engine projects (solution folder "CSyren") + MyGame.vcxproj
-  MyGame.vcxproj      imports CSyren.project.props / .targets, compiles source\**\*.cpp
-  source/             components, systems, services (any subfolders)
-  assets/             "project:" mount — scenes, models, prefabs, app.systems, editor.systems
-  build/              generated registry, binaries, cache (not in source control)
+  MyGame.csyrenproj    engine id, start scene, systems files, assets folder    committed
+  MyGame.vcxproj       imports CSyren.project.props / .targets, source\**      committed
+  source/              components, systems, services (any subfolders)          committed
+  assets/              "project:" mount: scenes, models, prefabs, *.systems    committed
+  MyGame.sln           the project's .vcxproj files + the engine projects      generated
+                       (solution folder "CSyren")
+  MyGame.vcxproj.user  debugger arguments (--project MyGame.csyrenproj)        generated
+  build/               engine.props, generated registry, binaries, cache       generated
 ```
 
-Create one with
+`tools/csyren.py` is the engine's project tool (`engine.json` names it):
 
-```
-python tools/new_project.py <folder> <Name> [--engine <path to CSyren>]
-```
+| command | effect |
+| --- | --- |
+| `new <folder> <Name> [--engine-id <id>] [--bare]` | writes the committed files, with an example `Spinner` component and `SpinnerSystem` unless `--bare`, then runs `generate` |
+| `generate <project>` | writes the generated files for this machine: the solution, `build/engine.props` (`CSyrenRoot` = the engine the tool belongs to) and the `.vcxproj.user` when it is missing |
+| `restore` | restores the engine's NuGet packages into `<engine>/packages` (`msbuild -t:restore`) |
+| `build <project> [--config Debug\|Release]` | `generate`, `restore` when packages are missing, then MSBuild |
+| `run <project> [--config ...] [arguments]` | `build`, then starts the editor with `--project` |
 
-It writes the files above with an example `Spinner` component and `SpinnerSystem`,
-and a start scene. The engine is found through `CSyrenRoot` in the `.vcxproj`
-(relative to the project when possible); the `CSYREN_ROOT` environment variable
-overrides it. Build the engine solution (`CSyren.sln`) once first: it restores the
-NuGet packages the project executable links against. Engine libraries build into
-the engine's `Build/` folder from any solution.
+`<project>` is a `.csyrenproj` file or its folder. [CSyrenHub](https://github.com/zonelder/CSyrenHub)
+keeps the engines of a machine (`%LOCALAPPDATA%\CSyren\engines.json`: id → folder) and runs
+the tool of the engine named by the project's `"engine"` field: `csyren-hub open MyGame`
+is `generate` with the right engine, then Visual Studio. Without the hub, run the tool of
+the engine you want: `py -3 <CSyren>\tools\csyren.py generate MyGame`.
+
+The `.vcxproj` finds the engine through `build\engine.props`; without it, through the
+`CSYREN_ROOT` environment variable; otherwise the build stops and says how to generate
+it. Engine libraries build into the engine's `Build/` folder from any solution, so the
+projects bound to one engine share its binaries. The sandbox (`CSyren.vcxproj`) builds
+with the committed `CSyren.sln`; `generate` leaves it alone.
+
+Other `.vcxproj` files in a project folder (a library, tests) join the generated
+solution as well (`build/`, `.vs/`, `x64/` and `packages/` are skipped); reference
+them from `MyGame.vcxproj` with a `ProjectReference`. Keys of the `.csyrenproj` that
+the engine does not read (`"engine"`) are kept when the editor saves the file.
 
 New `.cpp` files dropped into `source/` are compiled (wildcard). Visual Studio may
 expand the wildcard into a file list when files are added or removed through its
@@ -115,7 +135,7 @@ Because every registration is an explicit call from the executable, nothing
 depends on static initializers surviving in a static library. Built-in field
 editors (float, int, bool, string, vectors, color, quaternion) are installed by
 `EditorRegistry::resolveAll()` itself; `REGISTER_SYSTEM` remains only for systems
-defined in a `.cpp` compiled straight into an executable (tests, `game/`).
+defined in a `.cpp` compiled straight into an executable (tests).
 Tests register the engine types they use explicitly, as before.
 
 Generator tests: `python -m unittest discover -s tools/tests`.
@@ -196,11 +216,3 @@ A project's `app.systems`:
 ```
 
 `Serializer::saveSystems` writes the expanded list (includes are not preserved).
-
-## Transitional: game/
-
-`game/` (the movement prototype) still lives in the engine repository and is
-compiled into `CSyren.vcxproj`. Its systems use `REGISTER_SYSTEM`; its components
-and services are listed as markers in `game_registration.h`, which
-`CSyren.vcxproj` adds to the scan roots. Both go away when `game/` moves to its
-own project with CS_* markers.

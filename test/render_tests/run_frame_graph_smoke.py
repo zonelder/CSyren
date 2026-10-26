@@ -37,10 +37,10 @@ if '--application' in sys.argv:
     args[args.index('/FoBuild/frame_graph_smoke.obj')] = '/FoBuild/application_graph_smoke.obj'
     args[args.index('/FeBuild/Debug/frame_graph_smoke.exe')] = '/FeBuild/Debug/application_graph_smoke.exe'
     args.remove('Build/csyren_host/Intermediate/Debug/resource_manager.obj')
-    # Engine host objects (without WinMain) + the executable's own objects: the generated registry
-    # and game/. Listed by name: Build/CSyren may still hold objects of files that moved to source/.
+    # Engine host objects (without WinMain) + the executable's own object: the generated registry.
+    # Listed by name: Build/CSyren may still hold objects of files that moved out of the project.
     args += [str(p.relative_to(root)) for p in (root/'Build/csyren_host/Intermediate/Debug').glob('*.obj') if p.stem.lower() != 'winmain']
-    args += ['Build/CSyren/Intermediate/Debug/registry.gen.obj', 'Build/CSyren/Intermediate/Debug/game_components.obj']
+    args += ['Build/CSyren/Intermediate/Debug/registry.gen.obj']
     args += ['Build/Debug/physics.lib', 'Build/Debug/Jolt.lib', 'Build/Debug/imGui.lib', 'Build/Debug/cstdmf.lib']
     executable = root/'Build/Debug/application_graph_smoke.exe'
 log = root/'Build/frame_graph_smoke_build.log'

@@ -124,8 +124,8 @@ compiler only; the per-call checks (`get`, `patch`, `add`) stay visible.
 
 Lifecycle hooks keep using `scene()` and `Services` directly. In the engine,
 `SceneEventsSystem` and `EditorSystem` take `Exclusive` (event handlers and the
-ImGui editors touch types known only at run time); `GameSetupSystem` and
-`RenderEnvironmentSystem` are `OnceSystem`s. `TaskDescription` is the frame
+ImGui editors touch types known only at run time); `RenderEnvironmentSystem`
+is a `OnceSystem`. `TaskDescription` is the frame
 graph's input format: `TypedSystem` generates it, the GPU backend extends it and
 the frame graph tests build it directly; systems never write it.
 
@@ -274,7 +274,7 @@ within one running image and must not be serialized. To downcast, store a
 `tools/csyren_registry.py --rtti-roots` fails the build with CSR030 on
 `typeid`, `std::type_info`, `std::type_index`, `dynamic_cast`,
 `dynamic_pointer_cast`, `std::any`, `any_cast`, `make_any` and
-`<typeinfo>`/`<typeindex>`/`<any>` in `lib/`, `source/` and `game/`, including
+`<typeinfo>`/`<typeindex>`/`<any>` in `lib/`, `source/` and a project's `source/`, including
 macro definitions (comments and string literals are ignored). This check is the
 real guard: under `/GR-` MSVC only warns (C4541) on `typeid`/`dynamic_cast` of a
 polymorphic type, which then fails at run time.
