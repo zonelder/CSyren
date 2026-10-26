@@ -779,6 +779,13 @@ void projectConfiguration()
     CHECK(rejected); CHECK(first.save());
     invalid = first; invalid.startScene.clear(); CHECK(invalid.save());
     CHECK(ProjectSettings::load(firstFile).startScene.empty());
+    {   // keys the engine does not read (the engine id CSyrenHub writes) survive save()
+        auto settings = ProjectSettings::load(firstFile);
+        settings.document["engine"] = "dev"; CHECK(settings.save());
+        settings = ProjectSettings::load(firstFile); settings.name = "Renamed"; CHECK(settings.save());
+        std::ifstream input(firstFile); const auto json = nlohmann::json::parse(input);
+        CHECK(json.value("engine", std::string{}) == "dev"); CHECK(json.value("name", std::string{}) == "Renamed");
+    }
     CHECK(std::filesystem::current_path() == cwd);
 }
 

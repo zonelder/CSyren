@@ -15,6 +15,9 @@ namespace csyren
         std::string editorSystems = "assets/editor.systems";
         std::string startScene;
         std::filesystem::path file;
+        // The file as it was read. save() writes the fields above into it, so keys the engine
+        // does not use (the engine id CSyrenHub keeps in "engine") survive a save.
+        nlohmann::json document = nlohmann::json::object();
 
         core::ProjectPaths paths() const
         {
@@ -30,6 +33,7 @@ namespace csyren
             const auto json = nlohmann::json::parse(input);
             if (!json.is_object() || json.at("version").get<int>() != 1)
                 throw std::runtime_error("Unsupported .csyrenproj version");
+            settings.document = json;
             settings.name = json.value("name", settings.name);
             settings.projectPath = json.value("projectPath", settings.projectPath);
             settings.assetsPath = json.value("assetsPath", settings.assetsPath);
@@ -51,9 +55,10 @@ namespace csyren
         }
         bool save() const
         {
-            nlohmann::json json = { { "version", 1 }, { "name", name }, { "projectPath", projectPath },
-                { "assetsPath", assetsPath }, { "appSystems", appSystems },
-                { "editorSystems", editorSystems }, { "startScene", startScene } };
+            nlohmann::json json = document.is_object() ? document : nlohmann::json::object();
+            json["version"] = 1; json["name"] = name; json["projectPath"] = projectPath;
+            json["assetsPath"] = assetsPath; json["appSystems"] = appSystems;
+            json["editorSystems"] = editorSystems; json["startScene"] = startScene;
             std::ofstream output(file);
             if (!output) return false;
             output << json.dump(4); output.close(); return output.good();

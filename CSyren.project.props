@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Settings for a CSyren project executable (the engine's own CSyren.vcxproj or a
-       project made by tools/new_project.py). Import it in the PropertySheets group,
+       project made by tools/csyren.py new). Import it in the PropertySheets group,
        and CSyren.project.targets after Microsoft.Cpp.targets. See docs/project_structure.md.
 
        Layout of a project:
-         <Name>.csyrenproj    start scene, systems files, assets folder
+         <Name>.csyrenproj    engine id, start scene, systems files, assets folder
          source/             components, systems, services (CS_* markers, any subfolders)
          assets/             scenes, models, app.systems / editor.systems ("project:" mount)
-         build/              generated registry, cache (not in source control) -->
+         build/              engine.props, generated registry, cache (not in source control) -->
   <PropertyGroup>
     <CSyrenRoot>$(MSBuildThisFileDirectory)</CSyrenRoot>
     <CSyrenProjectSource Condition="'$(CSyrenProjectSource)'==''">$(MSBuildProjectDirectory)\source</CSyrenProjectSource>
