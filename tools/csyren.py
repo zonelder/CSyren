@@ -591,7 +591,7 @@ def new(folder, name, engine_id='', example=True, log=print):
         files['source/spinner.h'] = spinner_header(namespace)
         files['source/spinner.cpp'] = spinner_source(namespace)
     else:
-        os.makedirs(os.path.join(folder, 'source'), exist_ok=True)
+        files['source/.gitkeep'] = ''  # the registry scans source/: it must exist in a fresh clone
     for relative, text in files.items():
         write(os.path.join(folder, relative), text, bom=relative.endswith('.vcxproj'))
     log(f'Created {name} in {folder}')

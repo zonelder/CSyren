@@ -84,7 +84,7 @@ class NewProjectTest(unittest.TestCase):
 
     def test_bare_project_has_no_example(self):
         csyren.new(self.folder, 'Demo', log=QUIET, example=False)
-        self.assertTrue(os.path.isdir(self.path('source')))
+        self.assertTrue(os.path.isfile(self.path('source', '.gitkeep')), 'source/ survives a clone')
         self.assertFalse(os.path.exists(self.path('source', 'spinner.h')))
         self.assertNotIn('SpinnerSystem', read(self.path('assets', 'app.systems')))
         scene = json.loads(read(self.path('assets', 'scenes', 'main.scene')))
