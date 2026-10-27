@@ -5,7 +5,7 @@
     py -3 tools/csyren.py generate <project>
     py -3 tools/csyren.py restore
     py -3 tools/csyren.py build <project> [--config Debug|Release]
-    py -3 tools/csyren.py run <project> [--config Debug|Release] [editor arguments...]
+    py -3 tools/csyren.py run <project> [--config Debug|Release] [-- editor arguments...]
 
 <project> is a .csyrenproj file or the folder that holds one. The engine is the
 one this script belongs to (engine.json in the folder above tools/); CSyrenHub
@@ -658,6 +658,13 @@ def new(folder, name, engine_id='', example=True, log=print):
 # ---------------------------------------------------------------------------
 
 def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    # The editor gets only what follows "--": everything before it is the tool's own, so
+    # --config works on either side of <project> (run <project> --config Release).
+    editor_arguments = []
+    if '--' in argv:
+        split = argv.index('--')
+        argv, editor_arguments = argv[:split], argv[split + 1:]
     parser = argparse.ArgumentParser(prog='csyren.py', description='CSyren project tool.')
     commands = parser.add_subparsers(dest='command', required=True)
     command = commands.add_parser('new', help='create a project folder')
@@ -673,9 +680,11 @@ def main(argv=None):
         command.add_argument('project', help='.csyrenproj file or its folder')
         command.add_argument('--config', choices=CONFIGURATIONS, default='Debug')
         if name == 'run':
-            command.add_argument('arguments', nargs=argparse.REMAINDER, help='extra editor arguments')
+            command.epilog = 'Editor arguments follow "--": run <project> --config Release -- --console'
     commands.add_parser('info', help='print engine.json as JSON (used by CSyrenHub)')
     args = parser.parse_args(argv)
+    if editor_arguments and args.command != 'run':
+        parser.error('arguments after "--" are editor arguments; only run passes them on')
 
     try:
         if args.command == 'new':
@@ -687,7 +696,7 @@ def main(argv=None):
         elif args.command == 'build':
             build(args.project, args.config)
         elif args.command == 'run':
-            run(args.project, args.config, args.arguments)
+            run(args.project, args.config, editor_arguments)
         elif args.command == 'info':
             print(json.dumps(dict(engine_manifest(), root=ENGINE_ROOT), indent=4))
     except ToolError as error:

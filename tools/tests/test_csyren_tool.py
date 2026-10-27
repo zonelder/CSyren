@@ -187,6 +187,29 @@ class SubmodulesTest(unittest.TestCase):
             self.assertTrue(os.path.isfile(os.path.join(clone, 'lib', 'third_party', 'library', 'library.h')))
 
 
+class RunArgumentsTest(unittest.TestCase):
+    """CSyrenHub runs `run --config <cfg> <project>`; older hubs put --config after the project."""
+
+    def parse(self, *argv):
+        calls = []
+        with mock.patch.object(csyren, 'run', lambda project, config, arguments: calls.append((project, config, arguments))):
+            self.assertEqual(csyren.main(list(argv)), 0)
+        return calls[0]
+
+    def test_config_is_read_on_either_side_of_the_project(self):
+        self.assertEqual(self.parse('run', 'Demo.csyrenproj', '--config', 'Release'), ('Demo.csyrenproj', 'Release', []))
+        self.assertEqual(self.parse('run', '--config', 'Release', 'Demo.csyrenproj'), ('Demo.csyrenproj', 'Release', []))
+        self.assertEqual(self.parse('run', 'Demo'), ('Demo', 'Debug', []))
+
+    def test_only_arguments_after_the_separator_reach_the_editor(self):
+        self.assertEqual(self.parse('run', 'Demo', '--config', 'Release', '--', '--console'),
+                         ('Demo', 'Release', ['--console']))
+        with mock.patch('sys.stderr'), self.assertRaises(SystemExit):
+            csyren.main(['run', 'Demo', '--console'])
+        with mock.patch('sys.stderr'), self.assertRaises(SystemExit):
+            csyren.main(['build', 'Demo', '--', '--console'])
+
+
 class EngineManifestTest(unittest.TestCase):
     def test_the_engine_names_its_tool(self):
         manifest = csyren.engine_manifest()
