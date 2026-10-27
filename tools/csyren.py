@@ -27,8 +27,9 @@ build and run run generate first. The engine's own sandbox (CSyren.csyrenproj
 next to CSyren.sln) builds with the committed CSyren.sln and is never
 regenerated. generate and restore also write <engine>/Build/csyren.local.props:
 the registry step of every build then runs this Python, not whichever "python"
-comes first on PATH. restore downloads the engine's NuGet packages (msbuild
--t:restore); build runs it when packages are missing.
+comes first on PATH. restore checks out the engine's git submodules when a
+clone was made without them (Jolt: lib/third_party/JoltPhysics) and downloads
+its NuGet packages (msbuild -t:restore); build runs it when either is missing.
 """
 import argparse
 import json
@@ -322,8 +323,41 @@ def missing_packages(root=ENGINE_ROOT):
     return sorted(missing)
 
 
+def missing_submodules(root=ENGINE_ROOT):
+    """Submodules listed in <engine>/.gitmodules whose folder is missing or empty: a clone
+    made without --recurse-submodules leaves lib/third_party/JoltPhysics empty."""
+    path = os.path.join(root, '.gitmodules')
+    if not os.path.isfile(path):
+        return []
+    with open(path, encoding='utf-8-sig') as handle:
+        paths = re.findall(r'^\s*path\s*=\s*(.+?)\s*$', handle.read(), re.M)
+
+    def checked_out(folder):
+        return os.path.isdir(folder) and any(name != '.git' for name in os.listdir(folder))
+
+    return [p for p in paths if not checked_out(os.path.join(root, p))]
+
+
+def update_submodules(root=ENGINE_ROOT):
+    """git submodule update --init when a submodule is missing; nothing to do otherwise."""
+    missing = missing_submodules(root)
+    if not missing:
+        return
+    if not os.path.exists(os.path.join(root, '.git')):
+        raise ToolError(f'{", ".join(missing)} missing and {root} is not a git clone: '
+                        'clone the engine with git clone --recurse-submodules')
+    try:
+        execute(['git', '-C', root, 'submodule', 'update', '--init', '--recursive'])
+    except FileNotFoundError:
+        raise ToolError('git not found: install Git for Windows')
+    missing = missing_submodules(root)
+    if missing:
+        raise ToolError('submodules still missing after git submodule update: ' + ', '.join(missing))
+
+
 def restore():
     write_local_props()
+    update_submodules()
     execute([msbuild(), os.path.join(ENGINE_ROOT, 'CSyren.sln'), '-t:restore', '-p:RestorePackagesConfig=true',
              '-p:Configuration=Debug', '-p:Platform=x64', '-nologo', '-v:minimal'])
     missing = missing_packages()
@@ -335,7 +369,7 @@ def restore():
 
 def build(path, configuration='Debug'):
     project = generate(path)
-    if missing_packages():
+    if missing_submodules() or missing_packages():
         restore()
     execute([msbuild(), project.solution, '-m', f'-p:Configuration={configuration}', '-p:Platform=x64',
              '-nologo', '-v:minimal'])
@@ -633,7 +667,7 @@ def main(argv=None):
     command.add_argument('--bare', action='store_true', help='no example component; the start scene has a camera, a light and the ground')
     command = commands.add_parser('generate', help='write the solution and build/engine.props of a project for this machine')
     command.add_argument('project', help='.csyrenproj file or its folder')
-    commands.add_parser('restore', help="download the engine's NuGet packages")
+    commands.add_parser('restore', help="check out missing git submodules and download the engine's NuGet packages")
     for name, text in (('build', 'generate and build a project'), ('run', 'build a project and start its editor')):
         command = commands.add_parser(name, help=text)
         command.add_argument('project', help='.csyrenproj file or its folder')

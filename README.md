@@ -2,6 +2,9 @@
 
 C++20 / DirectX 12 engine with an ECS, a frame-graph scheduler, Jolt physics and an ImGui editor.
 
+- Clone with submodules: `git clone --recurse-submodules https://github.com/zonelder/CSyren`
+  (Jolt is the submodule `lib/third_party/JoltPhysics`). In a clone made without them,
+  `py -3 tools/csyren.py restore` checks them out and restores the NuGet packages.
 - Build `CSyren.sln` (x64). `CSyren.vcxproj` is the engine's own sandbox project; Debug runs with `--console`.
 - Projects live in their own folders and are bound to an engine by an id: create one with
   [CSyrenHub](https://github.com/zonelder/CSyrenHub) (`csyren-hub new`, `csyren-hub open`) or

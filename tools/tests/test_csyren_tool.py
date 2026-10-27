@@ -1,9 +1,12 @@
-"""Tests of tools/csyren.py (new / generate):  python -m unittest discover -s tools/tests"""
+"""Tests of tools/csyren.py (new / generate / restore):  python -m unittest discover -s tools/tests"""
 import json
 import os
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 import csyren  # noqa: E402
@@ -140,6 +143,48 @@ class PackagesTest(unittest.TestCase):
                 handle.write('<packages><package id="One" version="1.0" /><package id="Two" version="2.0" /></packages>')
             os.makedirs(os.path.join(root, 'packages', 'One.1.0'))
             self.assertEqual(csyren.missing_packages(root), ['Two.2.0'])
+
+
+class SubmodulesTest(unittest.TestCase):
+    def test_missing_submodules_are_listed(self):
+        with tempfile.TemporaryDirectory() as root:
+            with open(os.path.join(root, '.gitmodules'), 'w', encoding='utf-8') as handle:
+                for name in ('a', 'b', 'c'):
+                    handle.write(f'[submodule "lib/{name}"]\n\tpath = lib/{name}\n\turl = https://example.com/{name}.git\n')
+            os.makedirs(os.path.join(root, 'lib', 'a'))  # empty: cloned without --recurse-submodules
+            os.makedirs(os.path.join(root, 'lib', 'b'))
+            with open(os.path.join(root, 'lib', 'b', 'b.h'), 'w', encoding='utf-8') as handle:
+                handle.write('#pragma once\n')
+            self.assertEqual(csyren.missing_submodules(root), ['lib/a', 'lib/c'])
+            os.remove(os.path.join(root, '.gitmodules'))
+            self.assertEqual(csyren.missing_submodules(root), [])
+
+    @unittest.skipUnless(shutil.which('git'), 'git not found')
+    def test_restore_checks_out_a_missing_submodule(self):
+        with tempfile.TemporaryDirectory() as temp:
+            def git(folder, *arguments):
+                subprocess.run(['git', '-C', folder, '-c', 'protocol.file.allow=always', '-c', 'user.name=t',
+                                '-c', 'user.email=t@t'] + list(arguments), check=True, capture_output=True)
+
+            library, engine, clone = (os.path.join(temp, name) for name in ('library', 'engine', 'clone'))
+            for folder in (library, engine):
+                os.makedirs(folder)
+                git(folder, 'init', '-q', '-b', 'main')
+            with open(os.path.join(library, 'library.h'), 'w', encoding='utf-8') as handle:
+                handle.write('#pragma once\n')
+            git(library, 'add', '-A')
+            git(library, 'commit', '-q', '-m', 'library')
+            git(engine, 'submodule', '-q', 'add', library, 'lib/third_party/library')
+            git(engine, 'commit', '-q', '-m', 'engine')
+            subprocess.run(['git', 'clone', '-q', engine, clone], check=True, capture_output=True)
+            self.assertEqual(csyren.missing_submodules(clone), ['lib/third_party/library'])
+
+            # the submodule URL is a local path: allow git's file transport for this test
+            allow_file = {'GIT_CONFIG_COUNT': '1', 'GIT_CONFIG_KEY_0': 'protocol.file.allow', 'GIT_CONFIG_VALUE_0': 'always'}
+            with mock.patch.dict(os.environ, allow_file):
+                csyren.update_submodules(clone)
+            self.assertEqual(csyren.missing_submodules(clone), [])
+            self.assertTrue(os.path.isfile(os.path.join(clone, 'lib', 'third_party', 'library', 'library.h')))
 
 
 class EngineManifestTest(unittest.TestCase):

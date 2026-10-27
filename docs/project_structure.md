@@ -51,8 +51,8 @@ MyGame/
 | --- | --- |
 | `new <folder> <Name> [--engine-id <id>] [--bare]` | writes the committed files, with an example `Spinner` component and `SpinnerSystem` unless `--bare`, then runs `generate` |
 | `generate <project>` | writes the generated files for this machine: the solution, `build/engine.props` (`CSyrenRoot` = the engine the tool belongs to) and the `.vcxproj.user` when it is missing |
-| `restore` | restores the engine's NuGet packages into `<engine>/packages` (`msbuild -t:restore`) |
-| `build <project> [--config Debug\|Release]` | `generate`, `restore` when packages are missing, then MSBuild |
+| `restore` | checks out the engine's git submodules when they are missing (`git submodule update --init`; Jolt in `lib/third_party/JoltPhysics`), then restores its NuGet packages into `<engine>/packages` (`msbuild -t:restore`) |
+| `build <project> [--config Debug\|Release]` | `generate`, `restore` when submodules or packages are missing, then MSBuild |
 | `run <project> [--config ...] [arguments]` | `build`, then starts the editor with `--project` |
 
 `<project>` is a `.csyrenproj` file or its folder. [CSyrenHub](https://github.com/zonelder/CSyrenHub)
