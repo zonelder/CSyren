@@ -95,8 +95,8 @@ TEST_F(SceneWorkflow, TypedQueriesMatchSceneTransformHelpers)
     Transform c; c.position=math::Vector3{1,2,3}; c.rotation=math::Quaternion::euler(20,40,10);
     scene.addComponent<Transform>(parent,p); scene.addComponent<Transform>(child,c);
     // Typed system parameters, built the way TypedSystem::execute builds them.
-    auto read=details::Param<Select<Transform>>::make(&scene);
-    auto write=details::Param<Update<Transform>>::make(&scene);
+    auto read=core::details::Param<Select<Transform>>::make(&scene);
+    auto write=core::details::Param<Update<Transform>>::make(&scene);
     EXPECT_TRUE(worldMatrix(read,child)==worldMatrix(scene,child));
     EXPECT_NEAR((worldRotation(read,child)*math::Vector3::forward-worldRotation(scene,child)*math::Vector3::forward).magnitude(),0,1e-5f);
     EXPECT_EQ(parentOf(read,child),gap);
