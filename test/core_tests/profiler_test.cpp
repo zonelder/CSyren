@@ -243,10 +243,15 @@ TEST(Profiler, ChromeTraceExport)
     collector.beginFrame();
     const auto path = std::filesystem::temp_directory_path() / "csyren_profiler_test.json";
     ASSERT_TRUE(collector.exportChromeTrace(path));
-    std::ifstream in(path);
-    std::stringstream text; text << in.rdbuf();
-    const auto json = text.str();
-    std::filesystem::remove(path);
+    std::string json;
+    {
+        std::ifstream in(path); // closed before the removal: Windows does not delete an open file
+        std::stringstream text; text << in.rdbuf();
+        json = text.str();
+    }
+    std::error_code ignored;
+    std::filesystem::remove(path, ignored);
+    ASSERT_FALSE(json.empty());
     EXPECT_EQ(json.front(), '{');
     EXPECT_NE(json.find("\"traceEvents\""), std::string::npos);
     EXPECT_NE(json.find("\"ph\":\"X\""), std::string::npos);
