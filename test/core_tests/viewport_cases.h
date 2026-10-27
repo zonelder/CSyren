@@ -7,6 +7,7 @@
 #include "dx12_graphic/presentation_state.h"
 #include "core/window.h"
 #include "dx12_graphic/frame_prepare_system.h"
+#include "dx12_graphic/lighting/tonemap_system.h"
 #include "core/gpu_execution_plan.h"
 #include <dxgi1_4.h>
 
@@ -258,24 +259,37 @@ TEST_F(SceneWorkflow, ViewportRotationPreservesNativePixelSensitivity)
 
 TEST_F(SceneWorkflow, CameraColorIsSampledBeforeEditorOutputIsPresented)
 {
+    // FramePrepareSystem clears the deferred targets, TonemapSystem writes the camera
+    // color, the editor samples it while drawing the frame.
     render::FramePrepareSystem prepare;
-    auto mesh = prepare.describe(); mesh.phase = "render";
+    render::TonemapSystem tonemap;
     TaskDescription ui; ui.phase = "render";
     ui.gpu("scene.color",D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,AccessMode::Read)
       .gpu("frame.color",D3D12_RESOURCE_STATE_RENDER_TARGET,AccessMode::Write);
+    // Every camera attachment is a resource resting in its own state, as FrameGraphBackend
+    // declares them ("scene.<suffix>" before the expansion per camera view).
+    std::vector<GpuExecutionPlan::Resource> resources{
+        {"frame.color",D3D12_RESOURCE_STATE_COPY_SOURCE,D3D12_RESOURCE_STATE_COPY_SOURCE}};
+    for (size_t i = 0; i < size_t(render::ViewAttachment::Count); ++i)
+    {
+        const auto attachment = render::ViewAttachment(i);
+        const auto resting = static_cast<uint32_t>(render::CameraRenderTarget::restingState(attachment));
+        resources.push_back({std::string("scene.") + render::CameraRenderTarget::suffix(attachment),resting,resting});
+    }
     GpuExecutionPlan plan;
-    plan.compile({{"clear",prepare.describe()},{"mesh",mesh},{"editor",ui}},
-        {{"scene.color",D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE},
-         {"scene.depth",D3D12_RESOURCE_STATE_DEPTH_WRITE,D3D12_RESOURCE_STATE_DEPTH_WRITE},
-         {"frame.color",D3D12_RESOURCE_STATE_COPY_SOURCE,D3D12_RESOURCE_STATE_COPY_SOURCE}},D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    plan.compile({{"clear",prepare.describe()},{"tonemap",tonemap.describe()},{"editor",ui}},
+        resources,D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
     ASSERT_EQ(plan.passes().size(),3u);
     const auto& barriers = plan.passes().back().barriers;
     EXPECT_TRUE(std::any_of(barriers.begin(),barriers.end(),[](const auto& b) {
         return b.resource == "scene.color" && b.before == D3D12_RESOURCE_STATE_RENDER_TARGET && b.after == D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
     }));
-    ASSERT_EQ(plan.finalBarriers().size(),1u);
-    EXPECT_EQ(plan.finalBarriers().front().resource,"frame.color");
-    EXPECT_EQ(plan.finalBarriers().front().after,D3D12_RESOURCE_STATE_COPY_SOURCE);
+    // The frame returns to its resting state for the copy to the swap chain (the cleared
+    // targets return to theirs as well).
+    const auto& finals = plan.finalBarriers();
+    EXPECT_TRUE(std::any_of(finals.begin(),finals.end(),[](const auto& b) {
+        return b.resource == "frame.color" && b.after == D3D12_RESOURCE_STATE_COPY_SOURCE;
+    }));
 }
 
 TEST_F(SceneWorkflow, WarpCameraTargetsResizeIndependentlyWithoutDescriptorLeaks)
