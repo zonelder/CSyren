@@ -1,6 +1,7 @@
 """Tests of tools/csyren.py (new / generate / restore):  python -m unittest discover -s tools/tests"""
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -53,12 +54,11 @@ class NewProjectTest(unittest.TestCase):
         self.assertIn('<CSyrenRoot>' + csyren.windows(os.path.join(csyren.ENGINE_ROOT, '')) + '</CSyrenRoot>', props)
         self.assertIn('<CSyrenEngineId>dev</CSyrenEngineId>', props)
 
+        # the engine is linked as built libraries: none of its projects is in the solution
         solution = read(self.path('Demo.sln'))
         self.assertIn('= "Demo", "Demo.vcxproj"', solution)
-        self.assertIn('= "CSyren", "CSyren"', solution)
-        for relative in csyren.ENGINE_PROJECTS:
-            name = os.path.splitext(os.path.basename(relative))[0]
-            self.assertIn(f'= "{name}", "{csyren.windows(os.path.join(csyren.ENGINE_ROOT, relative))}"', solution)
+        self.assertEqual(solution.count('EndProject'), 1)
+        self.assertNotIn(csyren.windows(csyren.ENGINE_ROOT), solution)
 
     def test_generate_is_stable_and_keeps_the_user_file(self):
         csyren.new(self.folder, 'Demo', 'dev', log=QUIET)
@@ -185,6 +185,39 @@ class SubmodulesTest(unittest.TestCase):
                 csyren.update_submodules(clone)
             self.assertEqual(csyren.missing_submodules(clone), [])
             self.assertTrue(os.path.isfile(os.path.join(clone, 'lib', 'third_party', 'library', 'library.h')))
+
+
+class EngineLibrariesTest(unittest.TestCase):
+    def test_projects_link_every_library_the_engine_builds(self):
+        names = csyren.engine_libraries()
+        self.assertIn('csyren_host', names)
+        with open(os.path.join(csyren.ENGINE_ROOT, csyren.LIBRARIES_PROJECT), encoding='utf-8-sig') as handle:
+            for include in re.findall(r'<CSyrenEngineLibrary\s+Include="\$\(MSBuildThisFileDirectory\)([^"]+)"', handle.read()):
+                self.assertTrue(os.path.isfile(os.path.join(csyren.ENGINE_ROOT, *include.split('\\'))), include)
+        props = read(os.path.join(csyren.ENGINE_ROOT, 'CSyren.project.props'))
+        linked = re.search(r'<CSyrenEngineLibraries>(.*?)</CSyrenEngineLibraries>', props).group(1).split(';')
+        self.assertEqual([item.replace('$(CSyrenEngineLibraryDir)', '') for item in linked], [name + '.lib' for name in names])
+
+    def test_missing_libraries_and_the_installed_marker(self):
+        with tempfile.TemporaryDirectory() as root:
+            for name in (csyren.LIBRARIES_PROJECT, 'engine.json'):
+                shutil.copy(os.path.join(csyren.ENGINE_ROOT, name), os.path.join(root, name))
+            os.makedirs(os.path.join(root, 'Build', 'Debug'))
+            names = csyren.engine_libraries(root)
+            for name in names[1:]:
+                open(os.path.join(root, 'Build', 'Debug', name + '.lib'), 'wb').close()
+            self.assertEqual(csyren.missing_libraries('Debug', root), names[:1])
+            self.assertEqual(csyren.missing_libraries('Release', root), names)
+            marker = json.loads(csyren.installed_marker_text(('Debug', 'Release'), root))
+            self.assertEqual(marker['configurations'], ['Debug', 'Release'])
+            self.assertEqual(marker['version'], csyren.engine_manifest()['version'])
+
+    def test_build_engine_arguments(self):
+        calls = []
+        with mock.patch.object(csyren, 'build_engine', lambda configurations, installed: calls.append((configurations, installed))):
+            self.assertEqual(csyren.main(['build-engine']), 0)
+            self.assertEqual(csyren.main(['build-engine', '--config', 'Release', '--installed']), 0)
+        self.assertEqual(calls, [(csyren.CONFIGURATIONS, False), (('Release',), True)])
 
 
 class RunArgumentsTest(unittest.TestCase):

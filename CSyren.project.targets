@@ -1,36 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <!-- Import after Microsoft.Cpp.targets (see CSyren.project.props). -->
-  <!-- core, dx12_graphic, physics and csyren_host are linked object by object
-       (UseLibraryDependencyInputs, CSyren.project.props) so their static initializers stay;
-       cstdmf, math and imGui do not need that and are linked as .lib files. -->
+  <!-- Import after Microsoft.Cpp.targets (see CSyren.project.props).
+
+       A project links the engine as built libraries (Build\<Configuration>\*.lib, listed in
+       CSyren.project.props); the engine's projects are not part of the project's solution.
+       - A working clone of the engine is built here, before the project, by
+         CSyren.libraries.proj (incremental: nothing to do when the libraries are up to date).
+       - An installed engine (Build\csyren.installed, written by csyren.py build-engine
+         when CSyrenHub installs the engine) is never built by a project: its libraries
+         must be there.
+       - Inside CSyren.sln (the engine's sandbox) the solution builds the libraries itself. -->
+  <PropertyGroup>
+    <CSyrenEngineInstalled Condition="Exists('$(CSyrenRoot)Build\csyren.installed')">true</CSyrenEngineInstalled>
+    <CSyrenInEngineSolution Condition="'$(SolutionDir)'!='' and '$(SolutionDir)'!='*Undefined*' and '$([MSBuild]::NormalizeDirectory($(SolutionDir)))'=='$([MSBuild]::NormalizeDirectory($(CSyrenRoot)))'">true</CSyrenInEngineSolution>
+  </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="$(CSyrenRegistryFile)" />
-    <ProjectReference Include="$(CSyrenRoot)source\csyren_host.vcxproj">
-      <Project>{7e2b4c61-3f5a-4d8e-9b1c-2a6d5e8f0c13}</Project>
-    </ProjectReference>
-    <ProjectReference Include="$(CSyrenRoot)lib\core\core.vcxproj">
-      <Project>{c2d419d8-5a36-4905-bf2f-7fbc3cd025e9}</Project>
-    </ProjectReference>
-    <ProjectReference Include="$(CSyrenRoot)lib\cstdmf\cstdmf.vcxproj">
-      <Project>{0a840a4e-eebd-4693-bb62-de598c61096e}</Project>
-      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
-    </ProjectReference>
-    <ProjectReference Include="$(CSyrenRoot)lib\math\math.vcxproj">
-      <Project>{0d2c554d-745f-4404-b4b1-e0673e01b7db}</Project>
-      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
-    </ProjectReference>
-    <ProjectReference Include="$(CSyrenRoot)lib\dx12_graphic\dx12_graphic.vcxproj">
-      <Project>{02615bfc-b339-45ba-bf9f-22820d9e80a2}</Project>
-    </ProjectReference>
-    <ProjectReference Include="$(CSyrenRoot)lib\physics\physics.vcxproj">
-      <Project>{996e7bff-0176-4769-ad10-d9f68d3f755b}</Project>
-    </ProjectReference>
-    <ProjectReference Include="$(CSyrenRoot)lib\imGui\imGui.vcxproj">
-      <Project>{98210ad8-65f1-42db-825c-e4cac78084d0}</Project>
-      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
-    </ProjectReference>
   </ItemGroup>
+
+  <Target Name="CSyrenBuildEngine" BeforeTargets="PrepareForBuild" DependsOnTargets="CSyrenCheckPackages"
+          Condition="'$(CSyrenEngineInstalled)'!='true' and '$(CSyrenInEngineSolution)'!='true'">
+    <Message Importance="high" Text="CSyren engine libraries ($(Configuration)): $(CSyrenRoot)" />
+    <!-- The engine builds on its own: not in the configuration context of the project's solution. -->
+    <MSBuild Projects="$(CSyrenRoot)CSyren.libraries.proj" Targets="Build" BuildInParallel="$(BuildInParallel)"
+             Properties="Configuration=$(Configuration);Platform=$(Platform)"
+             RemoveProperties="CurrentSolutionConfigurationContents;BuildingSolutionFile;BuildingInsideVisualStudio;SolutionDir;SolutionExt;SolutionFileName;SolutionName;SolutionPath" />
+  </Target>
+
+  <Target Name="CSyrenCheckEngine" BeforeTargets="PrepareForBuild" Condition="'$(CSyrenEngineInstalled)'=='true'">
+    <ItemGroup>
+      <_CSyrenMissingLibrary Include="@(CSyrenEngineLibraryFile)" Condition="!Exists('%(FullPath)')" />
+    </ItemGroup>
+    <Error Condition="'@(_CSyrenMissingLibrary)'!=''"
+           Text="The installed CSyren engine at $(CSyrenRoot) has no $(Configuration) libraries (missing: @(_CSyrenMissingLibrary->'%(Filename)%(Extension)', ', ')). Build them: py -3 &quot;$(CSyrenRoot)tools\csyren.py&quot; build-engine --config $(Configuration)" />
+  </Target>
+
+  <!-- D3D12 redistributables (Microsoft.Direct3D.D3D12 package) next to the executable, as
+       dx12_graphic places them next to the engine's own executables. -->
+  <Target Name="CSyrenCopyD3D12" AfterTargets="Build" Condition="Exists('$(CSyrenRoot)Build\$(Configuration)\D3D12')">
+    <ItemGroup>
+      <_CSyrenD3D12File Include="$(CSyrenRoot)Build\$(Configuration)\D3D12\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_CSyrenD3D12File)" DestinationFolder="$(OutDir)D3D12" SkipUnchangedFiles="true" />
+  </Target>
 
   <!-- Registry of CS_* markers (tools/csyren_registry.py). The file is rewritten only when
        its content changes, so an unchanged registry does not recompile anything. -->
@@ -39,13 +51,13 @@
           CustomErrorRegularExpression="error CSR\d+" />
   </Target>
 
-  <!-- DirectXTex / DirectXTK12 come from the engine's NuGet packages (restored by building CSyren.sln). -->
+  <!-- DirectXTex / DirectXTK12 come from the engine's NuGet packages (restored by csyren.py restore). -->
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(CSyrenRoot)packages\directxtex_uwp.2025.7.10.1\build\native\directxtex_uwp.targets" Condition="Exists('$(CSyrenRoot)packages\directxtex_uwp.2025.7.10.1\build\native\directxtex_uwp.targets')" />
     <Import Project="$(CSyrenRoot)packages\directxtk12_uwp.2025.7.10.1\build\native\directxtk12_uwp.targets" Condition="Exists('$(CSyrenRoot)packages\directxtk12_uwp.2025.7.10.1\build\native\directxtk12_uwp.targets')" />
   </ImportGroup>
   <Target Name="CSyrenCheckPackages" BeforeTargets="PrepareForBuild">
     <Error Condition="!Exists('$(CSyrenRoot)packages\directxtex_uwp.2025.7.10.1\build\native\directxtex_uwp.targets') Or !Exists('$(CSyrenRoot)packages\directxtk12_uwp.2025.7.10.1\build\native\directxtk12_uwp.targets')"
-           Text="CSyren NuGet packages are missing in $(CSyrenRoot)packages. Restore them by building $(CSyrenRoot)CSyren.sln once." />
+           Text="CSyren NuGet packages are missing in $(CSyrenRoot)packages. Restore them: py -3 &quot;$(CSyrenRoot)tools\csyren.py&quot; restore" />
   </Target>
 </Project>

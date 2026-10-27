@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- The engine libraries a project links (Build\<Configuration>\*.lib): built by
+       `py -3 tools/csyren.py build-engine`, and by a project build when the engine is a
+       working clone (CSyren.project.targets). The engine's tests and sandbox are not part of
+       it: they build with CSyren.sln. -->
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
+    <Platform Condition="'$(Platform)'==''">x64</Platform>
+  </PropertyGroup>
+  <ItemGroup>
+    <CSyrenEngineLibrary Include="$(MSBuildThisFileDirectory)lib\cstdmf\cstdmf.vcxproj" />
+    <CSyrenEngineLibrary Include="$(MSBuildThisFileDirectory)lib\math\math.vcxproj" />
+    <CSyrenEngineLibrary Include="$(MSBuildThisFileDirectory)lib\core\core.vcxproj" />
+    <CSyrenEngineLibrary Include="$(MSBuildThisFileDirectory)lib\imGui\imGui.vcxproj" />
+    <CSyrenEngineLibrary Include="$(MSBuildThisFileDirectory)lib\JoltSolution\Jolt.vcxproj" />
+    <CSyrenEngineLibrary Include="$(MSBuildThisFileDirectory)lib\physics\physics.vcxproj" />
+    <CSyrenEngineLibrary Include="$(MSBuildThisFileDirectory)lib\dx12_graphic\dx12_graphic.vcxproj" />
+    <CSyrenEngineLibrary Include="$(MSBuildThisFileDirectory)source\csyren_host.vcxproj" />
+  </ItemGroup>
+  <Target Name="Build">
+    <MSBuild Projects="@(CSyrenEngineLibrary)" Targets="Build" Properties="Configuration=$(Configuration);Platform=$(Platform)" BuildInParallel="true" />
+  </Target>
+  <Target Name="Clean">
+    <MSBuild Projects="@(CSyrenEngineLibrary)" Targets="Clean" Properties="Configuration=$(Configuration);Platform=$(Platform)" BuildInParallel="true" />
+  </Target>
+  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
+</Project>

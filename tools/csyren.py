@@ -4,6 +4,7 @@
     py -3 tools/csyren.py new <folder> <Name> [--engine-id <id>] [--bare]
     py -3 tools/csyren.py generate <project>
     py -3 tools/csyren.py restore
+    py -3 tools/csyren.py build-engine [--config Debug|Release|all] [--installed]
     py -3 tools/csyren.py build <project> [--config Debug|Release]
     py -3 tools/csyren.py run <project> [--config Debug|Release] [-- editor arguments...]
 
@@ -16,8 +17,7 @@ A project folder:
     <Name>.csyrenproj     engine id, systems files, start scene        committed
     <Name>.vcxproj        imports CSyren.project.props / .targets      committed
     source/  assets/      code and content                             committed
-    <Name>.sln            the project's .vcxproj files and the         generated
-                          engine projects (solution folder "CSyren")
+    <Name>.sln            the project's .vcxproj files                 generated
     <Name>.vcxproj.user   debugger arguments (kept once written)       generated
     build/engine.props    CSyrenRoot: the engine on this machine       generated
     build/                registry, binaries, cache                    generated
@@ -30,6 +30,14 @@ the registry step of every build then runs this Python, not whichever "python"
 comes first on PATH. restore checks out the engine's git submodules when a
 clone was made without them (Jolt: lib/third_party/JoltPhysics) and downloads
 its NuGet packages (msbuild -t:restore); build runs it when either is missing.
+
+A project uses the engine as a finished module: it links the engine libraries
+(<engine>/Build/<Configuration>/*.lib, the projects of CSyren.libraries.proj) and
+none of the engine's projects or tests are in its solution. build-engine builds the
+libraries. A project build builds them too when the engine is a working clone
+(CSyren.project.targets); an installed engine (build-engine --installed, done by
+CSyrenHub engines install) is never rebuilt by a project, which only checks that
+its libraries are there.
 """
 import argparse
 import json
@@ -44,19 +52,11 @@ TOOLS = os.path.dirname(os.path.abspath(__file__))
 ENGINE_ROOT = os.path.dirname(TOOLS)
 
 CPP_PROJECT_TYPE = '8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942'
-FOLDER_TYPE = '2150E333-8FDC-42A3-9474-1A3956D46DE8'
 CONFIGURATIONS = ('Debug', 'Release')
-# Engine projects a project solution needs (path relative to the engine root).
-ENGINE_PROJECTS = [
-    'source/csyren_host.vcxproj',
-    'lib/core/core.vcxproj',
-    'lib/cstdmf/cstdmf.vcxproj',
-    'lib/math/math.vcxproj',
-    'lib/dx12_graphic/dx12_graphic.vcxproj',
-    'lib/physics/physics.vcxproj',
-    'lib/JoltSolution/Jolt.vcxproj',
-    'lib/imGui/imGui.vcxproj',
-]
+# The engine libraries a project links (MSBuild traversal of their .vcxproj files).
+LIBRARIES_PROJECT = 'CSyren.libraries.proj'
+# Marks an installed engine (written by build-engine --installed): projects never build it.
+INSTALLED_MARKER = os.path.join('Build', 'csyren.installed')
 # Folders of a project that never hold its own .vcxproj files.
 SKIPPED_DIRECTORIES = {'build', '.vs', 'x64', 'packages', '.git'}
 SUN_ROTATION = [0.45128136651016376, -0.3798879351514666, 0.2207144081588125, 0.7767338250637598]
@@ -175,27 +175,22 @@ def project_vcxprojs(project):
 # ---------------------------------------------------------------------------
 # Generated files
 
-def solution_text(name, projects, engine_projects):
-    """projects / engine_projects: (name, path written into the solution, GUID)."""
+def solution_text(name, projects):
+    """projects: (name, path written into the solution, GUID). The engine is not in the
+    solution: the projects link its built libraries (CSyren.project.props)."""
     stable = lambda what: str(uuid.uuid5(uuid.NAMESPACE_URL, f'csyren:{name}:{what}')).upper()
-    folder = stable('engine-folder')
     lines = ['', 'Microsoft Visual Studio Solution File, Format Version 12.00', '# Visual Studio Version 17',
              'VisualStudioVersion = 17.12.35506.116', 'MinimumVisualStudioVersion = 10.0.40219.1']
     for project_name, path, guid in projects:
         lines += [f'Project("{{{CPP_PROJECT_TYPE}}}") = "{project_name}", "{windows(path)}", "{{{guid}}}"', 'EndProject']
-    lines += [f'Project("{{{FOLDER_TYPE}}}") = "CSyren", "CSyren", "{{{folder}}}"', 'EndProject']
-    for project_name, path, guid in engine_projects:
-        lines += [f'Project("{{{CPP_PROJECT_TYPE}}}") = "{project_name}", "{windows(path)}", "{{{guid}}}"', 'EndProject']
     lines += ['Global', '\tGlobalSection(SolutionConfigurationPlatforms) = preSolution']
     lines += [f'\t\t{c}|x64 = {c}|x64' for c in CONFIGURATIONS]
     lines += ['\tEndGlobalSection', '\tGlobalSection(ProjectConfigurationPlatforms) = postSolution']
-    for _, _, guid in projects + engine_projects:
+    for _, _, guid in projects:
         for c in CONFIGURATIONS:
             lines += [f'\t\t{{{guid}}}.{c}|x64.ActiveCfg = {c}|x64', f'\t\t{{{guid}}}.{c}|x64.Build.0 = {c}|x64']
     lines += ['\tEndGlobalSection', '\tGlobalSection(SolutionProperties) = preSolution', '\t\tHideSolutionNode = FALSE',
-              '\tEndGlobalSection', '\tGlobalSection(NestedProjects) = preSolution']
-    lines += [f'\t\t{{{guid}}} = {{{folder}}}' for _, _, guid in engine_projects]
-    lines += ['\tEndGlobalSection', '\tGlobalSection(ExtensibilityGlobals) = postSolution',
+              '\tEndGlobalSection', '\tGlobalSection(ExtensibilityGlobals) = postSolution',
               f'\t\tSolutionGuid = {{{stable("solution")}}}', '\tEndGlobalSection', 'EndGlobal', '']
     return '\n'.join(lines)
 
@@ -259,15 +254,9 @@ def generate(path, log=print):
     for vcxproj in project_vcxprojs(project):
         relative = os.path.relpath(vcxproj, project.folder)
         projects.append((os.path.splitext(os.path.basename(vcxproj))[0], relative, project_guid(vcxproj)))
-    engine_projects = []
-    for relative in ENGINE_PROJECTS:
-        vcxproj = os.path.join(ENGINE_ROOT, relative)
-        if not os.path.isfile(vcxproj):
-            raise ToolError(f'engine project not found: {vcxproj}')
-        engine_projects.append((os.path.splitext(os.path.basename(relative))[0], vcxproj, project_guid(vcxproj)))
 
     written = ['<engine>/Build/csyren.local.props'] if local else []
-    if write(project.solution, solution_text(project.name, projects, engine_projects), bom=True):
+    if write(project.solution, solution_text(project.name, projects), bom=True):
         written.append(os.path.basename(project.solution))
     props = os.path.join(project.folder, 'build', 'engine.props')
     if write(props, engine_props_text(ENGINE_ROOT, project.engine_id)):
@@ -365,6 +354,49 @@ def restore():
         raise ToolError('packages still missing after restore: ' + ', '.join(missing) +
                         f'; build {os.path.join(ENGINE_ROOT, "CSyren.sln")} once in Visual Studio')
     print('engine packages restored')
+
+
+def engine_libraries(root=ENGINE_ROOT):
+    """Names of the engine libraries: the .vcxproj files listed in CSyren.libraries.proj."""
+    path = os.path.join(root, LIBRARIES_PROJECT)
+    try:
+        with open(path, encoding='utf-8-sig') as handle:
+            text = handle.read()
+    except OSError as error:
+        raise ToolError(f'cannot read {path}: {error}')
+    return [os.path.splitext(os.path.basename(include.replace('\\', '/')))[0]
+            for include in re.findall(r'<CSyrenEngineLibrary\s+Include="([^"]+)"', text)]
+
+
+def missing_libraries(configuration, root=ENGINE_ROOT):
+    """Engine libraries of `configuration` that are not built (<engine>/Build/<configuration>/<name>.lib)."""
+    folder = os.path.join(root, 'Build', configuration)
+    return [name for name in engine_libraries(root) if not os.path.isfile(os.path.join(folder, name + '.lib'))]
+
+
+def installed_marker_text(configurations, root=ENGINE_ROOT):
+    try:
+        commit = subprocess.run(['git', '-C', root, 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
+    except OSError:
+        commit = ''
+    return json.dumps({'version': engine_manifest(root)['version'], 'commit': commit,
+                       'configurations': list(configurations)}, indent=4) + '\n'
+
+
+def build_engine(configurations=CONFIGURATIONS, installed=False):
+    """Builds the engine libraries projects link. installed marks the engine as installed
+    (Build/csyren.installed): project builds then only check its libraries, never build them."""
+    if missing_submodules() or missing_packages():
+        restore()
+    for configuration in configurations:
+        execute([msbuild(), os.path.join(ENGINE_ROOT, LIBRARIES_PROJECT), '-m', f'-p:Configuration={configuration}',
+                 '-p:Platform=x64', '-nologo', '-v:minimal'])
+        missing = missing_libraries(configuration)
+        if missing:
+            raise ToolError(f'{configuration} libraries missing after the build: ' + ', '.join(missing))
+    if installed:
+        write(os.path.join(ENGINE_ROOT, INSTALLED_MARKER), installed_marker_text(configurations))
+    print('engine libraries built: ' + ', '.join(configurations) + (' (installed engine)' if installed else ''))
 
 
 def build(path, configuration='Debug'):
@@ -675,6 +707,10 @@ def main(argv=None):
     command = commands.add_parser('generate', help='write the solution and build/engine.props of a project for this machine')
     command.add_argument('project', help='.csyrenproj file or its folder')
     commands.add_parser('restore', help="check out missing git submodules and download the engine's NuGet packages")
+    command = commands.add_parser('build-engine', help='build the engine libraries projects link (Build/<config>/*.lib)')
+    command.add_argument('--config', choices=CONFIGURATIONS + ('all',), default='all')
+    command.add_argument('--installed', action='store_true',
+                         help='mark the engine as installed: project builds only check its libraries (CSyrenHub)')
     for name, text in (('build', 'generate and build a project'), ('run', 'build a project and start its editor')):
         command = commands.add_parser(name, help=text)
         command.add_argument('project', help='.csyrenproj file or its folder')
@@ -693,6 +729,8 @@ def main(argv=None):
             generate(args.project)
         elif args.command == 'restore':
             restore()
+        elif args.command == 'build-engine':
+            build_engine(CONFIGURATIONS if args.config == 'all' else (args.config,), args.installed)
         elif args.command == 'build':
             build(args.project, args.config)
         elif args.command == 'run':
