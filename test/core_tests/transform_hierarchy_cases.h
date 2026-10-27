@@ -164,7 +164,7 @@ TEST_F(SceneWorkflow, HierarchySurvivesArchivePlayStopAndBatchAppendInvalidatesS
 
 TEST_F(SceneWorkflow, PhysicsRoundTripsParentAndChildBodiesInWorldSpace)
 {
-    auto& engine=core::details::ServiceRegistry::create<physics::PhysicsEngine>();
+    auto& engine=createPhysicsServices();
     auto& time=core::details::ServiceRegistry::create<Time>();
     SceneInstance instance; auto& scene=instance.scene();
     auto parent=scene.createEntity(), child=scene.createEntity(parent);

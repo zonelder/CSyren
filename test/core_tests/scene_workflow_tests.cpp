@@ -13,6 +13,7 @@
 #include "core/time.h"
 #include "core/transform.h"
 #include "physics/physic_system.h"
+#include "physics/physics_layers.h"
 #include "physics/colliders.h"
 #include "physics/rigid_body.h"
 #include "editor_base.h"
@@ -95,6 +96,7 @@ public:
 void run(SceneSession& session, SceneOperation operation, std::string path = {}, bool discard = false)
 {
     session.enqueue(operation, std::move(path), discard); session.processRequests();
+    if (!session.error().empty()) ADD_FAILURE() << "SceneSession error: " << session.error();
     CHECK(session.error().empty());
 }
 void position(SceneSession& session, EntityKey key, math::Vector3 value, bool finished = true)
@@ -498,9 +500,17 @@ void systemGraphPreviews()
     standalone.shutdown(); core::details::ServiceRegistry::shutdownAll();
 }
 
+// The physics services as Application creates them: the physics systems read the
+// project's collision layers (PhysicsLayers), so the layers come first.
+physics::PhysicsEngine& createPhysicsServices()
+{
+    core::details::ServiceRegistry::create<physics::PhysicsLayers>();
+    return core::details::ServiceRegistry::create<physics::PhysicsEngine>();
+}
+
 void physicsLifecycle()
 {
-    core::details::ServiceRegistry::create<physics::PhysicsEngine>();
+    createPhysicsServices();
     core::details::ServiceRegistry::create<Time>();
     MemoryStorage storage; SceneSession session(storage); SystemManager manager;
     manager.phase({"simulation"}); manager.phase({"events", {"simulation"}});
