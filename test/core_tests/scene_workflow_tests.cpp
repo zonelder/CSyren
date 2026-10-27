@@ -665,6 +665,7 @@ void editorCameraWorkerExecution()
     auto& view = core::details::ServiceRegistry::create<EditorViewportState>();
     auto& mouse = const_cast<core::MouseDevice&>(devices.mouse());
     mouse.setButtonState(core::MouseButton::Right, true);
+    mouse.setMousePosition(0, 0); // the first position is the base: no delta
     mouse.setMousePosition(20, 10);
     const auto rotation = view.transform.rotation;
     EditorCameraControllerSystem controller;

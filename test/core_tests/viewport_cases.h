@@ -228,7 +228,9 @@ TEST_F(SceneWorkflow, ViewportNavigationIgnoresNativeInputOutsideTheImage)
     core::details::ServiceRegistry::create<Time>();
     auto& view = core::details::ServiceRegistry::create<EditorViewportState>(); view.viewportInput = true;
     auto& mouse = const_cast<MouseDevice&>(devices.mouse());
-    mouse.setButtonState(MouseButton::Right,true); mouse.setMousePosition(100,100);
+    // The first position is the base (no delta): a move follows, so there is native input to ignore.
+    mouse.setButtonState(MouseButton::Right,true); mouse.setMousePosition(0,0); mouse.setMousePosition(100,100);
+    ASSERT_EQ(mouse.deltaPosition().x,100); ASSERT_EQ(mouse.deltaPosition().y,100);
     const auto initial = view.transform.rotation;
     EditorCameraControllerSystem controller; controller.run();
     EXPECT_TRUE(view.transform.rotation.exactEqual(initial));
@@ -245,7 +247,8 @@ TEST_F(SceneWorkflow, ViewportRotationPreservesNativePixelSensitivity)
     core::details::ServiceRegistry::create<Time>();
     auto& view = core::details::ServiceRegistry::create<EditorViewportState>();
     auto& mouse = const_cast<MouseDevice&>(devices.mouse());
-    mouse.setButtonState(MouseButton::Right,true); mouse.setMousePosition(20,10);
+    // The first position is the base (no delta); the move gives the native delta (20, 10).
+    mouse.setButtonState(MouseButton::Right,true); mouse.setMousePosition(0,0); mouse.setMousePosition(20,10);
     EditorCameraControllerSystem controller; controller.run();
     const auto native = view.transform.rotation;
     view.transform.rotation = math::Quaternion{}; view.viewportInput = true;
