@@ -303,10 +303,24 @@ TEST_F(SceneWorkflow, WarpCameraTargetsResizeIndependentlyWithoutDescriptorLeaks
     render::DescriptorManager descriptors; descriptors.init(device.Get());
     render::RenderQueue queue; D3D12_COMMAND_QUEUE_DESC desc{}; desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
     ASSERT_TRUE(queue.init(device.Get(),desc));
+    // Descriptor counts are measured, not fixed: a target holds one set per attachment
+    // (SRVs, RTVs, a DSV), and the attachments grow with the renderer.
+    struct Counts { size_t srv, rtv, dsv; };
+    const auto active = [&] { return Counts{descriptors.srvUavStats().active,descriptors.rtvStats().active,descriptors.dsvStats().active}; };
+    const auto none = active();
     {
         render::CameraRenderTarget scene,game;
         scene.request(320,240); game.request(192,108);
-        scene.prepare(device.Get(),descriptors,queue); game.prepare(device.Get(),descriptors,queue);
+        scene.prepare(device.Get(),descriptors,queue);
+        const Counts one{ active().srv - none.srv, active().rtv - none.rtv, active().dsv - none.dsv };
+        ASSERT_GT(one.srv,0u); ASSERT_GT(one.rtv,0u); ASSERT_GT(one.dsv,0u);
+        game.prepare(device.Get(),descriptors,queue);
+        const auto expectTwoTargets = [&] {
+            const auto now = active();
+            EXPECT_EQ(now.srv,none.srv + 2 * one.srv); EXPECT_EQ(now.rtv,none.rtv + 2 * one.rtv);
+            EXPECT_EQ(now.dsv,none.dsv + 2 * one.dsv);
+        };
+        expectTwoTargets();
         EXPECT_NE(scene.color(),game.color()); EXPECT_NE(scene.depth(),game.depth());
         EXPECT_EQ(scene.width(),320u); EXPECT_EQ(game.width(),192u);
         const auto srv = scene.srv().ptr;
@@ -315,14 +329,14 @@ TEST_F(SceneWorkflow, WarpCameraTargetsResizeIndependentlyWithoutDescriptorLeaks
         {
             scene.request(200+i*10,150+i*10); scene.prepare(device.Get(),descriptors,queue);
             EXPECT_EQ(scene.srv().ptr,srv); EXPECT_EQ(game.width(),192u);
-            EXPECT_EQ(descriptors.srvUavStats().active,2u); EXPECT_EQ(descriptors.rtvStats().active,2u);
-            EXPECT_EQ(descriptors.dsvStats().active,2u);
+            expectTwoTargets(); // a resize recreates the views in place
         }
         EXPECT_NE(scene.color(),old.Get());
         auto* same = scene.color(); scene.prepare(device.Get(),descriptors,queue); EXPECT_EQ(scene.color(),same);
         scene.request(0,0); scene.prepare(device.Get(),descriptors,queue); EXPECT_EQ(scene.width(),1u); EXPECT_EQ(scene.height(),1u);
     }
-    EXPECT_EQ(descriptors.srvUavStats().active,0u); EXPECT_EQ(descriptors.rtvStats().active,0u); EXPECT_EQ(descriptors.dsvStats().active,0u);
+    const auto after = active();
+    EXPECT_EQ(after.srv,none.srv); EXPECT_EQ(after.rtv,none.rtv); EXPECT_EQ(after.dsv,none.dsv);
 }
 
 TEST_F(SceneWorkflow, NativeEditorWindowAndSwapChainResizeTogether)
