@@ -36,9 +36,9 @@ prototype items each lean on an engine item (in brackets).
 
 ## Stage 3 — content and rendering
 
-- [ ] `.material` assets, per-instance parameters; glTF normal / metal-rough / emissive maps, alpha mode, mips, embedded images
-- [ ] Culling, render list, instancing; paged upload buffers; meshes in the default heap; 32-bit indices
-- [ ] Shadows (CSM), bloom, spot lights, samplers declared by shaders
+- [ ] `.material` assets, per-instance parameters; glTF normal / metal-rough / emissive maps, alpha mode, embedded images (mips → World W3; material data in a buffer → World W1)
+- [ ] ~~Culling, render list, instancing; paged upload buffers; meshes in the default heap; 32-bit indices~~ → moved to World W1 (memory, indices) and W9 (GPU-driven culling and instancing)
+- [ ] Spot lights, samplers declared by shaders (shadows → World W8, bloom → World W12)
 - [ ] Prefab instances (link to the file, overrides, nesting)
 - [ ] Migration of saved data (upgrade hooks, renames)
 - [ ] Particles / VFX
@@ -46,7 +46,7 @@ prototype items each lean on an engine item (in brackets).
 
 ## Prototype
 
-- [ ] Own project in `samples/` (`new_project.py`): CS_* markers, no `game_registration.h`
+- [ ] Own project in `samples/` (`new_project.py`): CS_* markers, no `game_registration.h` (the World demo, W0, is the second project made this way)
 - [ ] Per-entity state in components; movement in a fixed step [time]
 - [ ] Time trial with checkpoints and respawn volumes [triggers]
 - [ ] Bots shoot back; player health and death [event channel, HUD, inner body]
