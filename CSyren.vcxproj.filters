@@ -1,9 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="game">
-      <UniqueIdentifier>{8f1c2d3e-4a5b-4c6d-9e7f-0a1b2c3d4e5f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="assets">
       <UniqueIdentifier>{0b3e4f50-6c7d-4e8f-9a01-2c3d4e5f6071}</UniqueIdentifier>
     </Filter>
@@ -18,56 +15,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="game\game_components.cpp">
-      <Filter>game</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="game_registration.h">
-      <Filter>game</Filter>
-    </ClInclude>
-    <ClInclude Include="game\bot_system.h">
-      <Filter>game</Filter>
-    </ClInclude>
-    <ClInclude Include="game\camera_rig_system.h">
-      <Filter>game</Filter>
-    </ClInclude>
-    <ClInclude Include="game\game_components.h">
-      <Filter>game</Filter>
-    </ClInclude>
-    <ClInclude Include="game\game_hud.h">
-      <Filter>game</Filter>
-    </ClInclude>
-    <ClInclude Include="game\game_materials.h">
-      <Filter>game</Filter>
-    </ClInclude>
-    <ClInclude Include="game\game_physics.h">
-      <Filter>game</Filter>
-    </ClInclude>
-    <ClInclude Include="game\pilot_movement_system.h">
-      <Filter>game</Filter>
-    </ClInclude>
-    <ClInclude Include="game\player_input.h">
-      <Filter>game</Filter>
-    </ClInclude>
-    <ClInclude Include="game\player_input_system.h">
-      <Filter>game</Filter>
-    </ClInclude>
-    <ClInclude Include="game\projectile_system.h">
-      <Filter>game</Filter>
-    </ClInclude>
-    <ClInclude Include="game\view_model_system.h">
-      <Filter>game</Filter>
-    </ClInclude>
-    <ClInclude Include="game\weapon_system.h">
-      <Filter>game</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="packages.config">
       <Filter>project</Filter>
     </None>
     <None Include="CSyren.csyrenproj">
+      <Filter>project</Filter>
+    </None>
+    <None Include="engine.json">
       <Filter>project</Filter>
     </None>
     <None Include="CSyren.paths.props">
@@ -88,6 +42,9 @@
     <None Include="assets\editor.systems">
       <Filter>assets</Filter>
     </None>
+    <None Include="assets\scenes\sandbox.scene">
+      <Filter>assets</Filter>
+    </None>
     <None Include="assets\pipelines\begin.systems">
       <Filter>assets</Filter>
     </None>
@@ -98,15 +55,6 @@
       <Filter>assets</Filter>
     </None>
     <None Include="assets\pipelines\editor.systems">
-      <Filter>assets</Filter>
-    </None>
-    <None Include="assets\movement_polygon.scene">
-      <Filter>assets</Filter>
-    </None>
-    <None Include="assets\models\rifle.glb">
-      <Filter>assets</Filter>
-    </None>
-    <None Include="assets\models\launcher.glb">
       <Filter>assets</Filter>
     </None>
     <None Include="assets\shaders\lit.shader">
@@ -136,19 +84,10 @@
     <None Include="tools\csyren_registry.py">
       <Filter>tools</Filter>
     </None>
-    <None Include="tools\new_project.py">
-      <Filter>tools</Filter>
-    </None>
-    <None Include="tools\gen_polygon_scene.py">
-      <Filter>tools</Filter>
-    </None>
-    <None Include="tools\make_weapon_models.py">
+    <None Include="tools\csyren.py">
       <Filter>tools</Filter>
     </None>
     <None Include="docs\project_structure.md">
-      <Filter>docs</Filter>
-    </None>
-    <None Include="docs\game_prototype.md">
       <Filter>docs</Filter>
     </None>
     <None Include="docs\asset_pipeline.md">
@@ -169,22 +108,10 @@
     <None Include="README.md">
       <Filter>docs</Filter>
     </None>
-    <None Include="assets\prefabs\explosion.prefab">
-      <Filter>assets</Filter>
-    </None>
-    <None Include="assets\prefabs\grenade.prefab">
-      <Filter>assets</Filter>
-    </None>
-    <None Include="assets\prefabs\impact.prefab">
-      <Filter>assets</Filter>
-    </None>
-    <None Include="assets\prefabs\muzzle_flash.prefab">
-      <Filter>assets</Filter>
-    </None>
-    <None Include="assets\prefabs\projectile_trail.prefab">
-      <Filter>assets</Filter>
-    </None>
     <None Include="tools\tests\test_csyren_registry.py">
+      <Filter>tools</Filter>
+    </None>
+    <None Include="tools\tests\test_csyren_tool.py">
       <Filter>tools</Filter>
     </None>
     <None Include="tools\tests\test_source_encoding.py">

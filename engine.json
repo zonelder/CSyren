@@ -1,0 +1,5 @@
+{
+    "name": "CSyren",
+    "version": "0.1.0",
+    "tool": "tools/csyren.py"
+}

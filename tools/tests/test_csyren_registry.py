@@ -1,8 +1,8 @@
 """Tests for tools/csyren_registry.py:  python -m unittest discover -s tools/tests
 
 The compile test builds the generated registry against small stand-ins of the
-engine headers with any C++20 compiler on PATH (g++/clang++), and is skipped
-when none is available."""
+engine headers with a C++20 compiler on PATH (g++/clang++), and is skipped
+when none is available (a compiler without -std=c++20 counts as none)."""
 import os
 import shutil
 import subprocess
@@ -13,7 +13,9 @@ import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
+sys.path.insert(0, HERE)
 import csyren_registry as registry  # noqa: E402
+import cxx_compiler  # noqa: E402
 
 REGISTRATION_H = os.path.normpath(os.path.join(HERE, '..', '..', 'lib', 'core', 'registration.h'))
 
@@ -184,9 +186,10 @@ class RegistryTest(unittest.TestCase):
         self.assertEqual(self.run_registry(os.path.join(self.root, 'nowhere')), 1)
 
     def test_generated_code_compiles(self):
-        compiler = shutil.which('g++') or shutil.which('clang++')
+        candidates = ('g++', 'clang++')
+        compiler, passed_over = cxx_compiler.find_cpp20(candidates)
         if not compiler:
-            self.skipTest('no C++ compiler on PATH')
+            self.skipTest(cxx_compiler.missing_reason(candidates, passed_over))
         write(self.root, 'source/game.h', GAME_H)
         self.assertEqual(self.run_registry(os.path.join(self.root, 'source')), 0)
         main = write(self.root, 'main.cpp', '''

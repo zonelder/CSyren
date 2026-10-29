@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Build\VS2022_CL\CMakeFiles\Jolt.dir\cmake_pch.cxx">
+    <ClCompile Include="jolt_pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\AABBTree\AABBTreeBuilder.cpp">
@@ -1315,18 +1315,9 @@
     <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\ObjectStream\ObjectStreamTypes.h">
       <Filter>ObjectStream</Filter>
     </ClInclude>
-    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Build\VS2022_CL\CMakeFiles\Jolt.dir\Debug\cmake_pch.hxx">
+    <ClInclude Include="jolt_pch.h">
       <Filter>Precompile Header File</Filter>
     </ClInclude>
-    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Build\VS2022_CL\CMakeFiles\Jolt.dir\Release\cmake_pch.hxx">
-      <Filter>Precompile Header File</Filter>
-    </ClInclude>
-    <ClInclude Include="$(SolutionDir)lib\third_party\JoltPhysics\Build\VS2022_CL\CMakeFiles\Jolt.dir\Distribution\cmake_pch.hxx">
-      <Filter>Precompile Header File</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="$(SolutionDir)lib\third_party\JoltPhysics\Build\CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="$(SolutionDir)lib\third_party\JoltPhysics\Jolt\Jolt.natvis" />

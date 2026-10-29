@@ -66,7 +66,8 @@ TEST_F(ShaderFileTest, GameOverridesEngineAndExplicitPathsBypassOverrides)
     ASSERT_FALSE(engine.empty());
     EXPECT_EQ(shaderFilePath("assets/shaders/default.shader"), engine);
     ASSERT_TRUE(files.mount("project", directory.path() / "project", true));
-    const std::string source = "project override";
+    // loadShaderSource ends every line with '\n' (include expansion), so the saved source does too.
+    const std::string source = "project override\n";
     ASSERT_TRUE(saveShaderSource("shaders/default.shader", ".shader", source));
     EXPECT_EQ(shaderFilePath("shaders/default.shader"), std::filesystem::weakly_canonical(directory.path() / "project/shaders/default.shader"));
     EXPECT_EQ(shaderFilePath("engine:/shaders/default.shader"), engine);

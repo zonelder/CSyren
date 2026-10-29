@@ -15,8 +15,8 @@ import unittest
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 
-# Engine code, tests, the transitional game/ folder and engine shaders.
-SCANNED = ('lib', 'source', 'game', 'test', 'assets')
+# Engine code, tests and engine shaders.
+SCANNED = ('lib', 'source', 'test', 'assets')
 EXTENSIONS = {'.h', '.hpp', '.inl', '.ipp', '.c', '.cc', '.cpp', '.hlsl', '.hlsli', '.shader', '.coshader'}
 # Third-party code keeps its own conventions; build output is not source.
 SKIPPED_DIRS = {'imGui', 'JoltSolution', 'third_party', 'packages', 'Build', 'build', 'x64', '.vs', '.git'}

@@ -4,37 +4,7 @@
             "include": "engine:/pipelines/begin.systems"
         },
         {
-            "class": "PlayerInputSystem"
-        },
-        {
-            "class": "GameSetupSystem"
-        },
-        {
-            "class": "PilotMovementSystem"
-        },
-        {
             "include": "engine:/pipelines/simulation.systems"
-        },
-        {
-            "class": "CameraRigSystem"
-        },
-        {
-            "class": "ViewModelSystem"
-        },
-        {
-            "class": "WeaponSystem"
-        },
-        {
-            "class": "ProjectileSystem"
-        },
-        {
-            "class": "BotSystem"
-        },
-        {
-            "class": "LifetimeSystem"
-        },
-        {
-            "class": "GameHudSystem"
         },
         {
             "include": "engine:/pipelines/render.systems"

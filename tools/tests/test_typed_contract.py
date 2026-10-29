@@ -6,20 +6,24 @@ checks that it is rejected with the expected diagnostic (the control case must
 compile). This is how a wrong system reads under your compiler.
 
 Compiler: CSYREN_CXX (cl, clang++ or g++), otherwise the first of cl, clang++,
-g++ found on PATH (cl needs a Developer Command Prompt); the cases are skipped
-when there is none, or when a header the engine includes is missing (Windows SDK,
-DirectXMath). CSYREN_CXXFLAGS adds flags (searched before lib/), e.g. include
+g++ on PATH that compiles C++20 (cl needs a Developer Command Prompt); the cases
+are skipped when there is none, or when a header the engine includes is missing
+(Windows SDK, DirectXMath). CSYREN_CXXFLAGS adds flags (searched before lib/), e.g. include
 directories for DirectXMath outside the Windows SDK."""
 import os
 import shlex
-import shutil
 import subprocess
+import sys
 import tempfile
 import textwrap
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 LIB = os.path.normpath(os.path.join(HERE, '..', '..', 'lib'))
+sys.path.insert(0, HERE)
+import cxx_compiler  # noqa: E402
+
+CANDIDATES = ('cl', 'clang++', 'g++')
 
 PRELUDE = '''
 #include <array>
@@ -33,13 +37,11 @@ struct Token {};
 
 
 def find_compiler():
+    """(compiler, compilers on PATH passed over because they do not compile C++20)."""
     configured = os.environ.get('CSYREN_CXX')
     if configured:
-        return configured
-    for candidate in ('cl', 'clang++', 'g++'):
-        if shutil.which(candidate):
-            return candidate
-    return None
+        return configured, []
+    return cxx_compiler.find_cpp20(CANDIDATES)
 
 
 def compile_source(compiler, source, defines=()):
@@ -49,7 +51,7 @@ def compile_source(compiler, source, defines=()):
         path = os.path.join(directory, 'case.cpp')
         with open(path, 'w', encoding='utf-8') as handle:
             handle.write(PRELUDE + textwrap.dedent(source))
-        if os.path.splitext(os.path.basename(compiler))[0].lower() == 'cl':
+        if cxx_compiler.is_msvc(compiler):
             forced = os.path.join(LIB, 'cstdmf', 'window_clean.h')
             command = [compiler, '/nologo', '/std:c++20', '/EHsc', '/permissive-', '/Zs', '/W3',
                        '/DNOMINMAX', '/D_DEBUG', *['/D' + d for d in defines], *extra, '/I' + LIB, '/FI' + forced, path]
@@ -59,7 +61,7 @@ def compile_source(compiler, source, defines=()):
         return result.returncode == 0, result.stdout + result.stderr
 
 
-COMPILER = find_compiler()
+COMPILER, PASSED_OVER = find_compiler()
 
 # Diagnostics of a missing include file (clang/gcc, cl).
 MISSING_HEADER = ('file not found', 'No such file or directory', 'C1083')
@@ -94,7 +96,7 @@ VALID_SYSTEMS = '''
         '''
 
 
-@unittest.skipUnless(COMPILER, 'no C++ compiler found (set CSYREN_CXX)')
+@unittest.skipUnless(COMPILER, cxx_compiler.missing_reason(CANDIDATES, PASSED_OVER) + '; set CSYREN_CXX')
 class TypedContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

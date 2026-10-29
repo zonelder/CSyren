@@ -1,14 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Settings for a CSyren project executable (the engine's own CSyren.vcxproj or a
-       project made by tools/new_project.py). Import it in the PropertySheets group,
+       project made by tools/csyren.py new). Import it in the PropertySheets group,
        and CSyren.project.targets after Microsoft.Cpp.targets. See docs/project_structure.md.
 
        Layout of a project:
-         <Name>.csyrenproj    start scene, systems files, assets folder
+         <Name>.csyrenproj    engine id, start scene, systems files, assets folder
          source/             components, systems, services (CS_* markers, any subfolders)
          assets/             scenes, models, app.systems / editor.systems ("project:" mount)
-         build/              generated registry, cache (not in source control) -->
+         build/              engine.props, generated registry, cache (not in source control) -->
+  <!-- Settings of this engine checkout on this machine, written by tools/csyren.py (generate,
+       restore): the Python the registry step runs with. Not in source control. -->
+  <Import Project="$(MSBuildThisFileDirectory)Build\csyren.local.props" Condition="Exists('$(MSBuildThisFileDirectory)Build\csyren.local.props')" />
   <PropertyGroup>
     <CSyrenRoot>$(MSBuildThisFileDirectory)</CSyrenRoot>
     <CSyrenProjectSource Condition="'$(CSyrenProjectSource)'==''">$(MSBuildProjectDirectory)\source</CSyrenProjectSource>
@@ -19,11 +22,20 @@
     <!-- Sources checked for C++ RTTI (typeid, dynamic_cast, std::any...): an error, the engine builds with /GR-. -->
     <CSyrenRttiRoots Condition="'$(CSyrenRttiRoots)'==''">$(CSyrenRoot)lib;$(CSyrenRoot)source;$(CSyrenProjectSource)</CSyrenRttiRoots>
     <CSyrenIncludeDirs>$(CSyrenRoot)lib;$(CSyrenRoot)lib\imGui;$(CSyrenRoot)lib\imGui\backends;$(CSyrenRoot)source\runtime;$(CSyrenRoot)source\editor;$(CSyrenRoot)source\host;$(CSyrenProjectSource)</CSyrenIncludeDirs>
-    <!-- Interpreter for tools/csyren_registry.py, e.g. "py -3" when python is not on PATH. -->
+    <!-- Interpreter for tools/csyren_registry.py: Build\csyren.local.props names the one tools/csyren.py
+         runs with; otherwise "python" (set it, e.g. "py -3", when that is not Python 3). -->
     <CSyrenPython Condition="'$(CSyrenPython)'==''">python</CSyrenPython>
     <!-- Always let MSBuild run: the registry depends on headers that are not project items. -->
     <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
+    <!-- The engine is linked as built libraries (CSyren.libraries.proj; CSyren.project.targets
+         builds them for a working clone). Plain .lib linking: registrations are explicit calls
+         of the generated registry, nothing relies on static initializers (see the docs). -->
+    <CSyrenEngineLibraryDir>$(CSyrenRoot)Build\$(Configuration)\</CSyrenEngineLibraryDir>
+    <CSyrenEngineLibraries>$(CSyrenEngineLibraryDir)cstdmf.lib;$(CSyrenEngineLibraryDir)math.lib;$(CSyrenEngineLibraryDir)core.lib;$(CSyrenEngineLibraryDir)imGui.lib;$(CSyrenEngineLibraryDir)Jolt.lib;$(CSyrenEngineLibraryDir)physics.lib;$(CSyrenEngineLibraryDir)dx12_graphic.lib;$(CSyrenEngineLibraryDir)csyren_host.lib</CSyrenEngineLibraries>
   </PropertyGroup>
+  <ItemGroup>
+    <CSyrenEngineLibraryFile Include="$(CSyrenEngineLibraries)" />
+  </ItemGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <AdditionalIncludeDirectories>$(CSyrenIncludeDirs);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -38,12 +50,8 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>dxgi.lib;d3d12.lib;dxguid.lib;d3dcompiler.lib;$(CSyrenRoot)Build\$(Configuration)\core.lib;$(CSyrenRoot)Build\$(Configuration)\math.lib;$(CSyrenRoot)Build\$(Configuration)\imGui.lib;$(CSyrenRoot)Build\$(Configuration)\dx12_graphic.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dxgi.lib;d3d12.lib;dxguid.lib;d3dcompiler.lib;$(CSyrenEngineLibraries);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <ProjectReference>
-      <!-- Link the objects of the engine libraries (keeps their static initializers). -->
-      <UseLibraryDependencyInputs>true</UseLibraryDependencyInputs>
-    </ProjectReference>
   </ItemDefinitionGroup>
   <Import Project="$(MSBuildThisFileDirectory)CSyren.engine.props" />
   <Import Project="$(MSBuildThisFileDirectory)CSyren.paths.props" />

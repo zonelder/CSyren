@@ -58,6 +58,6 @@ inspector shows the provider's list. `physics::CollisionLayer` uses it with the
 ## Migrated in this pass
 
 `BodyType`, `ProjectionType` (now `enum class`: `ProjectionType::Perspective`),
-`CameraRenderType`, `LightingDebugView`, and the game's `PilotMove`,
-`WeaponKind`, `BotBehaviour` (previously stored as `int`).
-`tools/gen_polygon_scene.py` writes names.
+`CameraRenderType`, `LightingDebugView`, and the movement prototype's `PilotMove`,
+`WeaponKind`, `BotBehaviour` (previously stored as `int`; now in SyrenMovement, whose
+scene generator writes names).

@@ -44,11 +44,8 @@ prototype items each lean on an engine item (in brackets).
 - [ ] Particles / VFX
 - [ ] Skinning, animation blending; mesh / convex colliders
 
-## Prototype
+## Projects
 
-- [ ] Own project in `samples/` (`new_project.py`): CS_* markers, no `game_registration.h` (the World demo, W0, is the second project made this way)
-- [ ] Per-entity state in components; movement in a fixed step [time]
-- [ ] Time trial with checkpoints and respawn volumes [triggers]
-- [ ] Bots shoot back; player health and death [event channel, HUD, inner body]
-- [ ] Weapons as data assets: N slots, aim-down-sights FOV, shotgun
-- [ ] Debug draw of movement probes, speed graph [debug draw]
+- [x] Projects outside the engine: `engine.json`, `tools/csyren.py` (new / generate / restore / build / run), CSyrenHub
+- [x] Movement prototype in its own repository (SyrenMovement: CS_* markers, no `game_registration.h`); its roadmap lives there (the World demo, W0, is the second project made this way)
+- [ ] Hub: GUI, prebuilt engine builds (CI, releases), engine version check when a project opens

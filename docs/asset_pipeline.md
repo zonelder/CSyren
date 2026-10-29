@@ -73,33 +73,17 @@ upload window (`Renderer::beginResourceUpload`).
 
 `shaders/lit.shader` (tint) and `shaders/lit_texture.shader` (tint × diffuse)
 do Lambert lighting from the engine `LightDirection` semantic. Imported
-materials and the game's flat materials use them; `Primitives::getLitShader()`
+materials and procedural flat materials (SyrenMovement's) use them; `Primitives::getLitShader()`
 / `getLitMaterial()` expose them for code.
 
 ## Node animation
 
 `AnimationClip` holds TRS tracks keyed by **node name**. `Animator` on an
 entity plays a clip over that entity's subtree (`AnimationSystem` matches
-tracks to descendant entity names and patches their Transforms). Weapons:
-`WeaponDef::reloadClip` names the clip; `WeaponSystem` resolves it on attach,
-takes `reloadTime` from the clip length and plays it on the active
-`ViewModelSlot` entity when a reload starts.
+tracks to descendant entity names and patches their Transforms). SyrenMovement
+plays its weapons' `reload` clips this way (`WeaponDef::reloadClip`; authoring
+notes are in its `docs/prototype.md`).
 
 Skinning is intentionally out of scope for now: it needs a skinned vertex
 format (`BLENDINDICES/BLENDWEIGHT`), a bone palette constant buffer and a
 skinning shader. The `ModelData` layer is where skins would be added.
-
-## Authoring weapons
-
-* `tools/make_weapon_models.py` writes placeholder `assets/models/rifle.glb`
-  and `launcher.glb` (boxes/cylinders, node hierarchy, `reload` clip).
-* Replace them with Blender exports (glTF Binary, +Y up, apply transforms,
-  include animations). Keep the node names the game relies on: `muzzle`
-  (empty at the barrel tip) and a clip named `reload`. Barrel along -Z in
-  Blender/glTF = forward in game.
-* `tools/gen_polygon_scene.py` instantiates both models under the pilot
-  camera (`viewmodel` → `ViewModelSlot 0/1` + `Animator`). After changing a
-  model's hierarchy, re-run the scene generator or use **File → Import model…**
-  in the editor and parent the result under `viewmodel` by hand.
-* View model motion (sway, bob, recoil, switch, reload dip) is procedural in
-  `game/view_model_system.h`; tune it through the `ViewModel` component.
