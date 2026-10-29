@@ -72,8 +72,10 @@ upload window (`Renderer::beginResourceUpload`).
 ## Lit shaders
 
 `shaders/lit.shader` (tint) and `shaders/lit_texture.shader` (tint × diffuse)
-do Lambert lighting from the engine `LightDirection` semantic. Imported
-materials and procedural flat materials (SyrenMovement's) use them; `Primitives::getLitShader()`
+are deferred PBR materials: they write the GBuffer (`packGBuffer`, with tint,
+roughness, metallic and emissive parameters), and the light pass shades them with
+Cook-Torrance GGX (see [rendering.md](rendering.md)). Imported materials and
+procedural flat materials (SyrenMovement's) use them; `Primitives::getLitShader()`
 / `getLitMaterial()` expose them for code.
 
 ## Node animation
