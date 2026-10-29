@@ -10,108 +10,228 @@ external module.
 ![CSyren editor](docs/images/editor.png)
 -->
 
-## Features
+## How it works
 
-### ECS and scheduling
-- **Typed systems:** the parameters of `execute()` declare its access:
-  `Select`, `Update<...>::Where<...>`, `Insert`, `Delete`, `Spawn`, `Res<T>`, `Exclusive`.
-  The compiler rejects an access the signature does not grant. An optional strict mode
-  also rejects unused declarations.
-- **Frame graph** built from those declarations. Systems that do not conflict run in
-  parallel on a job system (enkiTS). Order comes from string phases, `before`/`after`
-  and named CPU resource states.
-- No cap on the number of component types. Entity IDs carry generations. `EntityRef`
-  fields are remapped on load, duplicate and prefab spawn.
-- **Prefabs:** `.prefab` files, spawned from systems with
-  `spawn(prefab, pose).with(...).edit<T>(...)`.
-- **Event bus:** lock-free publishing from any thread, one channel per event type,
-  keyed subscriptions, delivered in publication order at one point of the frame.
-- **No RTTI:** the engine builds with `/GR-`, and the registry generator fails the build
-  on `typeid` / `dynamic_cast` / `std::any` in engine code.
+The examples below use `namespace csyren` and made-up game types.
+
+### Components
+
+A component is a plain struct. `describe()` lists the fields that the inspector shows
+and scene files store. `CS_COMPONENT` registers the struct: a build step collects the
+markers, so no registration list has to be kept by hand.
+
+```cpp
+struct Health
+{
+    float value = 100.0f;
+    float max = 100.0f;
+    static void describe();
+};
+CS_COMPONENT(Health);
+
+void Health::describe()   // in a .cpp
+{
+    using namespace core::reflection;
+    MetaFactory<Health>{}.type("Health"_hs)
+        .data<&Health::value>("value"_hs)
+        .data<&Health::max>("max"_hs);
+}
+```
+
+→ [docs/project_structure.md](docs/project_structure.md), [docs/reflection.md](docs/reflection.md)
+
+### Typed systems
+
+A system's `execute()` parameters say what it reads and writes, and the engine needs
+no other declaration. Touching anything the parameters do not list is a compile
+error. The scheduler uses the same parameters to decide which systems can run in
+parallel.
+
+```cpp
+class RegenSystem : public core::TypedSystem<RegenSystem>
+{
+public:
+    // Writes Health, reads the Time service. Visits entities that also have a Player.
+    void execute(core::Update<Health>::Where<Player> health,
+                 core::Res<const core::Time> time)
+    {
+        for (auto [id, h] : health)
+            h.value = std::min(h.max, h.value + 5.0f * time->deltaTime());
+
+        // health.get<core::Transform>(id);   // does not compile: Transform is not declared
+    }
+};
+CS_SYSTEM(RegenSystem);
+```
+
+| Parameter | Access |
+| --- | --- |
+| `Select<Cs...>` / `Update<Cs...>` | read / write components (`const C` inside `Update` is read-only) |
+| `::Where<Ts...>` | only entities that also have `Ts` |
+| `Insert<Cs...>` / `Delete` | create entities and add components / destroy and remove, applied at the task's commit |
+| `Spawn` | copy a prefab (below) |
+| `Res<T>` / `Res<const T>` | a service, write / read |
 
 → [docs/frame_graph.md](docs/frame_graph.md)
 
-### Rendering
-- Deferred GBuffer plus a forward pass for unlit and transparent materials (sorted
-  back-to-front).
-- Cook-Torrance GGX PBR (albedo, metallic, roughness, emissive). Directional lights and
-  **clustered point lights** (16×8×24 froxels, compute light assignment).
-- HDR → exposure → ACES → gamma. Reverse-Z depth. 7 debug views (albedo, normals,
-  roughness/metallic, depth, light heat map, emissive, lighting only).
-- The frame graph inserts D3D12 barriers, records passes in parallel and runs per-camera
-  passes once per rendered view. Render target formats come from the pass, so one
-  material works in any pass.
-- Shaders are HLSL with reflection annotations (`//@editable`, `//@range`, `//@semantic`)
-  and a compiled-shader cache.
+### Scheduling
 
-→ [docs/rendering.md](docs/rendering.md)
+Static members only order a system. The data it touches still comes from its parameters.
+A game's frame is a list of systems in a `.systems` file.
 
-### Physics (Jolt)
-- Rigid bodies (static / kinematic / dynamic) with box, sphere and capsule colliders.
-  Continuous collision for fast bodies. Contact events for the last frame.
-- Kinematic **character controller**: slopes, steps, crouch height, ground and wall
-  contacts, moving platforms.
-- Fixed-step simulation. Raycast, sphere cast and overlap queries with layer filters.
-- **Collision layers:** the engine provides up to 32 named layers and a collision matrix.
-  The project defines their names and rules, from code (`CS_ENUM`) or from JSON.
+```cpp
+static constexpr auto phase = "simulation";
+static constexpr std::array after{ "PhysicsSyncSystem" };
+```
+
+```json
+{ "systems": [
+    { "include": "engine:/pipelines/begin.systems" },
+    { "include": "engine:/pipelines/simulation.systems" },
+    { "class": "RegenSystem" },
+    { "include": "engine:/pipelines/render.systems" } ] }
+```
+
+### Events
+
+Events report what has already happened. Any thread can publish without locks. The
+engine delivers events at one point in the frame, in publication order. A key lets a
+subscriber receive only one entity's events.
+
+```cpp
+struct Died { core::Entity::ID who; static constexpr auto key = &Died::who; };
+// Members used below: core::Broadcast<Died> _died; core::Subscription _all, _boss;
+
+// Publisher: take the channel in onAttach, publish from execute().
+void onAttach() override { _died = sceneBus().createEvent<Died>(); }
+//   if (h.value <= 0) _died.publish({ id });
+
+// Subscriber: every death, or only the boss's.
+void onAttach() override
+{
+    auto died = sceneBus().createEvent<Died>();
+    _all  = died.subscribe([this](const Died&) { ++_kills; });
+    _boss = died.subscribe(bossId, [](const Died&) { /* level complete */ });
+}
+```
+
+→ [docs/project_structure.md#events](docs/project_structure.md#events)
+
+### Prefabs and spawning
+
+A `.prefab` file is a saved entity branch. A system spawns copies and can change the
+copy's root first. The copy appears at the task's commit, so systems ordered after the
+spawner see it in the same frame.
+
+```cpp
+struct Turret { core::PrefabRef shell; math::Vector3 velocity; static void describe(); };
+CS_COMPONENT(Turret);
+
+void execute(core::Select<Turret, core::Transform> turrets, core::Spawn spawn)
+{
+    for (auto [id, turret, tr] : turrets)
+        spawn(turret.shell, { tr.position, tr.rotation })
+            .edit<physics::RigidBody>([v = turret.velocity](physics::RigidBody& b) { b.linearVelocity = v; });
+}
+```
+
+### Physics
+
+The physics is Jolt with box, sphere and capsule colliders, a kinematic character
+controller and fixed-step simulation. The engine provides up to 32 collision layers.
+The game names them and sets which pairs collide.
+
+```cpp
+CS_ENUM(Layer, uint8_t, Default, Player, Projectile, Wall)
+
+class LayerSetup : public core::OnceSystem
+{
+public:
+    void init() override
+    {
+        auto* layers = core::Services::get<physics::PhysicsLayers>();
+        layers->defineEnum<Layer>();
+        layers->setCollision(Layer::Projectile, Layer::Projectile, false);
+    }
+};
+CS_SYSTEM(LayerSetup);
+
+// In any system with core::Res<const physics::PhysicsEngine> physics:
+auto hit = physics->raycast(origin, direction, 100.0f,
+    { .layerMask = physics::PhysicsLayers::toMask(core::MaskOf<Layer>{ Layer::Default, Layer::Wall }),
+      .ignore = shooter });
+```
 
 → [docs/physics_layers.md](docs/physics_layers.md)
 
-### Assets and animation
-- Model import through `IModelImporter`. glTF 2.0 (`.gltf` / `.glb`) is implemented.
-- Resource references by selector: `models/rifle.glb#mesh:Body`, `#mat:Steel`, `#anim:reload`.
-- Node (TRS) animation clips played over an entity subtree by `Animator`.
-- Texture loading from DDS and WIC formats (PNG, JPEG, ...) on upload tasks, with a
-  fallback texture until the load finishes.
+### Rendering
+
+The frame runs these passes: GBuffer → light clusters (compute) → deferred light pass
+(PBR, GGX) → forward pass for unlit and transparent materials → HDR tonemap. The frame
+graph inserts the D3D12 barriers. A material is an HLSL file, and its annotated fields
+show up in the inspector.
+
+```hlsl
+#include "gbuffer.hlsli"
+
+//@update material
+cbuffer material
+{
+    //@editable
+    float4 tint;
+    //@editable
+    //@range 0 1
+    float roughness;
+}
+
+GBufferOutput PSMain(PS_Input input)
+{
+    return packGBuffer(srgbToLinear(tint.rgb), 0.0f, input.normal, roughness, 0.0f);
+}
+```
+
+→ [docs/rendering.md](docs/rendering.md)
+
+### Assets
+
+Models are imported through an importer interface. glTF 2.0 (`.gltf` / `.glb`) is
+implemented. A resource name is a path plus a selector, and scene files store these names.
+
+```cpp
+rm.get<Mesh>("models/crate.glb#mesh:Body");
+rm.get<Material>("models/crate.glb#mat:Wood");
+rm.get<AnimationClip>("models/door.glb#anim:open");   // played by an Animator component
+```
 
 → [docs/asset_pipeline.md](docs/asset_pipeline.md)
 
-### Reflection and serialization
-- `describe()`-based reflection. JSON scene files, plus a compact archive.
-- `CS_ENUM` and `MaskOf<E>`: stored by name, shown in the inspector as combos and
-  checkboxes, with rename aliases.
-- Components the build does not know are kept on load and written back on save.
-
-→ [docs/reflection.md](docs/reflection.md)
-
-### Editor
-- Scene hierarchy, inspector (any reflected field, `EntityRef` picker), move / rotate /
-  scale gizmos, mouse picking, undo / redo.
-- Scene and Game views. **Play mode** runs the project's systems on a copy of the scene,
-  and Stop discards the copy. Editing is locked while playing.
-- Duplicate, delete, model import, "Save as prefab", prefab instantiation.
-- *systems* window: the current schedule with per-task timings.
-
 ### Profiler
-- Lock-free per-thread marks (`CS_PROFILE_SCOPE`, `CS_PROFILE_VALUE`). Frame graph tasks,
-  GPU submission, physics and editor windows are marked automatically.
-- Editor window with a per-thread timeline, sortable marks table and thread load.
-  Captures export as Chrome traces (Perfetto / `chrome://tracing`).
-- Compiled out with `CSYREN_PROFILER=0`.
+
+A mark is one line. Every system and frame-graph task is already marked. The editor
+shows a per-thread timeline and can export a Chrome trace.
+
+```cpp
+CS_PROFILE_SCOPE("Pathfinding");
+CS_PROFILE_VALUE("Agents", agents.size());
+```
 
 → [docs/profiler.md](docs/profiler.md)
 
-### Projects and tooling
-- A project is its own folder or repository, bound to an engine by id. The engine is
-  never copied into it.
-- Types are registered by markers (`CS_COMPONENT`, `CS_SYSTEM`, `CS_SERVICE`, `CS_EDITOR`,
-  `CS_REFLECT`). A pre-build step generates one registry file, so registration does not
-  depend on static initializers.
-- `tools/csyren.py`: `new`, `generate`, `restore`, `build-engine`, `build`, `run`.
-- [CSyrenHub](https://github.com/zonelder/CSyrenHub): registers engines on a machine,
-  creates and opens projects.
+### Editor
 
-→ [docs/project_structure.md](docs/project_structure.md)
+- Hierarchy, inspector for any reflected field, move / rotate / scale gizmos, picking, undo / redo.
+- Play runs the project's systems on a copy of the scene. Stop throws the copy away.
+- Model import, Save as prefab, prefab instantiation.
+- Windows: *profiler*, *systems* (the current schedule with per-task time), *statistic*.
 
 ## Requirements
 
 - Windows 10/11 x64, a GPU with Direct3D 12
-- Visual Studio 2022 (MSVC v143, C++20) with the Windows 10/11 SDK (10.0.22621 or newer)
-- Python 3 (`py -3`) for the project tool and the pre-build registry step
+- Visual Studio 2022 (MSVC v143, C++20), Windows SDK 10.0.22621 or newer
+- Python 3 (`py -3`): the project tool and the pre-build registry step
 - Git (Jolt is a submodule)
 
-NuGet packages (DirectXTex, DirectXTK12, Direct3D 12 Agility SDK, googletest) are restored
-automatically.
+NuGet packages are restored automatically.
 
 ## Getting started
 
@@ -121,12 +241,8 @@ cd CSyren
 py -3 tools/csyren.py restore
 ```
 
-`restore` checks out missing submodules and NuGet packages, so it is also the fix for a
-clone made without `--recurse-submodules`.
-
-Open `CSyren.sln`, select **x64**, and build. The startup project `CSyren` is the
-engine's sandbox: it opens `assets/scenes/sandbox.scene` in the editor. Debug runs with
-`--console`, which mirrors the log to a console window.
+Open `CSyren.sln` (x64) and run the `CSyren` project. It is the engine's sandbox and
+opens `assets/scenes/sandbox.scene` in the editor.
 
 ## Creating a project
 
@@ -135,95 +251,49 @@ py -3 tools/csyren.py new D:\Games\MyGame MyGame
 py -3 tools/csyren.py run D:\Games\MyGame
 ```
 
-or, with the hub: `csyren-hub new` / `csyren-hub open MyGame`.
+Or use [CSyrenHub](https://github.com/zonelder/CSyrenHub): `csyren-hub new`, `csyren-hub open MyGame`.
+The project gets `source/`, `assets/` and an example component and system. The engine
+is linked as libraries, never copied.
 
-`new` writes `MyGame.csyrenproj`, `MyGame.vcxproj`, `source/` and `assets/`, with an
-example `Spinner` component and `SpinnerSystem` (`--bare` skips them). Generated files
-(`MyGame.sln`, `build/`) are machine-local and stay out of source control.
-
-A component and a system, in any header under `source/`:
-
-```cpp
-#pragma once
-#include "core/registration.h"
-#include "core/typed_system.h"
-#include "core/time.h"
-
-namespace my_game
-{
-    struct Health
-    {
-        float value = 100.0f;
-        float regen = 5.0f;
-        static void describe(); // reflected fields, defined in a .cpp (below)
-    };
-    CS_COMPONENT(Health);
-
-    class RegenSystem : public csyren::core::TypedSystem<RegenSystem>
-    {
-    public:
-        void execute(csyren::core::Update<Health> health,
-                     csyren::core::Res<const csyren::core::Time> time)
-        {
-            for (auto [id, h] : health)
-                h.value += h.regen * time->deltaTime();
-        }
-    };
-    CS_SYSTEM(RegenSystem);
-}
-```
-
-```cpp
-#include "health.h"
-#include "core/meta.h"
-
-void my_game::Health::describe()
-{
-    using namespace csyren::core::reflection;
-    MetaFactory<Health>{}.type("Health"_hs)
-        .data<&Health::value>("value"_hs)
-        .data<&Health::regen>("regen"_hs);
-}
-```
-
-Add `{ "class": "RegenSystem" }` to the project's `assets/app.systems`. The next build
-registers both types.
+→ [docs/project_structure.md](docs/project_structure.md)
 
 ## Tests
 
-- C++ (googletest): `core_tests`, `cstdmf_tests`, `scene_workflow_tests`,
-  `dx12_graphic_tests` in `CSyren.sln`.
-- D3D12 integration smoke test (after a Debug build): `python test/render_tests/run_frame_graph_smoke.py`.
-- Project tool, registry generator, compile-time system contract and source encoding:
-  `python -m unittest discover -s tools/tests`.
-
-Engine tests check the engine only and are not part of project solutions.
-
-## Repository layout
-
-```
-lib/        engine libraries: core (ECS, scheduler, events, reflection), cstdmf (containers,
-            job system, profiler, log), math, dx12_graphic, physics; imGui, Jolt, third_party
-source/     runtime (render/animation systems, serializer), editor, host (Application, WinMain)
-assets/     engine assets ("engine:" mount): shaders, textures, pipelines/*.systems
-tools/      csyren.py, csyren_registry.py, tests/
-test/       engine tests
-docs/       design notes and roadmap
-```
-
-## Built with CSyren
-
-- **SyrenMovement**: Titanfall-style movement and shooter prototype
-- **SyrenBoard**: board game
+- C++ (googletest): `core_tests`, `cstdmf_tests`, `scene_workflow_tests`, `dx12_graphic_tests` in `CSyren.sln`
+- D3D12 smoke test after a Debug build: `python test/render_tests/run_frame_graph_smoke.py`
+- Tools and the compile-time system contract: `python -m unittest discover -s tools/tests`
 
 ## Roadmap
 
-Up next: fixed-step gameplay phase and pause / single step, disabled entities and
-`Without<T>` queries, physics trigger events, input actions, debug draw, a runtime
-HUD layer. Later: `.material` assets, shadows, spot lights, prefab instances with
-overrides, skinning.
+Ordered by expected effort, smallest first. The dependency order is in [docs/TODO.md](docs/TODO.md).
 
-Full list: [docs/TODO.md](docs/TODO.md)
+**Quick**
+- `Lifetime` component, `damp()` / spring helpers, seeded Random service
+- `Without<T>` and `single()` in queries
+- Time: max delta, pause, single step
+- Skip empty structural commits
+- Physics triggers (`isTrigger` as Jolt sensors) and contact enter / exit events
+- Gameplay events as system parameters (`Emit<E>` / `Events<E>`)
+
+**Medium**
+- Fixed-step gameplay phase, one structural commit point per phase
+- Empty tag components, disabled entities, transient (not saved) fields
+- Input actions: polled state, bindings as data, cursor capture as a service
+- Debug draw: lines, shapes, Jolt debug renderer
+- Physics: character visible to queries, `MoveKinematic`, collider scale, velocity changes without rebuilding the body
+- Spot lights, samplers declared by shaders
+- `Spawn` copies prepared values instead of parsing JSON per copy
+- Runtime without editor dependencies (serializer, scene loader)
+- Runtime HUD layer
+- Migration of saved data (upgrade hooks, renames)
+
+**Large**
+- `.material` assets with per-instance parameters; glTF normal / metal-rough / emissive maps, alpha mode, embedded images
+- Prefab instances: link to the file, overrides, nesting
+- Skinning, animation blending, mesh / convex colliders
+- Particles / VFX
+- Shadows, bloom, GPU-driven culling and instancing (the World track in TODO.md)
+- Hub: GUI, prebuilt engine releases, engine version check
 
 ## Third-party
 
