@@ -28,7 +28,7 @@ public:
     static constexpr auto phase = "simulation";
     static constexpr std::array after{"InputSystem"};
 
-    void execute(core::Update<Position, const Velocity>::Where<Movable> movers,
+    void execute(core::Query<Position, const Velocity>::With<Movable>::Without<Frozen> movers,
                  core::Res<const Time> time) {
         for (auto [id, position, velocity] : movers)
             position.x += velocity.x * time->deltaTime();
@@ -38,16 +38,14 @@ public:
 
 | Parameter | Meaning |
 |---|---|
-| `Select<Cs...>` | read `Cs`. Iteration visits entities that have every `C`; `get<C>(id)` reads one component of any entity |
-| `Update<Cs...>` | the same with write access; a `const C` inside `Update` is read-only. `patch<C>(id)` notifies derived data |
-| `::Where<Ts...>` | presence filter on a `Select`/`Update`; never conflicts with other systems |
-| `Insert<Cs...>` | `create()` entities and `add<C>()` components; staged until the structural commit, never conflicts with readers or writers of `Cs` |
-| `Delete` | `destroy(id)` entities and `remove<C>(id)` components, applied in the structural commit |
-| `Spawn` | `spawn(prefab, pose)` creates a copy of a prefab (`core/spawn.h`); `.with(T{...})` / `.edit<T>(fn)` change the copy's root first. Staged like `Insert`, but declares no component types: nobody sees the copy before the commit, so it conflicts with no reader or writer |
+| `Query<Cs...>` | components: `C` is written, `const C` is read. Iteration visits entities that have every `C` and yields `[id, c...]`; `get<C>(id)` reads one component of any entity (writes it when `C` is listed without `const`); `patch<C>(id)` notifies derived data; `single()` is the only matching row (empty when none or several match) |
+| `::With<Ts...>` | presence filter: only entities that also have every `T`; never conflicts with other systems |
+| `::Without<Ts...>` | presence filter: skips entities that have any `T`; never conflicts with other systems |
+| `Commands` | changes which entities and components exist (`core/commands.h`): `create`, `spawn` (prefabs), `entity(id).with / remove / destroy`. Applied in the task's structural commit, in call order; declares no component types, so it conflicts with no reader or writer |
 | `Res<T>` | a service: `Res<const T>` reads, `Res<T>` writes; empty (`false`) when the service is not registered |
 | `Exclusive` | the whole world: any component, structural changes and any service (`scene()`, `bus()`, `Services::get`). It conflicts with every task that declares an access. Only for systems whose types are known at run time |
 
-Any `Select`/`Update` also reads the entity hierarchy (`entities()`,
+Any `Query` also reads the entity hierarchy (`entities()`,
 `hierarchyRevision()`); it changes only in structural commits. `worldMatrix`,
 `worldRotation`, `parentOf`, `setWorldPose` and `WorldTransforms::update` accept
 such a parameter instead of `Scene&`. For derived caches a query also offers
@@ -69,41 +67,71 @@ A system whose parameters do not use the scene (only `Res`, `Recorder`, ...) can
 be run directly without a scene, e.g. `system.run()` in a test (`SystemManager`
 still schedules systems only while a scene is bound).
 
-Two systems that `Insert` the same type are ordered (registration order breaks
-the tie), so the later one sees the earlier commit and can skip an entity that
-already has the component. A reader in the same phase that is not ordered after
-an inserter sees the new components only in the next frame. A reference returned
-by `Insert::add` is for the current `execute()` only.
+### Commands
 
-`Spawn` is for entities whose components come from data (a prefab), so the
-system cannot list their types. Prefabs are `.prefab` files under the assets
-(`core::PrefabRef` fields hold the path; an empty reference spawns nothing),
-loaded and cached by the `core::PrefabLibrary` service. A prefab is validated and
-its resources are resolved when it is loaded, and the prefabs it refers to are
-loaded with it; load them in `onAttach` so spawning reads no files:
+`Commands` changes composition only: which entities and components exist.
 
 ```cpp
-void execute(Update<Launcher, const Transform> launchers, Spawn spawn) {
-    for (auto [id, launcher, tr] : launchers)
-        spawn(launcher.projectile, { tr.position, tr.rotation })
+void execute(Query<Launcher, const Transform> launchers, Commands commands) {
+    for (auto [id, launcher, tr] : launchers) {
+        launcher.last = commands.spawn(launcher.projectile, { tr.position, tr.rotation })
             .edit<RigidBody>([velocity = launcher.velocity](RigidBody& body) { body.linearVelocity = velocity; })
-            .with(Projectile{ .owner = id });
+            .with(Projectile{ .owner = id })
+            .id();
+        commands.create("Shot marker", id).with(Marker{ .ttl = 2.0f }); // a child of the launcher
+        if (--launcher.shots == 0) commands.entity(id).remove<Launcher>();
+    }
 }
 ```
 
-The copy (the whole branch) is created in the task's structural commit, in order
-with its other staged changes; a system ordered after the spawner sees it in the
-same frame. `with`/`edit` run in that commit, after `execute()` returned, so their
-lambdas capture by value. The spawn is scheduled when the request object returned
-by `spawn(...)` ends (the end of the statement); it cannot be stored or moved,
-and one destroyed by an exception spawns nothing. Spawners are not ordered against each other or against
-readers and writers of the prefab's components; only their commits are exclusive.
-A prefab that cannot be loaded, or an `edit` of a component the prefab's root
-lacks, is logged once and skipped.
+| Command | Effect |
+|---|---|
+| `create(name, parent)` | a new entity; `.with(T{...})` gives it components, which arrive together with the entity |
+| `spawn(prefab, pose)` | a copy of a prefab's branch; `.with(T{...})` adds `T` to the copy's root or replaces the prefab's `T`, `.edit<T>(fn)` changes the prefab's `T` on the root |
+| `.id()` | the ID of the new entity (the copy's root), known at the call; the entity exists after the commit, and if it cannot be created the ID never names an entity |
+| `entity(id).with(T{...})` | adds `T` when the entity has none; an existing `T` keeps its value |
+| `entity(id).remove<T>()` | removes `T` |
+| `entity(id).destroy()` | destroys the entity and its children |
+
+Values are given only to new entities and new components. Changing the value of
+an existing component is a write, so it needs the component in a `Query`.
+
+Every command is applied in the task's structural commit, in the order of the
+calls to `create`, `spawn` and `entity`, so an ID from `create(...).id()` can be
+used by a later command, even one in the same statement
+(`commands.create("child", commands.create("parent").id())`). Nothing is visible
+before the commit, not even to the same `execute()`: its queries keep seeing the
+scene as it was. Systems of the same phase ordered after this one (`after`) and
+systems of later phases see the changes in the same frame; a system of the same
+phase that is not ordered after it may run before the commit and then sees them
+in the next frame. `Commands` declares no component types, so it conflicts with
+no reader or writer, and two structural tasks are not ordered against each
+other; only their commits are (they are exclusive). `entity(id).with` makes two
+unordered systems that add the same component safe: the later commit finds it
+and keeps the first value.
+
+What is chained to a command (`with`, `edit`, `remove`, ...) belongs to it. The
+builders cannot be copied or moved, and one left by an exception is dropped (its
+reserved ID is given back); IDs are also given back when a frame fails before
+the commit. `with`/`edit` lambdas run in the commit, after `execute()` returned,
+so they capture by value. `Commands` itself cannot be copied or kept: helpers
+take `core::Commands&`. Outside a graph task (a system run directly, a
+`Commands::makeParam` in a test) the commands are applied when the `Commands`
+object goes away, after `execute()`, followed by `Scene::flush()`. A command for
+an entity that is gone by the commit does nothing.
+
+Prefabs are `.prefab` files under the assets (`core::PrefabRef` fields hold the
+path; an empty reference spawns nothing and `id()` is `invalidID`), loaded and
+cached by the `core::PrefabLibrary` service. A prefab is validated and its
+resources are resolved when it is loaded, and the prefabs it refers to are
+loaded with it; load them in `onAttach` so spawning reads no files. A prefab that
+cannot be loaded, an `edit` of a component the prefab's root lacks, or a type
+that is not a registered component is logged once and skipped.
 
 The compiler rejects: reading a type the parameters do not list, writing through
-a `Select` or a `const` type, `add<T>` of a type the `Insert` does not list, and
-`patch` without write access, a parameter passed by reference or of an unknown
+a `const` type, `patch` without write access, a filter on a type the query
+already lists, a non-copyable value in `with`, an `edit` whose function does not
+take the component, a parameter passed by reference or of an unknown
 kind, a private schedule member, a hand-written `describe()` and a direct
 `System` subclass. Wrap typed system classes (after the `#include`s) in
 `CS_STRICT_SYSTEMS_BEGIN`/`CS_STRICT_SYSTEMS_END` to make an unused parameter,
@@ -120,7 +148,7 @@ uniqueness checks and the strict markers are compiled out for it
 (`CSYREN_INTELLISENSE` in `typed_system.h`), and `TypedSystem` binds the
 generated `describe()`/`run` in its constructor, so the base class never needs
 the system class to be complete. Errors in these checks are reported by the
-compiler only; the per-call checks (`get`, `patch`, `add`) stay visible.
+compiler only; the per-call checks (`get`, `patch`, `with`) stay visible.
 
 Lifecycle hooks keep using `scene()` and `Services` directly. In the engine,
 `SceneEventsSystem` and `EditorSystem` take `Exclusive` (event handlers and the
@@ -165,13 +193,15 @@ the externally established condition at the start of each execution.
 
 ## Scene changes
 
-`Insert`, `Delete`, `Spawn` and `Exclusive` make a task structural: it stages entity and
-component creation/removal in its own transaction (`createEntity`,
-`addComponent`, `removeComponent`, `destroyEntity` underneath; no command-buffer
-API). The returned entity ID is final, and a returned component reference is
-immediately writable. The task's own queries see its staged component changes.
+`Commands` and `Exclusive` make a task structural: the graph adds a commit task
+after it. `Commands` records its changes and applies them in that commit.
+`Exclusive` changes the scene through its API (`createEntity`, `addComponent`,
+`removeComponent`, `destroyEntity`), which stages them in the task's transaction:
+the returned entity ID is final, a returned component reference is immediately
+writable, and the task's own views include its staged components. Adding a
+component through the scene inside a task needs write access to it.
 
-New views also include that task's staged components. Each view keeps a stable
+Each view keeps a stable
 candidate snapshot during iteration; structural edits cannot relocate its live
 storage. Other tasks observe changes after the automatic commit. The graph inserts this commit and
 includes it in an `after` dependency on the producing system. Calling `flush()`
@@ -185,14 +215,14 @@ incarnation and cannot retarget a reused ID.
 With runtime validation on (`CSYREN_ACCESS_VALIDATION`, default in Debug builds)
 undeclared accesses (a direct `Services::get` or `scene()` call inside `execute()`)
 throw; Release builds skip these checks. Structural changes outside a transaction
-are rejected in every build. Every `Select`/`Update` declares the entity
+are rejected in every build. Every `Query` declares the entity
 hierarchy (`SceneEntities`) read. `Exclusive` sets `exclusiveScene` and
 `dynamicResources`, which introduce the necessary exclusive edges; it is not the
 default for ordinary systems.
 
 Physics follows the same model. `PhysicsSystem` (simulation) steps the world
-through `Update<RigidBody, Transform>`, the collider `Select` and
-`Update<CharacterController>`; the Jolt world is built from the scene when it
+through `Query<RigidBody, Transform>`, a read-only collider `Query` and
+`Query<CharacterController>`; the Jolt world is built from the scene when it
 attaches. Later scene changes (bodies, colliders and characters created, patched
 or destroyed) are queued by the event handlers and applied by `PhysicsSyncSystem`
 (phase `events`, after `SceneEventsSystem`, which must be in the same schedule;

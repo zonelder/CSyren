@@ -16,12 +16,13 @@ prototype items each lean on an engine item (in brackets).
 
 ## Stage 1 — core foundations
 
-- [x] Entity IDs with generations; `EntityRef` field remapped on load / duplicate / prefab; `Spawn` returns the root
+- [x] Entity IDs with generations; `EntityRef` field remapped on load / duplicate / prefab; spawning returns the root
 - [x] Event bus: channels (`createEvent<E>()`), keyed subscriptions, no locks, delivery in publication order
 - [ ] Time: max delta, pause / single step, fixed-step phase for gameplay
-- [ ] Disabled entities; `Without<T>`, `single()` in queries; empty tag components; transient (not saved) fields
+- [x] System parameters after Bevy: `Query<Cs...>` (`const C` reads), `With` / `Without` filters, `single()`; `Commands` replaces `Insert`, `Delete` and `Spawn`
+- [ ] Disabled entities; empty tag components; required components; transient (not saved) fields
 - [ ] Structural commits: skip empty ones, one commit point per phase
-- [ ] `Spawn` copies prepared values instead of parsing JSON per copy
+- [ ] Spawning copies prepared values instead of parsing JSON per copy
 - [ ] Runtime does not depend on the editor (serializer, scene loader)
 
 ## Stage 2 — engine mechanisms from the prototype

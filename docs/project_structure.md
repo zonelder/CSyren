@@ -177,10 +177,10 @@ A slot whose generation runs out is retired.
 Duplicate keeps `EntityRef`s that leave the copied branch on the originals; a
 prefab cannot refer outside its branch ("Save as prefab" fails naming the
 component). A reference to a destroyed entity is saved as none. Systems read
-through a reference with `get<T>(ref)` / `contains(ref)` on `Select`/`Update`;
+through a reference with `get<T>(ref)` / `contains(ref)` on a `Query`;
 the inspector edits it with a list of the scene's entities.
-`spawn(...).root()` gives the copy's root ID right away; the entity exists after
-the task's commit.
+`commands.spawn(...).id()` and `commands.create(...).id()` give the new ID right
+away; the entity exists after the task's commit.
 
 ## Events
 

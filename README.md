@@ -51,8 +51,8 @@ parallel.
 class RegenSystem : public core::TypedSystem<RegenSystem>
 {
 public:
-    // Writes Health, reads the Time service. Visits entities that also have a Player.
-    void execute(core::Update<Health>::Where<Player> health,
+    // Writes Health, reads the Time service. Visits players that are not stunned.
+    void execute(core::Query<Health>::With<Player>::Without<Stunned> health,
                  core::Res<const core::Time> time)
     {
         for (auto [id, h] : health)
@@ -66,10 +66,9 @@ CS_SYSTEM(RegenSystem);
 
 | Parameter | Access |
 | --- | --- |
-| `Select<Cs...>` / `Update<Cs...>` | read / write components (`const C` inside `Update` is read-only) |
-| `::Where<Ts...>` | only entities that also have `Ts` |
-| `Insert<Cs...>` / `Delete` | create entities and add components / destroy and remove, applied at the task's commit |
-| `Spawn` | copy a prefab (below) |
+| `Query<Cs...>` | components: `C` is written, `const C` is read |
+| `::With<Ts...>` / `::Without<Ts...>` | only entities that also have every `T` / that have none of them |
+| `Commands` | create entities, copy prefabs (below), add and remove components, destroy entities; applied at the task's commit, in call order |
 | `Res<T>` / `Res<const T>` | a service, write / read |
 
 → [docs/frame_graph.md](docs/frame_graph.md)
@@ -119,19 +118,23 @@ void onAttach() override
 
 ### Prefabs and spawning
 
-A `.prefab` file is a saved entity branch. A system spawns copies and can change the
-copy's root first. The copy appears at the task's commit, so systems ordered after the
-spawner see it in the same frame.
+A `.prefab` file is a saved entity branch. A system spawns copies through `Commands` and
+can change the copy's root first. The copy appears at the task's commit, so systems
+ordered after the spawner see it in the same frame. `Commands` also creates entities and
+adds or removes components; values are given only to new entities and components.
 
 ```cpp
-struct Turret { core::PrefabRef shell; math::Vector3 velocity; static void describe(); };
+struct Turret { core::PrefabRef shell; math::Vector3 velocity; int shots = 3; static void describe(); };
 CS_COMPONENT(Turret);
 
-void execute(core::Select<Turret, core::Transform> turrets, core::Spawn spawn)
+void execute(core::Query<Turret, const core::Transform> turrets, core::Commands commands)
 {
     for (auto [id, turret, tr] : turrets)
-        spawn(turret.shell, { tr.position, tr.rotation })
+    {
+        commands.spawn(turret.shell, { tr.position, tr.rotation })
             .edit<physics::RigidBody>([v = turret.velocity](physics::RigidBody& b) { b.linearVelocity = v; });
+        if (--turret.shots == 0) commands.entity(id).remove<Turret>();
+    }
 }
 ```
 
@@ -269,7 +272,6 @@ Ordered by expected effort, smallest first. The dependency order is in [docs/TOD
 
 **Quick**
 - `Lifetime` component, `damp()` / spring helpers, seeded Random service
-- `Without<T>` and `single()` in queries
 - Time: max delta, pause, single step
 - Skip empty structural commits
 - Physics triggers (`isTrigger` as Jolt sensors) and contact enter / exit events
@@ -277,12 +279,12 @@ Ordered by expected effort, smallest first. The dependency order is in [docs/TOD
 
 **Medium**
 - Fixed-step gameplay phase, one structural commit point per phase
-- Empty tag components, disabled entities, transient (not saved) fields
+- Empty tag components, disabled entities, required components, transient (not saved) fields
 - Input actions: polled state, bindings as data, cursor capture as a service
 - Debug draw: lines, shapes, Jolt debug renderer
 - Physics: character visible to queries, `MoveKinematic`, collider scale, velocity changes without rebuilding the body
 - Spot lights, samplers declared by shaders
-- `Spawn` copies prepared values instead of parsing JSON per copy
+- Spawning copies prepared values instead of parsing JSON per copy
 - Runtime without editor dependencies (serializer, scene loader)
 - Runtime HUD layer
 - Migration of saved data (upgrade hooks, renames)
