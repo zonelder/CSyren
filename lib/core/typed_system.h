@@ -10,17 +10,18 @@
 //       static constexpr auto phase = "simulation";
 //       static constexpr std::array after{ "ViewModelSystem" };
 //
-//       void execute(core::Update<PilotState, WeaponInventory>::Where<PlayerTag> players,
-//                    core::Select<physics::CharacterController> controllers,
+//       void execute(core::Query<PilotState, WeaponInventory>::With<PlayerTag> players,
+//                    core::Query<const physics::CharacterController> controllers,
 //                    core::Spawn spawn,                 // grenades, impacts (prefabs)
 //                    core::Res<const core::Time> time);
 //   };
 //
-//   Select<Cs...>   read Cs. Iterating visits the entities that have every C (and
-//                   every Where type); get<C>(id) reads one component of any entity,
-//                   get<C>(ref) the same through an EntityRef field.
-//   Update<Cs...>   the same with write access. A const C inside Update is read-only.
-//   ::Where<Ts...>  presence filter. Never conflicts with other systems.
+//   Query<Cs...>    components: C is written, const C is read. Iterating visits the
+//                   entities that have every C (and every With type) and yields
+//                   [id, c...]; get<C>(id) reads one component of any entity (writes
+//                   it when C is listed without const), get<C>(ref) the same through
+//                   an EntityRef field; patch<C>(id) notifies derived data.
+//   ::With<Ts...>   presence filter. Never conflicts with other systems.
 //   Insert<Cs...>   create entities and add Cs. Other systems see them after the
 //                   structural commit; never conflicts with readers or writers of Cs.
 //   Delete          destroy entities and remove components (after the commit too).
@@ -41,8 +42,8 @@
 // parameters do not use the scene can be run without a bound scene (in tests,
 // system.run()); SystemManager schedules systems only with a scene.
 //
-// Any Select/Update also reads the entity hierarchy (entities()), which changes
-// only in structural commits. Public static members set the schedule: phase
+// Any Query also reads the entity hierarchy (entities()), which changes only in
+// structural commits. Public static members set the schedule: phase
 // (default "simulation"), after, before (a name or std::array of names), affinity,
 // states (std::array of core::StateUse: CPU resource states, e.g. a frame token
 // moving from "ready" to "submitted"), and for GPU recording tasks gpu (std::array
@@ -214,7 +215,7 @@ namespace csyren::core
         {
 #if !CSYREN_INTELLISENSE
             static_assert(CustomSystemParam<P>,
-                "Typed system parameters must be Select, Update, Insert, Delete, Res, Exclusive or a type with "
+                "Typed system parameters must be Query, Insert, Delete, Spawn, Res, Exclusive or a type with "
                 "static describeParam(ParamAccess&) / makeParam(Scene&) or makeParam() (passed by value)");
 #endif
             static void describe(ParamAccess& access) { P::describeParam(access); }
@@ -226,18 +227,18 @@ namespace csyren::core
         };
     }
 
-    // ------------------------------------------------------------------ Select / Update
+    // ------------------------------------------------------------------ Query
     template<class Filters, class... Cs> class ComponentQuery;
 
     template<class... Ws, class... Cs>
     class ComponentQuery<TypeList<Ws...>, Cs...>
     {
 #if !CSYREN_INTELLISENSE // compile-only checks (see CSYREN_INTELLISENSE)
-        static_assert(sizeof...(Cs) > 0, "Select/Update needs at least one component type");
-        static_assert(((!std::is_reference_v<Cs> && !std::is_volatile_v<Cs>) && ...), "Select/Update lists plain component types");
-        static_assert(details::unique_v<std::remove_const_t<Cs>...>, "Select/Update lists a component type twice");
+        static_assert(sizeof...(Cs) > 0, "Query needs at least one component type");
+        static_assert(((!std::is_reference_v<Cs> && !std::is_volatile_v<Cs>) && ...), "Query lists plain component types");
+        static_assert(details::unique_v<std::remove_const_t<Cs>...>, "Query lists a component type twice");
         static_assert(details::unique_v<std::remove_const_t<Cs>..., std::remove_const_t<Ws>...>,
-            "Where<T>: T is listed twice or already selected");
+            "With<T>: T is listed twice or already in the query");
 #endif
         // Filter types lead, as in the classic view<const Tag, ...>() spelling: with
         // pools of equal size the first one decides the iteration order.
@@ -246,7 +247,7 @@ namespace csyren::core
         template<class, class...> friend class ComponentQuery;
     public:
         // Adds presence filters: iteration and contains() also require every T.
-        template<class... Ts> using Where = ComponentQuery<TypeList<Ws..., Ts...>, Cs...>;
+        template<class... Ts> using With = ComponentQuery<TypeList<Ws..., Ts...>, Cs...>;
         using value_type = std::tuple<Entity::ID, Cs&...>;
 
         template<class T> static constexpr bool reads = details::contains_v<std::remove_const_t<T>, std::remove_const_t<Cs>...>;
@@ -285,7 +286,7 @@ namespace csyren::core
             for (auto it = begin(); it != end(); ++it) std::apply(fn, *it);
         }
 
-        // Entity has every listed component and every Where type.
+        // Entity has every listed component and every With type.
         bool contains(Entity::ID id) const
         {
             validate();
@@ -297,7 +298,7 @@ namespace csyren::core
         template<class T> auto get(Entity::ID id) const
         {
             using Value = std::remove_const_t<T>;
-            static_assert(reads<Value>, "get<T>: T is not listed in this Select/Update");
+            static_assert(reads<Value>, "get<T>: T is not listed in this Query");
             using Access = std::conditional_t<!std::is_const_v<T> && writes<Value>, Value, const Value>;
             return _scene->template getComponent<Access>(id);
         }
@@ -315,13 +316,13 @@ namespace csyren::core
         // Every entity with T, whatever else it has (T must be listed here).
         template<class T> ComponentQuery<TypeList<>, const std::remove_const_t<T>> select() const
         {
-            static_assert(reads<T>, "select<T>: T is not listed in this Select/Update");
+            static_assert(reads<T>, "select<T>: T is not listed in this Query");
             return ComponentQuery<TypeList<>, const std::remove_const_t<T>>(*_scene);
         }
         // Bumped on every structural change or patch() of T (for derived caches).
         template<class T> uint64_t componentRevision() const
         {
-            static_assert(reads<T>, "componentRevision<T>: T is not listed in this Select/Update");
+            static_assert(reads<T>, "componentRevision<T>: T is not listed in this Query");
             return _scene->template componentRevision<const std::remove_const_t<T>>();
         }
 
@@ -341,16 +342,16 @@ namespace csyren::core
         }
         template<class T> static constexpr void requireWrite()
         {
-            static_assert(!std::is_const_v<T> && writes<T>, "patch<T>: T must be listed without const in an Update");
+            static_assert(!std::is_const_v<T> && writes<T>, "patch<T>: T must be listed without const in this Query");
         }
         Scene* _scene;
     };
 
-    template<class... Cs> using Select = ComponentQuery<TypeList<>, const std::remove_const_t<Cs>...>;
-    template<class... Cs> using Update = ComponentQuery<TypeList<>, Cs...>;
+    // Components: C is written, const C is read. Filters: Query<...>::With<Ts...>.
+    template<class... Cs> using Query = ComponentQuery<TypeList<>, Cs...>;
 
     // QueryAccess<Q, T>::reads / ::writes: for constraining helpers that accept any
-    // Select/Update (see worldMatrix in transform_hierarchy.h).
+    // Query (see worldMatrix in transform_hierarchy.h).
     template<class Q, class T> struct QueryAccess
     {
         static constexpr bool reads = false;
@@ -422,7 +423,7 @@ namespace csyren::core
     class Res
     {
         static_assert(!std::is_reference_v<T> && !std::is_pointer_v<T>, "Res<T> takes a service type");
-        static_assert(!std::is_same_v<std::remove_const_t<T>, Scene>, "Res<Scene>: use Select/Update/Insert/Delete for scene data");
+        static_assert(!std::is_same_v<std::remove_const_t<T>, Scene>, "Res<Scene>: use Query/Insert/Delete for scene data");
         template<class> friend struct details::Param;
     public:
         T* get() const noexcept { return _service; }

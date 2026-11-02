@@ -72,7 +72,7 @@ VALID_SYSTEMS = '''
             public:
                 static constexpr auto phase = "simulation";
                 static constexpr std::array states{ StateUse::write<Token>("", "ready") };
-                void execute(Select<A>::Where<B> as, Update<B> bs, Insert<A> spawn, Delete remove, Res<const A> config) {
+                void execute(Query<const A>::With<B> as, Query<B> bs, Insert<A> spawn, Delete remove, Res<const A> config) {
                     for (auto [id, a] : as) { if (auto b = bs.get<B>(id)) b->x += a.x; bs.patch<B>(id); }
                     (void)spawn.add<A>(spawn.create()); remove.destroy(0); (void)config.get();
                 }
@@ -84,7 +84,7 @@ VALID_SYSTEMS = '''
             class Setup : public OnceSystem {};
             class Spawner : public TypedSystem<Spawner> {
             public:
-                void execute(Select<A> as, Spawn spawn) {
+                void execute(Query<const A> as, Spawn spawn) {
                     for (auto [id, a] : as)
                         spawn(PrefabRef{ "prefabs/x.prefab" }, { csyren::math::Vector3(float(a.x), 0, 0) })
                             .edit<B>([x = a.x](B& b) { b.x = x; })
@@ -135,18 +135,18 @@ class TypedContractTests(unittest.TestCase):
         # machinery is hidden, the per-call checks stay.
         self.expect_ok(VALID_SYSTEMS, defines=('__INTELLISENSE__',))
         self.expect_error('''
-            class S : public TypedSystem<S> { public: void execute(Select<A> as) { for (auto [id, a] : as) a.x = 1; } };
+            class S : public TypedSystem<S> { public: void execute(Query<const A> as) { for (auto [id, a] : as) a.x = 1; } };
         ''', 'const-qualified', 'read-only', 'C3892', 'C2166', defines=('__INTELLISENSE__',))
 
     def test_get_of_unlisted_type(self):
         self.expect_error('''
-            class S : public TypedSystem<S> { public: void execute(Select<A> as) { (void)as.get<B>(0); } };
+            class S : public TypedSystem<S> { public: void execute(Query<const A> as) { (void)as.get<B>(0); } };
             void use() { S s; s.run(); }
         ''', 'get<T>: T is not listed')
 
-    def test_write_through_select(self):
+    def test_write_through_const(self):
         self.expect_error('''
-            class S : public TypedSystem<S> { public: void execute(Select<A> as) { for (auto [id, a] : as) a.x = 1; } };
+            class S : public TypedSystem<S> { public: void execute(Query<const A> as) { for (auto [id, a] : as) a.x = 1; } };
             void use() { S s; s.run(); }
         ''', 'const-qualified', 'read-only', 'C3892', 'C2166')
 
@@ -158,14 +158,14 @@ class TypedContractTests(unittest.TestCase):
 
     def test_patch_without_write(self):
         self.expect_error('''
-            class S : public TypedSystem<S> { public: void execute(Select<A> as) { as.patch<A>(0); } };
+            class S : public TypedSystem<S> { public: void execute(Query<const A> as) { as.patch<A>(0); } };
             void use() { S s; s.run(); }
-        ''', 'patch<T>: T must be listed without const in an Update')
+        ''', 'patch<T>: T must be listed without const in this Query')
 
     def test_unused_parameter_in_strict_mode(self):
         self.expect_error('''
             CS_STRICT_SYSTEMS_BEGIN
-            class S : public TypedSystem<S> { public: void execute(Select<A> as, Res<const B> unused) { for (auto [id, a] : as) (void)a; } };
+            class S : public TypedSystem<S> { public: void execute(Query<const A> as, Res<const B> unused) { for (auto [id, a] : as) (void)a; } };
             CS_STRICT_SYSTEMS_END
             void use() { S s; s.run(); }
         ''', 'unused parameter', 'C4100')
@@ -178,7 +178,7 @@ class TypedContractTests(unittest.TestCase):
 
     def test_parameter_by_reference(self):
         self.expect_error('''
-            class S : public TypedSystem<S> { public: void execute(Select<A>& as) { (void)as; } };
+            class S : public TypedSystem<S> { public: void execute(Query<const A>& as) { (void)as; } };
             void use() { S s; (void)s.describe(); }
         ''', 'Typed system parameters are passed by value')
 
@@ -193,7 +193,7 @@ class TypedContractTests(unittest.TestCase):
             class S : public TypedSystem<S> {
                 static constexpr auto phase = "hidden";
             public:
-                void execute(Select<A> as) { (void)as; }
+                void execute(Query<const A> as) { (void)as; }
             };
             void use() { S s; (void)s.describe(); }
         ''', 'private')
@@ -202,7 +202,7 @@ class TypedContractTests(unittest.TestCase):
         self.expect_error('''
             class S : public TypedSystem<S> {
             public:
-                void execute(Select<A> as) { (void)as; }
+                void execute(Query<const A> as) { (void)as; }
                 TaskDescription describe() const override { return {}; }
             };
         ''', 'final')

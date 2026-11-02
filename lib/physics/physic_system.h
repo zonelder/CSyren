@@ -33,11 +33,11 @@ namespace csyren::physics
     public:
         static constexpr auto phase = "simulation";
 
-        using Bodies = core::Update<RigidBody, core::Transform>;
+        using Bodies = core::Query<RigidBody, core::Transform>;
         // Shapes, for bodies rebuilt before the step.
-        using Colliders = core::Select<BoxCollider, SphereCollider, CapsuleCollider>;
+        using Colliders = core::Query<const BoxCollider, const SphereCollider, const CapsuleCollider>;
         // Every character (its Transform is reached through Bodies).
-        using Characters = core::Update<CharacterController>;
+        using Characters = core::Query<CharacterController>;
 
         void execute(Bodies bodies, Colliders colliders, Characters characters, core::Res<PhysicsEngine> engine,
             core::Res<const core::Time> time, core::Res<const PhysicsLayers> layers);
@@ -59,9 +59,9 @@ namespace csyren::physics
         static constexpr auto after = "SceneEventsSystem";
 
         // Read for (re)building bodies: shapes, body settings and world poses.
-        using Sources = core::Select<core::Transform, RigidBody, BoxCollider, SphereCollider, CapsuleCollider>;
+        using Sources = core::Query<const core::Transform, const RigidBody, const BoxCollider, const SphereCollider, const CapsuleCollider>;
         // Characters (the rebuild records the shape height).
-        using Characters = core::Update<CharacterController>;
+        using Characters = core::Query<CharacterController>;
 
         void execute(Sources sources, Characters characters, core::Res<PhysicsEngine> engine, core::Res<const PhysicsLayers> layers);
     };

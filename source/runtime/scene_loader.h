@@ -16,7 +16,7 @@ namespace csyren
         static constexpr auto phase = "scene";
         static constexpr core::TaskAffinity affinity = core::TaskAffinity::MainThread;
 
-        void execute(core::Select<SceneLoaderRequest> requests, core::Delete remove, core::Res<editor::SceneSession> sessionService)
+        void execute(core::Query<const SceneLoaderRequest> requests, core::Delete remove, core::Res<editor::SceneSession> sessionService)
         {
             auto& session = *sessionService;
             if (session.playing()) return;

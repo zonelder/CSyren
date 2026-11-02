@@ -36,7 +36,7 @@ namespace csyren::render
         };
 
         // World matrices come from the renderer's per-frame copy of the Transforms.
-        using Meshes = core::Select<core::Transform, MeshFilter, MeshRenderer>;
+        using Meshes = core::Query<const core::Transform, const MeshFilter, const MeshRenderer>;
 
         void execute(Recorder recorder, Meshes meshes, core::Res<const ResourceManager> resourceManager, core::Res<const SceneLights> sceneLights)
         {

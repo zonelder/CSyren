@@ -52,7 +52,7 @@ class TMoveSystem : public TypedSystem<TMoveSystem> {
 public:
     static constexpr auto phase = "custom";
     static constexpr std::array after{ "TSpawnSystem" };
-    void execute(Update<TPosition, const TVelocity>::Where<TTag> movers, Res<const TConfig> config) {
+    void execute(Query<TPosition, const TVelocity>::With<TTag> movers, Res<const TConfig> config) {
         for (auto [id, position, velocity] : movers) position.x += velocity.x * config->scale;
     }
 };
@@ -60,7 +60,7 @@ class TCleanupSystem : public TypedSystem<TCleanupSystem> {
 public:
     static constexpr auto phase = "custom";
     static constexpr auto after = "TMoveSystem";
-    void execute(Select<TPosition> positions, Delete remove) {
+    void execute(Query<const TPosition> positions, Delete remove) {
         for (auto [id, position] : positions) {
             if (position.x >= 100) remove.destroy(id);
             else remove.remove<TVelocity>(id); // movers stop after this frame
@@ -71,7 +71,7 @@ class TObserverSystem : public TypedSystem<TObserverSystem> {
 public:
     static constexpr auto phase = "custom";
     static constexpr std::array after{ "TCleanupSystem" };
-    void execute(Select<TPosition> positions, Res<TCounter> counter, Res<const TMissing> missing) {
+    void execute(Query<const TPosition> positions, Res<TCounter> counter, Res<const TMissing> missing) {
         counter->sum = 0;
         positions.each([&](Entity::ID, const TPosition& position) { counter->sum += position.x; });
         counter->sawMissing = static_cast<bool>(missing);
@@ -126,7 +126,7 @@ class TMergeSystem : public TypedSystem<TMergeSystem> {
 public:
     static constexpr auto affinity = TaskAffinity::MainThread;
     static constexpr std::array before{ "a", "b" };
-    void execute(Select<TPosition, TVelocity> read, Update<TPosition>::Where<TVelocity, TTag> write,
+    void execute(Query<const TPosition, const TVelocity> read, Query<TPosition>::With<TVelocity, TTag> write,
         Insert<TPosition, TTag> spawn, Res<const TConfig> config, Res<TConfig> mutableConfig) {
         (void)read; (void)write; (void)spawn; (void)config; (void)mutableConfig;
     }
@@ -159,7 +159,7 @@ public:
     static constexpr auto phase = "render";
     static constexpr auto gpuScope = GpuTaskScope::View;
     static constexpr std::array gpu{ GpuUse{ "scene.hdr", 4u, AccessMode::Write }, GpuUse{ "scene.depth", 8u, AccessMode::Read } };
-    void execute(TRecorder recorder, Select<TPosition> positions) { (void)recorder; (void)positions; }
+    void execute(TRecorder recorder, Query<const TPosition> positions) { (void)recorder; (void)positions; }
 };
 class TGpuPassWithoutResources : public TypedSystem<TGpuPassWithoutResources> {
 public:
@@ -192,7 +192,7 @@ public:
 };
 class TSceneQuerySystem : public TypedSystem<TSceneQuerySystem> {
 public:
-    void execute(Select<TPosition> positions) { (void)positions; }
+    void execute(Query<const TPosition> positions) { (void)positions; }
 };
 TEST(TypedSystem, RunsWithoutASceneWhenNoParameterUsesIt) {
     struct Cleanup { ~Cleanup() { details::ServiceRegistry::shutdownAll(); } } cleanup;
@@ -359,7 +359,7 @@ TEST(TypedSystem, RunsThroughTheFrameGraph) {
 template<class Derived> class TTagger : public TypedSystem<Derived> {
 public:
     static constexpr auto phase = "custom";
-    void execute(Select<TPosition> positions, Select<TTag> tagged, Insert<TTag> tag) {
+    void execute(Query<const TPosition> positions, Query<const TTag> tagged, Insert<TTag> tag) {
         for (auto [id, position] : positions) { (void)position; if (!tagged.contains(id)) tag.add<TTag>(id); }
     }
 };
@@ -454,7 +454,7 @@ public:
     inline static EntityRef target;
     inline static int seen = 0;
     inline static bool contained = false;
-    void execute(Select<TPosition> positions) {
+    void execute(Query<const TPosition> positions) {
         const auto position = positions.get<TPosition>(target);
         seen = position ? position->x : -1;
         contained = positions.contains(target);

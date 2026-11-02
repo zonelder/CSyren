@@ -48,10 +48,10 @@ namespace csyren::core
         return setWorldPose(scene, id, position, rotation, worldMatrix(scene, parent), worldRotation(scene, parent));
     }
 
-    // The same queries for typed systems (core/typed_system.h): pass any Select or
-    // Update that lists Transform; setWorldPose needs Transform in an Update.
-    template<class Query> requires (QueryAccess<Query, Transform>::reads)
-    math::Matrix4x4 worldMatrix(const Query& query, Entity::ID id)
+    // The same queries for typed systems (core/typed_system.h): pass any Query that
+    // lists Transform; setWorldPose needs Transform listed without const.
+    template<class Q> requires (QueryAccess<Q, Transform>::reads)
+    math::Matrix4x4 worldMatrix(const Q& query, Entity::ID id)
     {
         math::Matrix4x4 result;
         const auto& entities = query.entities();
@@ -59,8 +59,8 @@ namespace csyren::core
             if (auto tr = query.template get<const Transform>(entity->id)) result *= tr->localMatrix();
         return result;
     }
-    template<class Query> requires (QueryAccess<Query, Transform>::reads)
-    math::Quaternion worldRotation(const Query& query, Entity::ID id)
+    template<class Q> requires (QueryAccess<Q, Transform>::reads)
+    math::Quaternion worldRotation(const Q& query, Entity::ID id)
     {
         math::Quaternion result;
         const auto& entities = query.entities();
@@ -68,14 +68,14 @@ namespace csyren::core
             if (auto tr = query.template get<const Transform>(entity->id)) result *= tr->rotation;
         return result;
     }
-    template<class Query> requires (QueryAccess<Query, Transform>::reads)
-    Entity::ID parentOf(const Query& query, Entity::ID id)
+    template<class Q> requires (QueryAccess<Q, Transform>::reads)
+    Entity::ID parentOf(const Q& query, Entity::ID id)
     {
         const auto* entity = query.entities().try_get(id);
         return entity ? entity->parent : Entity::invalidID;
     }
-    template<class Query> requires (QueryAccess<Query, Transform>::writes)
-    bool setWorldPose(const Query& query, Entity::ID id, const math::Vector3& position,
+    template<class Q> requires (QueryAccess<Q, Transform>::writes)
+    bool setWorldPose(const Q& query, Entity::ID id, const math::Vector3& position,
         const math::Quaternion& rotation, const math::Matrix4x4& parentMatrix, const math::Quaternion& parentRotation)
     {
         auto transform = query.template get<Transform>(id);
@@ -88,8 +88,8 @@ namespace csyren::core
         if (transform->position.exactEqual(localPosition) && transform->rotation.exactEqual(localRotation)) return true;
         return query.patch(transform, [&](Transform& tr) { tr.position = localPosition; tr.rotation = localRotation; });
     }
-    template<class Query> requires (QueryAccess<Query, Transform>::writes)
-    bool setWorldPose(const Query& query, Entity::ID id, const math::Vector3& position, const math::Quaternion& rotation)
+    template<class Q> requires (QueryAccess<Q, Transform>::writes)
+    bool setWorldPose(const Q& query, Entity::ID id, const math::Vector3& position, const math::Quaternion& rotation)
     {
         const auto parent = parentOf(query, id);
         return setWorldPose(query, id, position, rotation, worldMatrix(query, parent), worldRotation(query, parent));
@@ -110,9 +110,9 @@ namespace csyren::core
             const EntitySet<Entity>& entities() const { return scene.entities(); }
             auto view() const { return scene.view<const Transform>(); }
         };
-        template<class Query> struct QuerySource
+        template<class Q> struct QuerySource
         {
-            const Query& query;
+            const Q& query;
             uint64_t identity() const { return query.sceneIdentity(); }
             uint64_t hierarchy() const { return query.hierarchyRevision(); }
             uint64_t transforms() const { return query.template componentRevision<Transform>(); }
@@ -121,16 +121,16 @@ namespace csyren::core
         };
     public:
         bool update(Scene& scene) { return updateFrom(SceneSource{ scene }); }
-        // Typed systems: any Select/Update that lists Transform.
-        template<class Query> requires (QueryAccess<Query, Transform>::reads)
-        bool update(const Query& query) { return updateFrom(QuerySource<Query>{ query }); }
+        // Typed systems: any Query that lists Transform.
+        template<class Q> requires (QueryAccess<Q, Transform>::reads)
+        bool update(const Q& query) { return updateFrom(QuerySource<Q>{ query }); }
 
         // Run once in tree order. A visitor may edit existing local values;
         // descendants immediately inherit the updated parent. No structural edits
         // are allowed during propagation (the same borrowing rule as SceneView).
         template<class Before> void propagate(Scene& scene, Before before) { propagateFrom(SceneSource{ scene }, before); }
-        template<class Query, class Before> requires (QueryAccess<Query, Transform>::reads)
-        void propagate(const Query& query, Before before) { propagateFrom(QuerySource<Query>{ query }, before); }
+        template<class Q, class Before> requires (QueryAccess<Q, Transform>::reads)
+        void propagate(const Q& query, Before before) { propagateFrom(QuerySource<Q>{ query }, before); }
 
         const math::Matrix4x4& matrix(Entity::ID id) const { return _worlds[id].matrix; }
         const math::Quaternion& rotation(Entity::ID id) const { return _worlds[id].rotation; }

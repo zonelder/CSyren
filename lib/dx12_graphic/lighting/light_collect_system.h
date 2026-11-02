@@ -21,9 +21,9 @@ namespace csyren::render
         static constexpr std::array before{ "FrameAcquireSystem" };
         static constexpr core::TaskAffinity affinity = core::TaskAffinity::MainThread;
 
-        void execute(core::Select<LightingSettings> lightingSettings,
-            core::Select<core::Transform, DirectionalLight> directionalLights,
-            core::Select<core::Transform, PointLight> pointLights,
+        void execute(core::Query<const LightingSettings> lightingSettings,
+            core::Query<const core::Transform, const DirectionalLight> directionalLights,
+            core::Query<const core::Transform, const PointLight> pointLights,
             core::Res<SceneLights> sceneLights, core::Res<Renderer> output)
         {
             using namespace DirectX;

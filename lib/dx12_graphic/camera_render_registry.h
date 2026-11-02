@@ -37,7 +37,7 @@ namespace csyren::render::details
                 if (entry.camera.get() == &camera) return entry.view->target;
             return {};
         }
-        // `query` is a Select/Update that lists Transform.
+        // `query` is a core::Query that lists Transform.
         template<class Query,class Callback> void each(const Query& query,Callback callback)
         {
             for (auto& [id,entry] : _entries) {

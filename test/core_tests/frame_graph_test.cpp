@@ -242,7 +242,7 @@ public:
     static inline int observed = 0;
     static constexpr auto phase = "custom";
     static constexpr auto after = "StructuralProducer";
-    void execute(Select<Position> positions) {
+    void execute(Query<const Position> positions) {
         for (auto [id, position] : positions) observed = position.x;
     }
 };

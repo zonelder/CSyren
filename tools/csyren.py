@@ -539,7 +539,7 @@ namespace {namespace}
     public:
         static constexpr auto phase = "simulation";
 
-        void execute(csyren::core::Update<csyren::core::Transform, const Spinner> spinners,
+        void execute(csyren::core::Query<csyren::core::Transform, const Spinner> spinners,
                      csyren::core::Res<const csyren::core::Time> time)
         {{
             using namespace csyren;

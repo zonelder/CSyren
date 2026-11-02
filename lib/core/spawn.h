@@ -3,7 +3,7 @@
 //
 //   class LauncherSystem : public core::TypedSystem<LauncherSystem> {
 //   public:
-//       void execute(core::Update<Launcher, const core::Transform> launchers, core::Spawn spawn) {
+//       void execute(core::Query<Launcher, const core::Transform> launchers, core::Spawn spawn) {
 //           for (auto [id, launcher, tr] : launchers)
 //               launcher.last = spawn(launcher.projectile, { tr.position, tr.rotation })
 //                   .edit<physics::RigidBody>([velocity = launcher.velocity](physics::RigidBody& body) { body.linearVelocity = velocity; })

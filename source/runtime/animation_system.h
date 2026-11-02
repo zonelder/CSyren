@@ -26,7 +26,7 @@ namespace csyren
         static constexpr std::array after{ "PhysicsSystem" };
 
         // Animated targets are any entities with a Transform in the animator's subtree.
-        void execute(core::Update<Animator> animators, core::Update<core::Transform> transforms,
+        void execute(core::Query<Animator> animators, core::Query<core::Transform> transforms,
             core::Res<const render::ResourceManager> resourceManager, core::Res<const core::Time> time)
         {
             using namespace math;

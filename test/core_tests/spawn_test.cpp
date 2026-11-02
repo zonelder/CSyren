@@ -79,7 +79,7 @@ size_t countPayloads(Scene& scene) {
 class SSpawner : public TypedSystem<SSpawner> {
 public:
     static constexpr auto phase = "custom";
-    void execute(Select<SOrigin> origins, Spawn spawn) {
+    void execute(Query<const SOrigin> origins, Spawn spawn) {
         ++_frame;
         for (auto [id, origin] : origins)
             spawn(PrefabRef{ "prefabs/box.prefab" }, { math::Vector3(float(origin.count), 0, 0) })
@@ -96,7 +96,7 @@ class SCounter : public TypedSystem<SCounter> {
 public:
     static constexpr auto phase = "custom";
     static constexpr auto after = "SSpawner";
-    void execute(Select<SMarker> markers, Res<SSeen> seen) {
+    void execute(Query<const SMarker> markers, Res<SSeen> seen) {
         seen->spawned = 0;
         for (auto [id, marker] : markers) { (void)marker; ++seen->spawned; }
     }
@@ -107,7 +107,7 @@ REGISTER_SYSTEM(SCounter)
 class SOtherSpawner : public TypedSystem<SOtherSpawner> {
 public:
     static constexpr auto phase = "custom";
-    void execute(Select<SOrigin> origins, Spawn spawn) {
+    void execute(Query<const SOrigin> origins, Spawn spawn) {
         for (auto [id, origin] : origins) { (void)origin; spawn(PrefabRef{ "prefabs/box.prefab" }); }
     }
 };
@@ -131,7 +131,7 @@ class SRootSpawner : public TypedSystem<SRootSpawner> {
 public:
     static constexpr auto phase = "custom";
     inline static std::vector<Entity::ID> roots;
-    void execute(Select<SOrigin> origins, Spawn spawn) {
+    void execute(Query<const SOrigin> origins, Spawn spawn) {
         for (auto [id, origin] : origins) { (void)origin; roots.push_back(spawn(PrefabRef{ "prefabs/box.prefab" }).root()); }
         roots.push_back(spawn(PrefabRef{ "prefabs/missing.prefab" }).root());
         roots.push_back(spawn(PrefabRef{}).root());

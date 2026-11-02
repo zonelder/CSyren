@@ -123,7 +123,7 @@ namespace csyren::render
         void detachCameraScene() { _views.clear(); _primaryView.reset(); _cameraViews.detach(); }
         // Cameras with a Transform; the world matrices are computed for every
         // Transform (the query's select<Transform>()).
-        using CameraQuery = core::Select<core::Camera, core::Transform>;
+        using CameraQuery = core::Query<const core::Camera, const core::Transform>;
         void prepareCameraViews(const CameraQuery& cameras,float time,UINT width,UINT height);
         const core::WorldTransforms& worldTransforms() const { return _worldTransforms; }
         const auto& cameraViews() const { return _views; }
