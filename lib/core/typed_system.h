@@ -21,7 +21,10 @@
 //                   [id, c...]; get<C>(id) reads one component of any entity (writes
 //                   it when C is listed without const), get<C>(ref) the same through
 //                   an EntityRef field; patch<C>(id) notifies derived data.
-//   ::With<Ts...>   presence filter. Never conflicts with other systems.
+//   ::With<Ts...>   presence filter: only entities that also have every T.
+//   ::Without<Ts...> presence filter: skips entities that have any T. Filters never
+//                   conflict with other systems. single() returns the only matching
+//                   row, empty when none or several match.
 //   Insert<Cs...>   create entities and add Cs. Other systems see them after the
 //                   structural commit; never conflicts with readers or writers of Cs.
 //   Delete          destroy entities and remove components (after the commit too).
@@ -63,6 +66,7 @@
 #include <array>
 #include <concepts>
 #include <memory>
+#include <optional>
 #include <ranges>
 #include <stdexcept>
 #include <string>
@@ -228,10 +232,10 @@ namespace csyren::core
     }
 
     // ------------------------------------------------------------------ Query
-    template<class Filters, class... Cs> class ComponentQuery;
+    template<class With, class Without, class... Cs> class ComponentQuery;
 
-    template<class... Ws, class... Cs>
-    class ComponentQuery<TypeList<Ws...>, Cs...>
+    template<class... Ws, class... Xs, class... Cs>
+    class ComponentQuery<TypeList<Ws...>, TypeList<Xs...>, Cs...>
     {
 #if !CSYREN_INTELLISENSE // compile-only checks (see CSYREN_INTELLISENSE)
         static_assert(sizeof...(Cs) > 0, "Query needs at least one component type");
@@ -239,15 +243,20 @@ namespace csyren::core
         static_assert(details::unique_v<std::remove_const_t<Cs>...>, "Query lists a component type twice");
         static_assert(details::unique_v<std::remove_const_t<Cs>..., std::remove_const_t<Ws>...>,
             "With<T>: T is listed twice or already in the query");
+        static_assert(details::unique_v<std::remove_const_t<Cs>..., std::remove_const_t<Ws>..., std::remove_const_t<Xs>...>,
+            "Without<T>: T is listed twice, in With or in the query");
 #endif
         // Filter types lead, as in the classic view<const Tag, ...>() spelling: with
         // pools of equal size the first one decides the iteration order.
         using View = SceneView<const std::remove_const_t<Ws>..., Cs...>;
+        using Exclusion = SceneExclusion<std::remove_const_t<Xs>...>;
         template<class> friend struct details::Param;
-        template<class, class...> friend class ComponentQuery;
+        template<class, class, class...> friend class ComponentQuery;
     public:
-        // Adds presence filters: iteration and contains() also require every T.
-        template<class... Ts> using With = ComponentQuery<TypeList<Ws..., Ts...>, Cs...>;
+        // Presence filters: iteration, contains() and single() also require every T
+        // (With) or skip entities that have any T (Without).
+        template<class... Ts> using With = ComponentQuery<TypeList<Ws..., Ts...>, TypeList<Xs...>, Cs...>;
+        template<class... Ts> using Without = ComponentQuery<TypeList<Ws...>, TypeList<Xs..., Ts...>, Cs...>;
         using value_type = std::tuple<Entity::ID, Cs&...>;
 
         template<class T> static constexpr bool reads = details::contains_v<std::remove_const_t<T>, std::remove_const_t<Cs>...>;
@@ -263,18 +272,24 @@ namespace csyren::core
             iterator(const iterator&) = delete;
             iterator& operator=(const iterator&) = delete;
             value_type operator*() const { return project(*_it, std::make_index_sequence<sizeof...(Cs)>{}); }
-            iterator& operator++() { ++_it; return *this; }
+            iterator& operator++() { ++_it; skip(); return *this; }
             friend bool operator==(const iterator& it, sentinel) { return it._it == it._view.end(); }
             friend bool operator!=(const iterator& it, sentinel s) { return !(it == s); }
         private:
             friend class ComponentQuery;
-            explicit iterator(Scene* scene) : _view(scene), _it(_view.begin()) {}
+            explicit iterator(Scene* scene) : _view(scene), _it(_view.begin()), _exclusion(scene) { skip(); }
             // Drops the filter columns: (id, Ws&..., Cs&...) -> (id, Cs&...).
             template<class Tuple, size_t... I>
             static value_type project(Tuple&& row, std::index_sequence<I...>)
             { return value_type(std::get<0>(row), std::get<1 + sizeof...(Ws) + I>(row)...); }
+            void skip()
+            {
+                if constexpr (sizeof...(Xs) > 0)
+                    while (_it != _view.end() && _exclusion.excludes(std::get<0>(*_it))) ++_it;
+            }
             mutable View _view; // end() is non-const on SceneView
             typename View::iterator _it;
+            Exclusion _exclusion;
         };
 
         // Each loop takes a fresh snapshot (it sees components this task staged before it).
@@ -286,15 +301,27 @@ namespace csyren::core
             for (auto it = begin(); it != end(); ++it) std::apply(fn, *it);
         }
 
-        // Entity has every listed component and every With type.
+        // The only entity that matches; empty when none or more than one match.
+        std::optional<value_type> single() const
+        {
+            auto it = begin();
+            if (it == end()) return std::nullopt;
+            std::optional<value_type> row(std::in_place, *it);
+            ++it;
+            if (it != end()) return std::nullopt;
+            return row;
+        }
+
+        // Entity has every listed component and every With type, and no Without type.
         bool contains(Entity::ID id) const
         {
             validate();
-            return View(_scene).contains(id);
+            return View(_scene).contains(id) && !Exclusion(_scene).excludes(id);
         }
         bool contains(EntityRef reference) const { return contains(reference.id); }
 
-        // One component of any entity; read-only unless T is listed without const.
+        // One component of any entity (filters do not apply); read-only unless T is
+        // listed without const.
         template<class T> auto get(Entity::ID id) const
         {
             using Value = std::remove_const_t<T>;
@@ -314,10 +341,10 @@ namespace csyren::core
         { requireWrite<T>(); return _scene->patch(component, std::forward<Edit>(edit)); }
 
         // Every entity with T, whatever else it has (T must be listed here).
-        template<class T> ComponentQuery<TypeList<>, const std::remove_const_t<T>> select() const
+        template<class T> ComponentQuery<TypeList<>, TypeList<>, const std::remove_const_t<T>> select() const
         {
             static_assert(reads<T>, "select<T>: T is not listed in this Query");
-            return ComponentQuery<TypeList<>, const std::remove_const_t<T>>(*_scene);
+            return ComponentQuery<TypeList<>, TypeList<>, const std::remove_const_t<T>>(*_scene);
         }
         // Bumped on every structural change or patch() of T (for derived caches).
         template<class T> uint64_t componentRevision() const
@@ -339,6 +366,7 @@ namespace csyren::core
         {
             (_scene->template validateAccess<Cs>(), ...);
             (_scene->template validatePresence<Ws>(), ...);
+            (_scene->template validatePresence<Xs>(), ...);
         }
         template<class T> static constexpr void requireWrite()
         {
@@ -347,8 +375,9 @@ namespace csyren::core
         Scene* _scene;
     };
 
-    // Components: C is written, const C is read. Filters: Query<...>::With<Ts...>.
-    template<class... Cs> using Query = ComponentQuery<TypeList<>, Cs...>;
+    // Components: C is written, const C is read. Filters: Query<...>::With<Ts...>,
+    // Query<...>::Without<Ts...>.
+    template<class... Cs> using Query = ComponentQuery<TypeList<>, TypeList<>, Cs...>;
 
     // QueryAccess<Q, T>::reads / ::writes: for constraining helpers that accept any
     // Query (see worldMatrix in transform_hierarchy.h).
@@ -357,7 +386,7 @@ namespace csyren::core
         static constexpr bool reads = false;
         static constexpr bool writes = false;
     };
-    template<class... Ws, class... Cs, class T> struct QueryAccess<ComponentQuery<TypeList<Ws...>, Cs...>, T>
+    template<class... Ws, class... Xs, class... Cs, class T> struct QueryAccess<ComponentQuery<TypeList<Ws...>, TypeList<Xs...>, Cs...>, T>
     {
         static constexpr bool reads = details::contains_v<std::remove_const_t<T>, std::remove_const_t<Cs>...>;
         static constexpr bool writes = details::contains_v<std::remove_const_t<T>, Cs...>;
@@ -441,10 +470,12 @@ namespace csyren::core
 
     namespace details
     {
-        template<class... Ws, class... Cs> struct Param<ComponentQuery<TypeList<Ws...>, Cs...>>
+        template<class... Ws, class... Xs, class... Cs> struct Param<ComponentQuery<TypeList<Ws...>, TypeList<Xs...>, Cs...>>
         {
-            static void describe(ParamAccess& access) { (access.component<Cs>(), ...); (access.filter<Ws>(), ...); }
-            static ComponentQuery<TypeList<Ws...>, Cs...> make(Scene* scene) { return ComponentQuery<TypeList<Ws...>, Cs...>(requireScene(scene)); }
+            using Query = ComponentQuery<TypeList<Ws...>, TypeList<Xs...>, Cs...>;
+            static void describe(ParamAccess& access)
+            { (access.component<Cs>(), ...); (access.filter<Ws>(), ...); (access.filter<Xs>(), ...); }
+            static Query make(Scene* scene) { return Query(requireScene(scene)); }
         };
         template<class... Cs> struct Param<Insert<Cs...>>
         {

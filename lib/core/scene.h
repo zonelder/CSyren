@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <functional>
 #include <type_traits>
+#include <tuple>
 
 #include "cstdmf/assert_helpler.h"
 #include "component_base.h"
@@ -133,6 +134,8 @@ namespace csyren::core
 {
 	template<typename... Cs>
 	class SceneView;
+	template<class... Xs>
+	class SceneExclusion;
 
 	//class Application;
 	class Scene
@@ -144,6 +147,7 @@ namespace csyren::core
 		friend SceneTest;
         friend class EntityBatch;
 		template<typename...> friend class SceneView;
+		template<class...> friend class SceneExclusion;
 
 		using DestructFn = bool(Scene*, Entity::ID);
 		using GetRawFn = void* (Scene*, Entity::ID);
@@ -194,6 +198,7 @@ namespace csyren::core
         class Transaction {
             friend class Scene;
             template<typename...> friend class SceneView;
+            template<class...> friend class SceneExclusion;
             std::vector<std::function<void()>> commands;
             std::vector<std::function<void()>> cancellations;
             // Staged additions (StagedComponent<T>) and removals (nullptr) by
@@ -826,6 +831,32 @@ namespace csyren::core
 		mutable bool _empty{ false };
 	};
 
+
+	// Without filters of typed queries (core/typed_system.h): whether an entity has
+	// any of Xs. The pools are looked up once (per loop); components the running
+	// task has staged or removed count as well.
+	template<class... Xs>
+	class SceneExclusion
+	{
+		template<class T>
+		using PoolPtr = std::shared_ptr<ComponentPool<std::remove_const_t<T>>>;
+	public:
+		explicit SceneExclusion(Scene* scene) : _scene(scene)
+		{
+			auto* tx = scene->transaction();
+			_staged = tx && !tx->components.empty();
+			if (!_staged) ((std::get<PoolPtr<Xs>>(_pools) = scene->template getPool<std::remove_const_t<Xs>>()), ...);
+		}
+		[[nodiscard]] bool excludes(Entity::ID id) const
+		{
+			if (_staged) return (bool(_scene->template lookupComponent<const std::remove_const_t<Xs>>(id)) || ...);
+			return ((std::get<PoolPtr<Xs>>(_pools) && std::get<PoolPtr<Xs>>(_pools)->contains(id)) || ...);
+		}
+	private:
+		Scene* _scene;
+		std::tuple<PoolPtr<Xs>...> _pools;
+		bool _staged = false;
+	};
 }
 
 #include "component_registry.inl"

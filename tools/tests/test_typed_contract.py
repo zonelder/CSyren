@@ -72,8 +72,9 @@ VALID_SYSTEMS = '''
             public:
                 static constexpr auto phase = "simulation";
                 static constexpr std::array states{ StateUse::write<Token>("", "ready") };
-                void execute(Query<const A>::With<B> as, Query<B> bs, Insert<A> spawn, Delete remove, Res<const A> config) {
+                void execute(Query<const A>::With<B> as, Query<B>::Without<Token> bs, Insert<A> spawn, Delete remove, Res<const A> config) {
                     for (auto [id, a] : as) { if (auto b = bs.get<B>(id)) b->x += a.x; bs.patch<B>(id); }
+                    if (auto row = bs.single()) std::get<1>(*row).x = 0;
                     (void)spawn.add<A>(spawn.create()); remove.destroy(0); (void)config.get();
                 }
             };
@@ -155,6 +156,12 @@ class TypedContractTests(unittest.TestCase):
             class S : public TypedSystem<S> { public: void execute(Insert<A> spawn) { (void)spawn.add<B>(spawn.create()); } };
             void use() { S s; s.run(); }
         ''', 'add<T>: T is not listed in this Insert')
+
+    def test_without_of_a_listed_type(self):
+        self.expect_error('''
+            class S : public TypedSystem<S> { public: void execute(Query<const A>::Without<A> as) { (void)as; } };
+            void use() { S s; (void)s.describe(); }
+        ''', 'Without<T>: T is listed twice, in With or in the query')
 
     def test_patch_without_write(self):
         self.expect_error('''

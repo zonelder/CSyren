@@ -448,6 +448,81 @@ TEST(TypedSystem, FiltersAllowPresenceTestsOnly) {
 }
 #endif
 
+// Without skips entities that have a type; single() is the only matching row.
+class TWithoutReader : public TypedSystem<TWithoutReader> {
+public:
+    inline static int untagged = 0, moving = 0, only = -1, none = -1, several = -1;
+    inline static bool containsTagged = true, containsUntagged = false;
+    inline static Entity::ID tagged = Entity::invalidID, still = Entity::invalidID;
+    void execute(Query<const TPosition>::Without<TTag> positions,
+                 Query<const TPosition>::With<TVelocity>::Without<TTag> movers,
+                 Query<const TVelocity>::With<TTag> taggedMovers) {
+        untagged = 0; moving = 0;
+        for (auto [id, position] : positions) untagged += position.x;
+        for (auto [id, position] : movers) moving += position.x;
+        containsTagged = positions.contains(tagged);
+        containsUntagged = positions.contains(still);
+        const auto row = movers.single();
+        only = row ? std::get<1>(*row).x : -1;
+        const auto severalRows = positions.single();
+        several = severalRows ? std::get<1>(*severalRows).x : -1;
+        const auto noRow = taggedMovers.single();
+        none = noRow ? std::get<1>(*noRow).x : -1;
+    }
+};
+TEST(TypedSystem, WithoutSkipsEntitiesAndSingleNeedsExactlyOne) {
+    const auto d = TWithoutReader{}.describe();
+    EXPECT_FALSE(findAccess(d, TypeKey::of<TTag>(), true)); // a filter, not an access
+    EXPECT_TRUE(listed(d.filters, TypeKey::of<TTag>()));
+    EXPECT_FALSE(d.structuralChanges);
+
+    registerTypedComponents();
+    ServiceScene services;
+    details::ServiceRegistry::initializeAll();
+    auto& scene = services.scene;
+    TWithoutReader::tagged = scene.createEntity();
+    scene.addComponent<TPosition>(TWithoutReader::tagged, 1); scene.addComponent<TTag>(TWithoutReader::tagged);
+    TWithoutReader::still = scene.createEntity();
+    scene.addComponent<TPosition>(TWithoutReader::still, 10);
+    const auto mover = scene.createEntity();
+    scene.addComponent<TPosition>(mover, 100); scene.addComponent<TVelocity>(mover, 1);
+    TWithoutReader reader;
+    reader.run();
+    EXPECT_EQ(TWithoutReader::untagged, 110);
+    EXPECT_EQ(TWithoutReader::moving, 100);
+    EXPECT_FALSE(TWithoutReader::containsTagged);
+    EXPECT_TRUE(TWithoutReader::containsUntagged);
+    EXPECT_EQ(TWithoutReader::only, 100);
+    EXPECT_EQ(TWithoutReader::several, -1); // two untagged entities
+    EXPECT_EQ(TWithoutReader::none, -1);    // no tagged mover
+}
+
+TEST(TypedSystem, WithoutFiltersDoNotConflictWithWriters) {
+    FrameGraph graph; graph.phase({"custom"});
+    auto reader = TWithoutReader{}.describe(); reader.phase = "custom";
+    TaskDescription writer; writer.phase = "custom"; writer.write<TTag>();
+    graph.task("reader", reader, []{}); graph.task("writer", writer, []{});
+    graph.compile();
+    EXPECT_FALSE(graph.dependsOn("reader", "writer")); EXPECT_FALSE(graph.dependsOn("writer", "reader"));
+}
+
+// Components staged by the running task count for Without (as for With).
+TEST(TypedSystem, WithoutSeesComponentsStagedByTheTask) {
+    registerTypedComponents();
+    SceneInstance instance; auto& scene = instance.scene();
+    const auto a = scene.createEntity(); scene.addComponent<TPosition>(a, 1);
+    const auto b = scene.createEntity(); scene.addComponent<TPosition>(b, 2);
+    TypedAccess::Transaction tx;
+    TaskDescription d; d.read<TPosition>().write<TTag>(); d.structuralChanges = true;
+    TypedAccess::TaskScope scope(scene, &tx, &d);
+    scene.addComponent<TTag>(a); // staged until the commit
+    auto untagged = details::Param<Query<const TPosition>::Without<TTag>>::make(&scene);
+    int sum = 0;
+    for (auto [id, position] : untagged) sum += position.x;
+    EXPECT_EQ(sum, 2);
+    EXPECT_FALSE(untagged.contains(a));
+}
+
 // Queries follow an EntityRef kept in a component; it is empty once its entity is gone.
 class TRefReader : public TypedSystem<TRefReader> {
 public:
