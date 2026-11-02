@@ -172,7 +172,7 @@ namespace csyren::core
             planned.insert(planned.begin(), root);
             return EntityBatch(std::move(planned), 1);
         }
-        // An ID for an entity created later (as a batch root, e.g. by Spawn), known
+        // An ID for an entity created later (as a batch root, e.g. by Commands), known
         // now. Thread safe. releaseEntityId() gives an unused one back: it never
         // becomes an entity.
         [[nodiscard]] Entity::ID reserveEntityId() { requireStructuralAccess(); return _em.reserveId(); }
@@ -312,20 +312,28 @@ namespace csyren::core
             _em.queueDestroy(id);
         }
 
-        // A structural change whose types are known only at run time (core::Spawn):
+        // A structural change whose types are known only at run time (core::Commands):
         // runs in the active task's structural commit, in order with its other
-        // changes; immediately outside a graph task.
-        void defer(std::function<void()> command) {
+        // changes; immediately outside a graph task. `cancel` runs when the
+        // transaction is discarded, after its commit or instead of it (a failed
+        // frame), so it must do nothing once `command` has run.
+        void defer(std::function<void()> command, std::function<void()> cancel = {}) {
             requireStructuralAccess();
-            if (auto* tx = transaction()) { tx->commands.emplace_back(std::move(command)); return; }
+            if (auto* tx = transaction()) {
+                if (cancel) tx->cancellations.emplace_back(std::move(cancel));
+                tx->commands.emplace_back(std::move(command));
+                return;
+            }
             command();
         }
+        // True inside a graph task, whose structural changes wait for its commit.
+        bool defersStructuralChanges() const { return transaction() != nullptr; }
 
 		template<typename T, typename... Args>
 		ComponentRef<T> addComponent(Entity::ID id, Args&&... args)
         {
             requireStructuralAccess();
-            requireInsertAccess<T>();
+            requireComponentAccess<T>(); // writing T: a task needs write access (Commands add in the commit)
             if (auto* tx = transaction()) {
                 if (!tx->entities.contains(id) && !_em.contains(id)) return {};
                 const auto family = reflection::ComponentFamily::getID<T>();
@@ -528,19 +536,6 @@ namespace csyren::core
             for (const auto& a : b->description->accesses)
                 if (a.component && a.type == type) return;
             throw std::logic_error("Undeclared component filter in system: " + std::string(type.name));
-#endif
-        }
-        // addComponent: write access, or an insert declaration for the staged type.
-        template<class T> void requireInsertAccess() const {
-#if CSYREN_ACCESS_VALIDATION
-            const auto* b = TaskScope::_active;
-            if (!b || b->scene != this || !b->description || b->description->exclusiveScene) return;
-            const auto type = TypeKey::of<T>();
-            const auto& inserts = b->description->inserts;
-            if (std::find(inserts.begin(), inserts.end(), type) != inserts.end()) return;
-            for (const auto& a : b->description->accesses)
-                if (a.component && a.type == type && a.mode == AccessMode::Write) return;
-            throw std::logic_error("Undeclared component insert in system: " + std::string(type.name));
 #endif
         }
         Transaction* transaction() const {

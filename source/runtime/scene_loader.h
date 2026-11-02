@@ -1,5 +1,6 @@
 #pragma once
 #include "core/typed_system.h"
+#include "core/commands.h"
 #include "core/services.h"
 #include "scene_session.h"
 #include "serializer.h"
@@ -16,7 +17,7 @@ namespace csyren
         static constexpr auto phase = "scene";
         static constexpr core::TaskAffinity affinity = core::TaskAffinity::MainThread;
 
-        void execute(core::Query<const SceneLoaderRequest> requests, core::Delete remove, core::Res<editor::SceneSession> sessionService)
+        void execute(core::Query<const SceneLoaderRequest> requests, core::Commands commands, core::Res<editor::SceneSession> sessionService)
         {
             auto& session = *sessionService;
             if (session.playing()) return;
@@ -30,7 +31,7 @@ namespace csyren
                     session.enqueue(request.path.empty() ? editor::SceneOperation::Save : editor::SceneOperation::SaveAs, request.path);
                     break;
                 }
-                remove.remove<SceneLoaderRequest>(entity);
+                commands.entity(entity).remove<SceneLoaderRequest>();
             }
         }
     protected:

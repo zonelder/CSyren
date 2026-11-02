@@ -168,6 +168,7 @@ namespace csyren::editor
                 }
                 if (d.exclusiveScene) ImGui::TextUnformatted("Exclusive scene access");
                 if (d.dynamicResources) ImGui::TextUnformatted("Dynamic resources");
+                if (d.structuralChanges && !d.exclusiveScene) ImGui::TextUnformatted("Structural changes (applied in its commit)");
                 if (!d.structuralCommitFor.empty()) ImGui::Text("Commit for: %s", d.structuralCommitFor.c_str());
                 ImGui::TextUnformatted("Immediate predecessors:");
                 if (parents[i].empty()) ImGui::TextUnformatted("  Root task");
@@ -176,7 +177,6 @@ namespace csyren::editor
                     ImGui::BulletText("%s %s: %.*s [%s -> %s]", access.mode == core::AccessMode::Write ? "Write" : "Read",
                         access.component ? "component" : "resource", int(access.type.name.size()), access.type.name.data(),
                         access.requiredState.c_str(), access.resultingState.c_str());
-                for (const auto& type : d.inserts) ImGui::BulletText("Insert component: %.*s", int(type.name.size()), type.name.data());
                 for (const auto& type : d.filters) ImGui::BulletText("Filter component: %.*s", int(type.name.size()), type.name.data());
                 for (const auto& access : d.gpuAccesses)
                     ImGui::BulletText("GPU %s: %s | queue: %s | state: %u", access.mode == core::AccessMode::Write ? "Write" : "Read",

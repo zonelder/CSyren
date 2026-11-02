@@ -259,26 +259,14 @@ public:
     }
 private:
     static bool sceneAccess(const TaskDescription& d) {
-        return d.exclusiveScene || d.structuralChanges || !d.inserts.empty() || !d.filters.empty() ||
+        return d.exclusiveScene || d.structuralChanges || !d.filters.empty() ||
             std::any_of(d.accesses.begin(), d.accesses.end(),
             [](const TaskAccess& access) { return access.component || access.type == TypeKey::of<SceneEntities>(); });
     }
-    // Inserts and filters never conflict with live readers or writers: staged
-    // components and entity presence change only in the exclusive structural
-    // commit. Two tasks that may add the same type do conflict, so the later one
-    // runs after the earlier commit and can see (and skip) the earlier addition.
-    static bool insertsCollide(const TaskDescription& a, const TaskDescription& b) {
-        for (const auto& type : a.inserts) {
-            if (std::find(b.inserts.begin(), b.inserts.end(), type) != b.inserts.end()) return true;
-            // A classic structural writer of T may add T as well.
-            if (b.structuralChanges && std::any_of(b.accesses.begin(), b.accesses.end(), [&](const TaskAccess& access) {
-                return access.component && access.type == type && access.mode == AccessMode::Write;
-            })) return true;
-        }
-        return false;
-    }
+    // Filters never conflict with live readers or writers: entity presence changes
+    // only in the exclusive structural commits. Structural tasks conflict with each
+    // other only through their commits.
     static bool conflicts(const TaskDescription& a, const TaskDescription& b) {
-        if (insertsCollide(a, b) || insertsCollide(b, a)) return true;
         if ((a.dynamicResources && (!b.accesses.empty() || b.dynamicResources || !b.localResources.empty())) ||
             (b.dynamicResources && (!a.accesses.empty() || a.dynamicResources || !a.localResources.empty()))) return true;
         if ((a.exclusiveScene && sceneAccess(b)) || (b.exclusiveScene && sceneAccess(a))) return true;

@@ -9,6 +9,7 @@
 #include "core/scene_serialization_context.h"
 #include "core/system_manager.h"
 #include "core/typed_system.h"
+#include "core/commands.h"
 #include "core/scene_events_system.h"
 #include "core/time.h"
 #include "core/transform.h"
@@ -391,7 +392,6 @@ void systemsIncludes()
 
 // Typed probes with the plans the preview test needs; the counters show that a
 // preview neither initializes, attaches nor executes a system.
-struct PreviewMark {};
 struct PreviewCounters { int initCount{}, attachedCount{}, updatedCount{}; };
 template<class Derived> class PreviewProbe : public TypedSystem<Derived>, public PreviewCounters
 {
@@ -403,7 +403,7 @@ protected:
 class PreviewProducerSystem final : public PreviewProbe<PreviewProducerSystem>
 {
 public:
-    void execute(Insert<PreviewMark>) { ++updatedCount; } // structural: has a commit task
+    void execute(Commands) { ++updatedCount; } // structural: has a commit task
 };
 class PreviewConsumerSystem final : public PreviewProbe<PreviewConsumerSystem>
 {

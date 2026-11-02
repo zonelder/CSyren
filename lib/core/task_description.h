@@ -92,21 +92,12 @@ struct TaskDescription {
     std::vector<TypeKey> localResources;
     bool structuralChanges = false;
     std::string structuralCommitFor;
-    // Component types this task only adds through its scene transaction (to new or
-    // existing entities). Staged values stay invisible to other tasks until the
-    // structural commit, so inserts never conflict with live readers or writers.
-    std::vector<TypeKey> inserts;
     // Component types used only as presence filters. Presence changes only in a
     // structural commit, so filters never conflict with other tasks.
     std::vector<TypeKey> filters;
 
     template<class T> TaskDescription& read() { return access<T>(true, AccessMode::Read); }
     template<class T> TaskDescription& write() { return access<T>(true, AccessMode::Write); }
-    // Adding components requires a transaction, so insert() also sets structuralChanges.
-    template<class T> TaskDescription& insert() {
-        structuralChanges = true;
-        return unique<T>(inserts, "Duplicate task insert declaration");
-    }
     template<class T> TaskDescription& filter() { return unique<T>(filters, "Duplicate task filter declaration"); }
     template<class T> TaskDescription& readResource(std::string state = {}) {
         return access<T>(false, AccessMode::Read, std::move(state));

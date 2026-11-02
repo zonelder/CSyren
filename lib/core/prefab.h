@@ -10,7 +10,7 @@
 //   SpawnPose      where the copy goes: the root's position and rotation (and
 //                  scale, when set) relative to `parent`.
 //
-// Systems create copies with the core::Spawn parameter (core/spawn.h); the
+// Systems create copies with core::Commands::spawn (core/commands.h); the
 // editor and lifecycle code call Prefab::instantiate() between frames.
 #include <functional>
 #include <memory>
@@ -51,7 +51,7 @@ namespace csyren::core
     };
 
     // Change of the copy's root before the copy becomes part of the scene
-    // (Spawn's with/edit). The prefab is passed for log messages.
+    // (Commands::spawn(...).with/edit). The prefab is passed for log messages.
     using PrefabEdit = std::function<void(EntityBatch&, Entity::ID root, const Prefab&)>;
 
     class Prefab
@@ -61,7 +61,7 @@ namespace csyren::core
         virtual const std::string& path() const noexcept = 0;
         // Creates a copy of the branch in `scene`: the root gets the pose, then the
         // edits run, then the whole branch is appended. Structural: call it between
-        // frames or from a structural commit (core::Spawn does). Returns the root,
+        // frames or from a structural commit (core::Commands does). Returns the root,
         // or Entity::invalidID when the copy could not be created (logged).
         // `root`: an ID from Scene::reserveEntityId() for the copy's root (pass it
         // to Scene::stageEntities); invalidID: a new one.

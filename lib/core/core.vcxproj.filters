@@ -174,7 +174,7 @@
     <ClInclude Include="typed_system.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="prefab.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="entity_ref.h"><Filter>Header Files</Filter></ClInclude>
-    <ClInclude Include="spawn.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="commands.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="type_key.h"><Filter>Header Files</Filter></ClInclude>
   </ItemGroup>
 </Project>

@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "core/typed_system.h"
+#include "core/commands.h"
 #include "core/frame_graph.h"
 #include "core/system_manager.h"
 #include "core/scene_context.h"
@@ -40,12 +41,10 @@ struct ServiceScene {
 class TSpawnSystem : public TypedSystem<TSpawnSystem> {
 public:
     static constexpr auto phase = "custom";
-    void execute(Insert<TPosition, TVelocity, TTag> spawn, Res<TCounter> counter) {
+    void execute(Commands commands, Res<TCounter> counter) {
         if (counter->frames++ > 0) return;
-        const auto mover = spawn.create("mover");
-        spawn.add<TPosition>(mover, 0); spawn.add<TVelocity>(mover, 2); spawn.add<TTag>(mover);
-        const auto still = spawn.create("still");
-        spawn.add<TPosition>(still, 100); spawn.add<TVelocity>(still, 5);
+        commands.create("mover").with(TPosition{ 0 }).with(TVelocity{ 2 }).with(TTag{});
+        commands.create("still").with(TPosition{ 100 }).with(TVelocity{ 5 });
     }
 };
 class TMoveSystem : public TypedSystem<TMoveSystem> {
@@ -60,10 +59,10 @@ class TCleanupSystem : public TypedSystem<TCleanupSystem> {
 public:
     static constexpr auto phase = "custom";
     static constexpr auto after = "TMoveSystem";
-    void execute(Query<const TPosition> positions, Delete remove) {
+    void execute(Query<const TPosition> positions, Commands commands) {
         for (auto [id, position] : positions) {
-            if (position.x >= 100) remove.destroy(id);
-            else remove.remove<TVelocity>(id); // movers stop after this frame
+            if (position.x >= 100) commands.entity(id).destroy();
+            else commands.entity(id).remove<TVelocity>(); // movers stop after this frame
         }
     }
 };
@@ -110,13 +109,11 @@ TEST(TypedSystem, SignatureIsTheDeclaration) {
     ASSERT_TRUE(findAccess(d, TypeKey::of<SceneEntities>(), false)); // the hierarchy is always readable
     EXPECT_FALSE(findAccess(d, TypeKey::of<TTag>(), true));
     EXPECT_EQ(d.filters, std::vector<TypeKey>{TypeKey::of<TTag>()});
-    EXPECT_TRUE(d.inserts.empty());
     EXPECT_FALSE(d.structuralChanges);
 
     const auto spawn = TSpawnSystem{}.describe();
     EXPECT_TRUE(spawn.structuralChanges);
-    EXPECT_EQ(spawn.inserts.size(), 3u);
-    EXPECT_FALSE(findAccess(spawn, TypeKey::of<TPosition>(), true)); // inserting is not writing
+    for (const auto& access : spawn.accesses) EXPECT_FALSE(access.component); // Commands declare no types
     EXPECT_EQ(findAccess(spawn, TypeKey::of<TCounter>(), false)->mode, AccessMode::Write);
     EXPECT_TRUE(TCleanupSystem{}.describe().structuralChanges);
     EXPECT_EQ(TCleanupSystem{}.describe().after, std::vector<std::string>{"TMoveSystem"});
@@ -127,8 +124,8 @@ public:
     static constexpr auto affinity = TaskAffinity::MainThread;
     static constexpr std::array before{ "a", "b" };
     void execute(Query<const TPosition, const TVelocity> read, Query<TPosition>::With<TVelocity, TTag> write,
-        Insert<TPosition, TTag> spawn, Res<const TConfig> config, Res<TConfig> mutableConfig) {
-        (void)read; (void)write; (void)spawn; (void)config; (void)mutableConfig;
+        Commands commands, Res<const TConfig> config, Res<TConfig> mutableConfig) {
+        (void)read; (void)write; (void)commands; (void)config; (void)mutableConfig;
     }
 };
 TEST(TypedSystem, DeclarationsMergePerType) {
@@ -143,8 +140,6 @@ TEST(TypedSystem, DeclarationsMergePerType) {
     EXPECT_EQ(findAccess(d, TypeKey::of<TConfig>(), false)->mode, AccessMode::Write);
     EXPECT_FALSE(listed(d.filters, TypeKey::of<TVelocity>())); // read anyway
     EXPECT_TRUE(listed(d.filters, TypeKey::of<TTag>()));
-    EXPECT_FALSE(listed(d.inserts, TypeKey::of<TPosition>())); // write access may add it
-    EXPECT_TRUE(listed(d.inserts, TypeKey::of<TTag>()));
     EXPECT_TRUE(d.structuralChanges);
 }
 
@@ -297,34 +292,15 @@ TEST(TypedSystem, OnceSystemsStayOutOfTheGraph) {
     EXPECT_EQ(TSetupSystem::shut, 1);
 }
 
-TEST(TypedSystem, InsertsAndFiltersDoNotConflictWithLiveAccess) {
+TEST(TypedSystem, CommandsAndFiltersDoNotConflictWithLiveAccess) {
     FrameGraph graph; graph.phase({"custom"});
-    TaskDescription inserter; inserter.phase = "custom"; inserter.insert<TPosition>();
+    auto structural = TSpawnSystem{}.describe(); structural.phase = "custom";
     TaskDescription writer; writer.phase = "custom"; writer.write<TPosition>().write<TTag>();
     TaskDescription filtered; filtered.phase = "custom"; filtered.read<TVelocity>().filter<TTag>();
-    graph.task("inserter", inserter, []{}); graph.task("writer", writer, []{}); graph.task("filtered", filtered, []{});
+    graph.task("structural", structural, []{}); graph.task("writer", writer, []{}); graph.task("filtered", filtered, []{});
     graph.compile();
-    EXPECT_FALSE(graph.dependsOn("writer", "inserter")); EXPECT_FALSE(graph.dependsOn("inserter", "writer"));
+    EXPECT_FALSE(graph.dependsOn("writer", "structural")); EXPECT_FALSE(graph.dependsOn("structural", "writer"));
     EXPECT_FALSE(graph.dependsOn("filtered", "writer")); EXPECT_FALSE(graph.dependsOn("writer", "filtered"));
-    EXPECT_TRUE(inserter.structuralChanges);
-    EXPECT_THROW(inserter.insert<TPosition>(), std::invalid_argument);
-}
-
-TEST(TypedSystem, InsertsOfTheSameTypeAreOrdered) {
-    FrameGraph graph; graph.phase({"custom"});
-    TaskDescription a; a.phase = "custom"; a.insert<TTag>();
-    TaskDescription b; b.phase = "custom"; b.insert<TTag>();
-    TaskDescription classic; classic.phase = "custom"; classic.write<TTag>(); classic.structuralChanges = true;
-    graph.task("a", a, []{}); graph.task("b", b, []{}); graph.task("classic", classic, []{});
-    graph.compile();
-    EXPECT_TRUE(graph.dependsOn("b", "a"));
-    EXPECT_TRUE(graph.dependsOn("classic", "b")); // a structural writer may add the type too
-
-    FrameGraph live; live.phase({"custom"});
-    TaskDescription liveWriter; liveWriter.phase = "custom"; liveWriter.write<TTag>(); // no structural changes
-    live.task("a", a, []{}); live.task("live", liveWriter, []{});
-    live.compile();
-    EXPECT_FALSE(live.dependsOn("live", "a")); EXPECT_FALSE(live.dependsOn("a", "live"));
 }
 
 TEST(TypedSystem, RunsThroughTheFrameGraph) {
@@ -354,20 +330,20 @@ TEST(TypedSystem, RunsThroughTheFrameGraph) {
     systems.shutdown();
 }
 
-// Two unordered systems tag the same existing entities, each skipping entities
-// that are already tagged. The second one must see the first one's commit.
+// Two unordered systems tag the same existing entities. with() adds a component
+// only when the entity has none, so the later commit skips the tagged entities.
 template<class Derived> class TTagger : public TypedSystem<Derived> {
 public:
     static constexpr auto phase = "custom";
-    void execute(Query<const TPosition> positions, Query<const TTag> tagged, Insert<TTag> tag) {
-        for (auto [id, position] : positions) { (void)position; if (!tagged.contains(id)) tag.add<TTag>(id); }
+    void execute(Query<const TPosition> positions, Commands commands) {
+        for (auto [id, position] : positions) { (void)position; commands.entity(id).with(TTag{}); }
     }
 };
 class TTaggerA : public TTagger<TTaggerA> {};
 class TTaggerB : public TTagger<TTaggerB> {};
 REGISTER_SYSTEM(TTaggerA)
 REGISTER_SYSTEM(TTaggerB)
-TEST(TypedSystem, SameTypeInsertsIntoExistingEntitiesDoNotCollide) {
+TEST(TypedSystem, UnorderedCommandsAddingTheSameTypeDoNotCollide) {
     registerTypedComponents();
     ServiceScene services;
     details::ServiceRegistry::initializeAll();
@@ -380,6 +356,11 @@ TEST(TypedSystem, SameTypeInsertsIntoExistingEntitiesDoNotCollide) {
     for (auto [id, tag] : services.scene.view<const TTag>()) { (void)tag; ++tagged; }
     EXPECT_EQ(tagged, 3u);
     systems.shutdown();
+    // Not ordered against each other: only their commits are.
+    FrameGraph graph; graph.phase({"custom"});
+    graph.task("a", TTaggerA{}.describe(), []{}); graph.task("b", TTaggerB{}.describe(), []{});
+    graph.compile();
+    EXPECT_FALSE(graph.dependsOn("a", "b")); EXPECT_FALSE(graph.dependsOn("b", "a"));
 }
 
 class TLifecycleSystem : public TypedSystem<TLifecycleSystem> {
@@ -414,25 +395,98 @@ TEST(TypedSystem, LifecycleChangesAreRejectedWhileExecuting) {
     systems.shutdown();
 }
 
-TEST(TypedSystem, InsertGrantsAddingButNotReading) {
+// Commands are applied in the task's commit, in call order (even when one command
+// is an argument of another); before it nothing is visible, not even to the task
+// itself. Adding through the Scene inside a task needs write access.
+TEST(TypedSystem, CommandsApplyInTheCommitInCallOrder) {
     registerTypedComponents();
     SceneInstance instance; auto& scene = instance.scene();
     const auto existing = scene.createEntity(); scene.addComponent<TPosition>(existing, 5);
     TypedAccess::Transaction tx;
-    TaskDescription d; d.insert<TPosition>();
-    Entity::ID added = Entity::invalidID;
+    TaskDescription d; d.structuralChanges = true;
+    Entity::ID created = Entity::invalidID, nestedChild = Entity::invalidID, nestedTagged = Entity::invalidID;
     {
         TypedAccess::TaskScope scope(scene, &tx, &d);
-        added = scene.createEntity();
-        EXPECT_NO_THROW(scene.addComponent<TPosition>(added, 1));
+        auto commands = Commands::makeParam(scene);
+        created = commands.create("created", existing).with(TPosition{ 1 }).with(TPosition{ 2 }).id();
+        commands.entity(existing).with(TPosition{ 9 });                     // has one: keeps 5
+        commands.entity(existing).remove<TPosition>().with(TPosition{ 7 }); // removed, then added
+        commands.entity(created).with(TTag{});                              // created by the call above
+        nestedChild = commands.create("child", commands.create("parent").id()).id(); // the parent is called first
+        nestedTagged = commands.entity(commands.create("tagged").id()).with(TTag{}).id();
 #if CSYREN_ACCESS_VALIDATION
-        EXPECT_THROW(scene.addComponent<TVelocity>(added), std::logic_error);
-        EXPECT_THROW(scene.getComponent<const TPosition>(existing), std::logic_error);
+        EXPECT_THROW(scene.addComponent<TVelocity>(existing), std::logic_error);
 #endif
     }
-    EXPECT_FALSE(scene.hasComponent<TPosition>(added)); // staged until the commit
+    EXPECT_FALSE(scene.entities().contains(created)); // nothing before the commit
+    EXPECT_EQ(scene.getComponent<const TPosition>(existing)->x, 5);
     tx.apply(scene);
-    EXPECT_EQ(scene.getComponent<const TPosition>(added)->x, 1);
+    ASSERT_TRUE(scene.entities().contains(created));
+    EXPECT_EQ(scene.entities().try_get(created)->name, "created");
+    EXPECT_EQ(scene.entities().try_get(created)->parent, existing);
+    EXPECT_EQ(scene.getComponent<const TPosition>(created)->x, 2); // the last with() wins
+    EXPECT_TRUE(scene.hasComponent<TTag>(created));
+    EXPECT_EQ(scene.getComponent<const TPosition>(existing)->x, 7);
+    const auto parent = scene.entities().try_get(nestedChild)->parent;
+    ASSERT_TRUE(scene.entities().contains(parent));
+    EXPECT_EQ(scene.entities().try_get(parent)->name, "parent");
+    EXPECT_TRUE(scene.hasComponent<TTag>(nestedTagged));
+}
+
+TEST(TypedSystem, CommandsForGoneEntitiesAndDestroy) {
+    registerTypedComponents();
+    SceneInstance instance; auto& scene = instance.scene();
+    const auto parent = scene.createEntity("parent");
+    const auto child = scene.createEntity("child", parent);
+    const auto gone = scene.createEntity("gone");
+    scene.destroyEntity(gone); scene.flush();
+    {
+        auto commands = Commands::makeParam(scene); // outside a task: applied when it goes away
+        commands.entity(gone).with(TPosition{ 1 }).remove<TVelocity>().destroy();
+        commands.entity(parent).with(TVelocity{ 3 }).destroy();
+        EXPECT_TRUE(scene.entities().contains(parent)); // not yet
+    }
+    EXPECT_FALSE(scene.entities().contains(gone));
+    EXPECT_FALSE(scene.entities().contains(parent)); // flushed after the commands
+    EXPECT_FALSE(scene.entities().contains(child));  // with its children
+}
+
+// A frame that fails before the task's commit gives the reserved IDs back when
+// the transaction is discarded.
+TEST(TypedSystem, DiscardedCommandsGiveTheirIdsBack) {
+    registerTypedComponents();
+    SceneInstance instance; auto& scene = instance.scene();
+    TypedAccess::Transaction tx;
+    TaskDescription d; d.structuralChanges = true;
+    Entity::ID id = Entity::invalidID;
+    {
+        TypedAccess::TaskScope scope(scene, &tx, &d);
+        auto commands = Commands::makeParam(scene);
+        id = commands.create("never").with(TPosition{ 1 }).id();
+    }
+    tx.discard(); // the commit never ran
+    const auto next = scene.createEntity();
+    EXPECT_EQ(Entity::slot(next), Entity::slot(id));
+    EXPECT_NE(next, id);
+    EXPECT_FALSE(scene.entities().contains(id));
+}
+
+// A create left by an exception gives its ID back and creates nothing.
+TEST(TypedSystem, CreateLeftByAnExceptionCreatesNothing) {
+    registerTypedComponents();
+    SceneInstance instance; auto& scene = instance.scene();
+    auto commands = Commands::makeParam(scene);
+    Entity::ID id = Entity::invalidID;
+    EXPECT_THROW({
+        auto&& command = commands.create("never"); // kept until the end of the block
+        command.with(TPosition{ 1 });
+        id = command.id();
+        throw std::runtime_error("execute failed");
+    }, std::runtime_error);
+    EXPECT_FALSE(scene.entities().contains(id));
+    const auto next = scene.createEntity();
+    EXPECT_EQ(Entity::slot(next), Entity::slot(id));
+    EXPECT_NE(next, id);
 }
 
 #if CSYREN_ACCESS_VALIDATION

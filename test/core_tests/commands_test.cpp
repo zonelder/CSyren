@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "core/spawn.h"
+#include "core/commands.h"
 #include "core/frame_graph.h"
 #include "core/system_manager.h"
 #include "core/transform.h"
@@ -79,10 +79,10 @@ size_t countPayloads(Scene& scene) {
 class SSpawner : public TypedSystem<SSpawner> {
 public:
     static constexpr auto phase = "custom";
-    void execute(Query<const SOrigin> origins, Spawn spawn) {
+    void execute(Query<const SOrigin> origins, Commands commands) {
         ++_frame;
         for (auto [id, origin] : origins)
-            spawn(PrefabRef{ "prefabs/box.prefab" }, { math::Vector3(float(origin.count), 0, 0) })
+            commands.spawn(PrefabRef{ "prefabs/box.prefab" }, { math::Vector3(float(origin.count), 0, 0) })
                 .edit<SPayload>([count = origin.count](SPayload& payload) { payload.value += count; })
                 .with(SMarker{ _frame });
     }
@@ -107,20 +107,20 @@ REGISTER_SYSTEM(SCounter)
 class SOtherSpawner : public TypedSystem<SOtherSpawner> {
 public:
     static constexpr auto phase = "custom";
-    void execute(Query<const SOrigin> origins, Spawn spawn) {
-        for (auto [id, origin] : origins) { (void)origin; spawn(PrefabRef{ "prefabs/box.prefab" }); }
+    void execute(Query<const SOrigin> origins, Commands commands) {
+        for (auto [id, origin] : origins) { (void)origin; commands.spawn(PrefabRef{ "prefabs/box.prefab" }); }
     }
 };
 REGISTER_SYSTEM(SOtherSpawner)
 
-// Insert and Spawn in the same task: entity ids must not collide.
+// create and spawn in the same task: entity ids must not collide.
 class SMixed : public TypedSystem<SMixed> {
 public:
     static constexpr auto phase = "custom";
-    void execute(Insert<SPayload> insert, Spawn spawn) {
+    void execute(Commands commands) {
         for (int i = 0; i < 3; ++i) {
-            insert.add<SPayload>(insert.create("inserted"), 100 + i);
-            spawn(PrefabRef{ "prefabs/box.prefab" });
+            commands.create("created").with(SPayload{ 100 + i });
+            commands.spawn(PrefabRef{ "prefabs/box.prefab" });
         }
     }
 };
@@ -131,10 +131,10 @@ class SRootSpawner : public TypedSystem<SRootSpawner> {
 public:
     static constexpr auto phase = "custom";
     inline static std::vector<Entity::ID> roots;
-    void execute(Query<const SOrigin> origins, Spawn spawn) {
-        for (auto [id, origin] : origins) { (void)origin; roots.push_back(spawn(PrefabRef{ "prefabs/box.prefab" }).root()); }
-        roots.push_back(spawn(PrefabRef{ "prefabs/missing.prefab" }).root());
-        roots.push_back(spawn(PrefabRef{}).root());
+    void execute(Query<const SOrigin> origins, Commands commands) {
+        for (auto [id, origin] : origins) { (void)origin; roots.push_back(commands.spawn(PrefabRef{ "prefabs/box.prefab" }).id()); }
+        roots.push_back(commands.spawn(PrefabRef{ "prefabs/missing.prefab" }).id());
+        roots.push_back(commands.spawn(PrefabRef{}).id());
     }
 };
 REGISTER_SYSTEM(SRootSpawner)
@@ -145,7 +145,6 @@ TEST(Spawn, DeclaresOnlyAStructuralChange) {
     EXPECT_TRUE(d.structuralChanges);
     EXPECT_FALSE(d.exclusiveScene);
     EXPECT_FALSE(d.dynamicResources);
-    EXPECT_TRUE(d.inserts.empty());
     for (const auto& access : d.accesses)
         EXPECT_TRUE(!access.component || access.type == TypeKey::of<SOrigin>()) << access.type.name;
 }
@@ -222,7 +221,7 @@ TEST(Spawn, CopiesAppearInTheSpawnersCommit) {
     systems.shutdown();
 }
 
-TEST(Spawn, InsertAndSpawnInOneTaskGetDistinctEntities) {
+TEST(Spawn, CreateAndSpawnInOneTaskGetDistinctEntities) {
     registerSpawnComponents();
     SpawnServices services;
     SystemManager systems; systems.phase({ "custom" });
@@ -230,11 +229,11 @@ TEST(Spawn, InsertAndSpawnInOneTaskGetDistinctEntities) {
     systems.add("SMixed"); systems.init();
     EXPECT_NO_THROW(systems.execute());
     EXPECT_NO_THROW(systems.execute());
-    // 2 frames x (3 inserted + 3 copies with a child each).
+    // 2 frames x (3 created + 3 copies with a child each).
     EXPECT_EQ(countPayloads(services.scene), 12u);
     size_t entities = 0;
     for (const auto& entity : services.scene.entities()) { (void)entity; ++entities; }
-    EXPECT_EQ(entities, 1u + 6u + 12u); // root + inserted + copies (root and child)
+    EXPECT_EQ(entities, 1u + 6u + 12u); // root + created + copies (root and child)
     EXPECT_EQ(services.box().instances, 6);
     systems.shutdown();
 }
@@ -274,21 +273,21 @@ TEST(Spawn, PoseScaleAndParent) {
 TEST(Spawn, MissingPrefabsAndEmptyReferencesSpawnNothing) {
     registerSpawnComponents();
     SpawnServices services;
-    const auto spawnAll = [&](Spawn spawn) {
-        spawn(PrefabRef{});                                     // not set
-        spawn(PrefabRef{ "prefabs/missing.prefab" });           // library returns null
-        spawn(PrefabHandle{});                                   // null handle
-        spawn(services.library.prefabs.at("prefabs/box.prefab")) // edit of a component the root lacks
+    const auto spawnAll = [&](Commands commands) {
+        commands.spawn(PrefabRef{});                                     // not set
+        commands.spawn(PrefabRef{ "prefabs/missing.prefab" });           // library returns null
+        commands.spawn(PrefabHandle{});                                  // null handle
+        commands.spawn(services.library.prefabs.at("prefabs/box.prefab")) // edit of a component the root lacks
             .edit<SMarker>([](SMarker& marker) { marker.frame = 99; });
     };
-    spawnAll(Spawn::makeParam(services.scene));
+    spawnAll(Commands::makeParam(services.scene));
     EXPECT_EQ(countPayloads(services.scene), 1u); // only the box, without the failed edit
     for (auto [id, payload] : services.scene.view<const SPayload>()) {
         (void)payload;
         EXPECT_FALSE(services.scene.hasComponent<SMarker>(id));
     }
     EXPECT_EQ(services.library.loads, 1); // the empty reference never reaches the library
-    spawnAll(Spawn::makeParam(services.scene));
+    spawnAll(Commands::makeParam(services.scene));
     EXPECT_EQ(services.library.loads, 1); // the missing path is remembered, not retried
     EXPECT_EQ(countPayloads(services.scene), 2u);
 }
@@ -334,11 +333,11 @@ TEST(Spawn, RootIsKnownWhenSpawning) {
 TEST(Spawn, RequestLeftByAnExceptionGivesItsRootBack) {
     registerSpawnComponents();
     SpawnServices services;
-    auto spawn = Spawn::makeParam(services.scene);
+    auto commands = Commands::makeParam(services.scene);
     Entity::ID root = Entity::invalidID;
     EXPECT_THROW({
-        auto&& request = spawn(PrefabRef{ "prefabs/box.prefab" });
-        root = request.root();
+        auto&& request = commands.spawn(PrefabRef{ "prefabs/box.prefab" });
+        root = request.id();
         throw std::runtime_error("execute failed");
     }, std::runtime_error);
     EXPECT_EQ(countPayloads(services.scene), 0u);

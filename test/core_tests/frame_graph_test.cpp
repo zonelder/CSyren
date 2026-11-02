@@ -4,6 +4,7 @@
 #include "core/gpu_execution_plan.h"
 #include "core/system_manager.h"
 #include "core/typed_system.h"
+#include "core/commands.h"
 #include "core/scene_context.h"
 #include <atomic>
 #include <thread>
@@ -233,8 +234,8 @@ TEST(FrameGraph, DisjointStructuralTasksRunBeforeTheirCommits) {
 class StructuralProducer : public TypedSystem<StructuralProducer> {
 public:
     static constexpr auto phase = "custom";
-    void execute(Insert<Position> spawn) {
-        auto id = spawn.create(); spawn.add<Position>(id)->x = 77;
+    void execute(Commands commands) {
+        commands.create().with(Position{ 77 });
     }
 };
 class StructuralConsumer : public TypedSystem<StructuralConsumer> {

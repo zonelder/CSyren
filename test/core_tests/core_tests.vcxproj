@@ -156,7 +156,7 @@
     <ClCompile Include="job_system_test.cpp" />
     <ClCompile Include="frame_graph_test.cpp" />
     <ClCompile Include="typed_system_test.cpp" />
-    <ClCompile Include="spawn_test.cpp" />
+    <ClCompile Include="commands_test.cpp" />
     <ClCompile Include="profiler_test.cpp" />
   </ItemGroup>
   <ItemGroup>

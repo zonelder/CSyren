@@ -113,7 +113,7 @@ namespace csyren
         });
 		core::details::ServiceRegistry::create<Serializer>();
         core::details::ServiceRegistry::create<ArchiveSceneStorage>(*core::Services::get<Serializer>());
-        // Prefabs (core::Spawn, editor "Instantiate prefab") are read with the scene archive's sections.
+        // Prefabs (core::Commands::spawn, editor "Instantiate prefab") are read with the scene archive's sections.
         core::details::ServiceRegistry::create<core::PrefabLibrary>().setLoader(
             prefabFileLoader([storage = core::Services::get<ArchiveSceneStorage>()](core::SerializationContext& context) {
                 storage->configureComponentArchive(context);

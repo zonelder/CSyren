@@ -12,7 +12,7 @@
 //
 //       void execute(core::Query<PilotState, WeaponInventory>::With<PlayerTag> players,
 //                    core::Query<const physics::CharacterController> controllers,
-//                    core::Spawn spawn,                 // grenades, impacts (prefabs)
+//                    core::Commands commands,           // grenades, impacts (prefabs)
 //                    core::Res<const core::Time> time);
 //   };
 //
@@ -25,12 +25,10 @@
 //   ::Without<Ts...> presence filter: skips entities that have any T. Filters never
 //                   conflict with other systems. single() returns the only matching
 //                   row, empty when none or several match.
-//   Insert<Cs...>   create entities and add Cs. Other systems see them after the
-//                   structural commit; never conflicts with readers or writers of Cs.
-//   Delete          destroy entities and remove components (after the commit too).
-//   Spawn           create copies of prefabs (core/spawn.h): types come from data,
-//                   so none are declared; copies appear in the commit like Insert,
-//                   their root IDs are known when spawning (root()).
+//   Commands        changes which entities and components exist (core/commands.h):
+//                   create, spawn (prefabs), entity(id).with / remove / destroy.
+//                   Applied in the task's structural commit, in call order; declares
+//                   no component types, so it never conflicts with readers or writers.
 //   Res<T>          a service: Res<const T> reads, Res<T> writes. Empty (false) when
 //                   the service is not registered.
 //   Exclusive       the whole world: any component, structural changes and any
@@ -52,9 +50,9 @@
 // moving from "ready" to "submitted"), and for GPU recording tasks gpu (std::array
 // of core::GpuUse), gpuScope, gpuQueue. Parameters are what execute() touches;
 // static members only order it.
-// Two systems that Insert the same type are ordered, so the later one sees the
-// earlier commit; a same-phase reader not ordered after an inserter sees the
-// new components only in the next frame.
+// A system that must see the structural changes of another system of the same
+// phase in the same frame is ordered after it (`after`); systems of later phases
+// see them in the same frame anyway.
 //
 // Entity IDs carry a generation (core/entity.h): an ID kept after its entity was
 // destroyed finds nothing, even when its slot holds a new entity. Keep IDs in
@@ -119,7 +117,7 @@ namespace csyren::core
     {
         struct Entry { TypeKey type; bool write; };
         std::vector<Entry> components, resources;
-        std::vector<TypeKey> filters, inserts, localResources;
+        std::vector<TypeKey> filters, localResources;
         bool structural = false;
         bool scene = false;
         bool exclusive = false; // Exclusive: access to everything, conflicts with every access
@@ -132,7 +130,6 @@ namespace csyren::core
         template<class T> void resource()
         { merge(resources, TypeKey::of<T>(), !std::is_const_v<T>); }
         template<class C> void filter() { filters.push_back(TypeKey::of<C>()); scene = true; }
-        template<class C> void insert() { inserts.push_back(TypeKey::of<C>()); structural = scene = true; }
         // Service T with task-local state (e.g. the Renderer of a GPU recording
         // task): reachable through Services::get without being a shared access.
         template<class T> void localResource() { addUnique(localResources, TypeKey::of<T>()); }
@@ -145,15 +142,9 @@ namespace csyren::core
                 d.accesses.push_back({ c.type, true, c.write ? AccessMode::Write : AccessMode::Read, {}, {} });
             for (const auto& r : resourcesWithHierarchy)
                 d.accesses.push_back({ r.type, false, r.write ? AccessMode::Write : AccessMode::Read, {}, {} });
-            // A filter on a type that is also read adds nothing; neither does an
-            // insert of a type that is also written (write access may add it).
+            // A filter on a type that is also read adds nothing.
             for (const auto& type : filters)
                 if (!find(components, type) && !listed(d.filters, type)) d.filters.push_back(type);
-            for (const auto& type : inserts)
-            {
-                const auto* c = find(components, type);
-                if (!(c && c->write) && !listed(d.inserts, type)) d.inserts.push_back(type);
-            }
             for (const auto& type : localResources) addUnique(d.localResources, type);
             d.structuralChanges = structural || exclusive;
             if (exclusive) d.exclusiveScene = d.dynamicResources = true;
@@ -219,7 +210,7 @@ namespace csyren::core
         {
 #if !CSYREN_INTELLISENSE
             static_assert(CustomSystemParam<P>,
-                "Typed system parameters must be Query, Insert, Delete, Spawn, Res, Exclusive or a type with "
+                "Typed system parameters must be Query, Commands, Res, Exclusive or a type with "
                 "static describeParam(ParamAccess&) / makeParam(Scene&) or makeParam() (passed by value)");
 #endif
             static void describe(ParamAccess& access) { P::describeParam(access); }
@@ -392,48 +383,9 @@ namespace csyren::core
         static constexpr bool writes = details::contains_v<std::remove_const_t<T>, Cs...>;
     };
 
-    // ------------------------------------------------------------------ Insert / Delete
-    template<class... Cs>
-    class Insert
-    {
-#if !CSYREN_INTELLISENSE
-        static_assert(((!std::is_const_v<Cs> && !std::is_reference_v<Cs>) && ...), "Insert lists plain, non-const component types");
-        static_assert(details::unique_v<Cs...>, "Insert lists a component type twice");
-#endif
-        template<class> friend struct details::Param;
-    public:
-        [[nodiscard]] Entity::ID create(std::string_view name = EntityManager::DEFAULT_NAME,
-            Entity::ID parent = EntityManager::ROOT_PARENT) const
-        {
-            return _scene->createEntity(name, parent);
-        }
-        // The returned reference is writable immediately; others see it after the
-        // commit. Use it within this execute() only: kept for later it would be an
-        // undeclared live write.
-        template<class T, class... Args> ComponentRef<T> add(Entity::ID id, Args&&... args) const
-        {
-            static_assert(details::contains_v<T, Cs...>, "add<T>: T is not listed in this Insert");
-            return _scene->template addComponent<T>(id, std::forward<Args>(args)...);
-        }
-    private:
-        explicit Insert(Scene& scene) : _scene(&scene) {}
-        Scene* _scene;
-    };
-
-    class Delete
-    {
-        template<class> friend struct details::Param;
-    public:
-        void destroy(Entity::ID id) const { _scene->destroyEntity(id); }
-        template<class T> void remove(Entity::ID id) const { _scene->removeComponent(id, reflection::ComponentFamily::getID<T>()); }
-    private:
-        explicit Delete(Scene& scene) : _scene(&scene) {}
-        Scene* _scene;
-    };
-
     // ------------------------------------------------------------------ Exclusive
     // The whole world for one task: any component, structural changes (staged
-    // and committed like Insert/Delete) and any service (Services::get is not
+    // and committed like Commands) and any service (Services::get is not
     // validated). It conflicts with every task that declares an access, so no
     // such task runs concurrently with it.
     class Exclusive
@@ -452,7 +404,7 @@ namespace csyren::core
     class Res
     {
         static_assert(!std::is_reference_v<T> && !std::is_pointer_v<T>, "Res<T> takes a service type");
-        static_assert(!std::is_same_v<std::remove_const_t<T>, Scene>, "Res<Scene>: use Query/Insert/Delete for scene data");
+        static_assert(!std::is_same_v<std::remove_const_t<T>, Scene>, "Res<Scene>: use Query and Commands for scene data");
         template<class> friend struct details::Param;
     public:
         T* get() const noexcept { return _service; }
@@ -476,16 +428,6 @@ namespace csyren::core
             static void describe(ParamAccess& access)
             { (access.component<Cs>(), ...); (access.filter<Ws>(), ...); (access.filter<Xs>(), ...); }
             static Query make(Scene* scene) { return Query(requireScene(scene)); }
-        };
-        template<class... Cs> struct Param<Insert<Cs...>>
-        {
-            static void describe(ParamAccess& access) { (access.insert<Cs>(), ...); access.structural = access.scene = true; }
-            static Insert<Cs...> make(Scene* scene) { return Insert<Cs...>(requireScene(scene)); }
-        };
-        template<> struct Param<Delete>
-        {
-            static void describe(ParamAccess& access) { access.structural = access.scene = true; }
-            static Delete make(Scene* scene) { return Delete(requireScene(scene)); }
         };
         template<> struct Param<Exclusive>
         {

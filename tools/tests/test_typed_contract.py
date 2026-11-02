@@ -28,7 +28,7 @@ CANDIDATES = ('cl', 'clang++', 'g++')
 PRELUDE = '''
 #include <array>
 #include "core/typed_system.h"
-#include "core/spawn.h"
+#include "core/commands.h"
 using namespace csyren::core;
 struct A { int x = 0; };
 struct B { int x = 0; };
@@ -72,10 +72,10 @@ VALID_SYSTEMS = '''
             public:
                 static constexpr auto phase = "simulation";
                 static constexpr std::array states{ StateUse::write<Token>("", "ready") };
-                void execute(Query<const A>::With<B> as, Query<B>::Without<Token> bs, Insert<A> spawn, Delete remove, Res<const A> config) {
+                void execute(Query<const A>::With<B> as, Query<B>::Without<Token> bs, Commands commands, Res<const A> config) {
                     for (auto [id, a] : as) { if (auto b = bs.get<B>(id)) b->x += a.x; bs.patch<B>(id); }
                     if (auto row = bs.single()) std::get<1>(*row).x = 0;
-                    (void)spawn.add<A>(spawn.create()); remove.destroy(0); (void)config.get();
+                    commands.create("x").with(A{ 1 }); commands.entity(0).with(B{}).remove<A>().destroy(); (void)config.get();
                 }
             };
             class World : public TypedSystem<World> {
@@ -85,9 +85,9 @@ VALID_SYSTEMS = '''
             class Setup : public OnceSystem {};
             class Spawner : public TypedSystem<Spawner> {
             public:
-                void execute(Query<const A> as, Spawn spawn) {
+                void execute(Query<const A> as, Commands commands) {
                     for (auto [id, a] : as)
-                        spawn(PrefabRef{ "prefabs/x.prefab" }, { csyren::math::Vector3(float(a.x), 0, 0) })
+                        commands.spawn(PrefabRef{ "prefabs/x.prefab" }, { csyren::math::Vector3(float(a.x), 0, 0) })
                             .edit<B>([x = a.x](B& b) { b.x = x; })
                             .with(A{ 1 });
                 }
@@ -151,11 +151,12 @@ class TypedContractTests(unittest.TestCase):
             void use() { S s; s.run(); }
         ''', 'const-qualified', 'read-only', 'C3892', 'C2166')
 
-    def test_add_of_unlisted_type(self):
+    def test_with_takes_a_copyable_component(self):
         self.expect_error('''
-            class S : public TypedSystem<S> { public: void execute(Insert<A> spawn) { (void)spawn.add<B>(spawn.create()); } };
+            struct Unique { Unique() = default; Unique(const Unique&) = delete; Unique(Unique&&) = default; };
+            class S : public TypedSystem<S> { public: void execute(Commands commands) { commands.create().with(Unique{}); } };
             void use() { S s; s.run(); }
-        ''', 'add<T>: T is not listed in this Insert')
+        ''', 'with<T>: T is a copyable component')
 
     def test_without_of_a_listed_type(self):
         self.expect_error('''
@@ -177,9 +178,15 @@ class TypedContractTests(unittest.TestCase):
             void use() { S s; s.run(); }
         ''', 'unused parameter', 'C4100')
 
+    def test_commands_cannot_be_kept(self):
+        self.expect_error('''
+            class S : public TypedSystem<S> { public: void execute(Commands commands) { Commands kept = commands; (void)kept; } };
+            void use() { S s; s.run(); }
+        ''', 'deleted', 'C2280')
+
     def test_spawn_edit_takes_the_component(self):
         self.expect_error('''
-            class S : public TypedSystem<S> { public: void execute(Spawn spawn) { spawn(PrefabRef{ "x" }).edit<A>([](B&) {}); } };
+            class S : public TypedSystem<S> { public: void execute(Commands commands) { commands.spawn(PrefabRef{ "x" }).edit<A>([](B&) {}); } };
             void use() { S s; (void)s.describe(); }
         ''', 'edit<T>(fn): fn takes T&')
 
