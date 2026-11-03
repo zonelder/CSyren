@@ -146,16 +146,17 @@ namespace csyren::math
         *this = DirectX::XMQuaternionRotationAxis(axis, rad);
     }
 
+    // XMMatrixLookToLH builds a view matrix (world to camera): its rotation is the
+    // inverse of the rotation that turns +Z towards `forward`.
     inline Quaternion Quaternion::lookRotation(const Vector3& forward, const Vector3& upward) noexcept
     {
-        DirectX::XMMATRIX matrix = DirectX::XMMatrixLookToLH(Vector3::zero, forward, upward);
-        return Quaternion(DirectX::XMQuaternionRotationMatrix(matrix));
+        DirectX::XMMATRIX view = DirectX::XMMatrixLookToLH(Vector3::zero, forward, upward);
+        return Quaternion(DirectX::XMQuaternionInverse(DirectX::XMQuaternionRotationMatrix(view)));
     }
 
     inline void Quaternion::setLookRotation(const Vector3& forward, const Vector3& upward) noexcept
     {
-        DirectX::XMMATRIX matrix = DirectX::XMMatrixLookToLH(Vector3::zero, forward, upward);
-        *this = DirectX::XMQuaternionRotationMatrix(matrix);
+        *this = lookRotation(forward, upward);
     }
 
     inline Quaternion Quaternion::inverse() const noexcept
