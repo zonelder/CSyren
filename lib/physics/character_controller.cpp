@@ -17,6 +17,7 @@ namespace csyren::physics
 			.data<&CharacterController::mass>("mass"_hs)
 			.data<&CharacterController::layer>("layer"_hs)
 			.data<&CharacterController::velocity>("velocity"_hs, {}, FieldFlags::EditorVisible | FieldFlags::Transient | FieldFlags::ReadOnly)
+			.data<&CharacterController::acceleration>("acceleration"_hs, {}, FieldFlags::EditorVisible | FieldFlags::Transient | FieldFlags::ReadOnly)
 			.data<&CharacterController::grounded>("grounded"_hs, {}, FieldFlags::EditorVisible | FieldFlags::Transient | FieldFlags::ReadOnly)
 			.data<&CharacterController::groundNormal>("groundNormal"_hs, {}, FieldFlags::EditorVisible | FieldFlags::Transient | FieldFlags::ReadOnly)
 			.data<&CharacterController::currentHeight>("currentHeight"_hs, {}, FieldFlags::EditorVisible | FieldFlags::Transient | FieldFlags::ReadOnly)

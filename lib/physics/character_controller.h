@@ -9,8 +9,10 @@ namespace csyren::physics
 	// Kinematic capsule character driven by a desired velocity.
 	//
 	// Input (set by gameplay every frame):
-	//   velocity  - desired world velocity for the next physics steps.
-	//   height    - desired capsule height (feet to top); changed when crouching.
+	//   velocity      - desired world velocity for the next physics steps.
+	//   acceleration  - added to the velocity on every fixed step before the move
+	//                   (e.g. gravity), so arcs do not depend on the frame rate.
+	//   height        - desired capsule height (feet to top); changed when crouching.
 	// Output (written by PhysicsSystem after stepping):
 	//   velocity        - velocity after collision response (sliding along walls/floor).
 	//   grounded        - standing on walkable ground.
@@ -34,6 +36,7 @@ namespace csyren::physics
 		// Collision layer (PhysicsLayers): decides which bodies the capsule collides with.
 		CollisionLayer layer;
 		math::Vector3 velocity = math::Vector3::zero;
+		math::Vector3 acceleration = math::Vector3::zero;
 
 		bool grounded = false;
 		bool steepGround = false;

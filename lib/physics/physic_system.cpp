@@ -528,6 +528,7 @@ namespace csyren::physics
             update.mStickToFloorStepDown = JPH::Vec3(0.0f, -(std::max)(cc.stickToFloor, 0.0f), 0.0f);
             update.mWalkStairsStepUp = JPH::Vec3(0.0f, (std::max)(cc.stepHeight, 0.0f), 0.0f);
 
+            cc.velocity += cc.acceleration * dt;
             character.SetLinearVelocity(details::to_jolt(cc.velocity));
             record.prevPos = character.GetPosition();
             character.ExtendedUpdate(dt, details::to_jolt(gravity), update, broadPhaseFilter, layerFilter, {}, {}, *m_tempAllocator);
